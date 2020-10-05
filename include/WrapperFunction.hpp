@@ -2,13 +2,13 @@
 #define GUARD_WRAPPER_FUNCTION_H
 
 #include <cassert>
+#include <list>
 #include <memory>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
-#include <vector>
 
 #include "clang/AST/Decl.h"
 
@@ -69,15 +69,26 @@ public:
     _SelfType(SelfType)
   {}
 
+  explicit WrapperFunction(clang::FunctionDecl const *Decl)
+  : _IsMethod(false),
+    _Name(determineName(Decl)),
+    _Params(determineParams(Decl)),
+    _ReturnType(Decl->getReturnType())
+  { assert(!Decl->isTemplateInstantiation()); } // XXX
+
   explicit WrapperFunction(clang::CXXMethodDecl const *Decl)
-  : _IsConstructor(llvm::isa<clang::CXXConstructorDecl>(Decl)),
+  : _IsMethod(true),
+    _IsConstructor(llvm::isa<clang::CXXConstructorDecl>(Decl)),
     _IsDestructor(llvm::isa<clang::CXXDestructorDecl>(Decl)),
     _IsStatic(Decl->isStatic()),
     _Name(determineName(Decl)),
-    _SelfType(determineSelfType(Decl)),
-    _ReturnType(determineReturnType(Decl)),
-    _Params(determineParams(Decl))
+    _Params(determineParams(Decl)),
+    _ReturnType(Decl->getReturnType()),
+    _SelfType(WrapperType(Decl->getThisType()).pointee())
   { assert(!Decl->isTemplateInstantiation()); } // XXX
+
+  bool isMethod() const
+  { return _IsMethod; }
 
   bool isConstructor() const
   { return _IsConstructor; }
@@ -95,6 +106,9 @@ public:
   { return strHeader(Overload) + "\n" + strBody(); }
 
 private:
+  Identifier determineName(clang::FunctionDecl const *Decl) const
+  { return Identifier(Decl); }
+
   Identifier determineName(clang::CXXMethodDecl const *Decl) const
   {
     if (_IsConstructor) {
@@ -115,26 +129,14 @@ private:
     return Identifier(Decl);
   }
 
-  static WrapperType determineSelfType(clang::CXXMethodDecl const *Decl)
-  { return WrapperType(Decl->getThisType()).pointee(); }
-
-  static WrapperType determineReturnType(clang::CXXMethodDecl const *Decl)
-  { return Decl->getReturnType(); }
-
-  static std::vector<WrapperParam> determineParams(clang::CXXMethodDecl const *Decl)
+  static std::list<WrapperParam> determineParams(clang::FunctionDecl const *Decl)
   {
-    std::vector<WrapperParam> ParamList;
-
-    assert(!Decl->isOverloadedOperator()); // XXX
-    assert(!Decl->isVirtual()); // XXX
-
-    if (!Decl->isStatic())
-      ParamList.emplace_back(Decl->getThisType(), Identifier::Self);
+    std::list<WrapperParam> ParamList;
 
     auto Params(Decl->parameters());
 
-    for (unsigned p = 0u; p < Params.size(); ++p) {
-      auto Param(Params[p]);
+    unsigned p = 0u;
+    for (auto const &Param : Params) {
       auto ParamType(Param->getType());
       auto ParamName(Param->getNameAsString());
 
@@ -149,7 +151,22 @@ private:
       }
 
       ParamList.emplace_back(ParamType, ParamName);
+
+      ++p;
     }
+
+    return ParamList;
+  }
+
+  static std::list<WrapperParam> determineParams(clang::CXXMethodDecl const *Decl)
+  {
+    assert(!Decl->isOverloadedOperator()); // XXX
+    assert(!Decl->isVirtual()); // XXX
+
+    auto ParamList(determineParams(static_cast<clang::FunctionDecl const *>(Decl)));
+
+    if (!Decl->isStatic())
+      ParamList.emplace_front(Decl->getThisType(), Identifier::Self);
 
     return ParamList;
   }
@@ -157,19 +174,23 @@ private:
   bool hasParams() const
   { return !_Params.empty(); }
 
-  std::string strParams(bool Typed, std::size_t Skip = 0) const
+  std::string strParams(bool Typed, std::size_t Skip = 0u) const
   {
     std::stringstream SS;
 
-    auto dumpParam = [&](WrapperParam const &Param){
-      return Typed ? Param.strTyped() : Param.strUntyped();
-    };
+    auto dumpParam = [&](WrapperParam const &Param)
+    { return Typed ? Param.strTyped() : Param.strUntyped(); };
 
     SS << "(";
     if (_Params.size() > Skip) {
-      SS << dumpParam(_Params[Skip]);
-      for (std::size_t i = Skip + 1; i < _Params.size(); ++i)
-        SS << ", " << dumpParam(_Params[i]);
+      auto it = _Params.begin();
+
+      for (std::size_t i = 0u; i < Skip; ++i)
+        ++it;
+
+      SS << dumpParam(*it);
+      while (++it != _Params.end())
+        SS << ", " << dumpParam(*it);
     }
     SS << ")";
 
@@ -216,7 +237,7 @@ private:
       if (!_ReturnType.isVoid())
         SS << "return ";
 
-      if (_IsStatic) {
+      if (!_IsMethod || _IsStatic) {
         SS << _Name.strQualified()
            << strParams(false);
       } else {
@@ -237,15 +258,15 @@ private:
   std::string selfCastUnwrapped() const
   { return "reinterpret_cast<" + _SelfType.pointerTo().strUnwrapped(true) + ">"; }
 
+  bool _IsMethod = false;
   bool _IsConstructor = false;
   bool _IsDestructor = false;
   bool _IsStatic = false;
 
   Identifier _Name;
-
-  WrapperType _SelfType;
+  std::list<WrapperParam> _Params;
   WrapperType _ReturnType;
-  std::vector<WrapperParam> _Params;
+  WrapperType _SelfType;
 };
 
 class WrapperFunctionBuilder

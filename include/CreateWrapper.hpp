@@ -45,6 +45,11 @@ private:
       "publicMethodDecl",
       cxxMethodDecl(allOf(isPublic(), hasParent(cxxRecordDecl(inNS)))),
       &CreateWrapperConsumer::handlePublicMethodDecl);
+
+    addHandler<clang::FunctionDecl>(
+      "nonClassFunctionDecl",
+      functionDecl(inNS),
+      &CreateWrapperConsumer::handleNonClassFunctionDecl);
   }
 
 private:
@@ -55,6 +60,9 @@ private:
   { _WH->addWrapperRecord(Decl); }
 
   void handlePublicMethodDecl(clang::CXXMethodDecl const *Decl)
+  { _WH->addWrapperFunction(Decl); }
+
+  void handleNonClassFunctionDecl(clang::FunctionDecl const *Decl)
   { _WH->addWrapperFunction(Decl); }
 
   std::shared_ptr<WrapperHeader> _WH;
