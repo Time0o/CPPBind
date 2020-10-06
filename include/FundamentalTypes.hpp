@@ -23,7 +23,7 @@ public:
     assert(Type->isFundamentalType());
 
     clang::PrintingPolicy PP(CompilerState()->getLangOpts());
-    auto TypeName(clang::QualType(Type, 0).getAsString(PP));
+    auto TypeName(asQualType(Type).getAsString(PP));
 
     _FundamentalTypes[TypeName] = Type;
   }
@@ -36,6 +36,17 @@ public:
     return IT->second;
   }
 
+  bool is(clang::Type const *Type, std::string const &TypeName = "")
+  {
+    if (!Type->isFundamentalType())
+      return false;
+
+    if (TypeName.empty())
+      return true;
+
+    return asQualType(Type) == asQualType(get(TypeName));
+  }
+
 private:
   static FundamentalTypeRegistry &instance()
   {
@@ -43,29 +54,14 @@ private:
     return Ftr;
   }
 
+  static clang::QualType asQualType(clang::Type const *Type)
+  { return clang::QualType(Type, 0); }
+
   std::unordered_map<std::string, clang::Type const *> _FundamentalTypes;
 };
 
 inline FundamentalTypeRegistry &FundamentalTypes()
 { return FundamentalTypeRegistry::instance(); }
-
-inline void addFundamentalType(clang::Type const *Type)
-{ FundamentalTypes().add(Type); }
-
-inline clang::Type const *getFundamentalType(std::string const &TypeName)
-{ return FundamentalTypes().get(TypeName); }
-
-inline bool isFundamentalType(clang::Type const *Type,
-                              std::string const &TypeName = "")
-{
-  if (!Type->isFundamentalType())
-    return false;
-
-  if (TypeName.empty())
-    return true;
-
-  return clang::QualType(Type, 0) == clang::QualType(getFundamentalType(TypeName), 0);
-}
 
 } // namespace cppbind
 

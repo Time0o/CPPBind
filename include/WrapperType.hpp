@@ -27,7 +27,7 @@ public:
   {}
 
   WrapperType()
-  : WrapperType(getFundamentalType("void"))
+  : WrapperType(FundamentalTypes().get("void"))
   {}
 
   WrapperType(clang::TypeDecl const *Decl)
@@ -44,7 +44,7 @@ public:
   { return WrapperType(_Type.getTypePtr()); }
 
   bool isVoid() const
-  { return isFundamentalType(_Type.getTypePtr(), "void"); }
+  { return FundamentalTypes().is(_Type.getTypePtr(), "void"); }
 
   bool isPointer() const
   { return _Type->isPointerType(); }

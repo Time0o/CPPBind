@@ -58,7 +58,7 @@ private:
     auto const *Type(Decl->getType().getTypePtr());
 
     if (Type->isFundamentalType())
-      addFundamentalType(Type);
+      FundamentalTypes().add(Type);
   }
 
   void handleClassDecl(clang::CXXRecordDecl const *Decl)
