@@ -7,8 +7,8 @@
 
 #include "clang/ASTMatchers/ASTMatchers.h"
 
-#include "BuiltinTypes.hpp"
 #include "CompilerState.hpp"
+#include "FundamentalTypes.hpp"
 #include "GenericASTConsumer.hpp"
 #include "GenericFrontendAction.hpp"
 #include "Options.hpp"
@@ -31,10 +31,10 @@ private:
 
     auto inNS = hasParent(namespaceDecl(hasName(NAMESPACE)));
 
-    addHandler<clang::BuiltinType>(
-      "builtinType",
-      builtinType(),
-      &CreateWrapperConsumer::handleBuiltinType);
+    addHandler<clang::ValueDecl>(
+      "fundamentalTypeValueDecl",
+      valueDecl(), // XXX in namespace
+      &CreateWrapperConsumer::handleFundamentalTypeValueDecl);
 
     addHandler<clang::CXXRecordDecl>(
       "classDecl",
@@ -53,8 +53,13 @@ private:
   }
 
 private:
-  void handleBuiltinType(clang::BuiltinType const *Type)
-  { addBuiltinType(Type); }
+  void handleFundamentalTypeValueDecl(clang::ValueDecl const *Decl)
+  {
+    auto const *Type(Decl->getType().getTypePtr());
+
+    if (Type->isFundamentalType())
+      addFundamentalType(Type);
+  }
 
   void handleClassDecl(clang::CXXRecordDecl const *Decl)
   { _WH->addWrapperRecord(Decl); }

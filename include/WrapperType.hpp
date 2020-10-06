@@ -9,7 +9,7 @@
 #include "clang/AST/Decl.h"
 #include "clang/AST/Type.h"
 
-#include "BuiltinTypes.hpp"
+#include "FundamentalTypes.hpp"
 #include "Identifier.hpp"
 
 namespace cppbind
@@ -20,14 +20,14 @@ class WrapperType
 public:
   WrapperType(clang::QualType const &Type)
   : _Type(Type)
-  { assert(isBuiltin() || isWrappable()); }
+  { assert(isFundamental() || isWrappable()); }
 
   WrapperType(clang::Type const *Type)
   : WrapperType(clang::QualType(Type, 0))
   {}
 
   WrapperType()
-  : WrapperType(getBuiltinType("void"))
+  : WrapperType(getFundamentalType("void"))
   {}
 
   WrapperType(clang::TypeDecl const *Decl)
@@ -44,7 +44,7 @@ public:
   { return WrapperType(_Type.getTypePtr()); }
 
   bool isVoid() const
-  { return _Type->isSpecificBuiltinType(getBuiltinType("void")->getKind()); }
+  { return isFundamentalType(_Type.getTypePtr(), "void"); }
 
   bool isPointer() const
   { return _Type->isPointerType(); }
@@ -72,7 +72,7 @@ public:
 
   std::string strWrapped() const
   {
-    if (isBuiltin())
+    if (isFundamental())
       return strUnwrapped();
 
     auto Wrapped(strUnwrapped());
@@ -128,8 +128,8 @@ private:
       Str.replace(Pos, Old.length(), New);
   }
 
-  bool isBuiltin() const
-  { return _Type->isBuiltinType(); }
+  bool isFundamental() const
+  { return _Type->isFundamentalType(); }
 
   bool isWrappable() const
   { return true; } // XXX
