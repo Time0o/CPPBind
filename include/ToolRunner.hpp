@@ -2,6 +2,7 @@
 #define GUARD_TOOL_RUNNER_H
 
 #include <sstream>
+#include <string>
 #include <vector>
 
 #include "clang/Tooling/CommonOptionsParser.h"
@@ -16,7 +17,7 @@ public:
   ToolRunner(clang::tooling::CommonOptionsParser &Parser)
   : _Tool(Parser.getCompilations(),
           Parser.getSourcePathList())
-  { insertArgumentAdjusters(); }
+  { adjustArguments(); }
 
   template<typename T>
   int run()
@@ -27,37 +28,41 @@ public:
   }
 
 private:
-  void insertArgumentAdjusters()
+  void adjustArguments()
   {
-   using namespace clang::tooling;
+    using namespace clang::tooling;
 
-   std::vector<ArgumentsAdjuster> ArgumentsAdjusters;
+    std::vector<ArgumentsAdjuster> ArgumentsAdjusters;
 
-   auto BEGIN = ArgumentInsertPosition::BEGIN;
-   auto END = ArgumentInsertPosition::END;
+    auto BEGIN = ArgumentInsertPosition::BEGIN;
+    auto END = ArgumentInsertPosition::END;
 
-   // interpret all input files as C++ headers
+    // include fundamental types header
 
-   auto CPPLangAdjuster = getInsertArgumentAdjuster("-xc++-header", BEGIN);
+    ArgumentsAdjusters.push_back(getInsertArgumentAdjuster(
+      {"-include", FUNDAMENTAL_TYPES_HEADER}, BEGIN));
 
-   ArgumentsAdjusters.push_back(CPPLangAdjuster);
+    // interpret all input files as C++ headers
 
-   // add default include paths
+    ArgumentsAdjusters.push_back(getInsertArgumentAdjuster(
+      "-xc++-header", BEGIN));
 
-   CommandLineArguments ExtraArgs;
+    // add default include paths
 
-   std::stringstream ss(CLANG_INCLUDE_PATHS);
+    CommandLineArguments ExtraArgs;
 
-   std::string Inc;
-   while (ss >> Inc)
-     ExtraArgs.push_back(Inc);
+    std::stringstream ss(CLANG_INCLUDE_PATHS);
 
-   auto CPPIncAdjuster = getInsertArgumentAdjuster(ExtraArgs, END);
+    std::string Inc;
+    while (ss >> Inc)
+      ExtraArgs.push_back(Inc);
 
-   ArgumentsAdjusters.push_back(CPPIncAdjuster);
+    auto CPPIncAdjuster = getInsertArgumentAdjuster(ExtraArgs, END);
 
-   for (auto const &ArgumentsAdjuster : ArgumentsAdjusters)
-     _Tool.appendArgumentsAdjuster(ArgumentsAdjuster);
+    ArgumentsAdjusters.push_back(CPPIncAdjuster);
+
+    for (auto const &ArgumentsAdjuster : ArgumentsAdjusters)
+      _Tool.appendArgumentsAdjuster(ArgumentsAdjuster);
   }
 
   clang::tooling::ClangTool _Tool;

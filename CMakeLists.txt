@@ -15,6 +15,7 @@ set(CPPBIND cppbind)
 set(SRC_DIR ${PROJECT_SOURCE_DIR}/source)
 set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
 set(TOOL_DIR ${PROJECT_SOURCE_DIR}/tool)
+set(FUNDAMENTAL_TYPES_HEADER "${INCLUDE_DIR}/FundamentalTypeList.hpp")
 
 # find clang
 FIND_PROGRAM(CLANG clang)
@@ -50,5 +51,9 @@ set(
   LLVM_LIBRARIES
   option
 )
+
+# fundamental types header
+add_compile_definitions(FUNDAMENTAL_TYPES_HEADER="${FUNDAMENTAL_TYPES_HEADER}")
+add_compile_definitions(FUNDAMENTAL_TYPES_NAMESPACE="_fundamental_types")
 
 add_subdirectory(${SRC_DIR})

@@ -1,6 +1,7 @@
 #ifndef GUARD_CREATE_WRAPPER_H
 #define GUARD_CREATE_WRAPPER_H
 
+#include <cassert>
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -29,36 +30,43 @@ private:
   {
     using namespace clang::ast_matchers;
 
-    auto inNS = hasParent(namespaceDecl(hasName(NAMESPACE)));
+    auto inNs = [](std::string const &Ns)
+    { return hasParent(namespaceDecl(hasName(Ns))); };
+
+    // XXX check for clashes
+    auto inFundamentalTypeNs = inNs(FUNDAMENTAL_TYPES_NAMESPACE);
+    auto inWrappedNs = inNs(NAMESPACE);
 
     addHandler<clang::ValueDecl>(
       "fundamentalTypeValueDecl",
-      valueDecl(), // XXX in namespace
+      valueDecl(inFundamentalTypeNs),
       &CreateWrapperConsumer::handleFundamentalTypeValueDecl);
 
     addHandler<clang::CXXRecordDecl>(
       "classDecl",
-      cxxRecordDecl(allOf(inNS, anyOf(isClass(), isStruct()))),
+      cxxRecordDecl(allOf(inWrappedNs, anyOf(isClass(), isStruct()))),
       &CreateWrapperConsumer::handleClassDecl);
 
     addHandler<clang::CXXMethodDecl>(
       "publicMethodDecl",
-      cxxMethodDecl(allOf(isPublic(), hasParent(cxxRecordDecl(inNS)))),
+      cxxMethodDecl(allOf(isPublic(), hasParent(cxxRecordDecl(inWrappedNs)))),
       &CreateWrapperConsumer::handlePublicMethodDecl);
 
     addHandler<clang::FunctionDecl>(
       "nonClassFunctionDecl",
-      functionDecl(inNS),
+      functionDecl(inWrappedNs),
       &CreateWrapperConsumer::handleNonClassFunctionDecl);
   }
 
 private:
   void handleFundamentalTypeValueDecl(clang::ValueDecl const *Decl)
   {
-    auto const *Type(Decl->getType().getTypePtr());
+    auto const *Type = Decl->getType().getTypePtr();
 
-    if (Type->isFundamentalType())
-      FundamentalTypes().add(Type);
+    if (Type->isPointerType())
+      Type = Type->getPointeeType().getTypePtr();
+
+    FundamentalTypes().add(Type);
   }
 
   void handleClassDecl(clang::CXXRecordDecl const *Decl)

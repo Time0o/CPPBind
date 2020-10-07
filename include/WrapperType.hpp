@@ -43,6 +43,9 @@ public:
   WrapperType unqualified() const
   { return WrapperType(_Type.getTypePtr()); }
 
+  bool isQualified() const
+  { return _Type.hasQualifiers(); }
+
   bool isVoid() const
   { return FundamentalTypes().is(_Type.getTypePtr(), "void"); }
 
