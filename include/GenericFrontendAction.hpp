@@ -1,7 +1,6 @@
 #ifndef GUARD_GENERIC_FRONTEND_ACTION_H
 #define GUARD_GENERIC_FRONTEND_ACTION_H
 
-#include <iostream>
 #include <memory>
 
 #include "clang/AST/ASTConsumer.h"
