@@ -13,7 +13,7 @@
 namespace cppbind
 {
 
-class WrapperFile
+class FileBuffer
 {
 public:
   enum : char {
@@ -21,12 +21,12 @@ public:
     EmptyLine = '\n'
   };
 
-  WrapperFile(std::filesystem::path const &Path)
+  FileBuffer(std::filesystem::path const &Path)
   : _Path(Path)
   {}
 
   template<typename T>
-  WrapperFile &operator<<(T const &Line)
+  FileBuffer &operator<<(T const &Line)
   {
     _Content << Line;
     return *this;

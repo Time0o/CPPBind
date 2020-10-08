@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-#include "WrapperFile.hpp"
+#include "FileBuffer.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperRecord.hpp"
 
@@ -45,9 +45,9 @@ public:
     addWrapperFunction_(Wf);
   }
 
-  WrapperFile headerFile(std::filesystem::path const &WrappedPath) const
+  FileBuffer headerFile(std::filesystem::path const &WrappedPath) const
   {
-    WrapperFile File(wrapperHeaderPath(WrappedPath));
+    FileBuffer File(wrapperHeaderPath(WrappedPath));
 
     auto HeaderGuard(headerGuardToken(WrappedPath));
 
@@ -61,9 +61,9 @@ public:
     return File;
   }
 
-  WrapperFile sourceFile(std::filesystem::path const &WrappedPath) const
+  FileBuffer sourceFile(std::filesystem::path const &WrappedPath) const
   {
-    WrapperFile File(wrapperSourcePath(WrappedPath));
+    FileBuffer File(wrapperSourcePath(WrappedPath));
 
     append(File, includeHeaders, WrappedPath);
     append(File, openExternCGuard, false);
@@ -98,17 +98,17 @@ private:
     std::string const &Postfix,
     std::string const &Ext)
   {
-    std::filesystem::path WrapperFile(WrappedPath.filename());
+    std::filesystem::path FileBuffer(WrappedPath.filename());
     std::filesystem::path WrapperDir(Outdir);
 
-    WrapperFile.replace_filename(WrapperFile.stem().concat(Postfix));
-    WrapperFile.replace_extension(Ext);
+    FileBuffer.replace_filename(FileBuffer.stem().concat(Postfix));
+    FileBuffer.replace_extension(Ext);
 
-    return WrapperDir / WrapperFile;
+    return WrapperDir / FileBuffer;
   }
 
   template<typename FUNC, typename ...ARGS>
-  using ReturnType = decltype(std::declval<FUNC>()(std::declval<WrapperFile &>(),
+  using ReturnType = decltype(std::declval<FUNC>()(std::declval<FileBuffer &>(),
                               std::declval<ARGS>()...));
 
   template<typename FUNC, typename ...ARGS>
@@ -117,18 +117,18 @@ private:
 
   template<typename FUNC, typename ...ARGS>
   static std::enable_if_t<!MightPutNothing<FUNC, ARGS...>>
-  append(WrapperFile &File, FUNC &&f, ARGS&&... args)
+  append(FileBuffer &File, FUNC &&f, ARGS&&... args)
   {
     f(File, std::forward<ARGS>(args)...);
-    File << WrapperFile::EmptyLine;
+    File << FileBuffer::EmptyLine;
   }
 
   template<typename FUNC, typename ...ARGS>
   static std::enable_if_t<MightPutNothing<FUNC, ARGS...>>
-  append(WrapperFile &File, FUNC &&f, ARGS&&... args)
+  append(FileBuffer &File, FUNC &&f, ARGS&&... args)
   {
     if (f(File, std::forward<ARGS>(args)...))
-      File << WrapperFile::EmptyLine;
+      File << FileBuffer::EmptyLine;
   }
 
   static std::string headerGuardToken(std::filesystem::path const &WrappedPath)
@@ -142,74 +142,74 @@ private:
     return identifier.strUnqualified(Identifier::SNAKE_CASE_CAP_ALL);
   }
 
-  static void openHeaderGuard(WrapperFile &File, std::string const &HeaderGuard)
+  static void openHeaderGuard(FileBuffer &File, std::string const &HeaderGuard)
   {
-    File << "#ifndef " << HeaderGuard << WrapperFile::EndLine;
-    File << "#define " << HeaderGuard << WrapperFile::EndLine;
+    File << "#ifndef " << HeaderGuard << FileBuffer::EndLine;
+    File << "#define " << HeaderGuard << FileBuffer::EndLine;
   }
 
-  static void closeHeaderGuard(WrapperFile &File, std::string const &HeaderGuard)
-  { File << "#endif // " << HeaderGuard << WrapperFile::EndLine; }
+  static void closeHeaderGuard(FileBuffer &File, std::string const &HeaderGuard)
+  { File << "#endif // " << HeaderGuard << FileBuffer::EndLine; }
 
-  static bool openExternCGuard(WrapperFile &File, bool IfdefCpp)
-  {
-    if (WRAPPER_HEADER_OMIT_EXTERN_C)
-      return false;
-
-    if (IfdefCpp)
-      File << "#ifdef __cplusplus" << WrapperFile::EndLine;
-
-    File << "extern \"C\" {" << WrapperFile::EndLine;
-
-    if (IfdefCpp)
-      File << "#endif" << WrapperFile::EndLine;
-
-    return true;
-  }
-
-  static bool closeExternCGuard(WrapperFile &File, bool IfdefCpp)
+  static bool openExternCGuard(FileBuffer &File, bool IfdefCpp)
   {
     if (WRAPPER_HEADER_OMIT_EXTERN_C)
       return false;
 
     if (IfdefCpp)
-      File << "#ifdef __cplusplus" << WrapperFile::EndLine;
+      File << "#ifdef __cplusplus" << FileBuffer::EndLine;
 
-    File << "} // extern \"C\"" << WrapperFile::EndLine;
+    File << "extern \"C\" {" << FileBuffer::EndLine;
 
     if (IfdefCpp)
-      File << "#endif" << WrapperFile::EndLine;
+      File << "#endif" << FileBuffer::EndLine;
 
     return true;
   }
 
-  static void includeHeaders(WrapperFile &File,
+  static bool closeExternCGuard(FileBuffer &File, bool IfdefCpp)
+  {
+    if (WRAPPER_HEADER_OMIT_EXTERN_C)
+      return false;
+
+    if (IfdefCpp)
+      File << "#ifdef __cplusplus" << FileBuffer::EndLine;
+
+    File << "} // extern \"C\"" << FileBuffer::EndLine;
+
+    if (IfdefCpp)
+      File << "#endif" << FileBuffer::EndLine;
+
+    return true;
+  }
+
+  static void includeHeaders(FileBuffer &File,
                              std::filesystem::path const &WrappedPath)
   {
     auto include = [](std::filesystem::path const &HeaderPath)
     { return "#include \"" + HeaderPath.filename().string() + "\""; };
 
-    File << include(WrappedPath) << WrapperFile::EndLine;
+    File << include(WrappedPath) << FileBuffer::EndLine;
 
-    File << WrapperFile::EmptyLine;
+    File << FileBuffer::EmptyLine;
 
-    File << include(wrapperHeaderPath(WrappedPath)) << WrapperFile::EndLine;
+    File << include(wrapperHeaderPath(WrappedPath)) << FileBuffer::EndLine;
   }
 
-  static bool declareRecords(WrapperFile &File,
+  static bool declareRecords(FileBuffer &File,
                              RecordsType const &Records)
   {
     if (Records.empty())
       return false;
 
     for (auto const &WD : Records)
-      File << WD.strDeclaration() << WrapperFile::EndLine;
+      File << WD.strDeclaration() << FileBuffer::EndLine;
 
     return true;
   }
 
   static bool declareOrDefineFunctions(
-    WrapperFile &File,
+    FileBuffer &File,
     FunctionsType const &Functions,
     FunctionInsertionOrderType const &FunctionInsertionOrder,
     bool IncludeBody)
@@ -231,15 +231,15 @@ private:
       auto const &Wfs(It->second);
 
       if (IncludeBody && i > 0u)
-        File << WrapperFile::EmptyLine;
+        File << FileBuffer::EmptyLine;
 
-      File << defOrDecl(Wfs[0], Wfs.size() == 1u ? 0u : 1u) << WrapperFile::EndLine;
+      File << defOrDecl(Wfs[0], Wfs.size() == 1u ? 0u : 1u) << FileBuffer::EndLine;
 
       for (unsigned o = 1u; o < Wfs.size(); ++o) {
         if (IncludeBody)
-          File << WrapperFile::EmptyLine;
+          File << FileBuffer::EmptyLine;
 
-        File << defOrDecl(Wfs[o], o + 1u) << WrapperFile::EndLine;
+        File << defOrDecl(Wfs[o], o + 1u) << FileBuffer::EndLine;
       }
     }
 
