@@ -24,16 +24,20 @@ class WrapperHeader
   using FunctionInsertionOrderType = std::vector<Identifier>;
 
 public:
+  WrapperHeader(std::filesystem::path const &WrappedHeader)
+  : _WrappedHeader(WrappedHeader)
+  {}
+
   template<typename ...ARGS>
   void addWrapperRecord(ARGS&&... args)
   {
     WrapperRecord Wr(std::forward<ARGS>(args)...);
 
     if (Wr.needsImplicitDefaultConstructor())
-      addWrapperFunction_(Wr.implicitDefaultConstructor());
+      addWrapperFunction(Wr.implicitDefaultConstructor());
 
     if (Wr.needsImplicitDestructor())
-      addWrapperFunction_(Wr.implicitDestructor());
+      addWrapperFunction(Wr.implicitDestructor());
 
     _Records.emplace_back(std::move(Wr));
   }
@@ -42,116 +46,77 @@ public:
   void addWrapperFunction(ARGS&&... args)
   {
     WrapperFunction Wf(std::forward<ARGS>(args)...);
-    addWrapperFunction_(Wf);
+
+    auto Name(Wf.name());
+
+    auto It(_Functions.find(Name));
+
+    if (It == _Functions.end())
+      _FunctionInsertionOrder.push_back(Name);
+
+    _Functions[Name].push_back(Wf);
   }
 
-  FileBuffer headerFile(std::filesystem::path const &WrappedPath) const
+  void write() const
   {
-    FileBuffer File(wrapperHeaderPath(WrappedPath));
-
-    auto HeaderGuard(headerGuardToken(WrappedPath));
-
-    append(File, openHeaderGuard, HeaderGuard);
-    append(File, openExternCGuard, true);
-    append(File, declareRecords, _Records);
-    append(File, declareOrDefineFunctions, _Functions, _FunctionInsertionOrder, false);
-    append(File, closeExternCGuard, true);
-    append(File, closeHeaderGuard, HeaderGuard);
-
-    return File;
-  }
-
-  FileBuffer sourceFile(std::filesystem::path const &WrappedPath) const
-  {
-    FileBuffer File(wrapperSourcePath(WrappedPath));
-
-    append(File, includeHeaders, WrappedPath);
-    append(File, openExternCGuard, false);
-    append(File, declareOrDefineFunctions, _Functions, _FunctionInsertionOrder, true);
-    append(File, closeExternCGuard, false);
-
-    return File;
+    headerFile().write(headerFilePath());
+    sourceFile().write(sourceFilePath());
   }
 
 private:
-  static std::filesystem::path wrapperHeaderPath(
-    std::filesystem::path const &WrappedPath)
+  FileBuffer headerFile() const
   {
-    return wrapperFilePath(WrappedPath,
-                           WRAPPER_HEADER_OUTDIR,
-                           WRAPPER_HEADER_POSTFIX,
-                           WRAPPER_HEADER_EXT);
+    FileBuffer File;
+
+    append(File, &WrapperHeader::openHeaderGuard);
+    append(File, &WrapperHeader::openExternCGuard, true);
+    append(File, &WrapperHeader::declareRecords);
+    append(File, &WrapperHeader::declareOrDefineFunctions, false);
+    append(File, &WrapperHeader::closeExternCGuard, true);
+    append(File, &WrapperHeader::closeHeaderGuard);
+
+    return File;
   }
 
-  static std::filesystem::path wrapperSourcePath(
-    std::filesystem::path const &WrappedPath)
+  FileBuffer sourceFile() const
   {
-    return wrapperFilePath(WrappedPath,
-                           WRAPPER_SOURCE_OUTDIR,
-                           WRAPPER_SOURCE_POSTFIX,
-                           WRAPPER_SOURCE_EXT);
-  }
+    FileBuffer File;
 
-  static std::filesystem::path wrapperFilePath(
-    std::filesystem::path const &WrappedPath,
-    std::string const &Outdir,
-    std::string const &Postfix,
-    std::string const &Ext)
-  {
-    std::filesystem::path FileBuffer(WrappedPath.filename());
-    std::filesystem::path WrapperDir(Outdir);
+    append(File, &WrapperHeader::includeHeaders);
+    append(File, &WrapperHeader::openExternCGuard, false);
+    append(File, &WrapperHeader::declareOrDefineFunctions, true);
+    append(File, &WrapperHeader::closeExternCGuard, false);
 
-    FileBuffer.replace_filename(FileBuffer.stem().concat(Postfix));
-    FileBuffer.replace_extension(Ext);
-
-    return WrapperDir / FileBuffer;
+    return File;
   }
 
   template<typename FUNC, typename ...ARGS>
-  using ReturnType = decltype(std::declval<FUNC>()(std::declval<FileBuffer &>(),
-                              std::declval<ARGS>()...));
+  using ReturnType = decltype(
+    (std::declval<WrapperHeader>().*std::declval<FUNC>())(
+      std::declval<FileBuffer &>(),
+      std::declval<ARGS>()...));
 
   template<typename FUNC, typename ...ARGS>
   static constexpr bool MightPutNothing =
     !std::is_same_v<ReturnType<FUNC, ARGS...>, void>;
 
   template<typename FUNC, typename ...ARGS>
-  static std::enable_if_t<!MightPutNothing<FUNC, ARGS...>>
-  append(FileBuffer &File, FUNC &&f, ARGS&&... args)
+  std::enable_if_t<!MightPutNothing<FUNC, ARGS...>>
+  append(FileBuffer &File, FUNC &&f, ARGS&&... args) const
   {
-    f(File, std::forward<ARGS>(args)...);
+    (this->*f)(File, std::forward<ARGS>(args)...);
     File << FileBuffer::EmptyLine;
   }
 
   template<typename FUNC, typename ...ARGS>
-  static std::enable_if_t<MightPutNothing<FUNC, ARGS...>>
-  append(FileBuffer &File, FUNC &&f, ARGS&&... args)
+  std::enable_if_t<MightPutNothing<FUNC, ARGS...>>
+  append(FileBuffer &File, FUNC &&f, ARGS&&... args) const
   {
-    if (f(File, std::forward<ARGS>(args)...))
+    if ((this->*f)(File, std::forward<ARGS>(args)...))
       File << FileBuffer::EmptyLine;
   }
 
-  static std::string headerGuardToken(std::filesystem::path const &WrappedPath)
-  {
-    auto Token(WRAPPER_HEADER_GUARD_PREFIX +
-               WrappedPath.stem().string() +
-               WRAPPER_HEADER_GUARD_POSTFIX);
-
-    auto identifier(Identifier::makeUnqualifiedIdentifier(Token, false));
-
-    return identifier.strUnqualified(Identifier::SNAKE_CASE_CAP_ALL);
-  }
-
-  static void openHeaderGuard(FileBuffer &File, std::string const &HeaderGuard)
-  {
-    File << "#ifndef " << HeaderGuard << FileBuffer::EndLine;
-    File << "#define " << HeaderGuard << FileBuffer::EndLine;
-  }
-
-  static void closeHeaderGuard(FileBuffer &File, std::string const &HeaderGuard)
-  { File << "#endif // " << HeaderGuard << FileBuffer::EndLine; }
-
-  static bool openExternCGuard(FileBuffer &File, bool IfdefCpp)
+  bool openExternCGuard(FileBuffer &File, bool IfdefCpp) const
   {
     if (WRAPPER_HEADER_OMIT_EXTERN_C)
       return false;
@@ -167,7 +132,7 @@ private:
     return true;
   }
 
-  static bool closeExternCGuard(FileBuffer &File, bool IfdefCpp)
+  bool closeExternCGuard(FileBuffer &File, bool IfdefCpp) const
   {
     if (WRAPPER_HEADER_OMIT_EXTERN_C)
       return false;
@@ -183,38 +148,20 @@ private:
     return true;
   }
 
-  static void includeHeaders(FileBuffer &File,
-                             std::filesystem::path const &WrappedPath)
+  bool declareRecords(FileBuffer &File) const
   {
-    auto include = [](std::filesystem::path const &HeaderPath)
-    { return "#include \"" + HeaderPath.filename().string() + "\""; };
-
-    File << include(WrappedPath) << FileBuffer::EndLine;
-
-    File << FileBuffer::EmptyLine;
-
-    File << include(wrapperHeaderPath(WrappedPath)) << FileBuffer::EndLine;
-  }
-
-  static bool declareRecords(FileBuffer &File,
-                             RecordsType const &Records)
-  {
-    if (Records.empty())
+    if (_Records.empty())
       return false;
 
-    for (auto const &WD : Records)
+    for (auto const &WD : _Records)
       File << WD.strDeclaration() << FileBuffer::EndLine;
 
     return true;
   }
 
-  static bool declareOrDefineFunctions(
-    FileBuffer &File,
-    FunctionsType const &Functions,
-    FunctionInsertionOrderType const &FunctionInsertionOrder,
-    bool IncludeBody)
+  bool declareOrDefineFunctions(FileBuffer &File, bool IncludeBody) const
   {
-    if (Functions.empty())
+    if (_Functions.empty())
       return false;
 
     auto defOrDecl = [=](WrapperFunction const &Wf, unsigned Overload = 0u)
@@ -223,10 +170,9 @@ private:
                          : Wf.strDeclaration(Overload);
     };
 
-    auto const &Io = FunctionInsertionOrder;
-    for (auto i = 0u; i < Io.size(); ++i) {
-      auto It(Functions.find(Io[i]));
-      assert(It != Functions.end());
+    for (auto i = 0u; i < _FunctionInsertionOrder.size(); ++i) {
+      auto It(_Functions.find(_FunctionInsertionOrder[i]));
+      assert(It != _Functions.end());
 
       auto const &Wfs(It->second);
 
@@ -246,17 +192,66 @@ private:
     return true;
   }
 
-  void addWrapperFunction_(WrapperFunction const &Wf)
+  void openHeaderGuard(FileBuffer &File) const
   {
-    auto Name(Wf.name());
-
-    auto It(_Functions.find(Name));
-
-    if (It == _Functions.end())
-      _FunctionInsertionOrder.push_back(Name);
-
-    _Functions[Name].push_back(Wf);
+    File << "#ifndef " << headerGuardToken() << FileBuffer::EndLine;
+    File << "#define " << headerGuardToken() << FileBuffer::EndLine;
   }
+
+  void closeHeaderGuard(FileBuffer &File) const
+  { File << "#endif // " << headerGuardToken() << FileBuffer::EndLine; }
+
+  std::string headerGuardToken() const
+  {
+    auto Token(WRAPPER_HEADER_GUARD_PREFIX +
+               _WrappedHeader.stem().string() +
+               WRAPPER_HEADER_GUARD_POSTFIX);
+
+    auto identifier(Identifier::makeUnqualifiedIdentifier(Token, false));
+
+    return identifier.strUnqualified(Identifier::SNAKE_CASE_CAP_ALL);
+  }
+
+  void includeHeaders(FileBuffer &File) const
+  {
+    auto include = [](std::filesystem::path const &HeaderPath)
+    { return "#include \"" + HeaderPath.filename().string() + "\""; };
+
+    File << include(_WrappedHeader) << FileBuffer::EndLine;
+
+    File << FileBuffer::EmptyLine;
+
+    File << include(headerFilePath()) << FileBuffer::EndLine;
+  }
+
+  std::filesystem::path headerFilePath() const
+  {
+    return filePath(WRAPPER_HEADER_OUTDIR,
+                    WRAPPER_HEADER_POSTFIX,
+                    WRAPPER_HEADER_EXT);
+  }
+
+  std::filesystem::path sourceFilePath() const
+  {
+    return filePath(WRAPPER_SOURCE_OUTDIR,
+                    WRAPPER_SOURCE_POSTFIX,
+                    WRAPPER_SOURCE_EXT);
+  }
+
+  std::filesystem::path filePath(std::string const &Outdir,
+                                 std::string const &Postfix,
+                                 std::string const &Ext) const
+  {
+    std::filesystem::path FileBuffer(_WrappedHeader.filename());
+    std::filesystem::path WrapperDir(Outdir);
+
+    FileBuffer.replace_filename(FileBuffer.stem().concat(Postfix));
+    FileBuffer.replace_extension(Ext);
+
+    return WrapperDir / FileBuffer;
+  }
+
+  std::filesystem::path _WrappedHeader;
 
   RecordsType _Records;
   FunctionsType _Functions;

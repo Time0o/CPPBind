@@ -21,10 +21,6 @@ public:
     EmptyLine = '\n'
   };
 
-  FileBuffer(std::filesystem::path const &Path)
-  : _Path(Path)
-  {}
-
   template<typename T>
   FileBuffer &operator<<(T const &Line)
   {
@@ -32,15 +28,15 @@ public:
     return *this;
   }
 
-  void write() const
+  void write(std::filesystem::path const &Path) const
   {
     // open file
     std::error_code EC;
 
-    llvm::raw_fd_ostream OS(_Path.c_str(), EC, llvm::sys::fs::F_None);
+    llvm::raw_fd_ostream OS(Path.c_str(), EC, llvm::sys::fs::F_None);
 
     if (EC)
-      throw LLVMError("Failed to open '" + _Path.string() + "'", EC);
+      throw LLVMError("Failed to open '" + Path.string() + "'", EC);
 
     // write to file
     OS.clear_error();
@@ -52,12 +48,11 @@ public:
     EC = OS.error();
 
     if (EC)
-      throw LLVMError("Failed to write '" + _Path.string() + "'", EC);
+      throw LLVMError("Failed to write '" + Path.string() + "'", EC);
   }
 
 private:
   std::stringstream _Content;
-  std::filesystem::path _Path;
 };
 
 } // namespace cppbind

@@ -94,16 +94,10 @@ private:
   }
 
   void beforeProcessing() override
-  { _WH = std::make_shared<WrapperHeader>(); }
+  { _WH = std::make_shared<WrapperHeader>(CompilerState().currentFile()); }
 
   void afterProcessing() override
-  {
-    auto WrappedFile(CompilerState().currentFile());
-
-    // XXX write should take path
-    _WH->headerFile(WrappedFile).write();
-    _WH->sourceFile(WrappedFile).write();
-  }
+  { _WH->write(); }
 
   std::shared_ptr<WrapperHeader> _WH;
 };
