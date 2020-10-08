@@ -1,8 +1,11 @@
 #ifndef GUARD_TOOL_RUNNER_H
 #define GUARD_TOOL_RUNNER_H
 
+#include <memory>
 #include <sstream>
 #include <string>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 #include "clang/Tooling/CommonOptionsParser.h"
@@ -19,10 +22,10 @@ public:
           Parser.getSourcePathList())
   { adjustArguments(); }
 
-  template<typename T>
-  int run()
+  template<typename T, typename ...ARGS>
+  int run(ARGS&&... Args)
   {
-    auto Factory(clang::tooling::newFrontendActionFactory<T>());
+    auto Factory(makeFrontendActionFactory<T>(std::forward<ARGS>(Args)...));
 
     return _Tool.run(Factory.get());
   }
@@ -63,6 +66,32 @@ private:
 
     for (auto const &ArgumentsAdjuster : ArgumentsAdjusters)
       _Tool.appendArgumentsAdjuster(ArgumentsAdjuster);
+  }
+
+  template<typename T, typename ...ARGS>
+  static std::unique_ptr<clang::tooling::FrontendActionFactory>
+  makeFrontendActionFactory(ARGS&&... Args)
+  {
+    class ActionFactory : public clang::tooling::FrontendActionFactory
+    {
+    public:
+      ActionFactory(ARGS&&... Args)
+      : _StoredArgs(std::make_tuple(std::forward<ARGS>(Args)...))
+      {}
+
+      std::unique_ptr<clang::FrontendAction> create() override
+      {
+        return std::apply(
+          [](auto&&... Args)
+          { return std::make_unique<T>(std::forward<decltype(Args)>(Args)...); },
+          _StoredArgs);
+      }
+
+    private:
+      std::tuple<ARGS...> _StoredArgs;
+    };
+
+    return std::make_unique<ActionFactory>(std::forward<ARGS>(Args)...);
   }
 
   clang::tooling::ClangTool _Tool;
