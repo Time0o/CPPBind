@@ -135,8 +135,8 @@ private:
 
     auto Params(Decl->parameters());
 
-    unsigned p = 0u;
-    for (auto const &Param : Params) {
+    for (unsigned i = 0u; i < Params.size(); ++i) {
+      auto const &Param(Params[i]);
       auto ParamType(Param->getType());
       auto ParamName(Param->getNameAsString());
 
@@ -146,13 +146,11 @@ private:
       if (ParamName.empty()) {
         ParamName = WRAPPER_FUNC_UNNAMED_PARAM_PLACEHOLDER;
 
-        if (replaceAllStrs(ParamName, "%p", std::to_string(p + 1u)) == 0u)
+        if (replaceAllStrs(ParamName, "%p", std::to_string(i + 1u)) == 0u)
           throw std::runtime_error("Parameter name pattern must contain at least one occurence of '%p'");
       }
 
       ParamList.emplace_back(ParamType, ParamName);
-
-      ++p;
     }
 
     return ParamList;

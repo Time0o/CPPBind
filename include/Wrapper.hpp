@@ -182,13 +182,15 @@ private:
       if (IncludeBody && i > 0u)
         File << FileBuffer::EmptyLine;
 
-      File << defOrDecl(Wfs[0], Wfs.size() == 1u ? 0u : 1u) << FileBuffer::EndLine;
+      if (Wfs.size() == 1u) {
+        File << defOrDecl(Wfs[0]) << FileBuffer::EndLine;
+      } else {
+        for (unsigned Overload = 0u; Overload < Wfs.size(); ++Overload) {
+          if (IncludeBody)
+            File << FileBuffer::EmptyLine;
 
-      for (unsigned o = 1u; o < Wfs.size(); ++o) {
-        if (IncludeBody)
-          File << FileBuffer::EmptyLine;
-
-        File << defOrDecl(Wfs[o], o + 1u) << FileBuffer::EndLine;
+          File << defOrDecl(Wfs[Overload], Overload + 1u) << FileBuffer::EndLine;
+        }
       }
     }
 

@@ -142,13 +142,13 @@ public:
   { return makeUnqualifiedIdentifier(Name.str(), allowReserved, replaceSpecial); }
 
   bool operator==(Identifier const &ID) const
-  { return _Name == ID._Name && _NameQuals == ID._NameQuals; }
+  { return strQualified() == ID.strQualified(); }
 
   bool operator!=(Identifier const &ID) const
   { return !(*this == ID); }
 
   bool operator<(Identifier const &ID) const
-  { return _NameQuals + _Name < ID._NameQuals + ID._Name; }
+  { return strQualified() < ID.strQualified(); }
 
   Identifier &operator+=(Identifier const &ID)
   {
