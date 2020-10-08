@@ -24,23 +24,19 @@ public:
     CompilerState().updateCompilerInstance(CI);
     CompilerState().updateFile(File.str());
 
+    beforeProcessing();
+
     return makeConsumer();
   }
 
-  bool BeginSourceFileAction(clang::CompilerInstance &) override
-  {
-    beforeSourceFile();
-    return true;
-  }
-
   void EndSourceFileAction() override
-  { afterSourceFile(); }
+  { afterProcessing(); }
 
 private:
   virtual std::unique_ptr<CONSUMER> makeConsumer() = 0;
 
-  virtual void beforeSourceFile() = 0;
-  virtual void afterSourceFile() = 0;
+  virtual void beforeProcessing() = 0;
+  virtual void afterProcessing() = 0;
 };
 
 } // namespace cppbind

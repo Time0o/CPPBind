@@ -93,10 +93,10 @@ private:
     return std::make_unique<CreateWrapperConsumer>(_WH);
   }
 
-  void beforeSourceFile() override
+  void beforeProcessing() override
   { _WH = std::make_shared<WrapperHeader>(); }
 
-  void afterSourceFile() override
+  void afterProcessing() override
   {
     auto WrappedFile(CompilerState().currentFile());
 
