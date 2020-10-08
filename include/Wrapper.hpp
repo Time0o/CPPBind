@@ -57,6 +57,9 @@ public:
     _Functions[Name].push_back(Wf);
   }
 
+  bool empty() const
+  { return _Functions.empty(); }
+
   void write() const
   {
     headerFile().write(headerFilePath());

@@ -97,7 +97,10 @@ private:
   { _Wrapper = std::make_shared<Wrapper>(CompilerState().currentFile()); }
 
   void afterProcessing() override
-  { _Wrapper->write(); }
+  {
+    if (!_Wrapper->empty())
+      _Wrapper->write();
+  }
 
   std::shared_ptr<Wrapper> _Wrapper;
 };
