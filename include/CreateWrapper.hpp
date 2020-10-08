@@ -13,7 +13,7 @@
 #include "GenericASTConsumer.hpp"
 #include "GenericFrontendAction.hpp"
 #include "Options.hpp"
-#include "WrapperHeader.hpp"
+#include "Wrapper.hpp"
 
 namespace cppbind
 {
@@ -21,8 +21,8 @@ namespace cppbind
 class CreateWrapperConsumer : public GenericASTConsumer
 {
 public:
-  CreateWrapperConsumer(std::shared_ptr<WrapperHeader> WH)
-  : _WH(WH)
+  CreateWrapperConsumer(std::shared_ptr<Wrapper> WH)
+  : _Wrapper(WH)
   {}
 
 private:
@@ -70,15 +70,15 @@ private:
   }
 
   void handleClassDecl(clang::CXXRecordDecl const *Decl)
-  { _WH->addWrapperRecord(Decl); }
+  { _Wrapper->addWrapperRecord(Decl); }
 
   void handlePublicMethodDecl(clang::CXXMethodDecl const *Decl)
-  { _WH->addWrapperFunction(Decl); }
+  { _Wrapper->addWrapperFunction(Decl); }
 
   void handleNonClassFunctionDecl(clang::FunctionDecl const *Decl)
-  { _WH->addWrapperFunction(Decl); }
+  { _Wrapper->addWrapperFunction(Decl); }
 
-  std::shared_ptr<WrapperHeader> _WH;
+  std::shared_ptr<Wrapper> _Wrapper;
 };
 
 // XXX what about parallel invocations?
@@ -90,16 +90,16 @@ private:
   {
     // XXX skip source files, filter headers?
 
-    return std::make_unique<CreateWrapperConsumer>(_WH);
+    return std::make_unique<CreateWrapperConsumer>(_Wrapper);
   }
 
   void beforeProcessing() override
-  { _WH = std::make_shared<WrapperHeader>(CompilerState().currentFile()); }
+  { _Wrapper = std::make_shared<Wrapper>(CompilerState().currentFile()); }
 
   void afterProcessing() override
-  { _WH->write(); }
+  { _Wrapper->write(); }
 
-  std::shared_ptr<WrapperHeader> _WH;
+  std::shared_ptr<Wrapper> _Wrapper;
 };
 
 } // namespace cppbind

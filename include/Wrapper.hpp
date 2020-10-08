@@ -17,14 +17,14 @@
 namespace cppbind
 {
 
-class WrapperHeader
+class Wrapper
 {
   using RecordsType = std::vector<WrapperRecord>;
   using FunctionsType = std::map<Identifier, std::vector<WrapperFunction>>;
   using FunctionInsertionOrderType = std::vector<Identifier>;
 
 public:
-  WrapperHeader(std::filesystem::path const &WrappedHeader)
+  Wrapper(std::filesystem::path const &WrappedHeader)
   : _WrappedHeader(WrappedHeader)
   {}
 
@@ -68,12 +68,12 @@ private:
   {
     FileBuffer File;
 
-    append(File, &WrapperHeader::openHeaderGuard);
-    append(File, &WrapperHeader::openExternCGuard, true);
-    append(File, &WrapperHeader::declareRecords);
-    append(File, &WrapperHeader::declareOrDefineFunctions, false);
-    append(File, &WrapperHeader::closeExternCGuard, true);
-    append(File, &WrapperHeader::closeHeaderGuard);
+    append(File, &Wrapper::openHeaderGuard);
+    append(File, &Wrapper::openExternCGuard, true);
+    append(File, &Wrapper::declareRecords);
+    append(File, &Wrapper::declareOrDefineFunctions, false);
+    append(File, &Wrapper::closeExternCGuard, true);
+    append(File, &Wrapper::closeHeaderGuard);
 
     return File;
   }
@@ -82,17 +82,17 @@ private:
   {
     FileBuffer File;
 
-    append(File, &WrapperHeader::includeHeaders);
-    append(File, &WrapperHeader::openExternCGuard, false);
-    append(File, &WrapperHeader::declareOrDefineFunctions, true);
-    append(File, &WrapperHeader::closeExternCGuard, false);
+    append(File, &Wrapper::includeHeaders);
+    append(File, &Wrapper::openExternCGuard, false);
+    append(File, &Wrapper::declareOrDefineFunctions, true);
+    append(File, &Wrapper::closeExternCGuard, false);
 
     return File;
   }
 
   template<typename FUNC, typename ...ARGS>
   using ReturnType = decltype(
-    (std::declval<WrapperHeader>().*std::declval<FUNC>())(
+    (std::declval<Wrapper>().*std::declval<FUNC>())(
       std::declval<FileBuffer &>(),
       std::declval<ARGS>()...));
 
