@@ -14,24 +14,28 @@
 namespace cppbind
 {
 
-class ToolRunner
+template<typename T>
+class GenericToolRunner
 {
 public:
-  ToolRunner(clang::tooling::CommonOptionsParser &Parser)
-  : _Tool(Parser.getCompilations(),
-          Parser.getSourcePathList())
-  { adjustArguments(); }
-
-  template<typename T, typename ...ARGS>
-  int run(ARGS&&... Args)
+  int run(clang::tooling::CommonOptionsParser &Parser)
   {
-    auto Factory(makeFrontendActionFactory<T>(std::forward<ARGS>(Args)...));
+    clang::tooling::ClangTool Tool(Parser.getCompilations(),
+                                   Parser.getSourcePathList());
 
-    return _Tool.run(Factory.get());
+    adjustArguments(Tool);
+
+    beforeRun();
+
+    auto Factory(makeFactory());
+
+    return Tool.run(Factory.get());
+
+    afterRun();
   }
 
 private:
-  void adjustArguments()
+  static void adjustArguments(clang::tooling::ClangTool &Tool)
   {
     using namespace clang::tooling;
 
@@ -65,18 +69,21 @@ private:
     ArgumentsAdjusters.push_back(CPPIncAdjuster);
 
     for (auto const &ArgumentsAdjuster : ArgumentsAdjusters)
-      _Tool.appendArgumentsAdjuster(ArgumentsAdjuster);
+      Tool.appendArgumentsAdjuster(ArgumentsAdjuster);
   }
 
-  template<typename T, typename ...ARGS>
+  virtual std::unique_ptr<clang::tooling::FrontendActionFactory> makeFactory() = 0;
+
+protected:
+  template<typename ...ARGS>
   static std::unique_ptr<clang::tooling::FrontendActionFactory>
-  makeFrontendActionFactory(ARGS&&... Args)
+  makeFactoryWithArgs(ARGS&&... Args)
   {
-    class ActionFactory : public clang::tooling::FrontendActionFactory
+    class Factory : public clang::tooling::FrontendActionFactory
     {
     public:
-      ActionFactory(ARGS&&... Args)
-      : _StoredArgs(std::make_tuple(std::forward<ARGS>(Args)...))
+      Factory(ARGS&&... Args)
+      : _StoredArgs(std::forward_as_tuple(std::forward<ARGS>(Args)...))
       {}
 
       std::unique_ptr<clang::FrontendAction> create() override
@@ -91,10 +98,13 @@ private:
       std::tuple<ARGS...> _StoredArgs;
     };
 
-    return std::make_unique<ActionFactory>(std::forward<ARGS>(Args)...);
+    return std::make_unique<Factory>(std::forward<ARGS>(Args)...);
   }
 
-  clang::tooling::ClangTool _Tool;
+private:
+  virtual void beforeRun() {}
+  virtual void afterRun() {}
+
 };
 
 } // namespace cppbind

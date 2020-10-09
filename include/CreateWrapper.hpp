@@ -12,6 +12,7 @@
 #include "FundamentalTypes.hpp"
 #include "GenericASTConsumer.hpp"
 #include "GenericFrontendAction.hpp"
+#include "GenericToolRunner.hpp"
 #include "Options.hpp"
 #include "Wrapper.hpp"
 
@@ -103,6 +104,14 @@ private:
   }
 
   std::shared_ptr<Wrapper> _Wrapper;
+};
+
+class CreateWrapperToolRunner
+: public GenericToolRunner<CreateWrapperFrontendAction>
+{
+private:
+  std::unique_ptr<clang::tooling::FrontendActionFactory> makeFactory() override
+  { return makeFactoryWithArgs(); }
 };
 
 } // namespace cppbind

@@ -34,8 +34,8 @@ public:
 private:
   virtual std::unique_ptr<CONSUMER> makeConsumer() = 0;
 
-  virtual void beforeProcessing() = 0;
-  virtual void afterProcessing() = 0;
+  virtual void beforeProcessing() {};
+  virtual void afterProcessing() {};
 };
 
 } // namespace cppbind

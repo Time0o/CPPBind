@@ -1,7 +1,6 @@
 #include "CreateWrapper.hpp"
 #include "Identifier.hpp"
 #include "Options.hpp"
-#include "ToolRunner.hpp"
 
 using namespace cppbind;
 
@@ -83,6 +82,6 @@ int main(int argc, char const **argv)
 
   auto Parser(Options().parser(argc, argv));
 
-  ToolRunner Runner(Parser);
-  Runner.run<CreateWrapperFrontendAction>();
+  CreateWrapperToolRunner Runner;
+  Runner.run(Parser);
 }
