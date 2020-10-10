@@ -56,7 +56,7 @@ class WrapperFunction
     { return _Type.strWrapped() + (_Name ? " " + strUntyped() : ""); }
 
     std::string strUntyped() const
-    { return _Name ? _Name->strUnqualified("param-case") : ""; }
+    { return _Name ? _Name->strUnqualified(PARAM_CASE) : ""; }
 
   private:
     WrapperType _Type;
@@ -201,7 +201,7 @@ private:
 
     SS << _ReturnType.strWrapped()
        << ' '
-       << _Name.strQualified("func-case", true);
+       << _Name.strQualified(FUNC_CASE, true);
 
     if (Overload > 0u) {
       auto Postfix(WRAPPER_FUNC_OVERLOAD_POSTFIX);

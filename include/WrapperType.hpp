@@ -103,7 +103,7 @@ public:
   }
 
   std::string strBaseWrapped() const
-  { return Identifier(strBaseUnwrapped()).strQualified("type-case", true); }
+  { return Identifier(strBaseUnwrapped()).strQualified(TYPE_CASE, true); }
 
   std::string strBaseUnwrapped() const
   {

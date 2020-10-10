@@ -9,7 +9,6 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
-#include <variant>
 #include <vector>
 
 #include "clang/AST/Decl.h"
@@ -164,32 +163,26 @@ public:
   Identifier qualify(Identifier Qualifiers) const
   { return Identifier(Qualifiers.strQualified() + "::" + strQualified()); }
 
-  std::string strQualified(
-    std::variant<Case, llvm::StringRef> CaseOrStr = ORIG_CASE,
-    bool replaceScopeResolutions = false) const
+  std::string strQualified(Case Case = ORIG_CASE,
+                           bool replaceScopeResolutions = false) const
   {
-    Case Case = unpackCase(CaseOrStr);
-
     if (replaceScopeResolutions) {
       assert(Case != ORIG_CASE);
 
       if (_NameQualsComponents.empty())
-        return strUnqualified(CaseOrStr);
+        return strUnqualified(Case);
 
       return transformAndPasteComponents(_NameQualsComponents, Case) +
              caseDelim(Case) +
-             strUnqualified(CaseOrStr);
+             strUnqualified(Case);
 
     } else {
-      return _NameQuals + strUnqualified(CaseOrStr);
+      return _NameQuals + strUnqualified(Case);
     }
   }
 
-  std::string strUnqualified(
-    std::variant<Case, llvm::StringRef> CaseOrStr = ORIG_CASE) const
+  std::string strUnqualified(Case Case = ORIG_CASE) const
   {
-    Case Case = unpackCase(CaseOrStr);
-
     if (Case == ORIG_CASE)
         return _Name;
 
@@ -333,14 +326,6 @@ private:
     }
 
     return NameComponents;
-  }
-
-  static Case unpackCase(std::variant<Case, llvm::StringRef> CaseOrStr)
-  {
-    if (std::holds_alternative<Case>(CaseOrStr))
-      return std::get<Case>(CaseOrStr);
-    else
-      return Options().get<Case>(std::get<llvm::StringRef>(CaseOrStr));
   }
 
   static std::string caseDelim(Case Case)
