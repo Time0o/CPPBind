@@ -40,7 +40,7 @@ public:
   Identifier(std::string const &Name)
   : _Name(removeQuals(Name)),
     _NameQuals(extractQuals(Name)),
-    _NameComponents(splitName(_Name)),
+    _NameComponents(splitName(_Name, _LeadingUs, _TrailingUs)),
     _NameQualsComponents(splitStr(_NameQuals, "::"))
   {
     assert(isIdentifier(_Name));
@@ -151,11 +151,35 @@ public:
 
   Identifier &operator+=(Identifier const &ID)
   {
-    _Name += ID._Name;
+    auto onlyUs = [](std::string const &Str)
+    {
+      return std::all_of(Str.begin(),
+                         Str.end(),
+                         [](char c){ return c == '_'; });
+    };
 
-    _NameComponents.insert(_NameComponents.end(),
-                           ID._NameComponents.begin(),
-                           ID._NameComponents.end());
+    if (onlyUs(_Name)) {
+      _LeadingUs = _Name + ID._LeadingUs;
+
+      _Name = ID._Name;
+      _NameComponents = ID._NameComponents;
+
+      _TrailingUs = ID._TrailingUs;
+
+    } else if (onlyUs(ID._Name)) {
+      _TrailingUs += ID._Name;
+
+    } else {
+      _Name += ID._Name;
+
+      _NameComponents.insert(_NameComponents.end(),
+                             ID._NameComponents.begin(),
+                             ID._NameComponents.end());
+
+      _TrailingUs = ID._TrailingUs;
+    }
+
+    assert(isIdentifier(_Name));
 
     return *this;
   }
@@ -183,10 +207,14 @@ public:
 
   std::string strUnqualified(Case Case = ORIG_CASE) const
   {
-    if (Case == ORIG_CASE)
-        return _Name;
+    std::string Str;
 
-    return transformAndPasteComponents(_NameComponents, Case);
+    if (Case == ORIG_CASE)
+        Str = _Name;
+     else
+        Str = transformAndPasteComponents(_NameComponents, Case);
+
+    return _LeadingUs + Str + _TrailingUs;
   }
 
 private:
@@ -250,12 +278,13 @@ private:
   static std::string transformStrSnakeCaseCapAll(std::string Str, bool)
   { return upper(Str); }
 
-  static std::vector<std::string> splitName(std::string Name)
+  static std::vector<std::string> splitName(std::string Name,
+                                            std::string &LeadingUs,
+                                            std::string &TrailingUs)
   {
     if (Name.size() == 1)
         return {Name};
 
-    std::string LeadingUs, TrailingUs;
     Name = stripUnderscores(Name, LeadingUs, TrailingUs);
 
     std::vector<std::string> NameComponents;
@@ -263,9 +292,6 @@ private:
       NameComponents = splitNameSnakeCase(Name);
     else
       NameComponents = splitNamePascalCase(Name);
-
-    NameComponents.front() = LeadingUs + NameComponents.front();
-    NameComponents.back() = NameComponents.back() + TrailingUs;
 
     return NameComponents;
   }
@@ -391,7 +417,7 @@ private:
     return IdentifierTable.getOwn(Name.c_str());
   }
 
-  std::string _Name, _NameQuals;
+  std::string _Name, _NameQuals, _LeadingUs, _TrailingUs;
   std::vector<std::string> _NameComponents, _NameQualsComponents;
 };
 
