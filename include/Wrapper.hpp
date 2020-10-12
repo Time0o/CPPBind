@@ -3,7 +3,6 @@
 
 #include <cassert>
 #include <filesystem>
-#include <map>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -21,10 +20,6 @@ namespace cppbind
 
 class Wrapper
 {
-  using RecordsType = std::vector<WrapperRecord>;
-  using FunctionsType = std::map<Identifier, std::vector<WrapperFunction>>;
-  using FunctionInsertionOrderType = std::vector<Identifier>;
-
 public:
   Wrapper(std::filesystem::path const &WrappedHeader,
           std::shared_ptr<IdentifierIndex> IdentifierIndex)
@@ -43,7 +38,9 @@ public:
     if (Wr.needsImplicitDestructor())
       addWrapperFunction(Wr.implicitDestructor());
 
-    _Records.emplace_back(std::move(Wr));
+    _IdentifierIndex->add(Wr.name(), IdentifierIndex::TYPE);
+
+    _Records.push_back(Wr);
   }
 
   template<typename ...ARGS>
@@ -51,14 +48,12 @@ public:
   {
     WrapperFunction Wf(std::forward<ARGS>(args)...);
 
-    auto Name(Wf.name());
+    if (_IdentifierIndex->has(Wf.name()))
+      _IdentifierIndex->pushOverload(Wf.name());
+    else
+      _IdentifierIndex->add(Wf.name(), IdentifierIndex::FUNC);
 
-    auto It(_Functions.find(Name));
-
-    if (It == _Functions.end())
-      _FunctionInsertionOrder.push_back(Name);
-
-    _Functions[Name].push_back(Wf);
+    _Functions.push_back(Wf);
   }
 
   bool empty() const
@@ -160,8 +155,8 @@ private:
     if (_Records.empty())
       return false;
 
-    for (auto const &WD : _Records)
-      File << WD.strDeclaration() << FileBuffer::EndLine;
+    for (auto const &Wr : _Records)
+      File << Wr.strDeclaration(_IdentifierIndex) << FileBuffer::EndLine;
 
     return true;
   }
@@ -171,30 +166,16 @@ private:
     if (_Functions.empty())
       return false;
 
-    auto defOrDecl = [=](WrapperFunction const &Wf, unsigned Overload = 0u)
-    {
-      return IncludeBody ? Wf.strDefinition(Overload)
-                         : Wf.strDeclaration(Overload);
-    };
+    for (auto i = 0u; i < _Functions.size(); ++i) {
+      auto const &Wf(_Functions[i]);
 
-    for (auto i = 0u; i < _FunctionInsertionOrder.size(); ++i) {
-      auto It(_Functions.find(_FunctionInsertionOrder[i]));
-      assert(It != _Functions.end());
+      if (IncludeBody) {
+        if (i > 0u)
+          File << FileBuffer::EmptyLine;
 
-      auto const &Wfs(It->second);
-
-      if (IncludeBody && i > 0u)
-        File << FileBuffer::EmptyLine;
-
-      if (Wfs.size() == 1u) {
-        File << defOrDecl(Wfs[0]) << FileBuffer::EndLine;
+        File << Wf.strDefinition(_IdentifierIndex) << FileBuffer::EndLine;
       } else {
-        for (unsigned Overload = 0u; Overload < Wfs.size(); ++Overload) {
-          if (IncludeBody)
-            File << FileBuffer::EmptyLine;
-
-          File << defOrDecl(Wfs[Overload], Overload + 1u) << FileBuffer::EndLine;
-        }
+        File << Wf.strDeclaration(_IdentifierIndex) << FileBuffer::EndLine;
       }
     }
 
@@ -263,9 +244,8 @@ private:
   std::filesystem::path _WrappedHeader;
   std::shared_ptr<IdentifierIndex> _IdentifierIndex;
 
-  RecordsType _Records;
-  FunctionsType _Functions;
-  FunctionInsertionOrderType _FunctionInsertionOrder;
+  std::vector<WrapperRecord> _Records;
+  std::vector<WrapperFunction> _Functions;
 };
 
 } // namespace cppbind

@@ -15,6 +15,7 @@
 #include "llvm/Support/Casting.h"
 
 #include "Identifier.hpp"
+#include "IdentifierIndex.hpp"
 #include "Options.hpp"
 #include "String.hpp"
 #include "WrapperType.hpp"
@@ -52,8 +53,8 @@ class WrapperFunction
       return *_Name;
     }
 
-    std::string strTyped() const
-    { return _Type.strWrapped() + (_Name ? " " + strUntyped() : ""); }
+    std::string strTyped(std::shared_ptr<IdentifierIndex> II) const
+    { return _Type.strWrapped(II) + (_Name ? " " + strUntyped() : ""); }
 
     std::string strUntyped() const
     { return _Name ? _Name->strUnqualified(PARAM_CASE) : ""; }
@@ -99,11 +100,11 @@ public:
   Identifier name() const
   { return _Name; }
 
-  std::string strDeclaration(unsigned Overload = 0u) const
-  { return strHeader(Overload) + ";"; }
+  std::string strDeclaration(std::shared_ptr<IdentifierIndex> II) const
+  { return strHeader(II) + ";"; }
 
-  std::string strDefinition(unsigned Overload = 0u) const
-  { return strHeader(Overload) + "\n" + strBody(); }
+  std::string strDefinition(std::shared_ptr<IdentifierIndex> II) const
+  { return strHeader(II) + "\n" + strBody(II); }
 
 private:
   Identifier determineName(clang::FunctionDecl const *Decl) const
@@ -172,12 +173,14 @@ private:
   bool hasParams() const
   { return !_Params.empty(); }
 
-  std::string strParams(bool Typed, std::size_t Skip = 0u) const
+  std::string strParams(std::shared_ptr<IdentifierIndex> II,
+                        bool Typed,
+                        std::size_t Skip = 0u) const
   {
     std::stringstream SS;
 
     auto dumpParam = [&](WrapperParam const &Param)
-    { return Typed ? Param.strTyped() : Param.strUntyped(); };
+    { return Typed ? Param.strTyped(II) : Param.strUntyped(); };
 
     SS << "(";
     if (_Params.size() > Skip) {
@@ -195,39 +198,41 @@ private:
     return SS.str();
   };
 
-  std::string strHeader(unsigned Overload) const
+  std::string strHeader(std::shared_ptr<IdentifierIndex> II) const
   {
     std::stringstream SS;
 
-    SS << _ReturnType.strWrapped()
+    SS << _ReturnType.strWrapped(II)
        << ' '
-       << _Name.strQualified(FUNC_CASE, true);
+       << II->alias(_Name).strQualified(FUNC_CASE, true);
+
+    auto Postfix(WRAPPER_FUNC_OVERLOAD_POSTFIX);
+
+    auto Overload = II->popOverload(_Name);
 
     if (Overload > 0u) {
-      auto Postfix(WRAPPER_FUNC_OVERLOAD_POSTFIX);
-
       if (replaceAllStrs(Postfix, "%o", std::to_string(Overload)) == 0u)
         throw std::runtime_error("Overload postfix pattern must contain at least one occurence of '%o'");
 
       SS << Postfix;
     }
 
-    SS << strParams(true);
+    SS << strParams(II, true);
 
     return SS.str();
   }
 
-  std::string strBody() const
+  std::string strBody(std::shared_ptr<IdentifierIndex> II) const
   {
     std::stringstream SS;
 
     SS << "{ ";
 
     if (_IsConstructor) {
-      SS << "return " << selfCastWrapped()
+      SS << "return " << selfCastWrapped(II)
          << "(new " << _SelfType.strBaseUnwrapped() << ")";
       if (hasParams())
-        SS << strParams(false);
+        SS << strParams(II, false);
     } else if (_IsDestructor) {
       SS << "delete " << selfCastUnwrapped()
          << "(" << Identifier::Self << ")";
@@ -237,11 +242,11 @@ private:
 
       if (!_IsMethod || _IsStatic) {
         SS << _Name.strQualified()
-           << strParams(false);
+           << strParams(II, false);
       } else {
         SS << selfCastUnwrapped()
            << "(" << Identifier::Self << ")->" << _Name.strUnqualified()
-           << strParams(false, 1);
+           << strParams(II, false, 1);
       }
     }
 
@@ -250,8 +255,8 @@ private:
     return SS.str();
   }
 
-  std::string selfCastWrapped() const
-  { return "reinterpret_cast<" + _SelfType.pointerTo().strWrapped() + ">"; }
+  std::string selfCastWrapped(std::shared_ptr<IdentifierIndex> II) const
+  { return "reinterpret_cast<" + _SelfType.pointerTo().strWrapped(II) + ">"; }
 
   std::string selfCastUnwrapped() const
   { return "reinterpret_cast<" + _SelfType.pointerTo().strUnwrapped(true) + ">"; }

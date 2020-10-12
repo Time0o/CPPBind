@@ -10,6 +10,7 @@
 #include "clang/AST/Type.h"
 
 #include "Identifier.hpp"
+#include "IdentifierIndex.hpp"
 #include "WrapperType.hpp"
 
 namespace cppbind
@@ -46,8 +47,11 @@ public:
            .build();
   }
 
-  std::string strDeclaration() const
-  { return _Type.strWrapped() + ";"; }
+  Identifier name() const
+  { return _Type.strBaseUnwrapped(); }
+
+  std::string strDeclaration(std::shared_ptr<IdentifierIndex> II) const
+  { return _Type.strWrapped(II) + ";"; }
 
 private:
   Identifier qualifiedMemberName(std::string const &Name) const

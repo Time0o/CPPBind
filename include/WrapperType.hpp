@@ -11,6 +11,7 @@
 
 #include "FundamentalTypes.hpp"
 #include "Identifier.hpp"
+#include "IdentifierIndex.hpp"
 
 namespace cppbind
 {
@@ -73,7 +74,10 @@ public:
     return Pointee;
   }
 
-  std::string strWrapped() const
+  Identifier name() const
+  { return strBaseUnwrapped(); }
+
+  std::string strWrapped(std::shared_ptr<IdentifierIndex> II) const
   {
     if (isFundamental() || pointee(true).isFundamental())
       return strUnwrapped();
@@ -83,7 +87,7 @@ public:
     if (isClass())
       replaceFirst(Wrapped, "class", "struct");
 
-    replaceFirst(Wrapped, strBaseUnwrapped(), strBaseWrapped());
+    replaceFirst(Wrapped, strBaseUnwrapped(), strBaseWrapped(II));
 
     return Wrapped;
   }
@@ -102,8 +106,8 @@ public:
     return Unwrapped;
   }
 
-  std::string strBaseWrapped() const
-  { return Identifier(strBaseUnwrapped()).strQualified(TYPE_CASE, true); }
+  std::string strBaseWrapped(std::shared_ptr<IdentifierIndex> II) const
+  { return II->alias(name()).strQualified(TYPE_CASE, true); }
 
   std::string strBaseUnwrapped() const
   {
