@@ -38,16 +38,11 @@ public:
   };
 
   Identifier(std::string const &Name)
-  : _Name(removeQuals(Name)),
+  : _Name(stripUnderscores(removeQuals(Name), _LeadingUs, _TrailingUs, _OnlyUs)),
     _NameQuals(extractQuals(Name)),
-    _NameComponents(splitName(_Name, _LeadingUs, _TrailingUs)),
+    _NameComponents(splitName(_Name)),
     _NameQualsComponents(splitStr(_NameQuals, "::"))
-  {
-    assert(isIdentifier(_Name));
-
-    for (auto const &NameQualsComponent : _NameQualsComponents)
-      assert(isIdentifier(NameQualsComponent));
-  }
+  { assertValid(); }
 
   Identifier(char const *Name)
   : Identifier(std::string(Name))
@@ -151,14 +146,10 @@ public:
 
   Identifier &operator+=(Identifier const &ID)
   {
-    auto onlyUs = [](std::string const &Str)
-    {
-      return std::all_of(Str.begin(),
-                         Str.end(),
-                         [](char c){ return c == '_'; });
-    };
+    if (_OnlyUs && ID._OnlyUs) {
+      _Name += ID._Name;
 
-    if (onlyUs(_Name)) {
+    } else if (_OnlyUs) {
       _LeadingUs = _Name + ID._LeadingUs;
 
       _Name = ID._Name;
@@ -166,7 +157,9 @@ public:
 
       _TrailingUs = ID._TrailingUs;
 
-    } else if (onlyUs(ID._Name)) {
+      _OnlyUs = false;
+
+    } else if (ID._OnlyUs) {
       _TrailingUs += ID._Name;
 
     } else {
@@ -179,7 +172,7 @@ public:
       _TrailingUs = ID._TrailingUs;
     }
 
-    assert(isIdentifier(_Name));
+    assertValid();
 
     return *this;
   }
@@ -207,12 +200,15 @@ public:
 
   std::string strUnqualified(Case Case = ORIG_CASE) const
   {
+    if (_OnlyUs)
+      return _Name;
+
     std::string Str;
 
     if (Case == ORIG_CASE)
-        Str = _Name;
-     else
-        Str = transformAndPasteComponents(_NameComponents, Case);
+      Str = _Name;
+    else
+      Str = transformAndPasteComponents(_NameComponents, Case);
 
     return _LeadingUs + Str + _TrailingUs;
   }
@@ -278,14 +274,13 @@ private:
   static std::string transformStrSnakeCaseCapAll(std::string Str, bool)
   { return upper(Str); }
 
-  static std::vector<std::string> splitName(std::string Name,
-                                            std::string &LeadingUs,
-                                            std::string &TrailingUs)
+  static std::vector<std::string> splitName(std::string Name)
   {
     if (Name.size() == 1)
         return {Name};
 
-    Name = stripUnderscores(Name, LeadingUs, TrailingUs);
+    if (isAllStr(Name, '_'))
+      return {};
 
     std::vector<std::string> NameComponents;
     if (Name.find(caseDelim(SNAKE_CASE)) != std::string::npos)
@@ -298,15 +293,19 @@ private:
 
   static std::string stripUnderscores(std::string const &Name,
                                       std::string &LeadingUs,
-                                      std::string &TrailingUs)
+                                      std::string &TrailingUs,
+                                      bool &OnlyUs)
   {
     std::size_t LeadingUsEnd = 0u;
-    while (LeadingUsEnd < Name.size() &&
-           Name[LeadingUsEnd] == '_')
+    while (LeadingUsEnd < Name.size() && Name[LeadingUsEnd] == '_')
       ++LeadingUsEnd;
 
-    if (LeadingUsEnd == Name.size())
-      return {Name};
+    if (LeadingUsEnd == Name.size()) {
+      OnlyUs = true;
+      return Name;
+    } else {
+      OnlyUs = false;
+    }
 
     std::size_t TrailingUsBeg = Name.size() - 1u;
     while (Name[TrailingUsBeg] == '_')
@@ -417,7 +416,36 @@ private:
     return IdentifierTable.getOwn(Name.c_str());
   }
 
-  std::string _Name, _NameQuals, _LeadingUs, _TrailingUs;
+  void assertValid() const
+  {
+#ifndef NDEBUG
+    assert(!_Name.empty());
+
+    if (_OnlyUs) {
+      assert(isAllStr(_Name, '_'));
+
+      assert(_LeadingUs.empty());
+      assert(_TrailingUs.empty());
+
+    } else {
+      assert(isIdentifier(_LeadingUs + _Name + _TrailingUs));
+      assert(_Name.front() != '_');
+      assert(_Name.back() != '_');
+
+      assert(isAllStr(_LeadingUs, '_'));
+      assert(isAllStr(_TrailingUs, '_'));
+    }
+
+    for (auto const &NameQualsComponent : _NameQualsComponents)
+      assert(isIdentifier(NameQualsComponent));
+#endif
+  }
+
+  std::string _LeadingUs;
+  std::string _TrailingUs;
+  bool _OnlyUs;
+
+  std::string _Name, _NameQuals;
   std::vector<std::string> _NameComponents, _NameQualsComponents;
 };
 

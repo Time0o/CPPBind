@@ -169,6 +169,9 @@ static std::string &indentStr(std::string &Str)
   return Str;
 }
 
+inline bool isAllStr(std::string const &Str, char c)
+{ return std::all_of(Str.begin(), Str.end(), [=](char c_){ return c_ == c; }); }
+
 } // namespace cppbind
 
 #endif // GUARD_STRING_H
