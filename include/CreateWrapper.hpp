@@ -22,8 +22,8 @@ namespace cppbind
 class CreateWrapperConsumer : public GenericASTConsumer
 {
 public:
-  CreateWrapperConsumer(std::shared_ptr<Wrapper> WH)
-  : _Wrapper(WH)
+  CreateWrapperConsumer(std::shared_ptr<Wrapper> Wrapper)
+  : _Wrapper(Wrapper)
   {}
 
 private:
