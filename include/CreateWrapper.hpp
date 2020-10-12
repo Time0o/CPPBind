@@ -45,7 +45,7 @@ private:
 
     addHandler<clang::CXXRecordDecl>(
       "classDecl",
-      cxxRecordDecl(allOf(inWrappedNs, anyOf(isClass(), isStruct()))),
+      cxxRecordDecl(allOf(inWrappedNs, anyOf(isClass(), isStruct()), isDefinition())),
       &CreateWrapperConsumer::handleClassDecl);
 
     addHandler<clang::CXXMethodDecl>(
