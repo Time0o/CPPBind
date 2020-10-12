@@ -47,7 +47,7 @@ class WrapperFunction
     bool hasName() const
     { return _Name.has_value(); }
 
-    Identifier Name() const
+    Identifier name() const
     {
       assert(_Name);
       return *_Name;
@@ -103,7 +103,7 @@ public:
   void resolveOverload(std::shared_ptr<IdentifierIndex> II)
   {
     if (_Overload == 0u)
-      _Overload = II->popOverload(_Name);
+      _Overload = II->popOverload(name());
   }
 
   std::string strDeclaration(std::shared_ptr<IdentifierIndex> II) const
@@ -210,7 +210,7 @@ private:
 
     SS << _ReturnType.strWrapped(II)
        << ' '
-       << II->alias(_Name).strQualified(FUNC_CASE, true);
+       << II->alias(name()).strQualified(FUNC_CASE, true);
 
     auto Postfix(WRAPPER_FUNC_OVERLOAD_POSTFIX);
 
@@ -245,11 +245,11 @@ private:
         SS << "return ";
 
       if (!_IsMethod || _IsStatic) {
-        SS << _Name.strQualified()
+        SS << name().strQualified()
            << strParams(II, false);
       } else {
         SS << selfCastUnwrapped()
-           << "(" << Identifier::Self << ")->" << _Name.strUnqualified()
+           << "(" << Identifier::Self << ")->" << name().strUnqualified()
            << strParams(II, false, 1);
       }
     }
