@@ -13,6 +13,7 @@
 #include "GenericASTConsumer.hpp"
 #include "GenericFrontendAction.hpp"
 #include "GenericToolRunner.hpp"
+#include "IdentifierIndex.hpp"
 #include "Options.hpp"
 #include "Wrapper.hpp"
 
@@ -86,6 +87,11 @@ private:
 class CreateWrapperFrontendAction
 : public GenericFrontendAction<CreateWrapperConsumer>
 {
+public:
+  CreateWrapperFrontendAction(std::shared_ptr<IdentifierIndex> IdentifierIndex)
+  : _IdentifierIndex(IdentifierIndex)
+  {}
+
 private:
   std::unique_ptr<CreateWrapperConsumer> makeConsumer() override
   {
@@ -95,7 +101,11 @@ private:
   }
 
   void beforeProcessing() override
-  { _Wrapper = std::make_shared<Wrapper>(CompilerState().currentFile()); }
+  {
+    auto WrappedHeader(CompilerState().currentFile());
+
+    _Wrapper = std::make_shared<Wrapper>(WrappedHeader, _IdentifierIndex);
+  }
 
   void afterProcessing() override
   {
@@ -104,6 +114,7 @@ private:
   }
 
   std::shared_ptr<Wrapper> _Wrapper;
+  std::shared_ptr<IdentifierIndex> _IdentifierIndex;
 };
 
 class CreateWrapperToolRunner
@@ -111,7 +122,10 @@ class CreateWrapperToolRunner
 {
 private:
   std::unique_ptr<clang::tooling::FrontendActionFactory> makeFactory() override
-  { return makeFactoryWithArgs(); }
+  { return makeFactoryWithArgs(_IdentifierIndex); }
+
+  std::shared_ptr<IdentifierIndex> _IdentifierIndex =
+    std::make_shared<IdentifierIndex>();
 };
 
 } // namespace cppbind

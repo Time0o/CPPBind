@@ -4,6 +4,7 @@
 #include <cassert>
 #include <filesystem>
 #include <map>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <type_traits>
@@ -11,6 +12,7 @@
 #include <vector>
 
 #include "FileBuffer.hpp"
+#include "IdentifierIndex.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperRecord.hpp"
 
@@ -24,8 +26,10 @@ class Wrapper
   using FunctionInsertionOrderType = std::vector<Identifier>;
 
 public:
-  Wrapper(std::filesystem::path const &WrappedHeader)
-  : _WrappedHeader(WrappedHeader)
+  Wrapper(std::filesystem::path const &WrappedHeader,
+          std::shared_ptr<IdentifierIndex> IdentifierIndex)
+  : _WrappedHeader(WrappedHeader),
+    _IdentifierIndex(IdentifierIndex)
   {}
 
   template<typename ...ARGS>
@@ -257,6 +261,7 @@ private:
   }
 
   std::filesystem::path _WrappedHeader;
+  std::shared_ptr<IdentifierIndex> _IdentifierIndex;
 
   RecordsType _Records;
   FunctionsType _Functions;
