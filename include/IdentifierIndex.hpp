@@ -101,6 +101,8 @@ public:
     if (P->MaxOverload == 1u)
       return 0u;
 
+    assert(P->CurrentOverload <= P->MaxOverload);
+
     return P->CurrentOverload++;
   }
 

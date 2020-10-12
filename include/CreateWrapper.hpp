@@ -109,8 +109,11 @@ private:
 
   void afterProcessing() override
   {
-    if (!_Wrapper->empty())
-      _Wrapper->write();
+    if (_Wrapper->empty())
+      return;
+
+    _Wrapper->resolveOverloads();
+    _Wrapper->write();
   }
 
   std::shared_ptr<Wrapper> _Wrapper;

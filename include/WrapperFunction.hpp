@@ -100,6 +100,12 @@ public:
   Identifier name() const
   { return _Name; }
 
+  void resolveOverload(std::shared_ptr<IdentifierIndex> II)
+  {
+    if (_Overload == 0u)
+      _Overload = II->popOverload(_Name);
+  }
+
   std::string strDeclaration(std::shared_ptr<IdentifierIndex> II) const
   { return strHeader(II) + ";"; }
 
@@ -208,10 +214,8 @@ private:
 
     auto Postfix(WRAPPER_FUNC_OVERLOAD_POSTFIX);
 
-    auto Overload = II->popOverload(_Name);
-
-    if (Overload > 0u) {
-      if (replaceAllStrs(Postfix, "%o", std::to_string(Overload)) == 0u)
+    if (_Overload > 0u) {
+      if (replaceAllStrs(Postfix, "%o", std::to_string(_Overload)) == 0u)
         throw std::runtime_error("Overload postfix pattern must contain at least one occurence of '%o'");
 
       SS << Postfix;
@@ -265,6 +269,7 @@ private:
   bool _IsConstructor = false;
   bool _IsDestructor = false;
   bool _IsStatic = false;
+  unsigned _Overload = 0u;
 
   Identifier _Name;
   std::list<WrapperParam> _Params;

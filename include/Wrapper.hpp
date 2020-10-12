@@ -59,6 +59,12 @@ public:
   bool empty() const
   { return _Functions.empty(); }
 
+  void resolveOverloads()
+  {
+    for (auto &Wf : _Functions)
+      Wf.resolveOverload(_IdentifierIndex);
+  }
+
   void write() const
   {
     headerFile().write(headerFilePath());
@@ -167,7 +173,7 @@ private:
       return false;
 
     for (auto i = 0u; i < _Functions.size(); ++i) {
-      auto const &Wf(_Functions[i]);
+      auto &Wf(_Functions[i]);
 
       if (IncludeBody) {
         if (i > 0u)
