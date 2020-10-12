@@ -75,7 +75,7 @@ public:
 
   std::string strWrapped() const
   {
-    if (isFundamental())
+    if (isFundamental() || pointee(true).isFundamental())
       return strUnwrapped();
 
     auto Wrapped(strUnwrapped());
