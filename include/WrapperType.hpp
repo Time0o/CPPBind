@@ -12,6 +12,7 @@
 #include "FundamentalTypes.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
+#include "String.hpp"
 
 namespace cppbind
 {
@@ -85,9 +86,9 @@ public:
     auto Wrapped(strUnwrapped());
 
     if (isClass())
-      replaceFirst(Wrapped, "class", "struct");
+      replaceStr(Wrapped, "class", "struct");
 
-    replaceFirst(Wrapped, strBaseUnwrapped(), strBaseWrapped(II));
+    replaceStr(Wrapped, strBaseUnwrapped(), strBaseWrapped(II));
 
     return Wrapped;
   }
@@ -123,16 +124,6 @@ private:
 
     if (Pos != std::string::npos)
       Str.erase(Pos, Remove.length());
-  }
-
-  static void replaceFirst(std::string &Str,
-                           std::string const &Old,
-                           std::string const &New)
-  {
-    auto Pos = Str.find(Old);
-
-    if (Pos != std::string::npos)
-      Str.replace(Pos, Old.length(), New);
   }
 
   bool isFundamental() const
