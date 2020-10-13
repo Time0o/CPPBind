@@ -67,12 +67,14 @@ class WrapperFunction
 public:
   WrapperFunction(Identifier const &Name, WrapperType const &SelfType)
   : _Name(Name),
+    _OverloadName(Name),
     _SelfType(SelfType)
   {}
 
   explicit WrapperFunction(clang::FunctionDecl const *Decl)
   : _IsMethod(false),
     _Name(determineName(Decl)),
+    _OverloadName(_Name),
     _Params(determineParams(Decl)),
     _ReturnType(Decl->getReturnType())
   { assert(!Decl->isTemplateInstantiation()); } // XXX
@@ -83,6 +85,7 @@ public:
     _IsDestructor(llvm::isa<clang::CXXDestructorDecl>(Decl)),
     _IsStatic(Decl->isStatic()),
     _Name(determineName(Decl)),
+    _OverloadName(_Name),
     _Params(determineParams(Decl)),
     _ReturnType(Decl->getReturnType()),
     _SelfType(WrapperType(Decl->getThisType()).pointee())
@@ -97,6 +100,9 @@ public:
   bool isDestructor() const
   { return _IsDestructor; }
 
+  bool isOverloaded() const
+  { return _Overload > 0u; }
+
   Identifier name() const
   { return _Name; }
 
@@ -104,6 +110,15 @@ public:
   {
     if (_Overload == 0u)
       _Overload = II->popOverload(name());
+
+    auto Postfix(WRAPPER_FUNC_OVERLOAD_POSTFIX);
+
+    if (replaceAllStrs(Postfix, "%o", std::to_string(_Overload)) == 0u)
+      throw std::runtime_error("Overload postfix pattern must contain at least one occurence of '%o'");
+
+    _OverloadName = name() + Postfix;
+
+    II->add(_OverloadName, IdentifierIndex::FUNC);
   }
 
   std::string strDeclaration(std::shared_ptr<IdentifierIndex> II) const
@@ -208,18 +223,11 @@ private:
   {
     std::stringstream SS;
 
+    auto Name = _Overload > 0u ? _OverloadName : name();
+
     SS << _ReturnType.strWrapped(II)
        << ' '
-       << II->alias(name()).strQualified(FUNC_CASE, true);
-
-    auto Postfix(WRAPPER_FUNC_OVERLOAD_POSTFIX);
-
-    if (_Overload > 0u) {
-      if (replaceAllStrs(Postfix, "%o", std::to_string(_Overload)) == 0u)
-        throw std::runtime_error("Overload postfix pattern must contain at least one occurence of '%o'");
-
-      SS << Postfix;
-    }
+       << II->alias(Name).strQualified(FUNC_CASE, true);
 
     SS << strParams(II, true);
 
@@ -272,6 +280,8 @@ private:
   unsigned _Overload = 0u;
 
   Identifier _Name;
+  Identifier _OverloadName;
+
   std::list<WrapperParam> _Params;
   WrapperType _ReturnType;
   WrapperType _SelfType;
