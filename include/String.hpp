@@ -155,7 +155,7 @@ inline std::string &rtrimStr(std::string &Str)
 inline std::string &trimStr(std::string &Str)
 { return rtrimStr(ltrimStr(Str)); }
 
-static std::string &indentStr(std::string &Str)
+inline std::string &indentStr(std::string &Str)
 {
   std::stringstream In(Str);
   std::stringstream Out;
