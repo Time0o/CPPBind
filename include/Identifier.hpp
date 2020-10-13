@@ -449,7 +449,7 @@ private:
   std::vector<std::string> _NameComponents, _NameQualsComponents;
 };
 
-Identifier operator+(Identifier ID1, Identifier const &ID2)
+inline Identifier operator+(Identifier ID1, Identifier const &ID2)
 {
   ID1 += ID2;
   return ID1;
