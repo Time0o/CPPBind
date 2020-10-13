@@ -155,9 +155,7 @@ private:
     }
 
     if (Option._Choices) {
-      if constexpr (!std::is_integral_v<T> &&
-                    !std::is_same_v<T, std::string>)
-      {
+      if constexpr (std::is_enum_v<T>) {
         for (auto const &Choice : *Option._Choices) {
           Opt->getParser().addLiteralOption(std::get<0>(Choice),
                                             std::get<1>(Choice),
