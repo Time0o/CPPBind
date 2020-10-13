@@ -1,6 +1,7 @@
 #include "CreateWrapper.hpp"
 #include "Identifier.hpp"
 #include "Options.hpp"
+#include "String.hpp"
 
 using namespace cppbind;
 
@@ -35,15 +36,25 @@ int main(int argc, char const **argv)
            .setChoices(CaseChoices)
            .setDefault(CaseDefault);
 
+  auto validPostfix = [](std::string Postfix){
+    replaceAllStrs(Postfix, "%", "");
+
+    return Identifier::isIdentifier(Postfix) && Postfix.back() != '_';
+  };
+
   Options().add<std::string>("wrapper-func-overload-postfix")
            .setDescription("Wrapper function overload postfix, "
                            "use %o to denote #overload", "postfix")
-           .setDefault("_%o");
+           .setDefault("_%o")
+           .addAssertion(validPostfix,
+                         "postfix must create identifiers not ending in '_'");
 
   Options().add<std::string>("wrapper-func-unnamed-param-placeholder")
            .setDescription("Wrapper function unnamed parameter placeholder, "
                             "use %p to denote parameter number", "placeholder")
-           .setDefault("_%p");
+           .setDefault("_%p")
+           .addAssertion(validPostfix,
+                         "postfix must create identifiers not ending in '_'");
 
   Options().add<std::string>("wrapper-header-postfix")
            .setDescription("Output header file basename postfix", "postfix")

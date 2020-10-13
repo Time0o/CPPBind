@@ -3,6 +3,7 @@
 
 #include <any>
 #include <cassert>
+#include <functional>
 #include <initializer_list>
 #include <memory>
 #include <optional>
@@ -42,6 +43,8 @@ class OptionsRegistry
   {
     friend OptionsRegistry;
 
+    using AssertFunc = std::function<bool(T const &)>;
+
   public:
     Option(llvm::StringRef Name)
     : _Name(Name)
@@ -70,7 +73,18 @@ class OptionsRegistry
     Option &setDefault(T const &Default)
     { _Default = Default; return *this; }
 
+    Option &addAssertion(AssertFunc &&Assertion, std::string const &Msg)
+    { _Assertions.emplace_back(Assertion, Msg); return *this; }
+
   private:
+    void assertValue(T const &Value) const
+    {
+      for (auto const &[Assertion, Msg] : _Assertions) {
+        if (!Assertion(Value))
+          throw std::runtime_error(_Name.str() + ": " + Msg);
+      }
+    }
+
     llvm::StringRef _Name;
 
     std::optional<llvm::StringRef> _Desc;
@@ -78,6 +92,8 @@ class OptionsRegistry
     std::optional<bool> _Optional;
     std::optional<OptionChoices<T>> _Choices;
     std::optional<T> _Default = std::nullopt;
+
+    std::vector<std::pair<AssertFunc, std::string>> _Assertions;
   };
 
 public:
@@ -144,15 +160,19 @@ private:
                                                   : llvm::cl::ValueRequired);
 
     if (Option._Default) {
+      Option.assertValue(*Option._Default);
+
       Opt->setInitialValue(*Option._Default);
 
       _OptsPresent.insert(Option._Name);
-
-    } else {
-      Opt->setCallback([&](
-        typename llvm::cl::parser<T>::parser_data_type const &)
-      { _OptsPresent.insert(Option._Name); });
     }
+
+    Opt->setCallback([&](T const &Value){
+      Option.assertValue(Value);
+
+      if (!Option._Default)
+        _OptsPresent.insert(Option._Name);
+    });
 
     if (Option._Choices) {
       if constexpr (std::is_enum_v<T>) {
