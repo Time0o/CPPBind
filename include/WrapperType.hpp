@@ -99,9 +99,9 @@ public:
 
     if (compact) {
       if (isClass())
-        removeFirst(Unwrapped, "class ");
+        replaceStr(Unwrapped, "class ", "");
       if (isStruct())
-        removeFirst(Unwrapped, "struct ");
+        replaceStr(Unwrapped, "struct ", "");
     }
 
     return Unwrapped;
@@ -117,15 +117,6 @@ public:
   }
 
 private:
-  static void removeFirst(std::string &Str,
-                          std::string const &Remove)
-  {
-    auto Pos = Str.find(Remove);
-
-    if (Pos != std::string::npos)
-      Str.erase(Pos, Remove.length());
-  }
-
   bool isFundamental() const
   { return Type_->isFundamentalType(); }
 
