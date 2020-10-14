@@ -22,36 +22,36 @@
 namespace cppbind
 {
 
+class WrapperParam
+{
+public:
+  WrapperParam(WrapperType const &Type, Identifier const &Name)
+  : Type_(Type),
+    Name_(Name)
+  {}
+
+  WrapperType type() const
+  { return Type_; }
+
+  Identifier name() const
+  { return Name_; }
+
+  std::string strTyped(std::shared_ptr<IdentifierIndex> II) const
+  { return Type_.strWrapped(II) + " " + strUntyped(); }
+
+  std::string strUntyped() const
+  { return Name_.strUnqualified(PARAM_CASE); }
+
+private:
+  WrapperType Type_;
+  Identifier Name_;
+};
+
 class WrapperFunctionBuilder;
 
 class WrapperFunction
 {
   friend WrapperFunctionBuilder;
-
-  class WrapperParam
-  {
-  public:
-    WrapperParam(WrapperType const &Type, Identifier const &Name)
-    : Type_(Type),
-      Name_(Name)
-    {}
-
-    WrapperType type() const
-    { return Type_; }
-
-    Identifier name() const
-    { return Name_; }
-
-    std::string strTyped(std::shared_ptr<IdentifierIndex> II) const
-    { return Type_.strWrapped(II) + " " + strUntyped(); }
-
-    std::string strUntyped() const
-    { return Name_.strUnqualified(PARAM_CASE); }
-
-  private:
-    WrapperType Type_;
-    Identifier Name_;
-  };
 
 public:
   WrapperFunction(Identifier const &Name, WrapperType const &SelfType)
@@ -64,7 +64,7 @@ public:
   : IsMethod_(false),
     Name_(determineName(Decl)),
     OverloadName_(Name_),
-    Params_(determineParams(Decl)),
+    Params_(determineParams(Decl, IsMethod_)),
     ReturnType_(Decl->getReturnType())
   { assert(!Decl->isTemplateInstantiation()); } // XXX
 
@@ -75,7 +75,7 @@ public:
     IsStatic_(Decl->isStatic()),
     Name_(determineName(Decl)),
     OverloadName_(Name_),
-    Params_(determineParams(Decl)),
+    Params_(determineParams(Decl, IsMethod_)),
     ReturnType_(Decl->getReturnType()),
     SelfType_(WrapperType(Decl->getThisType()).pointee())
   { assert(!Decl->isTemplateInstantiation()); } // XXX
@@ -94,6 +94,9 @@ public:
 
   Identifier name() const
   { return Name_; }
+
+  std::vector<WrapperParam> params() const
+  { return Params_; }
 
   void resolveOverload(std::shared_ptr<IdentifierIndex> II)
   {
@@ -142,9 +145,21 @@ private:
     return Identifier(Decl);
   }
 
-  static std::list<WrapperParam> determineParams(clang::FunctionDecl const *Decl)
+  static std::vector<WrapperParam> determineParams(
+    clang::FunctionDecl const *Decl,
+    bool IsMethod)
   {
-    std::list<WrapperParam> ParamList;
+    std::vector<WrapperParam> ParamList;
+
+    if (IsMethod) {
+      auto const *MethodDecl = dynamic_cast<clang::CXXMethodDecl const *>(Decl);
+
+      assert(!MethodDecl->isOverloadedOperator()); // XXX
+      assert(!MethodDecl->isVirtual()); // XXX
+
+      if (!MethodDecl->isStatic())
+        ParamList.emplace_back(MethodDecl->getThisType(), Identifier::Self);
+    }
 
     auto Params(Decl->parameters());
 
@@ -165,19 +180,6 @@ private:
 
       ParamList.emplace_back(ParamType, ParamName);
     }
-
-    return ParamList;
-  }
-
-  static std::list<WrapperParam> determineParams(clang::CXXMethodDecl const *Decl)
-  {
-    assert(!Decl->isOverloadedOperator()); // XXX
-    assert(!Decl->isVirtual()); // XXX
-
-    auto ParamList(determineParams(static_cast<clang::FunctionDecl const *>(Decl)));
-
-    if (!Decl->isStatic())
-      ParamList.emplace_front(Decl->getThisType(), Identifier::Self);
 
     return ParamList;
   }
@@ -272,7 +274,7 @@ private:
   Identifier Name_;
   Identifier OverloadName_;
 
-  std::list<WrapperParam> Params_;
+  std::vector<WrapperParam> Params_;
   WrapperType ReturnType_;
   WrapperType SelfType_;
 };

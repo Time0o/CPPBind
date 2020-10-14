@@ -4,6 +4,7 @@
 #include <cassert>
 #include <filesystem>
 #include <memory>
+#include <set>
 #include <sstream>
 #include <string>
 #include <type_traits>
@@ -12,8 +13,10 @@
 
 #include "FileBuffer.hpp"
 #include "IdentifierIndex.hpp"
+#include "Logging.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperRecord.hpp"
+#include "WrapperType.hpp"
 
 namespace cppbind
 {
@@ -158,11 +161,31 @@ private:
 
   bool declareRecords(FileBuffer &File) const
   {
-    if (Records_.empty())
+    auto cmp = [](WrapperType const &Wt1, WrapperType const &Wt2)
+    { return Wt1.name(true) < Wt2.name(true); };
+
+    std::set<WrapperType, decltype(cmp)> WrappableParamTypes(cmp);
+
+    for (auto const &Wf : Functions_) {
+      for (auto const &Param : Wf.params()) {
+        auto ParamBaseType(Param.type().base());
+
+        if (ParamBaseType.isWrappable(IdentifierIndex_)) {
+          WrappableParamTypes.insert(ParamBaseType.unqualifiedAndDesugared());
+
+        } else if (!ParamBaseType.isFundamental()) {
+          error() << "Parameter type "
+                  << ParamBaseType.unqualified()
+                  << " is not wrappable";
+        }
+      }
+    }
+
+    if (WrappableParamTypes.empty())
       return false;
 
-    for (auto const &Wr : Records_)
-      File << Wr.strDeclaration(IdentifierIndex_) << FileBuffer::EndLine;
+    for (auto const &T : WrappableParamTypes)
+      File << T.strDeclaration(IdentifierIndex_) << FileBuffer::EndLine;
 
     return true;
   }

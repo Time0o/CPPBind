@@ -51,7 +51,7 @@ public:
   { return Type_.strBaseUnwrapped(desugar); }
 
   std::string strDeclaration(std::shared_ptr<IdentifierIndex> II) const
-  { return Type_.strWrapped(II) + ";"; }
+  { return Type_.strDeclaration(II); }
 
 private:
   Identifier qualifiedMemberName(std::string const &Name) const

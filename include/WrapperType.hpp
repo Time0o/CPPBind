@@ -2,6 +2,7 @@
 #define GUARD_WRAPPER_TYPE_H
 
 #include <memory>
+#include <ostream>
 #include <string>
 #include <utility>
 
@@ -11,7 +12,6 @@
 #include "FundamentalTypes.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
-#include "Logging.hpp"
 #include "String.hpp"
 
 namespace cppbind
@@ -35,6 +35,12 @@ public:
   WrapperType(clang::TypeDecl const *Decl)
   : WrapperType(Decl->getTypeForDecl())
   {}
+
+  bool operator==(WrapperType const &Wt) const
+  { return Type_ == Wt.Type_; }
+
+  bool operator!=(WrapperType const &Wt) const
+  { return !(*this == Wt); }
 
   clang::QualType const &operator*() const
   { return Type_; }
@@ -66,7 +72,7 @@ public:
   }
 
   bool isWrappable(std::shared_ptr<IdentifierIndex> II) const
-  { return II->has(name(), IdentifierIndex::TYPE); }
+  { return II->has(name(true), IdentifierIndex::TYPE); }
 
   bool isPointer() const
   { return typePtr()->isPointerType(); }
@@ -103,8 +109,7 @@ public:
     if (base().isFundamental())
       return strUnwrapped();
 
-    if (!base().isWrappable(II))
-      error() << "Type " << print() << " is not wrappable";
+    assert(isWrappable(II));
 
     auto Wrapped(strUnwrapped());
 
@@ -143,6 +148,9 @@ public:
     return T->getAsString(PP);
   }
 
+  std::string strDeclaration(std::shared_ptr<IdentifierIndex> II) const
+  { return strWrapped(II) + ";"; }
+
 private:
   clang::Type const *typePtr() const
   { return Type_.getTypePtr(); }
@@ -153,23 +161,21 @@ private:
   clang::Type const *baseTypePtr() const
   { return baseQualType().getTypePtr(); }
 
-  std::string print() const
-  {
-    auto Sugared(strBaseUnwrapped());
-    auto Desugared(strBaseUnwrapped(true));
-
-    std::stringstream SS;
-
-    SS << Sugared;
-
-    if (Desugared != Sugared)
-      SS << " (alias " + Desugared + ")";
-
-    return SS.str();
-  }
-
   clang::QualType Type_;
 };
+
+inline std::ostream &operator<<(std::ostream &Os, WrapperType const &Wt)
+{
+  auto Sugared(Wt.strBaseUnwrapped());
+  auto Desugared(Wt.strBaseUnwrapped(true));
+
+  Os << "Type " << Sugared;
+
+  if (Desugared != Sugared)
+    Os << " (alias " + Desugared + ")";
+
+  return Os;
+}
 
 } // namespace cppbind
 
