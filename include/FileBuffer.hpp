@@ -6,7 +6,7 @@
 #include <string>
 #include <system_error>
 
-#include "LLVMError.hpp"
+#include "Logging.hpp"
 #include "Options.hpp"
 #include "String.hpp"
 
@@ -36,7 +36,7 @@ public:
     llvm::raw_fd_ostream OS(Path.c_str(), EC, llvm::sys::fs::F_None);
 
     if (EC)
-      throw LLVMError("Failed to open '" + Path.string() + "'", EC);
+      error() << "Failed to open '" << Path.string() << "'" << EC.message();
 
     // write to file
     OS.clear_error();
@@ -48,7 +48,7 @@ public:
     EC = OS.error();
 
     if (EC)
-      throw LLVMError("Failed to write '" + Path.string() + "'", EC);
+      error() << "Failed to write '" << Path.string() << "'" << EC.message();
   }
 
 private:

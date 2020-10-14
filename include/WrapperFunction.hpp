@@ -253,8 +253,7 @@ private:
         SS << "return ";
 
       if (!_IsMethod || _IsStatic) {
-        SS << name().strQualified()
-           << strParams(II, false);
+        SS << name().strQualified() << strParams(II, false);
       } else {
         SS << selfCastUnwrapped()
            << "(" << Identifier::Self << ")->" << name().strUnqualified()

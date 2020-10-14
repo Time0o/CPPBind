@@ -10,6 +10,7 @@
 #include <unordered_set>
 
 #include "Identifier.hpp"
+#include "Logging.hpp"
 #include "Options.hpp"
 
 namespace cppbind
@@ -68,8 +69,12 @@ public:
         break;
     }
 
-    if (!createCIdentifier(Id, Type))
+    if (!createCIdentifier(Id, Type)) {
       P->Alias = createCAlias(Id, Type);
+
+      warn() << "creating alias "
+             << cIdentifier(Id, Type) << " => " << cIdentifier(*P->Alias, Type);
+    }
 
     _Index[Id] = P;
   }

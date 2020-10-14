@@ -1,5 +1,8 @@
+#include <iostream>
+
 #include "CreateWrapper.hpp"
 #include "Identifier.hpp"
+#include "Logging.hpp"
 #include "Options.hpp"
 #include "String.hpp"
 
@@ -94,5 +97,10 @@ int main(int argc, char const **argv)
   auto Parser(Options().parser(argc, argv));
 
   CreateWrapperToolRunner Runner;
-  Runner.run(Parser);
+
+  try {
+    Runner.run(Parser);
+  } catch (CPPBindError const &Err) {
+    std::cerr << Err.what() << std::endl;
+  }
 }
