@@ -108,8 +108,10 @@ public:
 
   void resolveOverload(std::shared_ptr<IdentifierIndex> II)
   {
-    if (_Overload == 0u)
-      _Overload = II->popOverload(name());
+    if (_Overload == 0u) {
+      if ((_Overload = II->popOverload(name())) == 0u)
+        return;
+    }
 
     auto Postfix(WRAPPER_FUNC_OVERLOAD_POSTFIX);
 
