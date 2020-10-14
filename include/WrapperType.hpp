@@ -1,7 +1,6 @@
 #ifndef GUARD_WRAPPER_TYPE_H
 #define GUARD_WRAPPER_TYPE_H
 
-#include <cassert>
 #include <memory>
 #include <string>
 #include <utility>
@@ -12,6 +11,7 @@
 #include "FundamentalTypes.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
+#include "Logging.hpp"
 #include "String.hpp"
 
 namespace cppbind
@@ -22,7 +22,7 @@ class WrapperType
 public:
   WrapperType(clang::QualType const &Type)
   : Type_(Type)
-  { assert(isFundamental() || isWrappable()); }
+  {}
 
   WrapperType(clang::Type const *Type)
   : WrapperType(clang::QualType(Type, 0))
@@ -43,22 +43,39 @@ public:
   { return &Type_; }
 
   WrapperType unqualified() const
-  { return WrapperType(Type_.getTypePtr()); }
+  { return WrapperType(typePtr()); }
+
+  WrapperType desugared() const
+  { return WrapperType(Type_.getDesugaredType(CompilerState()->getASTContext())); }
+
+  WrapperType unqualifiedAndDesugared() const
+  { return WrapperType(typePtr()->getUnqualifiedDesugaredType()); }
 
   bool isQualified() const
   { return Type_.hasQualifiers(); }
 
-  bool isVoid() const
-  { return FundamentalTypes().is(Type_.getTypePtr(), "void"); }
+  bool isFundamental(char const *Which = nullptr) const
+  {
+    if (!typePtr()->isFundamentalType())
+      return false;
+
+    if (!Which)
+      return true;
+
+    return FundamentalTypes().is(typePtr(), Which);
+  }
+
+  bool isWrappable(std::shared_ptr<IdentifierIndex> II) const
+  { return II->has(name(), IdentifierIndex::TYPE); }
 
   bool isPointer() const
-  { return Type_->isPointerType(); }
+  { return typePtr()->isPointerType(); }
 
   bool isClass() const
-  { return (*pointee(true))->isClassType(); }
+  { return typePtr()->isClassType(); }
 
   bool isStruct() const
-  { return (*pointee(true))->isStructureType(); }
+  { return typePtr()->isStructureType(); }
 
   WrapperType pointerTo() const
   { return WrapperType(CompilerState()->getASTContext().getPointerType(Type_)); }
@@ -75,13 +92,19 @@ public:
     return Pointee;
   }
 
-  Identifier name() const
-  { return strBaseUnwrapped(); }
+  WrapperType base() const
+  { return pointee(true); }
+
+  Identifier name(bool desugar = false) const
+  { return strBaseUnwrapped(desugar); }
 
   std::string strWrapped(std::shared_ptr<IdentifierIndex> II) const
   {
-    if (isFundamental() || pointee(true).isFundamental())
+    if (base().isFundamental())
       return strUnwrapped();
+
+    if (!base().isWrappable(II))
+      error() << "Type " << print() << " is not wrappable";
 
     auto Wrapped(strUnwrapped());
 
@@ -110,18 +133,40 @@ public:
   std::string strBaseWrapped(std::shared_ptr<IdentifierIndex> II) const
   { return II->alias(name()).strQualified(TYPE_CASE, true); }
 
-  std::string strBaseUnwrapped() const
+  std::string strBaseUnwrapped(bool desugar = false) const
   {
     clang::PrintingPolicy PP(CompilerState()->getLangOpts());
-    return pointee(true).unqualified()->getAsString(PP);
+
+    auto T(desugar ? base().unqualifiedAndDesugared()
+                   : base().unqualified());
+
+    return T->getAsString(PP);
   }
 
 private:
-  bool isFundamental() const
-  { return Type_->isFundamentalType(); }
+  clang::Type const *typePtr() const
+  { return Type_.getTypePtr(); }
 
-  bool isWrappable() const
-  { return true; } // XXX
+  clang::QualType baseQualType() const
+  { return *base(); }
+
+  clang::Type const *baseTypePtr() const
+  { return baseQualType().getTypePtr(); }
+
+  std::string print() const
+  {
+    auto Sugared(strBaseUnwrapped());
+    auto Desugared(strBaseUnwrapped(true));
+
+    std::stringstream SS;
+
+    SS << Sugared;
+
+    if (Desugared != Sugared)
+      SS << " (alias " + Desugared + ")";
+
+    return SS.str();
+  }
 
   clang::QualType Type_;
 };

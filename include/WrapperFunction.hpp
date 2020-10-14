@@ -4,7 +4,6 @@
 #include <cassert>
 #include <list>
 #include <memory>
-#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -32,36 +31,26 @@ class WrapperFunction
   class WrapperParam
   {
   public:
-    explicit WrapperParam(WrapperType const &Type)
-    : Type_(Type)
-    {}
-
     WrapperParam(WrapperType const &Type, Identifier const &Name)
     : Type_(Type),
       Name_(Name)
     {}
 
-    WrapperType Type() const
+    WrapperType type() const
     { return Type_; }
 
-    bool hasName() const
-    { return Name_.has_value(); }
-
     Identifier name() const
-    {
-      assert(Name_);
-      return *Name_;
-    }
+    { return Name_; }
 
     std::string strTyped(std::shared_ptr<IdentifierIndex> II) const
-    { return Type_.strWrapped(II) + (Name_ ? " " + strUntyped() : ""); }
+    { return Type_.strWrapped(II) + " " + strUntyped(); }
 
     std::string strUntyped() const
-    { return Name_ ? Name_->strUnqualified(PARAM_CASE) : ""; }
+    { return Name_.strUnqualified(PARAM_CASE); }
 
   private:
     WrapperType Type_;
-    std::optional<Identifier> Name_;
+    Identifier Name_;
   };
 
 public:
@@ -251,7 +240,7 @@ private:
       SS << "delete " << selfCastUnwrapped()
          << "(" << Identifier::Self << ")";
     } else {
-      if (!ReturnType_.isVoid())
+      if (!ReturnType_.isFundamental("void"))
         SS << "return ";
 
       if (!IsMethod_ || IsStatic_) {

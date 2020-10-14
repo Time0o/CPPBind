@@ -47,8 +47,8 @@ public:
            .build();
   }
 
-  Identifier name() const
-  { return Type_.strBaseUnwrapped(); }
+  Identifier name(bool desugar = false) const
+  { return Type_.strBaseUnwrapped(desugar); }
 
   std::string strDeclaration(std::shared_ptr<IdentifierIndex> II) const
   { return Type_.strWrapped(II) + ";"; }

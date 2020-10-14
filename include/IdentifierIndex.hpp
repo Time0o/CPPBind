@@ -82,6 +82,15 @@ public:
   bool has(Identifier const &Id) const
   { return static_cast<bool>(props<AnyProps>(Id)); }
 
+  bool has(Identifier const &Id, Type Type) const
+  {
+    auto Props(props<AnyProps>(Id));
+    if (!Props)
+      return false;
+
+    return Props->Type == Type;
+  }
+
   Identifier alias(Identifier const &Id) const
   {
     auto P(props<AnyProps>(Id));
