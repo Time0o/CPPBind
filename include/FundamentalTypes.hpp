@@ -25,13 +25,13 @@ public:
     clang::PrintingPolicy PP(CompilerState()->getLangOpts());
     auto TypeName(asQualType(Type).getAsString(PP));
 
-    _FundamentalTypes[TypeName] = Type;
+    FundamentalTypes_[TypeName] = Type;
   }
 
   clang::Type const *get(std::string const &TypeName) const
   {
-    auto IT(_FundamentalTypes.find(TypeName));
-    assert(IT != _FundamentalTypes.end());
+    auto IT(FundamentalTypes_.find(TypeName));
+    assert(IT != FundamentalTypes_.end());
 
     return IT->second;
   }
@@ -57,7 +57,7 @@ private:
   static clang::QualType asQualType(clang::Type const *Type)
   { return clang::QualType(Type, 0); }
 
-  std::unordered_map<std::string, clang::Type const *> _FundamentalTypes;
+  std::unordered_map<std::string, clang::Type const *> FundamentalTypes_;
 };
 
 inline FundamentalTypeRegistry &FundamentalTypes()

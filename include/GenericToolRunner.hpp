@@ -83,7 +83,7 @@ protected:
     {
     public:
       Factory(ARGS&&... Args)
-      : _StoredArgs(std::forward_as_tuple(std::forward<ARGS>(Args)...))
+      : StoredArgs_(std::forward_as_tuple(std::forward<ARGS>(Args)...))
       {}
 
       std::unique_ptr<clang::FrontendAction> create() override
@@ -91,11 +91,11 @@ protected:
         return std::apply(
           [](auto&&... Args)
           { return std::make_unique<T>(std::forward<decltype(Args)>(Args)...); },
-          _StoredArgs);
+          StoredArgs_);
       }
 
     private:
-      std::tuple<ARGS...> _StoredArgs;
+      std::tuple<ARGS...> StoredArgs_;
     };
 
     return std::make_unique<Factory>(std::forward<ARGS>(Args)...);
@@ -104,7 +104,6 @@ protected:
 private:
   virtual void beforeRun() {}
   virtual void afterRun() {}
-
 };
 
 } // namespace cppbind

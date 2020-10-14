@@ -33,94 +33,94 @@ class WrapperFunction
   {
   public:
     explicit WrapperParam(WrapperType const &Type)
-    : _Type(Type)
+    : Type_(Type)
     {}
 
     WrapperParam(WrapperType const &Type, Identifier const &Name)
-    : _Type(Type),
-      _Name(Name)
+    : Type_(Type),
+      Name_(Name)
     {}
 
     WrapperType Type() const
-    { return _Type; }
+    { return Type_; }
 
     bool hasName() const
-    { return _Name.has_value(); }
+    { return Name_.has_value(); }
 
     Identifier name() const
     {
-      assert(_Name);
-      return *_Name;
+      assert(Name_);
+      return *Name_;
     }
 
     std::string strTyped(std::shared_ptr<IdentifierIndex> II) const
-    { return _Type.strWrapped(II) + (_Name ? " " + strUntyped() : ""); }
+    { return Type_.strWrapped(II) + (Name_ ? " " + strUntyped() : ""); }
 
     std::string strUntyped() const
-    { return _Name ? _Name->strUnqualified(PARAM_CASE) : ""; }
+    { return Name_ ? Name_->strUnqualified(PARAM_CASE) : ""; }
 
   private:
-    WrapperType _Type;
-    std::optional<Identifier> _Name;
+    WrapperType Type_;
+    std::optional<Identifier> Name_;
   };
 
 public:
   WrapperFunction(Identifier const &Name, WrapperType const &SelfType)
-  : _Name(Name),
-    _OverloadName(Name),
-    _SelfType(SelfType)
+  : Name_(Name),
+    OverloadName_(Name),
+    SelfType_(SelfType)
   {}
 
   explicit WrapperFunction(clang::FunctionDecl const *Decl)
-  : _IsMethod(false),
-    _Name(determineName(Decl)),
-    _OverloadName(_Name),
-    _Params(determineParams(Decl)),
-    _ReturnType(Decl->getReturnType())
+  : IsMethod_(false),
+    Name_(determineName(Decl)),
+    OverloadName_(Name_),
+    Params_(determineParams(Decl)),
+    ReturnType_(Decl->getReturnType())
   { assert(!Decl->isTemplateInstantiation()); } // XXX
 
   explicit WrapperFunction(clang::CXXMethodDecl const *Decl)
-  : _IsMethod(true),
-    _IsConstructor(llvm::isa<clang::CXXConstructorDecl>(Decl)),
-    _IsDestructor(llvm::isa<clang::CXXDestructorDecl>(Decl)),
-    _IsStatic(Decl->isStatic()),
-    _Name(determineName(Decl)),
-    _OverloadName(_Name),
-    _Params(determineParams(Decl)),
-    _ReturnType(Decl->getReturnType()),
-    _SelfType(WrapperType(Decl->getThisType()).pointee())
+  : IsMethod_(true),
+    IsConstructor_(llvm::isa<clang::CXXConstructorDecl>(Decl)),
+    IsDestructor_(llvm::isa<clang::CXXDestructorDecl>(Decl)),
+    IsStatic_(Decl->isStatic()),
+    Name_(determineName(Decl)),
+    OverloadName_(Name_),
+    Params_(determineParams(Decl)),
+    ReturnType_(Decl->getReturnType()),
+    SelfType_(WrapperType(Decl->getThisType()).pointee())
   { assert(!Decl->isTemplateInstantiation()); } // XXX
 
   bool isMethod() const
-  { return _IsMethod; }
+  { return IsMethod_; }
 
   bool isConstructor() const
-  { return _IsConstructor; }
+  { return IsConstructor_; }
 
   bool isDestructor() const
-  { return _IsDestructor; }
+  { return IsDestructor_; }
 
   bool isOverloaded() const
-  { return _Overload > 0u; }
+  { return Overload_ > 0u; }
 
   Identifier name() const
-  { return _Name; }
+  { return Name_; }
 
   void resolveOverload(std::shared_ptr<IdentifierIndex> II)
   {
-    if (_Overload == 0u) {
-      if ((_Overload = II->popOverload(name())) == 0u)
+    if (Overload_ == 0u) {
+      if ((Overload_ = II->popOverload(name())) == 0u)
         return;
     }
 
     auto Postfix(WRAPPER_FUNC_OVERLOAD_POSTFIX);
 
-    if (replaceAllStrs(Postfix, "%o", std::to_string(_Overload)) == 0u)
+    if (replaceAllStrs(Postfix, "%o", std::to_string(Overload_)) == 0u)
       throw std::runtime_error("Overload postfix pattern must contain at least one occurence of '%o'");
 
-    _OverloadName = name() + Postfix;
+    OverloadName_ = name() + Postfix;
 
-    II->add(_OverloadName, IdentifierIndex::FUNC);
+    II->add(OverloadName_, IdentifierIndex::FUNC);
   }
 
   std::string strDeclaration(std::shared_ptr<IdentifierIndex> II) const
@@ -135,7 +135,7 @@ private:
 
   Identifier determineName(clang::CXXMethodDecl const *Decl) const
   {
-    if (_IsConstructor) {
+    if (IsConstructor_) {
 #ifndef NDEBUG
       auto const *ConstructorDecl =
         llvm::dyn_cast<clang::CXXConstructorDecl>(Decl);
@@ -147,7 +147,7 @@ private:
       return Identifier(Identifier::New).qualify(Decl->getParent());
     }
 
-    if (_IsDestructor)
+    if (IsDestructor_)
       return Identifier(Identifier::Delete).qualify(Decl->getParent());
 
     return Identifier(Decl);
@@ -194,7 +194,7 @@ private:
   }
 
   bool hasParams() const
-  { return !_Params.empty(); }
+  { return !Params_.empty(); }
 
   std::string strParams(std::shared_ptr<IdentifierIndex> II,
                         bool Typed,
@@ -206,14 +206,14 @@ private:
     { return Typed ? Param.strTyped(II) : Param.strUntyped(); };
 
     SS << "(";
-    if (_Params.size() > Skip) {
-      auto it = _Params.begin();
+    if (Params_.size() > Skip) {
+      auto it = Params_.begin();
 
       for (std::size_t i = 0u; i < Skip; ++i)
         ++it;
 
       SS << dumpParam(*it);
-      while (++it != _Params.end())
+      while (++it != Params_.end())
         SS << ", " << dumpParam(*it);
     }
     SS << ")";
@@ -225,9 +225,9 @@ private:
   {
     std::stringstream SS;
 
-    auto Name = _Overload > 0u ? _OverloadName : name();
+    auto Name = Overload_ > 0u ? OverloadName_ : name();
 
-    SS << _ReturnType.strWrapped(II)
+    SS << ReturnType_.strWrapped(II)
        << ' '
        << II->alias(Name).strQualified(FUNC_CASE, true);
 
@@ -242,19 +242,19 @@ private:
 
     SS << "{ ";
 
-    if (_IsConstructor) {
+    if (IsConstructor_) {
       SS << "return " << selfCastWrapped(II)
-         << "(new " << _SelfType.strBaseUnwrapped() << ")";
+         << "(new " << SelfType_.strBaseUnwrapped() << ")";
       if (hasParams())
         SS << strParams(II, false);
-    } else if (_IsDestructor) {
+    } else if (IsDestructor_) {
       SS << "delete " << selfCastUnwrapped()
          << "(" << Identifier::Self << ")";
     } else {
-      if (!_ReturnType.isVoid())
+      if (!ReturnType_.isVoid())
         SS << "return ";
 
-      if (!_IsMethod || _IsStatic) {
+      if (!IsMethod_ || IsStatic_) {
         SS << name().strQualified() << strParams(II, false);
       } else {
         SS << selfCastUnwrapped()
@@ -269,54 +269,54 @@ private:
   }
 
   std::string selfCastWrapped(std::shared_ptr<IdentifierIndex> II) const
-  { return "reinterpret_cast<" + _SelfType.pointerTo().strWrapped(II) + ">"; }
+  { return "reinterpret_cast<" + SelfType_.pointerTo().strWrapped(II) + ">"; }
 
   std::string selfCastUnwrapped() const
-  { return "reinterpret_cast<" + _SelfType.pointerTo().strUnwrapped(true) + ">"; }
+  { return "reinterpret_cast<" + SelfType_.pointerTo().strUnwrapped(true) + ">"; }
 
-  bool _IsMethod = false;
-  bool _IsConstructor = false;
-  bool _IsDestructor = false;
-  bool _IsStatic = false;
-  unsigned _Overload = 0u;
+  bool IsMethod_ = false;
+  bool IsConstructor_ = false;
+  bool IsDestructor_ = false;
+  bool IsStatic_ = false;
+  unsigned Overload_ = 0u;
 
-  Identifier _Name;
-  Identifier _OverloadName;
+  Identifier Name_;
+  Identifier OverloadName_;
 
-  std::list<WrapperParam> _Params;
-  WrapperType _ReturnType;
-  WrapperType _SelfType;
+  std::list<WrapperParam> Params_;
+  WrapperType ReturnType_;
+  WrapperType SelfType_;
 };
 
 class WrapperFunctionBuilder
 {
 public:
   WrapperFunctionBuilder(Identifier const &Name, WrapperType const &SelfType)
-  : _Wf(Name, SelfType)
+  : Wf_(Name, SelfType)
   {}
 
   WrapperFunctionBuilder &isConstructor()
-  { _Wf._IsConstructor = true; return *this; }
+  { Wf_.IsConstructor_ = true; return *this; }
 
   WrapperFunctionBuilder &isDestructor()
-  { _Wf._IsDestructor = true; return *this; }
+  { Wf_.IsDestructor_ = true; return *this; }
 
   WrapperFunctionBuilder &isStatic()
-  { _Wf._IsStatic = true; return *this; }
+  { Wf_.IsStatic_ = true; return *this; }
 
   template<typename TYPE>
   WrapperFunctionBuilder &setReturnType(TYPE const &Type)
-  { _Wf._ReturnType = Type; return *this; }
+  { Wf_.ReturnType_ = Type; return *this; }
 
   template<typename ...ARGS>
   WrapperFunctionBuilder &addParam(ARGS&&... Args)
-  { _Wf._Params.emplace_back(std::forward<ARGS>(Args)...); return *this; }
+  { Wf_.Params_.emplace_back(std::forward<ARGS>(Args)...); return *this; }
 
   WrapperFunction build() const
-  { return _Wf; }
+  { return Wf_; }
 
 private:
-  WrapperFunction _Wf;
+  WrapperFunction Wf_;
 };
 
 } // namespace cppbind

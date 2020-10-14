@@ -29,38 +29,38 @@ public:
   CPPBindLogger(Level Lvl,
          std::ostream &Stdout = std::cout,
          std::ostream &Stderr = std::cerr)
-  : _Lvl(Lvl),
-    _Stdout(Stdout),
-    _Stderr(Stderr)
-  { _Buf << _Headers[_Lvl - 1] << ": "; }
+  : Lvl_(Lvl),
+    Stdout_(Stdout),
+    Stderr_(Stderr)
+  { Buf_ << _Headers[Lvl_ - 1] << ": "; }
 
   ~CPPBindLogger() noexcept(false)
   {
-    auto Msg(_Buf.str());
+    auto Msg(Buf_.str());
 
-    if (_Lvl == ERROR) {
+    if (Lvl_ == ERROR) {
       if (std::uncaught_exceptions() == 0)
         throw CPPBindError(Msg);
       else
-        _Stderr << Msg << std::endl;
-    } else if (_Lvl == WARNING) {
-      _Stderr << Msg << std::endl;
+        Stderr_ << Msg << std::endl;
+    } else if (Lvl_ == WARNING) {
+      Stderr_ << Msg << std::endl;
     } else {
-      _Stdout << Msg << std::endl;
+      Stdout_ << Msg << std::endl;
     }
   }
 
   template<typename T>
   CPPBindLogger &operator<<(T const &Value)
   {
-    _Buf << Value;
+    Buf_ << Value;
     return *this;
   }
 
 private:
-  int _Lvl;
-  std::ostream &_Stdout, &_Stderr;
-  std::stringstream _Buf;
+  int Lvl_;
+  std::ostream &Stdout_, &Stderr_;
+  std::stringstream Buf_;
 };
 
 inline CPPBindLogger debug()

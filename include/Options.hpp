@@ -47,7 +47,7 @@ class OptionsRegistry
 
   public:
     Option(llvm::StringRef Name)
-    : _Name(Name)
+    : Name_(Name)
     {}
 
     ~Option()
@@ -56,44 +56,44 @@ class OptionsRegistry
     Option &setDescription(llvm::StringRef Desc,
                            llvm::StringRef ValueDesc = "")
     {
-      _Desc = Desc;
+      Desc_ = Desc;
 
       if (!ValueDesc.empty())
-          _ValueDesc = ValueDesc;
+          ValueDesc_ = ValueDesc;
 
       return *this;
     }
 
     Option &setOptional(bool Optional)
-    { _Optional = Optional; return *this; }
+    { Optional_ = Optional; return *this; }
 
     Option &setChoices(OptionChoices<T> Choices)
-    { _Choices = Choices; return *this; }
+    { Choices_ = Choices; return *this; }
 
     Option &setDefault(T const &Default)
-    { _Default = Default; return *this; }
+    { Default_ = Default; return *this; }
 
     Option &addAssertion(AssertFunc &&Assertion, std::string const &Msg)
-    { _Assertions.emplace_back(Assertion, Msg); return *this; }
+    { Assertions_.emplace_back(Assertion, Msg); return *this; }
 
   private:
     void assertValue(T const &Value) const
     {
-      for (auto const &[Assertion, Msg] : _Assertions) {
+      for (auto const &[Assertion, Msg] : Assertions_) {
         if (!Assertion(Value))
-          throw std::runtime_error(_Name.str() + ": " + Msg);
+          throw std::runtime_error(Name_.str() + ": " + Msg);
       }
     }
 
-    llvm::StringRef _Name;
+    llvm::StringRef Name_;
 
-    std::optional<llvm::StringRef> _Desc;
-    std::optional<llvm::StringRef> _ValueDesc;
-    std::optional<bool> _Optional;
-    std::optional<OptionChoices<T>> _Choices;
-    std::optional<T> _Default = std::nullopt;
+    std::optional<llvm::StringRef> Desc_;
+    std::optional<llvm::StringRef> ValueDesc_;
+    std::optional<bool> Optional_;
+    std::optional<OptionChoices<T>> Choices_;
+    std::optional<T> Default_ = std::nullopt;
 
-    std::vector<std::pair<AssertFunc, std::string>> _Assertions;
+    std::vector<std::pair<AssertFunc, std::string>> Assertions_;
   };
 
 public:
@@ -114,17 +114,17 @@ public:
   { return *instance().findOpt<T>(Name); }
 
   clang::tooling::CommonOptionsParser parser(int Argc, char const **Argv)
-  { return clang::tooling::CommonOptionsParser(Argc, Argv, _Category); }
+  { return clang::tooling::CommonOptionsParser(Argc, Argv, Category_); }
 
 private:
   OptionsRegistry(llvm::StringRef Category, llvm::StringRef Usage)
-  : _Category(Category)
+  : Category_(Category)
   {
-    _Usage = Usage.str();
-    _Usage = indentStr(trimStr(_Usage));
+    Usage_ = Usage.str();
+    Usage_ = indentStr(trimStr(Usage_));
 
-    _Help.emplace_back(clang::tooling::CommonOptionsParser::HelpMessage);
-    _Help.emplace_back(_Usage.c_str());
+    Help_.emplace_back(clang::tooling::CommonOptionsParser::HelpMessage);
+    Help_.emplace_back(Usage_.c_str());
   }
 
   static OptionsRegistry &instance()
@@ -140,43 +140,43 @@ private:
     // XXX aliases
     // XXX indicate mandatory options and default values in Desc
 
-    if (_Opts.find(Option._Name) != _Opts.end())
+    if (Opts_.find(Option.Name_) != Opts_.end())
       return;
 
-    auto Opt(packOpt<T>(Option._Name, llvm::cl::cat(_Category)));
+    auto Opt(packOpt<T>(Option.Name_, llvm::cl::cat(Category_)));
 
-    if (Option._Desc)
-      Opt->setDescription(*Option._Desc);
+    if (Option.Desc_)
+      Opt->setDescription(*Option.Desc_);
 
-    if (Option._ValueDesc)
-      Opt->setValueStr(*Option._ValueDesc);
+    if (Option.ValueDesc_)
+      Opt->setValueStr(*Option.ValueDesc_);
 
-    if (Option._Optional)
-      Opt->setNumOccurrencesFlag(*Option._Optional ? llvm::cl::Optional
+    if (Option.Optional_)
+      Opt->setNumOccurrencesFlag(*Option.Optional_ ? llvm::cl::Optional
                                                    : llvm::cl::Required);
 
     if constexpr (std::is_same_v<T, bool>)
-      Opt->setValueExpectedFlag(*Option._Optional ? llvm::cl::ValueOptional
+      Opt->setValueExpectedFlag(*Option.Optional_ ? llvm::cl::ValueOptional
                                                   : llvm::cl::ValueRequired);
 
-    if (Option._Default) {
-      Option.assertValue(*Option._Default);
+    if (Option.Default_) {
+      Option.assertValue(*Option.Default_);
 
-      Opt->setInitialValue(*Option._Default);
+      Opt->setInitialValue(*Option.Default_);
 
-      _OptsPresent.insert(Option._Name);
+      OptsPresent_.insert(Option.Name_);
     }
 
     Opt->setCallback([&](T const &Value){
       Option.assertValue(Value);
 
-      if (!Option._Default)
-        _OptsPresent.insert(Option._Name);
+      if (!Option.Default_)
+        OptsPresent_.insert(Option.Name_);
     });
 
-    if (Option._Choices) {
+    if (Option.Choices_) {
       if constexpr (std::is_enum_v<T>) {
-        for (auto const &Choice : *Option._Choices) {
+        for (auto const &Choice : *Option.Choices_) {
           Opt->getParser().addLiteralOption(std::get<0>(Choice),
                                             std::get<1>(Choice),
                                             std::get<2>(Choice));
@@ -186,18 +186,18 @@ private:
       }
     }
 
-    _Opts[Option._Name] = Opt;
+    Opts_[Option.Name_] = Opt;
   }
 
   bool optPresent(llvm::StringRef Name) const
-  { return _OptsPresent.find(Name) != _OptsPresent.end(); }
+  { return OptsPresent_.find(Name) != OptsPresent_.end(); }
 
   template<typename T>
   auto findOpt(llvm::StringRef Name) const
   {
-    auto OptIt(_Opts.find(Name));
+    auto OptIt(Opts_.find(Name));
 
-    assert(OptIt != _Opts.end() && "valid option name");
+    assert(OptIt != Opts_.end() && "valid option name");
     assert(optPresent(Name) && "option present");
 
     return unpackOpt<T>(OptIt->second);
@@ -217,13 +217,13 @@ private:
     }
   }
 
-  llvm::cl::OptionCategory _Category;
+  llvm::cl::OptionCategory Category_;
 
-  std::string _Usage;
-  std::vector<llvm::cl::extrahelp> _Help;
+  std::string Usage_;
+  std::vector<llvm::cl::extrahelp> Help_;
 
-  std::unordered_map<std::string, std::any> _Opts;
-  std::unordered_set<std::string> _OptsPresent;
+  std::unordered_map<std::string, std::any> Opts_;
+  std::unordered_set<std::string> OptsPresent_;
 };
 
 template<>

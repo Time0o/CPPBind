@@ -23,8 +23,8 @@ class Wrapper
 public:
   Wrapper(std::filesystem::path const &WrappedHeader,
           std::shared_ptr<IdentifierIndex> IdentifierIndex)
-  : _WrappedHeader(WrappedHeader),
-    _IdentifierIndex(IdentifierIndex)
+  : WrappedHeader_(WrappedHeader),
+    IdentifierIndex_(IdentifierIndex)
   {}
 
   template<typename ...ARGS>
@@ -38,9 +38,9 @@ public:
     if (Wr.needsImplicitDestructor())
       addWrapperFunction(Wr.implicitDestructor());
 
-    _IdentifierIndex->add(Wr.name(), IdentifierIndex::TYPE);
+    IdentifierIndex_->add(Wr.name(), IdentifierIndex::TYPE);
 
-    _Records.push_back(Wr);
+    Records_.push_back(Wr);
   }
 
   template<typename ...ARGS>
@@ -48,21 +48,21 @@ public:
   {
     WrapperFunction Wf(std::forward<ARGS>(args)...);
 
-    if (_IdentifierIndex->has(Wf.name()))
-      _IdentifierIndex->pushOverload(Wf.name());
+    if (IdentifierIndex_->has(Wf.name()))
+      IdentifierIndex_->pushOverload(Wf.name());
     else
-      _IdentifierIndex->add(Wf.name(), IdentifierIndex::FUNC);
+      IdentifierIndex_->add(Wf.name(), IdentifierIndex::FUNC);
 
-    _Functions.push_back(Wf);
+    Functions_.push_back(Wf);
   }
 
   bool empty() const
-  { return _Functions.empty(); }
+  { return Functions_.empty(); }
 
   void resolveOverloads()
   {
-    for (auto &Wf : _Functions)
-      Wf.resolveOverload(_IdentifierIndex);
+    for (auto &Wf : Functions_)
+      Wf.resolveOverload(IdentifierIndex_);
   }
 
   void write() const
@@ -158,30 +158,30 @@ private:
 
   bool declareRecords(FileBuffer &File) const
   {
-    if (_Records.empty())
+    if (Records_.empty())
       return false;
 
-    for (auto const &Wr : _Records)
-      File << Wr.strDeclaration(_IdentifierIndex) << FileBuffer::EndLine;
+    for (auto const &Wr : Records_)
+      File << Wr.strDeclaration(IdentifierIndex_) << FileBuffer::EndLine;
 
     return true;
   }
 
   bool declareOrDefineFunctions(FileBuffer &File, bool IncludeBody) const
   {
-    if (_Functions.empty())
+    if (Functions_.empty())
       return false;
 
-    for (auto i = 0u; i < _Functions.size(); ++i) {
-      auto &Wf(_Functions[i]);
+    for (auto i = 0u; i < Functions_.size(); ++i) {
+      auto &Wf(Functions_[i]);
 
       if (IncludeBody) {
         if (i > 0u)
           File << FileBuffer::EmptyLine;
 
-        File << Wf.strDefinition(_IdentifierIndex) << FileBuffer::EndLine;
+        File << Wf.strDefinition(IdentifierIndex_) << FileBuffer::EndLine;
       } else {
-        File << Wf.strDeclaration(_IdentifierIndex) << FileBuffer::EndLine;
+        File << Wf.strDeclaration(IdentifierIndex_) << FileBuffer::EndLine;
       }
     }
 
@@ -200,7 +200,7 @@ private:
   std::string headerGuardToken() const
   {
     auto Token(WRAPPER_HEADER_GUARD_PREFIX +
-               _WrappedHeader.stem().string() +
+               WrappedHeader_.stem().string() +
                WRAPPER_HEADER_GUARD_POSTFIX);
 
     auto identifier(Identifier::makeUnqualifiedIdentifier(Token, false));
@@ -213,7 +213,7 @@ private:
     auto include = [](std::filesystem::path const &HeaderPath)
     { return "#include \"" + HeaderPath.filename().string() + "\""; };
 
-    File << include(_WrappedHeader) << FileBuffer::EndLine;
+    File << include(WrappedHeader_) << FileBuffer::EndLine;
 
     File << FileBuffer::EmptyLine;
 
@@ -238,7 +238,7 @@ private:
                                  std::string const &Postfix,
                                  std::string const &Ext) const
   {
-    std::filesystem::path FileBuffer(_WrappedHeader.filename());
+    std::filesystem::path FileBuffer(WrappedHeader_.filename());
     std::filesystem::path WrapperDir(Outdir);
 
     FileBuffer.replace_filename(FileBuffer.stem().concat(Postfix));
@@ -247,11 +247,11 @@ private:
     return WrapperDir / FileBuffer;
   }
 
-  std::filesystem::path _WrappedHeader;
-  std::shared_ptr<IdentifierIndex> _IdentifierIndex;
+  std::filesystem::path WrappedHeader_;
+  std::shared_ptr<IdentifierIndex> IdentifierIndex_;
 
-  std::vector<WrapperRecord> _Records;
-  std::vector<WrapperFunction> _Functions;
+  std::vector<WrapperRecord> Records_;
+  std::vector<WrapperFunction> Functions_;
 };
 
 } // namespace cppbind

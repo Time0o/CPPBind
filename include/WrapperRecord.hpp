@@ -20,45 +20,45 @@ class WrapperRecord
 {
 public:
   explicit WrapperRecord(clang::CXXRecordDecl const *Decl)
-  : _Decl(Decl),
-    _Type(_Decl->getTypeForDecl()),
-    _TypePointer(_Type.pointerTo())
+  : Decl_(Decl),
+    Type_(Decl_->getTypeForDecl()),
+    TypePointer_(Type_.pointerTo())
   {}
 
   bool needsImplicitDefaultConstructor() const
-  { return _Decl->needsImplicitDefaultConstructor(); }
+  { return Decl_->needsImplicitDefaultConstructor(); }
 
   WrapperFunction implicitDefaultConstructor() const
   {
-    return WrapperFunctionBuilder(qualifiedMemberName(Identifier::New), _Type)
-           .setReturnType(_TypePointer)
+    return WrapperFunctionBuilder(qualifiedMemberName(Identifier::New), Type_)
+           .setReturnType(TypePointer_)
            .isConstructor()
            .build();
   }
 
   bool needsImplicitDestructor() const
-  { return _Decl->needsImplicitDestructor(); }
+  { return Decl_->needsImplicitDestructor(); }
 
   WrapperFunction implicitDestructor() const
   {
-    return WrapperFunctionBuilder(qualifiedMemberName(Identifier::Delete), _Type)
-           .addParam(_TypePointer, Identifier::Self)
+    return WrapperFunctionBuilder(qualifiedMemberName(Identifier::Delete), Type_)
+           .addParam(TypePointer_, Identifier::Self)
            .isDestructor()
            .build();
   }
 
   Identifier name() const
-  { return _Type.strBaseUnwrapped(); }
+  { return Type_.strBaseUnwrapped(); }
 
   std::string strDeclaration(std::shared_ptr<IdentifierIndex> II) const
-  { return _Type.strWrapped(II) + ";"; }
+  { return Type_.strWrapped(II) + ";"; }
 
 private:
   Identifier qualifiedMemberName(std::string const &Name) const
-  { return Identifier(Name).qualify(_Decl); }
+  { return Identifier(Name).qualify(Decl_); }
 
-  clang::CXXRecordDecl const *_Decl;
-  WrapperType _Type, _TypePointer;
+  clang::CXXRecordDecl const *Decl_;
+  WrapperType Type_, TypePointer_;
 };
 
 } // namespace cppbind

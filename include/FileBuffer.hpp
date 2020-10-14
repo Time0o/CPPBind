@@ -24,7 +24,7 @@ public:
   template<typename T>
   FileBuffer &operator<<(T const &Line)
   {
-    _Content << Line;
+    Content_ << Line;
     return *this;
   }
 
@@ -41,7 +41,7 @@ public:
     // write to file
     OS.clear_error();
 
-    auto Content(_Content.str());
+    auto Content(Content_.str());
 
     OS << trimStr(Content);
 
@@ -52,7 +52,7 @@ public:
   }
 
 private:
-  std::stringstream _Content;
+  std::stringstream Content_;
 };
 
 } // namespace cppbind

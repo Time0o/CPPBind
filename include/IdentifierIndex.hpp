@@ -76,7 +76,7 @@ public:
              << cIdentifier(Id, Type) << " => " << cIdentifier(*P->Alias, Type);
     }
 
-    _Index[Id] = P;
+    Index_[Id] = P;
   }
 
   bool has(Identifier const &Id) const
@@ -115,9 +115,9 @@ private:
   template<typename T>
   std::shared_ptr<T> props(Identifier const &Id) const
   {
-    auto It(_Index.find(Id));
+    auto It(Index_.find(Id));
 
-    if (It == _Index.end())
+    if (It == Index_.end())
       return nullptr;
 
     auto Props(It->second);
@@ -136,7 +136,7 @@ private:
   {
     auto CId(cIdentifier(Id, Type));
 
-    return _CIdentifiers.insert(CId).second;
+    return CIdentifiers_.insert(CId).second;
   }
 
   Identifier createCAlias(Identifier const &Id, Type Type)
@@ -144,12 +144,12 @@ private:
     std::string CAlias(cIdentifier(Id, Type));
     std::string TrailingUs;
 
-    while (_CIdentifiers.find(CAlias) != _CIdentifiers.end()) {
+    while (CIdentifiers_.find(CAlias) != CIdentifiers_.end()) {
       CAlias += "_";
       TrailingUs += "_";
     }
 
-    _CIdentifiers.insert(CAlias);
+    CIdentifiers_.insert(CAlias);
 
     return Id + TrailingUs;
   }
@@ -169,8 +169,8 @@ private:
     }
   }
 
-  std::map<Identifier, std::shared_ptr<Props>> _Index;
-  std::unordered_set<std::string> _CIdentifiers;
+  std::map<Identifier, std::shared_ptr<Props>> Index_;
+  std::unordered_set<std::string> CIdentifiers_;
 };
 
 } // namespace cppbind

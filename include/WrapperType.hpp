@@ -21,7 +21,7 @@ class WrapperType
 {
 public:
   WrapperType(clang::QualType const &Type)
-  : _Type(Type)
+  : Type_(Type)
   { assert(isFundamental() || isWrappable()); }
 
   WrapperType(clang::Type const *Type)
@@ -37,22 +37,22 @@ public:
   {}
 
   clang::QualType const &operator*() const
-  { return _Type; }
+  { return Type_; }
 
   clang::QualType const *operator->() const
-  { return &_Type; }
+  { return &Type_; }
 
   WrapperType unqualified() const
-  { return WrapperType(_Type.getTypePtr()); }
+  { return WrapperType(Type_.getTypePtr()); }
 
   bool isQualified() const
-  { return _Type.hasQualifiers(); }
+  { return Type_.hasQualifiers(); }
 
   bool isVoid() const
-  { return FundamentalTypes().is(_Type.getTypePtr(), "void"); }
+  { return FundamentalTypes().is(Type_.getTypePtr(), "void"); }
 
   bool isPointer() const
-  { return _Type->isPointerType(); }
+  { return Type_->isPointerType(); }
 
   bool isClass() const
   { return (*pointee(true))->isClassType(); }
@@ -61,12 +61,12 @@ public:
   { return (*pointee(true))->isStructureType(); }
 
   WrapperType pointerTo() const
-  { return WrapperType(CompilerState()->getASTContext().getPointerType(_Type)); }
+  { return WrapperType(CompilerState()->getASTContext().getPointerType(Type_)); }
 
   WrapperType pointee(bool recursive = false) const
   {
     if (!recursive)
-      return _Type->getPointeeType();
+      return Type_->getPointeeType();
 
     WrapperType Pointee(*this);
     while (Pointee.isPointer())
@@ -95,7 +95,7 @@ public:
 
   std::string strUnwrapped(bool compact = false) const
   {
-    auto Unwrapped(_Type.getAsString());
+    auto Unwrapped(Type_.getAsString());
 
     if (compact) {
       if (isClass())
@@ -127,12 +127,12 @@ private:
   }
 
   bool isFundamental() const
-  { return _Type->isFundamentalType(); }
+  { return Type_->isFundamentalType(); }
 
   bool isWrappable() const
   { return true; } // XXX
 
-  clang::QualType _Type;
+  clang::QualType Type_;
 };
 
 } // namespace cppbind

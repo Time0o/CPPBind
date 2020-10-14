@@ -24,30 +24,30 @@ class GenericASTConsumer : public clang::ASTConsumer
   {
   public:
     Handler(llvm::StringRef ID, T_MATCHER const &Matcher)
-    : _ID(ID),
-      _Matcher(Matcher.bind(ID))
+    : ID_(ID),
+      Matcher_(Matcher.bind(ID))
     {}
 
     template<typename FUNC>
     void addAction(FUNC &&f)
-    { _Actions.emplace_back(std::forward<FUNC>(f)); }
+    { Actions_.emplace_back(std::forward<FUNC>(f)); }
 
     void registerWith(clang::ast_matchers::MatchFinder &MatchFinder)
-    { MatchFinder.addMatcher(_Matcher, this); }
+    { MatchFinder.addMatcher(Matcher_, this); }
 
     void run(clang::ast_matchers::MatchFinder::MatchResult const &Result) override
     {
-      T const *Node = Result.Nodes.getNodeAs<T>(_ID);
+      T const *Node = Result.Nodes.getNodeAs<T>(ID_);
       assert(Node);
 
-      for (auto const &Action : _Actions)
+      for (auto const &Action : Actions_)
         Action(Node);
     }
 
   private:
-    llvm::StringRef _ID;
-    T_MATCHER _Matcher;
-    std::vector<std::function<void(T const *Node)>> _Actions;
+    llvm::StringRef ID_;
+    T_MATCHER Matcher_;
+    std::vector<std::function<void(T const *Node)>> Actions_;
   };
 
 public:
@@ -57,7 +57,7 @@ public:
 
     addHandlers();
 
-    _MatchFinder.matchAST(Context);
+    MatchFinder_.matchAST(Context);
   }
 
 protected:
@@ -67,9 +67,9 @@ protected:
     auto Handler(std::make_unique<Handler<T, T_MATCHER>>(ID, Matcher));
 
     Handler->addAction(bindHandlerAction(std::forward<FUNC>(Action)));
-    Handler->registerWith(_MatchFinder);
+    Handler->registerWith(MatchFinder_);
 
-    _MatchHandlers.emplace_back(std::move(Handler));
+    MatchHandlers_.emplace_back(std::move(Handler));
   }
 
 private:
@@ -100,11 +100,11 @@ private:
   auto bindHandlerAction(FUNC &&Action)
   { return std::forward<FUNC>(Action); }
 
-  clang::ast_matchers::MatchFinder
-  _MatchFinder;
+  using MatchFinder = clang::ast_matchers::MatchFinder;
+  using MatchHandler = MatchFinder::MatchCallback;
 
-  std::vector<std::unique_ptr<clang::ast_matchers::MatchFinder::MatchCallback>>
-  _MatchHandlers;
+  MatchFinder MatchFinder_;
+  std::vector<std::unique_ptr<MatchHandler>> MatchHandlers_;
 };
 
 } // namespace cppbind

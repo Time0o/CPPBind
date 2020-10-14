@@ -17,33 +17,33 @@ class CompilerStateRegistry
 
 public:
   void updateFile(std::string const &File)
-  { _File = File; }
+  { File_ = File; }
 
   void updateCompilerInstance(clang::CompilerInstance const &CI)
-  { _CI = CI; }
+  { CI_ = CI; }
 
   std::string currentFile() const
   {
-    assert(_File);
-    return *_File;
+    assert(File_);
+    return *File_;
   }
 
   clang::CompilerInstance const &currentCompilerInstance() const
   {
-    assert(_CI);
-    return _CI->get();
+    assert(CI_);
+    return CI_->get();
   }
 
   clang::CompilerInstance const &operator*() const
   {
-    assert(_CI);
-    return _CI->get();
+    assert(CI_);
+    return CI_->get();
   }
 
   clang::CompilerInstance const *operator->() const
   {
-    assert(_CI);
-    return &_CI->get();
+    assert(CI_);
+    return &CI_->get();
   }
 
 private:
@@ -54,8 +54,8 @@ private:
     return CS;
   }
 
-  std::optional<std::string> _File;
-  std::optional<std::reference_wrapper<clang::CompilerInstance const>> _CI;
+  std::optional<std::string> File_;
+  std::optional<std::reference_wrapper<clang::CompilerInstance const>> CI_;
 };
 
 inline CompilerStateRegistry &CompilerState()

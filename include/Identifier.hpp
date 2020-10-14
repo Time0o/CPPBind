@@ -38,10 +38,10 @@ public:
   };
 
   Identifier(std::string const &Name)
-  : _Name(stripUnderscores(removeQuals(Name), _LeadingUs, _TrailingUs, _OnlyUs)),
-    _NameQuals(extractQuals(Name)),
-    _NameComponents(splitName(_Name)),
-    _NameQualsComponents(splitStr(_NameQuals, "::"))
+  : Name_(stripUnderscores(removeQuals(Name), LeadingUs_, TrailingUs_, OnlyUs_)),
+    NameQuals_(extractQuals(Name)),
+    NameComponents_(splitName(Name_)),
+    NameQualsComponents_(splitStr(NameQuals_, "::"))
   { assertValid(); }
 
   Identifier(char const *Name)
@@ -146,30 +146,30 @@ public:
 
   Identifier &operator+=(Identifier const &ID)
   {
-    if (_OnlyUs && ID._OnlyUs) {
-      _Name += ID._Name;
+    if (OnlyUs_ && ID.OnlyUs_) {
+      Name_ += ID.Name_;
 
-    } else if (_OnlyUs) {
-      _LeadingUs = _Name + ID._LeadingUs;
+    } else if (OnlyUs_) {
+      LeadingUs_ = Name_ + ID.LeadingUs_;
 
-      _Name = ID._Name;
-      _NameComponents = ID._NameComponents;
+      Name_ = ID.Name_;
+      NameComponents_ = ID.NameComponents_;
 
-      _TrailingUs = ID._TrailingUs;
+      TrailingUs_ = ID.TrailingUs_;
 
-      _OnlyUs = false;
+      OnlyUs_ = false;
 
-    } else if (ID._OnlyUs) {
-      _TrailingUs += ID._Name;
+    } else if (ID.OnlyUs_) {
+      TrailingUs_ += ID.Name_;
 
     } else {
-      _Name += ID._Name;
+      Name_ += ID.Name_;
 
-      _NameComponents.insert(_NameComponents.end(),
-                             ID._NameComponents.begin(),
-                             ID._NameComponents.end());
+      NameComponents_.insert(NameComponents_.end(),
+                             ID.NameComponents_.begin(),
+                             ID.NameComponents_.end());
 
-      _TrailingUs = ID._TrailingUs;
+      TrailingUs_ = ID.TrailingUs_;
     }
 
     assertValid();
@@ -186,31 +186,31 @@ public:
     if (replaceScopeResolutions) {
       assert(Case != ORIG_CASE);
 
-      if (_NameQualsComponents.empty())
+      if (NameQualsComponents_.empty())
         return strUnqualified(Case);
 
-      return transformAndPasteComponents(_NameQualsComponents, Case) +
+      return transformAndPasteComponents(NameQualsComponents_, Case) +
              caseDelim(Case) +
              strUnqualified(Case);
 
     } else {
-      return _NameQuals + strUnqualified(Case);
+      return NameQuals_ + strUnqualified(Case);
     }
   }
 
   std::string strUnqualified(Case Case = ORIG_CASE) const
   {
-    if (_OnlyUs)
-      return _Name;
+    if (OnlyUs_)
+      return Name_;
 
     std::string Str;
 
     if (Case == ORIG_CASE)
-      Str = _Name;
+      Str = Name_;
     else
-      Str = transformAndPasteComponents(_NameComponents, Case);
+      Str = transformAndPasteComponents(NameComponents_, Case);
 
-    return _LeadingUs + Str + _TrailingUs;
+    return LeadingUs_ + Str + TrailingUs_;
   }
 
 private:
@@ -419,34 +419,34 @@ private:
   void assertValid() const
   {
 #ifndef NDEBUG
-    assert(!_Name.empty());
+    assert(!Name_.empty());
 
-    if (_OnlyUs) {
-      assert(isAllStr(_Name, '_'));
+    if (OnlyUs_) {
+      assert(isAllStr(Name_, '_'));
 
-      assert(_LeadingUs.empty());
-      assert(_TrailingUs.empty());
+      assert(LeadingUs_.empty());
+      assert(TrailingUs_.empty());
 
     } else {
-      assert(isIdentifier(_LeadingUs + _Name + _TrailingUs));
-      assert(_Name.front() != '_');
-      assert(_Name.back() != '_');
+      assert(isIdentifier(LeadingUs_ + Name_ + TrailingUs_));
+      assert(Name_.front() != '_');
+      assert(Name_.back() != '_');
 
-      assert(isAllStr(_LeadingUs, '_'));
-      assert(isAllStr(_TrailingUs, '_'));
+      assert(isAllStr(LeadingUs_, '_'));
+      assert(isAllStr(TrailingUs_, '_'));
     }
 
-    for (auto const &NameQualsComponent : _NameQualsComponents)
+    for (auto const &NameQualsComponent : NameQualsComponents_)
       assert(isIdentifier(NameQualsComponent));
 #endif
   }
 
-  std::string _LeadingUs;
-  std::string _TrailingUs;
-  bool _OnlyUs;
+  std::string LeadingUs_;
+  std::string TrailingUs_;
+  bool OnlyUs_;
 
-  std::string _Name, _NameQuals;
-  std::vector<std::string> _NameComponents, _NameQualsComponents;
+  std::string Name_, NameQuals_;
+  std::vector<std::string> NameComponents_, NameQualsComponents_;
 };
 
 inline Identifier operator+(Identifier ID1, Identifier const &ID2)

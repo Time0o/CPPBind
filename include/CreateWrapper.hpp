@@ -24,7 +24,7 @@ class CreateWrapperConsumer : public GenericASTConsumer
 {
 public:
   CreateWrapperConsumer(std::shared_ptr<Wrapper> Wrapper)
-  : _Wrapper(Wrapper)
+  : Wrapper_(Wrapper)
   {}
 
 private:
@@ -72,15 +72,15 @@ private:
   }
 
   void handleClassDecl(clang::CXXRecordDecl const *Decl)
-  { _Wrapper->addWrapperRecord(Decl); }
+  { Wrapper_->addWrapperRecord(Decl); }
 
   void handlePublicMethodDecl(clang::CXXMethodDecl const *Decl)
-  { _Wrapper->addWrapperFunction(Decl); }
+  { Wrapper_->addWrapperFunction(Decl); }
 
   void handleNonClassFunctionDecl(clang::FunctionDecl const *Decl)
-  { _Wrapper->addWrapperFunction(Decl); }
+  { Wrapper_->addWrapperFunction(Decl); }
 
-  std::shared_ptr<Wrapper> _Wrapper;
+  std::shared_ptr<Wrapper> Wrapper_;
 };
 
 // XXX what about parallel invocations?
@@ -89,7 +89,7 @@ class CreateWrapperFrontendAction
 {
 public:
   CreateWrapperFrontendAction(std::shared_ptr<IdentifierIndex> IdentifierIndex)
-  : _IdentifierIndex(IdentifierIndex)
+  : IdentifierIndex_(IdentifierIndex)
   {}
 
 private:
@@ -97,27 +97,27 @@ private:
   {
     // XXX skip source files, filter headers?
 
-    return std::make_unique<CreateWrapperConsumer>(_Wrapper);
+    return std::make_unique<CreateWrapperConsumer>(Wrapper_);
   }
 
   void beforeProcessing() override
   {
     auto WrappedHeader(CompilerState().currentFile());
 
-    _Wrapper = std::make_shared<Wrapper>(WrappedHeader, _IdentifierIndex);
+    Wrapper_ = std::make_shared<Wrapper>(WrappedHeader, IdentifierIndex_);
   }
 
   void afterProcessing() override
   {
-    if (_Wrapper->empty())
+    if (Wrapper_->empty())
       return;
 
-    _Wrapper->resolveOverloads();
-    _Wrapper->write();
+    Wrapper_->resolveOverloads();
+    Wrapper_->write();
   }
 
-  std::shared_ptr<Wrapper> _Wrapper;
-  std::shared_ptr<IdentifierIndex> _IdentifierIndex;
+  std::shared_ptr<Wrapper> Wrapper_;
+  std::shared_ptr<IdentifierIndex> IdentifierIndex_;
 };
 
 class CreateWrapperToolRunner
@@ -125,9 +125,9 @@ class CreateWrapperToolRunner
 {
 private:
   std::unique_ptr<clang::tooling::FrontendActionFactory> makeFactory() override
-  { return makeFactoryWithArgs(_IdentifierIndex); }
+  { return makeFactoryWithArgs(IdentifierIndex_); }
 
-  std::shared_ptr<IdentifierIndex> _IdentifierIndex =
+  std::shared_ptr<IdentifierIndex> IdentifierIndex_ =
     std::make_shared<IdentifierIndex>();
 };
 
