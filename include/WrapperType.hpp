@@ -113,7 +113,7 @@ public:
 
     auto Wrapped(strUnwrapped());
 
-    if (isClass())
+    if (base().isClass())
       replaceStr(Wrapped, "class", "struct");
 
     replaceStr(Wrapped, strBaseUnwrapped(), strBaseWrapped(II));
