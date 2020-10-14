@@ -107,8 +107,7 @@ public:
 
     auto Postfix(WRAPPER_FUNC_OVERLOAD_POSTFIX);
 
-    if (replaceAllStrs(Postfix, "%o", std::to_string(Overload_)) == 0u)
-      throw std::runtime_error("Overload postfix pattern must contain at least one occurence of '%o'");
+    assert(replaceAllStrs(Postfix, "%o", std::to_string(Overload_)) > 0u);
 
     OverloadName_ = name() + Postfix;
 
@@ -174,8 +173,7 @@ private:
       if (ParamName.empty()) {
         ParamName = WRAPPER_FUNC_UNNAMED_PARAM_PLACEHOLDER;
 
-        if (replaceAllStrs(ParamName, "%p", std::to_string(i + 1u)) == 0u)
-          throw std::runtime_error("Parameter name pattern must contain at least one occurence of '%p'");
+        assert(replaceAllStrs(ParamName, "%p", std::to_string(i + 1u)) > 0u);
       }
 
       ParamList.emplace_back(ParamType, ParamName);

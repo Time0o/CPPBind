@@ -24,6 +24,7 @@
 #include "llvm/Option/OptTable.h"
 #include "llvm/Support/CommandLine.h"
 
+#include "Logging.hpp"
 #include "OptionConstants.hpp"
 #include "String.hpp"
 
@@ -81,7 +82,7 @@ class OptionsRegistry
     {
       for (auto const &[Assertion, Msg] : Assertions_) {
         if (!Assertion(Value))
-          throw std::runtime_error(Name_.str() + ": " + Msg);
+          error() << Name_.str() << ": " << Msg;
       }
     }
 

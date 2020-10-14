@@ -15,6 +15,7 @@
 #include "clang/Basic/IdentifierTable.h"
 
 #include "CompilerState.hpp"
+#include "Logging.hpp"
 #include "String.hpp"
 
 namespace cppbind
@@ -125,7 +126,7 @@ public:
     }
 
     if (!isIdentifier(UnqualifiedIdentifier, false, allowReserved))
-      throw std::runtime_error("failed to create unqualified identifier");
+      error() << "failed to create unqualified identifier";
 
     return UnqualifiedIdentifier;
   }
