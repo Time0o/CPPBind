@@ -121,14 +121,14 @@ public:
     return Wrapped;
   }
 
-  std::string strUnwrapped(bool compact = false) const
+  std::string strUnwrapped(bool Compact = false) const
   {
     auto Unwrapped(Type_.getAsString());
 
-    if (compact) {
-      if (isClass())
+    if (Compact) {
+      if (base().isClass())
         replaceStr(Unwrapped, "class ", "");
-      if (isStruct())
+      if (base().isStruct())
         replaceStr(Unwrapped, "struct ", "");
     }
 
