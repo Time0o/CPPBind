@@ -83,6 +83,9 @@ public:
   bool isStruct() const
   { return typePtr()->isStructureType(); }
 
+  bool isConst() const
+  { return Type_.isConstQualified(); }
+
   WrapperType pointerTo() const
   { return WrapperType(CompilerState()->getASTContext().getPointerType(Type_)); }
 
@@ -97,6 +100,9 @@ public:
 
     return Pointee;
   }
+
+  WrapperType withConst() const
+  { return WrapperType(Type_.withConst()); }
 
   WrapperType base() const
   { return pointee(true); }

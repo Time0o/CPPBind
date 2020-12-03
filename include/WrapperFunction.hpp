@@ -22,6 +22,40 @@
 namespace cppbind
 {
 
+namespace detail
+{
+  // XXX move this into WrapperType?
+
+  inline std::string typed(std::string const &Type,
+                           std::string const &What)
+  { return Type + " " + What; }
+
+  inline std::string typedWrapped(WrapperType const &Type,
+                                  std::string const &What,
+                                  std::shared_ptr<IdentifierIndex> II)
+  { return Type.strWrapped(II) + " " + What; }
+
+  inline std::string typedUnwrapped(WrapperType const &Type,
+                                    std::string const &What)
+  { return Type.strUnwrapped(true) + " " + What; }
+
+  inline std::string typeCast(std::string const &Type,
+                              std::string const &What)
+  { return "reinterpret_cast<" + Type + ">" + "(" + What + ")"; }
+
+  inline std::string typeCastWrapped(WrapperType const &Type,
+                                     std::string const &What,
+                                     std::shared_ptr<IdentifierIndex> II)
+  { return typeCast(Type.strWrapped(II), What); }
+
+  inline std::string typeCastUnwrapped(WrapperType const &Type,
+                                       std::string const &What)
+  { return typeCast(Type.strUnwrapped(true), What); }
+
+  inline std::string dereference(std::string const &What)
+  { return "*" + What; }
+}
+
 class WrapperParam
 {
 public:
@@ -36,13 +70,35 @@ public:
   Identifier name() const
   { return Name_; }
 
-  std::string strTyped(std::shared_ptr<IdentifierIndex> II) const
-  { return Type_.strWrapped(II) + " " + strUntyped(); }
+  std::string strHeader(std::shared_ptr<IdentifierIndex> II) const
+  {
+    if (wrap()) {
+      return Type_.isPointer() ?
+        detail::typedWrapped(Type_, id(), II) :
+        detail::typedWrapped(Type_.withConst().pointerTo(), id(), II);
+    }
 
-  std::string strUntyped() const
-  { return Name_.strUnqualified(PARAM_CASE); }
+    return detail::typedUnwrapped(Type_, id());
+  }
+
+  std::string strBody() const
+  {
+    if (wrap()) {
+      return Type_.isPointer() ?
+        detail::typeCastUnwrapped(Type_, id()) :
+        detail::dereference(detail::typeCastUnwrapped(Type_.withConst().pointerTo(), id()));
+    }
+
+    return id();
+  }
 
 private:
+  std::string id() const
+  { return Name_.strUnqualified(PARAM_CASE); }
+
+  bool wrap() const
+  { return !Type_.base().isFundamental(); }
+
   WrapperType Type_;
   Identifier Name_;
 };
@@ -187,20 +243,12 @@ private:
 
   std::string strParams(std::shared_ptr<IdentifierIndex> II,
                         bool Body,
-                        std::size_t Skip = 0u) const
+                        std::size_t Skip = 0u) const // TODO pass II after?
   {
     std::stringstream SS;
 
-    auto dumpParam = [&](WrapperParam const &Param)
-    {
-      if (Body) {
-        return Param.type().base().isFundamental() ?
-          Param.strUntyped() :
-          paramCastUnwrapped(Param) + "(" + Param.strUntyped() + ")";
-      }
-
-      return Param.strTyped(II);
-    };
+    auto strParam = [&](WrapperParam const &Param)
+    { return Body ? Param.strBody() : Param.strHeader(II); };
 
     SS << "(";
     if (Params_.size() > Skip) {
@@ -209,9 +257,9 @@ private:
       for (std::size_t i = 0u; i < Skip; ++i)
         ++it;
 
-      SS << dumpParam(*it);
+      SS << strParam(*it);
       while (++it != Params_.end())
-        SS << ", " << dumpParam(*it);
+        SS << ", " << strParam(*it);
     }
     SS << ")";
 
@@ -235,18 +283,20 @@ private:
 
   std::string strBody(std::shared_ptr<IdentifierIndex> II) const
   {
+    auto SelfTypePtr(SelfType_.pointerTo());
+
     std::stringstream SS;
 
     SS << "{ ";
 
     if (IsConstructor_) {
-      SS << "return " << selfCastWrapped(II)
-         << "(new " << SelfType_.strBaseUnwrapped() << ")";
+      SS << "return " << detail::typeCastWrapped(
+        SelfTypePtr, "new " + SelfType_.strBaseUnwrapped(), II);
+
       if (hasParams())
         SS << strParams(II, true);
     } else if (IsDestructor_) {
-      SS << "delete " << selfCastUnwrapped()
-         << "(" << Identifier::Self << ")";
+      SS << "delete " << detail::typeCastUnwrapped(SelfTypePtr, Identifier::Self);
     } else {
       if (!ReturnType_.isFundamental("void"))
         SS << "return ";
@@ -254,9 +304,8 @@ private:
       if (!IsMethod_ || IsStatic_) {
         SS << name().strQualified() << strParams(II, true);
       } else {
-        SS << selfCastUnwrapped()
-           << "(" << Identifier::Self << ")->" << name().strUnqualified()
-           << strParams(II, true, 1);
+        SS << detail::typeCastUnwrapped(SelfTypePtr, Identifier::Self)
+           << "->" << name().strUnqualified() << strParams(II, true, 1);
       }
     }
 
@@ -264,15 +313,6 @@ private:
 
     return SS.str();
   }
-
-  std::string selfCastWrapped(std::shared_ptr<IdentifierIndex> II) const
-  { return "reinterpret_cast<" + SelfType_.pointerTo().strWrapped(II) + ">"; }
-
-  std::string selfCastUnwrapped() const
-  { return "reinterpret_cast<" + SelfType_.pointerTo().strUnwrapped(true) + ">"; }
-
-  static std::string paramCastUnwrapped(WrapperParam const &Param)
-  { return "reinterpret_cast<" + Param.type().strUnwrapped(true) + ">"; }
 
   bool IsMethod_ = false;
   bool IsConstructor_ = false;
