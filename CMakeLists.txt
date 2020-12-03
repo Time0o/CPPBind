@@ -21,9 +21,12 @@ set(PROJECT_COPYRIGHT "2020")
 
 set(CPPBIND cppbind)
 set(CPPBIND_SRC CPPBind.cpp)
+set(CPPBIND_TEST cppbind_test)
+set(CPPBIND_TEST_SRC CPPBindTest.cpp)
 
 set(SRC_DIR ${PROJECT_SOURCE_DIR}/source)
 set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
+set(TEST_DIR ${PROJECT_SOURCE_DIR}/test)
 set(TOOL_DIR ${PROJECT_SOURCE_DIR}/tool)
 
 set(FUNDAMENTAL_TYPES_HEADER ${INCLUDE_DIR}/FundamentalTypeList.hpp)
@@ -42,9 +45,6 @@ if(${CLANG} STREQUAL CLANG-NOTFOUND OR ${CLANGXX} STREQUAL CLANGXX-NOTFOUND)
   message(FATAL_ERROR "Failed to find clang/clang++")
 endif()
 
-set(CMAKE_C_COMPILER ${CLANG})
-set(CMAKE_CXX_COMPILER ${CLANGXX})
-
 set(CLANG_LIBRARIES clang-cpp)
 
 # clang include paths
@@ -61,9 +61,33 @@ find_package(LLVM REQUIRED CONFIG)
 
 set(LLVM_LIBRARIES option)
 
+# fetch catch2
+if (CMAKE_BUILD_TYPE STREQUAL Debug)
+  Include(FetchContent)
+
+  FetchContent_Declare(
+    Catch2
+    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+    GIT_TAG        v2.13.3)
+
+  message(STATUS "Fetching Catch2")
+  FetchContent_MakeAvailable(Catch2)
+  message(STATUS "Fetching Catch2 - done")
+
+  list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/contrib)
+endif()
+
 
 ################################################################################
 # Subdirectories
 ################################################################################
 
+set(CMAKE_C_COMPILER ${CLANG})
+set(CMAKE_CXX_COMPILER ${CLANGXX})
+
 add_subdirectory(${SRC_DIR})
+
+if (CMAKE_BUILD_TYPE STREQUAL Debug)
+  enable_testing()
+  add_subdirectory(${TEST_DIR})
+endif()
