@@ -186,13 +186,21 @@ private:
   { return !Params_.empty(); }
 
   std::string strParams(std::shared_ptr<IdentifierIndex> II,
-                        bool Typed,
+                        bool Body,
                         std::size_t Skip = 0u) const
   {
     std::stringstream SS;
 
     auto dumpParam = [&](WrapperParam const &Param)
-    { return Typed ? Param.strTyped(II) : Param.strUntyped(); };
+    {
+      if (Body) {
+        return Param.type().base().isFundamental() ?
+          Param.strUntyped() :
+          paramCastUnwrapped(Param) + "(" + Param.strUntyped() + ")";
+      }
+
+      return Param.strTyped(II);
+    };
 
     SS << "(";
     if (Params_.size() > Skip) {
@@ -220,7 +228,7 @@ private:
        << ' '
        << II->alias(Name).strQualified(FUNC_CASE, true);
 
-    SS << strParams(II, true);
+    SS << strParams(II, false);
 
     return SS.str();
   }
@@ -235,7 +243,7 @@ private:
       SS << "return " << selfCastWrapped(II)
          << "(new " << SelfType_.strBaseUnwrapped() << ")";
       if (hasParams())
-        SS << strParams(II, false);
+        SS << strParams(II, true);
     } else if (IsDestructor_) {
       SS << "delete " << selfCastUnwrapped()
          << "(" << Identifier::Self << ")";
@@ -244,11 +252,11 @@ private:
         SS << "return ";
 
       if (!IsMethod_ || IsStatic_) {
-        SS << name().strQualified() << strParams(II, false);
+        SS << name().strQualified() << strParams(II, true);
       } else {
         SS << selfCastUnwrapped()
            << "(" << Identifier::Self << ")->" << name().strUnqualified()
-           << strParams(II, false, 1);
+           << strParams(II, true, 1);
       }
     }
 
@@ -262,6 +270,9 @@ private:
 
   std::string selfCastUnwrapped() const
   { return "reinterpret_cast<" + SelfType_.pointerTo().strUnwrapped(true) + ">"; }
+
+  static std::string paramCastUnwrapped(WrapperParam const &Param)
+  { return "reinterpret_cast<" + Param.type().strUnwrapped(true) + ">"; }
 
   bool IsMethod_ = false;
   bool IsConstructor_ = false;
