@@ -243,7 +243,7 @@ private:
 
   std::string strParams(std::shared_ptr<IdentifierIndex> II,
                         bool Body,
-                        std::size_t Skip = 0u) const // TODO pass II after?
+                        std::size_t Skip = 0u) const
   {
     std::stringstream SS;
 
