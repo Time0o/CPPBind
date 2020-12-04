@@ -79,6 +79,70 @@ endif()
 
 
 ################################################################################
+# Helper Functions
+################################################################################
+
+function(target_cpp_config TARGET)
+  set_target_properties(
+    ${TARGET} PROPERTIES
+    LINKER_LANGUAGE CXX
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
+    COMPILE_FLAGS "-Wall -Wextra -pedantic"
+    LINK_FLAGS ""
+  )
+endfunction()
+
+function(target_clang_config TARGET)
+  # definitions
+  target_compile_definitions(
+    ${TARGET} PRIVATE
+    -DCLANG_INCLUDE_PATHS="${CLANG_INCLUDE_PATHS}"
+  )
+
+  # linking
+  target_link_libraries(${TARGET} PRIVATE ${CLANG_LIBRARIES})
+endfunction()
+
+function(target_llvm_config TARGET)
+  # definitions
+  target_compile_definitions(${TARGET} PRIVATE ${LLVM_DEFINITIONS})
+
+  # includes
+  target_include_directories(${TARGET} PRIVATE ${LLVM_INCLUDE_DIRS})
+
+  # linking
+  target_link_directories(${TARGET} PRIVATE ${LLVM_LIBRARY_DIRS})
+
+  llvm_config(${TARGET} USE_SHARED ${LLVM_LIBRARIES})
+endfunction()
+
+function(target_cppbind_config TARGET)
+  # definitions
+  target_compile_definitions(
+    ${TARGET} PRIVATE
+    -DFUNDAMENTAL_TYPES_HEADER="${FUNDAMENTAL_TYPES_HEADER}"
+    -DFUNDAMENTAL_TYPES_NAMESPACE="${FUNDAMENTAL_TYPES_NAMESPACE}"
+  )
+
+  # includes
+  target_include_directories(${TARGET} PRIVATE ${INCLUDE_DIR})
+endfunction()
+
+function(target_catch2_config TARGET)
+  # linking
+  target_link_libraries(${TARGET} PRIVATE Catch2)
+endfunction()
+
+function(target_basic_config TARGET)
+  target_cpp_config(${TARGET})
+  target_clang_config(${TARGET})
+  target_llvm_config(${TARGET})
+  target_cppbind_config(${TARGET})
+endfunction()
+
+
+################################################################################
 # Subdirectories
 ################################################################################
 

@@ -2,31 +2,4 @@ cmake_minimum_required(VERSION 3.6)
 
 add_executable(${CPPBIND} ${CPPBIND_SRC})
 
-set_target_properties(
-  ${CPPBIND} PROPERTIES
-  LINKER_LANGUAGE CXX
-  CXX_STANDARD 17
-  CXX_STANDARD_REQUIRED ON
-  COMPILE_FLAGS "-Wall -Wextra -pedantic"
-  LINK_FLAGS ""
-)
-
-target_compile_definitions(
-  ${CPPBIND} PRIVATE
-  -DCLANG_INCLUDE_PATHS="${CLANG_INCLUDE_PATHS}"
-  ${LLVM_DEFINITIONS}
-  -DFUNDAMENTAL_TYPES_HEADER="${FUNDAMENTAL_TYPES_HEADER}"
-  -DFUNDAMENTAL_TYPES_NAMESPACE="${FUNDAMENTAL_TYPES_NAMESPACE}"
-)
-
-target_include_directories(
-  ${CPPBIND} PRIVATE
-  ${INCLUDE_DIR}
-  ${LLVM_INCLUDE_DIRS}
-)
-
-target_link_directories(${CPPBIND} PRIVATE ${LLVM_LIBRARY_DIRS})
-
-target_link_libraries(${CPPBIND} PRIVATE ${CLANG_LIBRARIES})
-
-llvm_config(${CPPBIND} USE_SHARED ${LLVM_LIBRARIES})
+target_basic_config(${CPPBIND})

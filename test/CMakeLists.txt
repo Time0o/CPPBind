@@ -5,6 +5,7 @@ include(Catch)
 
 add_executable(${CPPBIND_TEST} ${CPPBIND_TEST_SRC})
 
-target_link_libraries(${CPPBIND_TEST} Catch2)
+target_basic_config(${CPPBIND_TEST})
+target_catch2_config(${CPPBIND_TEST})
 
 catch_discover_tests(${CPPBIND_TEST})
