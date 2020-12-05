@@ -88,8 +88,8 @@ class CreateWrapperFrontendAction
 : public GenericFrontendAction<CreateWrapperConsumer>
 {
 public:
-  CreateWrapperFrontendAction(std::shared_ptr<IdentifierIndex> IdentifierIndex)
-  : IdentifierIndex_(IdentifierIndex)
+  CreateWrapperFrontendAction(std::shared_ptr<IdentifierIndex> II)
+  : II_(II)
   {}
 
 private:
@@ -101,11 +101,7 @@ private:
   }
 
   void beforeProcessing() override
-  {
-    auto WrappedHeader(CompilerState().currentFile());
-
-    Wrapper_ = std::make_shared<Wrapper>(WrappedHeader, IdentifierIndex_);
-  }
+  { Wrapper_ = std::make_shared<Wrapper>(II_,  CompilerState().currentFile()); }
 
   void afterProcessing() override
   {
@@ -116,8 +112,8 @@ private:
     Wrapper_->write();
   }
 
+  std::shared_ptr<IdentifierIndex> II_;
   std::shared_ptr<Wrapper> Wrapper_;
-  std::shared_ptr<IdentifierIndex> IdentifierIndex_;
 };
 
 class CreateWrapperToolRunner
@@ -125,10 +121,10 @@ class CreateWrapperToolRunner
 {
 private:
   std::unique_ptr<clang::tooling::FrontendActionFactory> makeFactory() override
-  { return makeFactoryWithArgs(IdentifierIndex_); }
+  { return makeFactoryWithArgs(II_); }
 
-  std::shared_ptr<IdentifierIndex> IdentifierIndex_ =
-    std::make_shared<IdentifierIndex>();
+private:
+  std::shared_ptr<IdentifierIndex> II_ = std::make_shared<IdentifierIndex>();
 };
 
 } // namespace cppbind

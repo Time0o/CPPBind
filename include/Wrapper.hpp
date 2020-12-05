@@ -24,10 +24,10 @@ namespace cppbind
 class Wrapper
 {
 public:
-  Wrapper(std::filesystem::path const &WrappedHeader,
-          std::shared_ptr<IdentifierIndex> IdentifierIndex)
-  : WrappedHeader_(WrappedHeader),
-    IdentifierIndex_(IdentifierIndex)
+  Wrapper(std::shared_ptr<IdentifierIndex> IdentifierIndex,
+          std::filesystem::path const &WrappedHeader)
+  : II_(IdentifierIndex),
+    WrappedHeader_(WrappedHeader)
   {}
 
   template<typename ...ARGS>
@@ -41,7 +41,7 @@ public:
     if (Wr.needsImplicitDestructor())
       addWrapperFunction(Wr.implicitDestructor());
 
-    IdentifierIndex_->add(Wr.name(), IdentifierIndex::TYPE);
+    II_->add(Wr.name(), IdentifierIndex::TYPE);
 
     Records_.push_back(Wr);
   }
@@ -51,10 +51,10 @@ public:
   {
     WrapperFunction Wf(std::forward<ARGS>(args)...);
 
-    if (IdentifierIndex_->has(Wf.name()))
-      IdentifierIndex_->pushOverload(Wf.name());
+    if (II_->has(Wf.name()))
+      II_->pushOverload(Wf.name());
     else
-      IdentifierIndex_->add(Wf.name(), IdentifierIndex::FUNC);
+      II_->add(Wf.name(), IdentifierIndex::FUNC);
 
     Functions_.push_back(Wf);
   }
@@ -65,7 +65,7 @@ public:
   void resolveOverloads()
   {
     for (auto &Wf : Functions_)
-      Wf.resolveOverload(IdentifierIndex_);
+      Wf.resolveOverload(II_);
   }
 
   void write() const
@@ -170,7 +170,7 @@ private:
       for (auto const &Param : Wf.params()) {
         auto ParamBaseType(Param.type().base());
 
-        if (ParamBaseType.isWrappable(IdentifierIndex_)) {
+        if (ParamBaseType.isWrappable(II_)) {
           WrappableParamTypes.insert(ParamBaseType.unqualifiedAndDesugared());
 
         } else if (!ParamBaseType.isFundamental()) {
@@ -185,7 +185,7 @@ private:
       return false;
 
     for (auto const &T : WrappableParamTypes)
-      File << T.strDeclaration(IdentifierIndex_) << FileBuffer::EndLine;
+      File << T.strDeclaration(II_) << FileBuffer::EndLine;
 
     return true;
   }
@@ -202,9 +202,9 @@ private:
         if (i > 0u)
           File << FileBuffer::EmptyLine;
 
-        File << Wf.strDefinition(IdentifierIndex_) << FileBuffer::EndLine;
+        File << Wf.strDefinition(II_) << FileBuffer::EndLine;
       } else {
-        File << Wf.strDeclaration(IdentifierIndex_) << FileBuffer::EndLine;
+        File << Wf.strDeclaration(II_) << FileBuffer::EndLine;
       }
     }
 
@@ -270,8 +270,8 @@ private:
     return WrapperDir / FileBuffer;
   }
 
+  std::shared_ptr<IdentifierIndex> II_;
   std::filesystem::path WrappedHeader_;
-  std::shared_ptr<IdentifierIndex> IdentifierIndex_;
 
   std::vector<WrapperRecord> Records_;
   std::vector<WrapperFunction> Functions_;
