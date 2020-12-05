@@ -36,7 +36,7 @@ private:
     { return hasParent(namespaceDecl(hasName(Ns))); };
 
     // XXX check for clashes
-    auto inFundamentalTypeNs = inNs(FUNDAMENTAL_TYPES_NAMESPACE);
+    auto inFundamentalTypeNs = inNs("__fundamental_types");
     auto inWrappedNs = inNs(NAMESPACE);
 
     addHandler<clang::ValueDecl>(

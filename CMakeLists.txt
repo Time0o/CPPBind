@@ -29,9 +29,6 @@ set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
 set(TEST_DIR ${PROJECT_SOURCE_DIR}/test)
 set(TOOL_DIR ${PROJECT_SOURCE_DIR}/tool)
 
-set(FUNDAMENTAL_TYPES_HEADER ${INCLUDE_DIR}/FundamentalTypeList.hpp)
-set(FUNDAMENTAL_TYPES_NAMESPACE _fundamental_types)
-
 
 ################################################################################
 # Dependencies
@@ -118,13 +115,6 @@ function(target_llvm_config TARGET)
 endfunction()
 
 function(target_cppbind_config TARGET)
-  # definitions
-  target_compile_definitions(
-    ${TARGET} PRIVATE
-    -DFUNDAMENTAL_TYPES_HEADER="${FUNDAMENTAL_TYPES_HEADER}"
-    -DFUNDAMENTAL_TYPES_NAMESPACE="${FUNDAMENTAL_TYPES_NAMESPACE}"
-  )
-
   # includes
   target_include_directories(${TARGET} PRIVATE ${INCLUDE_DIR})
 endfunction()

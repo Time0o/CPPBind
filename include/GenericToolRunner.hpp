@@ -29,6 +29,10 @@ public:
 
     auto Factory(makeFactory());
 
+    clang::tooling::runToolOnCodeWithArgs(Factory->create(),
+                                          FundamentalTypesHeader,
+                                          clangIncludes());
+
     int Ret = Tool.run(Factory.get());
 
     afterRun();
@@ -39,39 +43,32 @@ public:
 private:
   static void adjustArguments(clang::tooling::ClangTool &Tool)
   {
-    using namespace clang::tooling;
+    std::vector<clang::tooling::ArgumentsAdjuster> ArgumentsAdjusters;
 
-    std::vector<ArgumentsAdjuster> ArgumentsAdjusters;
+    auto BEGIN = clang::tooling::ArgumentInsertPosition::BEGIN;
+    auto END = clang::tooling::ArgumentInsertPosition::END;
 
-    auto BEGIN = ArgumentInsertPosition::BEGIN;
-    auto END = ArgumentInsertPosition::END;
+    ArgumentsAdjusters.push_back(
+      clang::tooling::getInsertArgumentAdjuster("-xc++-header", BEGIN));
 
-    // include fundamental types header
-
-    ArgumentsAdjusters.push_back(getInsertArgumentAdjuster(
-      {"-include", FUNDAMENTAL_TYPES_HEADER}, BEGIN));
-
-    // interpret all input files as C++ headers
-
-    ArgumentsAdjusters.push_back(getInsertArgumentAdjuster(
-      "-xc++-header", BEGIN));
-
-    // add default include paths
-
-    CommandLineArguments ExtraArgs;
-
-    std::stringstream ss(CLANG_INCLUDE_PATHS);
-
-    std::string Inc;
-    while (ss >> Inc)
-      ExtraArgs.push_back(Inc);
-
-    auto CPPIncAdjuster = getInsertArgumentAdjuster(ExtraArgs, END);
-
-    ArgumentsAdjusters.push_back(CPPIncAdjuster);
+    ArgumentsAdjusters.push_back(
+      clang::tooling::getInsertArgumentAdjuster(clangIncludes(), END));
 
     for (auto const &ArgumentsAdjuster : ArgumentsAdjusters)
       Tool.appendArgumentsAdjuster(ArgumentsAdjuster);
+  }
+
+  static std::vector<std::string> clangIncludes()
+  {
+    std::stringstream SS(CLANG_INCLUDE_PATHS);
+
+    std::vector<std::string> Includes;
+
+    std::string Inc;
+    while (SS >> Inc)
+      Includes.push_back(Inc);
+
+    return Includes;
   }
 
   virtual std::unique_ptr<clang::tooling::FrontendActionFactory> makeFactory() = 0;
