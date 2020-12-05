@@ -29,9 +29,11 @@ public:
 
     auto Factory(makeFactory());
 
-    return Tool.run(Factory.get());
+    int Ret = Tool.run(Factory.get());
 
     afterRun();
+
+    return Ret;
   }
 
 private:
