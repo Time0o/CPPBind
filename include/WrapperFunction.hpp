@@ -283,20 +283,18 @@ private:
 
   std::string strBody(std::shared_ptr<IdentifierIndex> II) const
   {
-    auto SelfTypePtr(SelfType_.pointerTo());
-
     std::stringstream SS;
 
     SS << "{ ";
 
     if (IsConstructor_) {
       SS << "return " << detail::typeCastWrapped(
-        SelfTypePtr, "new " + SelfType_.strBaseUnwrapped(), II);
+        self(), "new " + SelfType_.strBaseUnwrapped(), II);
 
       if (hasParams())
         SS << strParams(II, true);
     } else if (IsDestructor_) {
-      SS << "delete " << detail::typeCastUnwrapped(SelfTypePtr, Identifier::Self);
+      SS << "delete " << detail::typeCastUnwrapped(self(), Identifier::Self);
     } else {
       if (!ReturnType_.isFundamental("void"))
         SS << "return ";
@@ -304,7 +302,7 @@ private:
       if (!IsMethod_ || IsStatic_) {
         SS << name().strQualified() << strParams(II, true);
       } else {
-        SS << detail::typeCastUnwrapped(SelfTypePtr, Identifier::Self)
+        SS << detail::typeCastUnwrapped(self(), Identifier::Self)
            << "->" << name().strUnqualified() << strParams(II, true, 1);
       }
     }
@@ -313,6 +311,9 @@ private:
 
     return SS.str();
   }
+
+  WrapperType self() const
+  { return SelfType_.pointerTo(); }
 
   bool IsMethod_ = false;
   bool IsConstructor_ = false;
