@@ -2,7 +2,11 @@
 #define GUARD_BUILTIN_TYPES_H
 
 #include <cassert>
+#include <cstdlib>
+#include <filesystem>
 #include <memory>
+#include <fstream>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 
@@ -10,57 +14,79 @@
 #include "clang/AST/Type.h"
 #include "clang/Tooling/Tooling.h"
 
-#include "ClangIncludes.hpp"
 #include "CompilerState.hpp"
 
 namespace cppbind
 {
 
-constexpr char const *FundamentalTypesHeader = R"(
-  #include <cstddef>
-
-  namespace __fundamental_types
-  {
-
-  extern void *_void;
-
-  extern std::nullptr_t _nullptr_t;
-
-  extern bool _bool;
-
-  extern short int _short_int;
-  extern int _int;
-  extern long _long;
-  extern long long _long_long;
-
-  extern unsigned short int _unsigned_short_int;
-  extern unsigned int _unsigned_int;
-  extern unsigned long long _unsigned_long_long;
-  extern unsigned long _unsigned_long;
-
-  extern std::size_t _size_t;
-
-  extern signed char _signed_char;
-  extern unsigned char _unsigned_char;
-  extern char _char;
-  extern wchar_t _wchar_t;
-  extern char16_t _char16_t;
-  extern char32_t _char32_t;
-
-  extern float _float;
-  extern double _double;
-  extern long double _long_double;
-
-  } // namespace __fundamental_types
-)";
-
-inline void parseFundamentalTypes(
-  std::unique_ptr<clang::tooling::FrontendActionFactory> const &Factory)
+class FundamentalTypesHeader
 {
-  clang::tooling::runToolOnCodeWithArgs(Factory->create(),
-                                        FundamentalTypesHeader,
-                                        clangIncludes());
-}
+public:
+  FundamentalTypesHeader()
+  {
+    char Tmpnam[6] = {'X', 'X', 'X', 'X', 'X', 'X'};
+    if (mkstemp(Tmpnam) == -1)
+      throw std::runtime_error("failed to create temporary file");
+
+    Path_ = Tmpnam;
+
+    std::ofstream Stream(Tmpnam);
+    if (!Stream)
+      throw std::runtime_error("failed to generate temporary file");
+
+    Stream << Header_;
+    Stream.flush();
+  }
+
+  ~FundamentalTypesHeader()
+  { std::filesystem::remove(Path_); }
+
+  static std::string prepend(std::string &Code)
+  { return Header_ + ("\n" + Code); }
+
+  std::filesystem::path path() const
+  { return Path_; }
+
+private:
+  static constexpr char const *Header_ = &R"(
+#include <cstddef>
+
+namespace __fundamental_types
+{
+
+extern void *_void;
+
+extern std::nullptr_t _nullptr_t;
+
+extern bool _bool;
+
+extern short int _short_int;
+extern int _int;
+extern long _long;
+extern long long _long_long;
+
+extern unsigned short int _unsigned_short_int;
+extern unsigned int _unsigned_int;
+extern unsigned long long _unsigned_long_long;
+extern unsigned long _unsigned_long;
+
+extern std::size_t _size_t;
+
+extern signed char _signed_char;
+extern unsigned char _unsigned_char;
+extern char _char;
+extern wchar_t _wchar_t;
+extern char16_t _char16_t;
+extern char32_t _char32_t;
+
+extern float _float;
+extern double _double;
+extern long double _long_double;
+
+} // namespace __fundamental_types)"[1];
+
+  std::filesystem::path Path_;
+};
 
 class FundamentalTypeRegistry
 {

@@ -1,6 +1,7 @@
 #ifndef GUARD_TOOL_RUNNER_H
 #define GUARD_TOOL_RUNNER_H
 
+#include <filesystem>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -11,7 +12,6 @@
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
 
-#include "ClangIncludes.hpp"
 #include "FundamentalTypes.hpp"
 
 namespace cppbind
@@ -21,18 +21,33 @@ template<typename T>
 class GenericToolRunner
 {
 public:
+  bool run(std::string Code)
+  {
+    beforeRun();
+
+    auto Factory(makeFactory());
+
+    bool Ret = clang::tooling::runToolOnCodeWithArgs(
+      Factory->create(),
+      FundamentalTypesHeader::prepend(Code),
+      clangIncludes());
+
+    afterRun();
+
+    return Ret;
+  }
+
   int run(clang::tooling::CommonOptionsParser &Parser)
   {
     clang::tooling::ClangTool Tool(Parser.getCompilations(),
                                    Parser.getSourcePathList());
 
-    adjustArguments(Tool);
+    FundamentalTypesHeader FTH;
+    adjustArguments(Tool, FTH.path());
 
     beforeRun();
 
     auto Factory(makeFactory());
-
-    parseFundamentalTypes(Factory);
 
     int Ret = Tool.run(Factory.get());
 
@@ -71,12 +86,31 @@ protected:
   }
 
 private:
-  static void adjustArguments(clang::tooling::ClangTool &Tool)
+  static std::vector<std::string> clangIncludes()
+  {
+    std::istringstream SS(CLANG_INCLUDE_PATHS);
+
+    std::vector<std::string> Includes;
+
+    std::string Inc;
+    while (SS >> Inc)
+      Includes.push_back(Inc);
+
+    return Includes;
+  }
+
+  static void adjustArguments(
+    clang::tooling::ClangTool &Tool,
+    std::filesystem::path const &FundamentalTypesHeaderPath)
   {
     std::vector<clang::tooling::ArgumentsAdjuster> ArgumentsAdjusters;
 
     auto BEGIN = clang::tooling::ArgumentInsertPosition::BEGIN;
     auto END = clang::tooling::ArgumentInsertPosition::END;
+
+    ArgumentsAdjusters.push_back(
+      clang::tooling::getInsertArgumentAdjuster(
+        {"-include", FundamentalTypesHeaderPath.string()}, BEGIN));
 
     ArgumentsAdjusters.push_back(
       clang::tooling::getInsertArgumentAdjuster("-xc++-header", BEGIN));

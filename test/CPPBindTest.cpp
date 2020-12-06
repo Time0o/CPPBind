@@ -39,21 +39,11 @@ private:
   {
     RunnerType Runner;
 
-    auto Factory(Runner.makeFactory());
-
-    cppbind::parseFundamentalTypes(Factory);
-
-    runTool(Factory, Code);
+    Runner.run("namespace test {" + Code + "}");
 
     std::string StrSource(Runner.strSource());
 
     return cppbind::normalizeWhitespaceStr(StrSource);
-  }
-
-  static void runTool(FactoryType const &Factory, std::string const &Code)
-  {
-    clang::tooling::runToolOnCode(Factory->create(),
-                                  "namespace test { " + Code + "}");
   }
 
   std::string Code_, WrappedCode_;
