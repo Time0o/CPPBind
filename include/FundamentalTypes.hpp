@@ -2,12 +2,15 @@
 #define GUARD_BUILTIN_TYPES_H
 
 #include <cassert>
+#include <memory>
 #include <string>
 #include <unordered_map>
 
 #include "clang/AST/PrettyPrinter.h"
 #include "clang/AST/Type.h"
+#include "clang/Tooling/Tooling.h"
 
+#include "ClangIncludes.hpp"
 #include "CompilerState.hpp"
 
 namespace cppbind
@@ -50,6 +53,14 @@ constexpr char const *FundamentalTypesHeader = R"(
 
   } // namespace __fundamental_types
 )";
+
+inline void parseFundamentalTypes(
+  std::unique_ptr<clang::tooling::FrontendActionFactory> const &Factory)
+{
+  clang::tooling::runToolOnCodeWithArgs(Factory->create(),
+                                        FundamentalTypesHeader,
+                                        clangIncludes());
+}
 
 class FundamentalTypeRegistry
 {

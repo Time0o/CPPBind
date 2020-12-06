@@ -21,9 +21,61 @@
 namespace cppbind
 {
 
+class Wrapper;
+
+class WrapperFiles
+{
+  friend class Wrapper;
+
+public:
+  WrapperFiles(bool Boilerplate = true)
+  : Boilerplate_(Boilerplate)
+  {}
+
+  bool empty() const
+  { return HeaderFile_.empty() && SourceFile_.empty(); }
+
+  FileBuffer const &header() const
+  { return HeaderFile_; }
+
+  FileBuffer const &source() const
+  { return SourceFile_; }
+
+  void write() const
+  {
+    HeaderFile_.write(HeaderFilePath_);
+    SourceFile_.write(SourceFilePath_);
+  }
+
+private:
+  bool boilerplate() const
+  { return Boilerplate_; }
+
+  void addHeader(FileBuffer &&File, std::filesystem::path const &Path)
+  {
+    HeaderFile_ = std::move(File);
+    HeaderFilePath_ = Path;
+  }
+
+  void addSource(FileBuffer &&File, std::filesystem::path const &Path)
+  {
+    SourceFile_ = std::move(File);
+    SourceFilePath_ = Path;
+  }
+
+  bool Boilerplate_;
+
+  FileBuffer HeaderFile_;
+  std::filesystem::path HeaderFilePath_;
+
+  FileBuffer SourceFile_;
+  std::filesystem::path SourceFilePath_;
+};
+
 class Wrapper
 {
 public:
+
   Wrapper(std::shared_ptr<IdentifierIndex> IdentifierIndex,
           std::filesystem::path const &WrappedHeader)
   : II_(IdentifierIndex),
@@ -68,37 +120,63 @@ public:
       Wf.overload(II_);
   }
 
-  void write() const
+  void write(std::shared_ptr<WrapperFiles> Files)
   {
-    headerFile().write(headerFilePath());
-    sourceFile().write(sourceFilePath());
+    Files->addHeader(headerFile(Files->boilerplate()), headerFilePath());
+    Files->addSource(sourceFile(Files->boilerplate()), sourceFilePath());
   }
 
 private:
-  FileBuffer headerFile() const
+  FileBuffer headerFile(bool Boilerplate = false) const
   {
     FileBuffer File;
 
-    append(File, &Wrapper::openHeaderGuard);
-    append(File, &Wrapper::openExternCGuard, true);
-    append(File, &Wrapper::declareRecords);
+    if (Boilerplate) {
+      append(File, &Wrapper::openHeaderGuard);
+      append(File, &Wrapper::openExternCGuard, true);
+      append(File, &Wrapper::declareRecords);
+    }
+
     append(File, &Wrapper::declareOrDefineFunctions, false);
-    append(File, &Wrapper::closeExternCGuard, true);
-    append(File, &Wrapper::closeHeaderGuard);
+
+    if (Boilerplate) {
+      append(File, &Wrapper::closeExternCGuard, true);
+      append(File, &Wrapper::closeHeaderGuard);
+    }
 
     return File;
   }
 
-  FileBuffer sourceFile() const
+  std::filesystem::path headerFilePath() const
+  {
+    return filePath(WRAPPER_HEADER_OUTDIR,
+                    WRAPPER_HEADER_POSTFIX,
+                    WRAPPER_HEADER_EXT);
+  }
+
+  FileBuffer sourceFile(bool Boilerplate = false) const
   {
     FileBuffer File;
 
-    append(File, &Wrapper::includeHeaders);
-    append(File, &Wrapper::openExternCGuard, false);
+    if (Boilerplate) {
+      append(File, &Wrapper::includeHeaders);
+      append(File, &Wrapper::openExternCGuard, false);
+    }
+
     append(File, &Wrapper::declareOrDefineFunctions, true);
-    append(File, &Wrapper::closeExternCGuard, false);
+
+    if (Boilerplate) {
+      append(File, &Wrapper::closeExternCGuard, false);
+    }
 
     return File;
+  }
+
+  std::filesystem::path sourceFilePath() const
+  {
+    return filePath(WRAPPER_SOURCE_OUTDIR,
+                    WRAPPER_SOURCE_POSTFIX,
+                    WRAPPER_SOURCE_EXT);
   }
 
   template<typename FUNC, typename ...ARGS>
@@ -241,20 +319,6 @@ private:
     File << FileBuffer::EmptyLine;
 
     File << include(headerFilePath()) << FileBuffer::EndLine;
-  }
-
-  std::filesystem::path headerFilePath() const
-  {
-    return filePath(WRAPPER_HEADER_OUTDIR,
-                    WRAPPER_HEADER_POSTFIX,
-                    WRAPPER_HEADER_EXT);
-  }
-
-  std::filesystem::path sourceFilePath() const
-  {
-    return filePath(WRAPPER_SOURCE_OUTDIR,
-                    WRAPPER_SOURCE_POSTFIX,
-                    WRAPPER_SOURCE_EXT);
   }
 
   std::filesystem::path filePath(std::string const &Outdir,

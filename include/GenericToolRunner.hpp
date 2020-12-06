@@ -11,6 +11,9 @@
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
 
+#include "ClangIncludes.hpp"
+#include "FundamentalTypes.hpp"
+
 namespace cppbind
 {
 
@@ -29,46 +32,13 @@ public:
 
     auto Factory(makeFactory());
 
-    clang::tooling::runToolOnCodeWithArgs(Factory->create(),
-                                          FundamentalTypesHeader,
-                                          clangIncludes());
+    parseFundamentalTypes(Factory);
 
     int Ret = Tool.run(Factory.get());
 
     afterRun();
 
     return Ret;
-  }
-
-private:
-  static void adjustArguments(clang::tooling::ClangTool &Tool)
-  {
-    std::vector<clang::tooling::ArgumentsAdjuster> ArgumentsAdjusters;
-
-    auto BEGIN = clang::tooling::ArgumentInsertPosition::BEGIN;
-    auto END = clang::tooling::ArgumentInsertPosition::END;
-
-    ArgumentsAdjusters.push_back(
-      clang::tooling::getInsertArgumentAdjuster("-xc++-header", BEGIN));
-
-    ArgumentsAdjusters.push_back(
-      clang::tooling::getInsertArgumentAdjuster(clangIncludes(), END));
-
-    for (auto const &ArgumentsAdjuster : ArgumentsAdjusters)
-      Tool.appendArgumentsAdjuster(ArgumentsAdjuster);
-  }
-
-  static std::vector<std::string> clangIncludes()
-  {
-    std::stringstream SS(CLANG_INCLUDE_PATHS);
-
-    std::vector<std::string> Includes;
-
-    std::string Inc;
-    while (SS >> Inc)
-      Includes.push_back(Inc);
-
-    return Includes;
   }
 
   virtual std::unique_ptr<clang::tooling::FrontendActionFactory> makeFactory() = 0;
@@ -101,6 +71,23 @@ protected:
   }
 
 private:
+  static void adjustArguments(clang::tooling::ClangTool &Tool)
+  {
+    std::vector<clang::tooling::ArgumentsAdjuster> ArgumentsAdjusters;
+
+    auto BEGIN = clang::tooling::ArgumentInsertPosition::BEGIN;
+    auto END = clang::tooling::ArgumentInsertPosition::END;
+
+    ArgumentsAdjusters.push_back(
+      clang::tooling::getInsertArgumentAdjuster("-xc++-header", BEGIN));
+
+    ArgumentsAdjusters.push_back(
+      clang::tooling::getInsertArgumentAdjuster(clangIncludes(), END));
+
+    for (auto const &ArgumentsAdjuster : ArgumentsAdjusters)
+      Tool.appendArgumentsAdjuster(ArgumentsAdjuster);
+  }
+
   virtual void beforeRun() {}
   virtual void afterRun() {}
 };

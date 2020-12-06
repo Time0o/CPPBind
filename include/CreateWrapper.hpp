@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "clang/ASTMatchers/ASTMatchers.h"
 
@@ -24,7 +25,7 @@ class CreateWrapperConsumer : public GenericASTConsumer
 {
 public:
   CreateWrapperConsumer(std::shared_ptr<Wrapper> Wrapper)
-  : Wrapper_(Wrapper)
+  : Wr_(Wrapper)
   {}
 
 private:
@@ -72,15 +73,15 @@ private:
   }
 
   void handleClassDecl(clang::CXXRecordDecl const *Decl)
-  { Wrapper_->addWrapperRecord(Decl); }
+  { Wr_->addWrapperRecord(Decl); }
 
   void handlePublicMethodDecl(clang::CXXMethodDecl const *Decl)
-  { Wrapper_->addWrapperFunction(Decl); }
+  { Wr_->addWrapperFunction(Decl); }
 
   void handleNonClassFunctionDecl(clang::FunctionDecl const *Decl)
-  { Wrapper_->addWrapperFunction(Decl); }
+  { Wr_->addWrapperFunction(Decl); }
 
-  std::shared_ptr<Wrapper> Wrapper_;
+  std::shared_ptr<Wrapper> Wr_;
 };
 
 // XXX what about parallel invocations?
@@ -88,8 +89,10 @@ class CreateWrapperFrontendAction
 : public GenericFrontendAction<CreateWrapperConsumer>
 {
 public:
-  CreateWrapperFrontendAction(std::shared_ptr<IdentifierIndex> II)
-  : II_(II)
+  CreateWrapperFrontendAction(std::shared_ptr<IdentifierIndex> II,
+                              std::shared_ptr<WrapperFiles> WrFiles)
+  : II_(II),
+    WrFiles_(WrFiles)
   {}
 
 private:
@@ -97,34 +100,75 @@ private:
   {
     // XXX skip source files, filter headers?
 
-    return std::make_unique<CreateWrapperConsumer>(Wrapper_);
+    return std::make_unique<CreateWrapperConsumer>(Wr_);
   }
 
   void beforeProcessing() override
-  { Wrapper_ = std::make_shared<Wrapper>(II_,  CompilerState().currentFile()); }
+  { Wr_ = std::make_shared<Wrapper>(II_,  CompilerState().currentFile()); }
 
   void afterProcessing() override
   {
-    if (Wrapper_->empty())
+    if (Wr_->empty())
       return;
 
-    Wrapper_->overload();
-    Wrapper_->write();
+    Wr_->overload();
+
+    Wr_->write(WrFiles_);
   }
 
   std::shared_ptr<IdentifierIndex> II_;
-  std::shared_ptr<Wrapper> Wrapper_;
+  std::shared_ptr<Wrapper> Wr_;
+  std::shared_ptr<WrapperFiles> WrFiles_;
 };
 
+template<bool BOILERPLATE>
 class CreateWrapperToolRunner
 : public GenericToolRunner<CreateWrapperFrontendAction>
 {
-private:
+public:
   std::unique_ptr<clang::tooling::FrontendActionFactory> makeFactory() override
-  { return makeFactoryWithArgs(II_); }
+  { return makeFactoryWithArgs(II_, newWrapperFiles()); }
+
+protected:
+  std::shared_ptr<WrapperFiles> newWrapperFiles()
+  {
+    WrFiles_.push_back(std::make_shared<WrapperFiles>(BOILERPLATE));
+
+    return WrFiles_.back();
+  }
+
+  std::shared_ptr<IdentifierIndex> II_ = std::make_shared<IdentifierIndex>();
+  std::vector<std::shared_ptr<WrapperFiles>> WrFiles_;
+};
+
+class CreateAndWriteWrapperToolRunner
+: public CreateWrapperToolRunner<true>
+{
+private:
+  void afterRun() override
+  {
+    for (auto const &WF : WrFiles_) {
+      if (WF->empty())
+        continue;
+
+      WF->write();
+    }
+  }
+};
+
+class CreateWrapperTestToolRunner
+: public cppbind::CreateWrapperToolRunner<false>
+{
+public:
+  std::string strHeader() const
+  { return WrFiles_.front()->header().content(); }
+
+  std::string strSource() const
+  { return WrFiles_.front()->source().content(); }
 
 private:
-  std::shared_ptr<IdentifierIndex> II_ = std::make_shared<IdentifierIndex>();
+  void afterRun() override
+  { assert(WrFiles_.size() == 1u); }
 };
 
 } // namespace cppbind

@@ -24,9 +24,16 @@ public:
   template<typename T>
   FileBuffer &operator<<(T const &Line)
   {
+    Empty_ = false;
     Content_ << Line;
     return *this;
   }
+
+  bool empty() const
+  { return Empty_; }
+
+  std::string content() const
+  { return Content_.str(); }
 
   void write(std::filesystem::path const &Path) const
   {
@@ -52,6 +59,7 @@ public:
   }
 
 private:
+  bool Empty_ = true;
   std::stringstream Content_;
 };
 

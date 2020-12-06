@@ -3,7 +3,9 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cctype>
 #include <cstddef>
+#include <iterator>
 #include <locale>
 #include <sstream>
 #include <string>
@@ -167,6 +169,34 @@ inline std::string &indentStr(std::string &Str)
   Str = Out.str();
 
   return Str;
+}
+
+inline std::string normalizeWhitespaceStr(std::string &Str)
+{
+  Str = trimStr(Str);
+
+  std::list<char> StrList(Str.begin(), Str.end());
+
+  for (auto It(StrList.begin()); It != StrList.end(); ++It) {
+    if (!std::isspace(*It))
+      continue;
+
+    auto ItNext(std::next(It));
+
+    if (std::isspace(*ItNext)) {
+      while (std::isspace(*ItNext))
+        ItNext = StrList.erase(ItNext);
+    }
+
+    It = ItNext;
+  }
+
+  std::replace_if(StrList.begin(),
+                  StrList.end(),
+                  [](char c){ return std::isspace(c); },
+                  ' ');
+
+  return std::string(StrList.begin(), StrList.end());
 }
 
 inline bool isAllStr(std::string const &Str, char c)
