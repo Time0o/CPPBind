@@ -62,10 +62,10 @@ public:
   bool empty() const
   { return Functions_.empty(); }
 
-  void resolveOverloads()
+  void overload()
   {
     for (auto &Wf : Functions_)
-      Wf.resolveOverload(II_);
+      Wf.overload(II_);
   }
 
   void write() const

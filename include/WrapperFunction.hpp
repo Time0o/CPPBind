@@ -154,7 +154,7 @@ public:
   std::vector<WrapperParam> params() const
   { return Params_; }
 
-  void resolveOverload(std::shared_ptr<IdentifierIndex> II)
+  void overload(std::shared_ptr<IdentifierIndex> II)
   {
     if (Overload_ == 0u) {
       if ((Overload_ = II->popOverload(name())) == 0u)

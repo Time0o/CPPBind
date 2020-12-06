@@ -108,7 +108,7 @@ private:
     if (Wrapper_->empty())
       return;
 
-    Wrapper_->resolveOverloads();
+    Wrapper_->overload();
     Wrapper_->write();
   }
 
