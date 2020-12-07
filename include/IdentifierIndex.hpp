@@ -2,7 +2,6 @@
 #define GUARD_IDENTIFIER_INDEX_H
 
 #include <cassert>
-#include <filesystem>
 #include <map>
 #include <memory>
 #include <optional>

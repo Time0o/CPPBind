@@ -2,7 +2,6 @@
 #define GUARD_WRAPPER_HEADER_H
 
 #include <cassert>
-#include <filesystem>
 #include <memory>
 #include <set>
 #include <sstream>
@@ -51,13 +50,13 @@ private:
   bool boilerplate() const
   { return Boilerplate_; }
 
-  void addHeader(FileBuffer &&File, std::filesystem::path const &Path)
+  void addHeader(FileBuffer &&File, std::string const &Path)
   {
     HeaderFile_ = std::move(File);
     HeaderFilePath_ = Path;
   }
 
-  void addSource(FileBuffer &&File, std::filesystem::path const &Path)
+  void addSource(FileBuffer &&File, std::string const &Path)
   {
     SourceFile_ = std::move(File);
     SourceFilePath_ = Path;
@@ -66,10 +65,10 @@ private:
   bool Boilerplate_;
 
   FileBuffer HeaderFile_;
-  std::filesystem::path HeaderFilePath_;
+  std::string HeaderFilePath_;
 
   FileBuffer SourceFile_;
-  std::filesystem::path SourceFilePath_;
+  std::string SourceFilePath_;
 };
 
 class Wrapper
@@ -77,7 +76,7 @@ class Wrapper
 public:
 
   Wrapper(std::shared_ptr<IdentifierIndex> IdentifierIndex,
-          std::filesystem::path const &WrappedHeader)
+          std::string const &WrappedHeader)
   : II_(IdentifierIndex),
     WrappedHeader_(WrappedHeader)
   {}
@@ -147,11 +146,11 @@ private:
     return File;
   }
 
-  std::filesystem::path headerFilePath() const
+  std::string headerFilePath() const
   {
-    return filePath(WRAPPER_HEADER_OUTDIR,
-                    WRAPPER_HEADER_POSTFIX,
-                    WRAPPER_HEADER_EXT);
+    return wrapperFilePath(WRAPPER_HEADER_OUTDIR,
+                           WRAPPER_HEADER_POSTFIX,
+                           WRAPPER_HEADER_EXT);
   }
 
   FileBuffer sourceFile(bool Boilerplate = false) const
@@ -172,11 +171,11 @@ private:
     return File;
   }
 
-  std::filesystem::path sourceFilePath() const
+  std::string sourceFilePath() const
   {
-    return filePath(WRAPPER_SOURCE_OUTDIR,
-                    WRAPPER_SOURCE_POSTFIX,
-                    WRAPPER_SOURCE_EXT);
+    return wrapperFilePath(WRAPPER_SOURCE_OUTDIR,
+                           WRAPPER_SOURCE_POSTFIX,
+                           WRAPPER_SOURCE_EXT);
   }
 
   template<typename FUNC, typename ...ARGS>
@@ -301,7 +300,7 @@ private:
   std::string headerGuardToken() const
   {
     auto Token(WRAPPER_HEADER_GUARD_PREFIX +
-               WrappedHeader_.stem().string() +
+               pathFilename(WrappedHeader_, false) +
                WRAPPER_HEADER_GUARD_POSTFIX);
 
     auto identifier(Identifier::makeUnqualifiedIdentifier(Token, false));
@@ -311,8 +310,8 @@ private:
 
   void includeHeaders(FileBuffer &File) const
   {
-    auto include = [](std::filesystem::path const &HeaderPath)
-    { return "#include \"" + HeaderPath.filename().string() + "\""; };
+    auto include = [](std::string const &HeaderPath)
+    { return "#include \"" + pathFilename(HeaderPath) + "\""; };
 
     File << include(WrappedHeader_) << FileBuffer::EndLine;
 
@@ -321,21 +320,39 @@ private:
     File << include(headerFilePath()) << FileBuffer::EndLine;
   }
 
-  std::filesystem::path filePath(std::string const &Outdir,
-                                 std::string const &Postfix,
-                                 std::string const &Ext) const
+  static constexpr char PathSep = '/';
+  static constexpr char ExtSep = '.';
+
+  std::string wrapperFilePath(std::string const &Outdir,
+                              std::string const &Postfix,
+                              std::string const &Ext) const
   {
-    std::filesystem::path FileBuffer(WrappedHeader_.filename());
-    std::filesystem::path WrapperDir(Outdir);
+    auto Filename(pathFilename(WrappedHeader_, false) + Postfix + ExtSep + Ext);
 
-    FileBuffer.replace_filename(FileBuffer.stem().concat(Postfix));
-    FileBuffer.replace_extension(Ext);
-
-    return WrapperDir / FileBuffer;
+    return pathConcat(Outdir, Filename);
   }
 
+  static std::string pathFilename(std::string Path, bool WithExt = true)
+  {
+    auto LastSlash = Path.find_last_of(PathSep);
+    if (LastSlash != std::string::npos)
+      Path.erase(0, LastSlash + 1);
+
+    if (!WithExt) {
+      auto LastDot = Path.find_last_of(ExtSep);
+      if (LastDot != std::string::npos)
+        Path.erase(LastDot);
+    }
+
+    return Path;
+  }
+
+  static std::string pathConcat(std::string const &Path1,
+                                std::string const &Path2)
+  { return Path1 + PathSep + Path2; }
+
   std::shared_ptr<IdentifierIndex> II_;
-  std::filesystem::path WrappedHeader_;
+  std::string WrappedHeader_;
 
   std::vector<WrapperRecord> Records_;
   std::vector<WrapperFunction> Functions_;

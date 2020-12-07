@@ -1,7 +1,6 @@
 #ifndef GUARD_WRAPPER_FILE_H
 #define GUARD_WRAPPER_FILE_H
 
-#include <filesystem>
 #include <sstream>
 #include <string>
 #include <system_error>
@@ -35,7 +34,7 @@ public:
   std::string content() const
   { return Content_.str(); }
 
-  void write(std::filesystem::path const &Path) const
+  void write(std::string const &Path) const
   {
     // open file
     std::error_code EC;
@@ -43,7 +42,7 @@ public:
     llvm::raw_fd_ostream OS(Path.c_str(), EC, llvm::sys::fs::F_None);
 
     if (EC)
-      error() << "Failed to open '" << Path.string() << "'" << EC.message();
+      error() << "Failed to open '" << Path << "'" << EC.message();
 
     // write to file
     OS.clear_error();
@@ -55,7 +54,7 @@ public:
     EC = OS.error();
 
     if (EC)
-      error() << "Failed to write '" << Path.string() << "'" << EC.message();
+      error() << "Failed to write '" << Path << "'" << EC.message();
   }
 
 private:

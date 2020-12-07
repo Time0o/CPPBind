@@ -2,8 +2,8 @@
 #define GUARD_BUILTIN_TYPES_H
 
 #include <cassert>
+#include <cstdio>
 #include <cstdlib>
-#include <filesystem>
 #include <memory>
 #include <fstream>
 #include <stdexcept>
@@ -23,14 +23,9 @@ class FundamentalTypesHeader
 {
 public:
   FundamentalTypesHeader()
+  : Path_(createTmpPath())
   {
-    char Tmpnam[6] = {'X', 'X', 'X', 'X', 'X', 'X'};
-    if (mkstemp(Tmpnam) == -1)
-      throw std::runtime_error("failed to create temporary file");
-
-    Path_ = Tmpnam;
-
-    std::ofstream Stream(Tmpnam);
+    std::ofstream Stream(path());
     if (!Stream)
       throw std::runtime_error("failed to generate temporary file");
 
@@ -39,15 +34,27 @@ public:
   }
 
   ~FundamentalTypesHeader()
-  { std::filesystem::remove(Path_); }
+  { std::remove(c_path()); }
 
   static std::string prepend(std::string &Code)
   { return Header_ + ("\n" + Code); }
 
-  std::filesystem::path path() const
+  std::string path() const
   { return Path_; }
 
+  char const *c_path() const
+  { return Path_.c_str(); }
+
 private:
+  static std::string createTmpPath()
+  {
+    char Tmpnam[6] = {'X', 'X', 'X', 'X', 'X', 'X'};
+    if (mkstemp(Tmpnam) == -1)
+      throw std::runtime_error("failed to create temporary path");
+
+    return Tmpnam;
+  }
+
   static constexpr char const *Header_ = &R"(
 #include <cstddef>
 
@@ -85,7 +92,7 @@ extern long double _long_double;
 
 } // namespace __fundamental_types)"[1];
 
-  std::filesystem::path Path_;
+  std::string Path_;
 };
 
 class FundamentalTypeRegistry

@@ -1,7 +1,6 @@
 #ifndef GUARD_TOOL_RUNNER_H
 #define GUARD_TOOL_RUNNER_H
 
-#include <filesystem>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -101,7 +100,7 @@ private:
 
   static void adjustArguments(
     clang::tooling::ClangTool &Tool,
-    std::filesystem::path const &FundamentalTypesHeaderPath)
+    std::string const &FundamentalTypesHeaderPath)
   {
     std::vector<clang::tooling::ArgumentsAdjuster> ArgumentsAdjusters;
 
@@ -110,7 +109,7 @@ private:
 
     ArgumentsAdjusters.push_back(
       clang::tooling::getInsertArgumentAdjuster(
-        {"-include", FundamentalTypesHeaderPath.string()}, BEGIN));
+        {"-include", FundamentalTypesHeaderPath}, BEGIN));
 
     ArgumentsAdjusters.push_back(
       clang::tooling::getInsertArgumentAdjuster("-xc++-header", BEGIN));
