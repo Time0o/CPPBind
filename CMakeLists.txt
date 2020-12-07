@@ -47,6 +47,8 @@ if (NOT CMAKE_CXX_COMPILER_ID STREQUAL Clang)
   set(CMAKE_CXX_COMPILER ${CLANGXX})
 endif()
 
+set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -pedantic")
+
 set(CLANG_LIBRARIES clang-cpp)
 
 # clang include paths
@@ -85,7 +87,6 @@ function(target_cpp_config TARGET)
     LINKER_LANGUAGE CXX
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED ON
-    COMPILE_FLAGS "-Wall -Wextra -pedantic"
     LINK_FLAGS ""
   )
 endfunction()
