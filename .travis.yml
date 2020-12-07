@@ -4,21 +4,46 @@ os: linux
 dist: bionic
 compiler: clang
 
-addons:
-  apt:
-    packages:
-      - clang-10
-      - llvm-10-dev
-      - libclang-10-dev
-      - libclang-cpp10-dev
-
-env:
- - CLANG=clang++-10
+matrix:
+  include:
+    - addons:
+        apt:
+          packages:
+            - clang-7
+            - llvm-7-dev
+            - libclang-7-dev
+      env:
+        - CLANGXX=clang++-7
+    - addons:
+        apt:
+          packages:
+            - clang-8
+            - llvm-8-dev
+            - libclang-8-dev
+      env:
+        - CLANGXX=clang++-8
+    - addons:
+        apt:
+          packages:
+            - clang-9
+            - llvm-9-dev
+            - libclang-9-dev
+      env:
+        - CLANGXX=clang++-9
+    - addons:
+        apt:
+          packages:
+            - clang-10
+            - llvm-10-dev
+            - libclang-10-dev
+            - libclang-cpp10-dev
+      env:
+        - CLANGXX=clang++-10
 
 script:
   - mkdir build
   - cd build
-  - cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER="$(which $CLANG)" ..
+  - cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER="$(which $CLANGXX)" ..
   - make
   - make test
 
