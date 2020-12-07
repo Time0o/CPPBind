@@ -53,8 +53,8 @@ list(GET CLANG_VERSION_LIST 0 CLANG_VERSION_MAJOR)
 list(GET CLANG_VERSION_LIST 1 CLANG_VERSION_MINOR)
 list(GET CLANG_VERSION_LIST 2 CLANG_VERSION_PATCH)
 
-if (CLANG_VERSION_MAJOR LESS 7)
-  message(FATAL_ERROR "Clang version < 7 not supported")
+if (CLANG_VERSION_MAJOR LESS 10)
+  message(FATAL_ERROR "Clang version < 10 not supported")
 endif()
 
 # flags
