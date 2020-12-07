@@ -35,16 +35,21 @@ set(TOOL_DIR ${PROJECT_SOURCE_DIR}/tool)
 ################################################################################
 
 # find clang
-FIND_PROGRAM(CLANG clang)
-FIND_PROGRAM(CLANGXX clang++)
+if (NOT CMAKE_CXX_COMPILER_ID STREQUAL Clang)
+  FIND_PROGRAM(CLANGXX clang++)
 
-if(${CLANG} STREQUAL CLANG-NOTFOUND OR ${CLANGXX} STREQUAL CLANGXX-NOTFOUND)
-  message(FATAL_ERROR "Failed to find clang/clang++")
+  if(${CLANGXX} STREQUAL CLANGXX-NOTFOUND)
+    message(FATAL_ERROR "Failed to find clang")
+  endif()
+
+  set(CMAKE_CXX_COMPILER ${CLANGXX})
 endif()
 
 set(CLANG_LIBRARIES clang-cpp)
 
 # clang include paths
+set(ENV{CLANGXX} ${CMAKE_CXX_COMPILER})
+
 execute_process(COMMAND ${TOOL_DIR}/clang_include_paths.sh
                 RESULT_VARIABLE CLANG_INCLUDE_PATHS_ERROR
                 OUTPUT_VARIABLE CLANG_INCLUDE_PATHS)
