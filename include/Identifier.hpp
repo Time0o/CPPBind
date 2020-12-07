@@ -87,13 +87,30 @@ public:
     auto &Info(info(Name));
 
     return !Info.isKeyword(CompilerState()->getLangOpts()) &&
-           !Info.isReservedName();
+           !isReservedIdentifier(Info);
   }
 
   static bool isIdentifier(llvm::StringRef Name,
                            bool allowQualified = true,
                            bool allowReserved = true)
   { return isIdentifier(Name.str(), allowQualified, allowReserved); }
+
+  static bool isReservedIdentifier(clang::IdentifierInfo &Info)
+  {
+#if __clang_major__ >= 10
+    return Info.isReservedName();
+#else
+    if (Info.getLength() < 2)
+       return false;
+
+    char const *NameStart = Info.getNameStart();
+
+    char C1 = NameStart[0];
+    char C2 = NameStart[1];
+
+    return C1 == '_' && (C2 == '_' || (C2 >= 'A' && C2 <= 'Z'));
+#endif
+  }
 
   static Identifier makeUnqualifiedIdentifier(std::string const &Name,
                                               bool allowReserved = false,

@@ -15,10 +15,8 @@ namespace cppbind
 class FileBuffer
 {
 public:
-  enum : char {
-    EndLine = '\n',
-    EmptyLine = '\n'
-  };
+  static constexpr char EndLine = '\n';
+  static constexpr char EmptyLine = '\n';
 
   template<typename T>
   FileBuffer &operator<<(T const &Line)

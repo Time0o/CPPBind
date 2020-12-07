@@ -58,6 +58,14 @@ public:
   virtual std::unique_ptr<clang::tooling::FrontendActionFactory> makeFactory() = 0;
 
 protected:
+#if __clang_major__ >= 10
+  using FrontendActionPtr = std::unique_ptr<clang::FrontendAction>;
+  #define MAKE_FRONTEND_ACTION(Args) std::make_unique<T>(Args)
+#else
+  using FrontendActionPtr = clang::FrontendAction *;
+  #define MAKE_FRONTEND_ACTION(Args) new T(Args)
+#endif
+
   template<typename ...ARGS>
   static std::unique_ptr<clang::tooling::FrontendActionFactory>
   makeFactoryWithArgs(ARGS&&... Args)
@@ -69,11 +77,11 @@ protected:
       : StoredArgs_(std::forward_as_tuple(std::forward<ARGS>(Args)...))
       {}
 
-      std::unique_ptr<clang::FrontendAction> create() override
+      FrontendActionPtr create() override
       {
         return std::apply(
           [](auto&&... Args)
-          { return std::make_unique<T>(std::forward<decltype(Args)>(Args)...); },
+          { return MAKE_FRONTEND_ACTION(std::forward<decltype(Args)>(Args)...); },
           StoredArgs_);
       }
 

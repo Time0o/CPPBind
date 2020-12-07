@@ -63,8 +63,6 @@ namespace __fundamental_types
 
 extern void *_void;
 
-extern std::nullptr_t _nullptr_t;
-
 extern bool _bool;
 
 extern short int _short_int;

@@ -43,7 +43,7 @@ class OptionsRegistry
   {
     friend OptionsRegistry;
 
-    using AssertFunc = std::function<bool(T const &)>;
+    using Assertion = std::function<bool(T const &)>;
 
   public:
     Option(llvm::StringRef Name)
@@ -70,21 +70,13 @@ class OptionsRegistry
     Option &setDefault(T const &Default)
     { Default_ = Default; return *this; }
 
-    Option &addAssertion(AssertFunc &&Assertion, std::string const &Msg)
-    { Assertions_.emplace_back(Assertion, Msg); return *this; }
+    Option &addAssertion(Assertion &&Assert, std::string const &Msg)
+    { Assertions_.emplace_back(Assert, Msg); return *this; }
 
     void done() const
     { OptionsRegistry::instance().addOpt(*this); }
 
   private:
-    void assertValue(T const &Value) const
-    {
-      for (auto const &[Assertion, Msg] : Assertions_) {
-        if (!Assertion(Value))
-          error() << Name_.str() << ": " << Msg;
-      }
-    }
-
     llvm::StringRef Name_;
 
     std::optional<llvm::StringRef> Desc_;
@@ -93,7 +85,7 @@ class OptionsRegistry
     std::optional<OptionChoices<T>> Choices_;
     std::optional<T> Default_ = std::nullopt;
 
-    std::vector<std::pair<AssertFunc, std::string>> Assertions_;
+    std::vector<std::pair<Assertion, std::string>> Assertions_;
   };
 
 public:
@@ -184,6 +176,7 @@ public:
 
     add<bool>("wrapper-header-omit-extern-c")
       .setDescription("Do not use 'extern \"C\"' guards")
+      .setDefault(false)
       .done();
 
     add<std::string>("wrapper-source-postfix")
@@ -207,16 +200,19 @@ public:
       .done();
   }
 
-  bool present(llvm::StringRef Name) const
-  { return instance().optPresent(Name); }
-
   template<typename T>
   T get(llvm::StringRef Name) const
-  { return *instance().findOpt<T>(Name); }
+  {
+    T Value = *instance().findOpt<T>(Name);
+
+    assertOptValue(Name, Value);
+
+    return Value;
+  }
 
   template<typename T>
   void set(llvm::StringRef Name, T const &Value) const
-  { *findOpt<T>(Name, false) = Value; }
+  { *findOpt<T>(Name) = Value; }
 
   clang::tooling::CommonOptionsParser parser(int Argc, char const **Argv)
   { return clang::tooling::CommonOptionsParser(Argc, Argv, Category_); }
@@ -249,8 +245,7 @@ private:
     // XXX aliases
     // XXX indicate mandatory options and default values in Desc
 
-    if (Opts_.find(Option.Name_) != Opts_.end())
-      return;
+    assert(Opts_.find(Option.Name_) == Opts_.end());
 
     auto Opt(packOpt<T>(Option.Name_, llvm::cl::cat(Category_)));
 
@@ -268,20 +263,8 @@ private:
       Opt->setValueExpectedFlag(*Option.Optional_ ? llvm::cl::ValueOptional
                                                   : llvm::cl::ValueRequired);
 
-    if (Option.Default_) {
-      Option.assertValue(*Option.Default_);
-
+    if (Option.Default_)
       Opt->setInitialValue(*Option.Default_);
-
-      OptsPresent_.insert(Option.Name_);
-    }
-
-    Opt->setCallback([=](T const &Value){
-      Option.assertValue(Value);
-
-      if (!Option.Default_)
-        OptsPresent_.insert(Option.Name_);
-    });
 
     if (Option.Choices_) {
       if constexpr (std::is_enum_v<T>) {
@@ -296,20 +279,17 @@ private:
     }
 
     Opts_[Option.Name_] = Opt;
+
+    if (!Option.Assertions_.empty())
+      OptAssertions_[Option.Name_] = Option.Assertions_;
   }
 
-  bool optPresent(llvm::StringRef Name) const
-  { return OptsPresent_.find(Name) != OptsPresent_.end(); }
-
   template<typename T>
-  auto findOpt(llvm::StringRef Name, bool AssertPresent = true) const
+  auto findOpt(llvm::StringRef Name) const
   {
     auto OptIt(Opts_.find(Name));
 
     assert(OptIt != Opts_.end() && "valid option name");
-
-    if (AssertPresent)
-      assert(optPresent(Name) && "option present");
 
     return unpackOpt<T>(OptIt->second);
   }
@@ -328,13 +308,34 @@ private:
     }
   }
 
+  template<typename T>
+  void assertOptValue(llvm::StringRef Name, T const &Value) const
+  {
+    auto It(OptAssertions_.find(Name));
+    if (It == OptAssertions_.end())
+      return;
+
+    decltype(Option<T>::Assertions_) Assertions;
+
+    try {
+      Assertions = std::any_cast<decltype(Assertions)>(*It);
+    } catch (std::bad_any_cast const &) {
+      assert(false && "valid option assertions");
+    }
+
+    for (auto const &[Assert, Msg] : Assertions) {
+      if (!Assert(Value))
+        error() << Name.str() << ": " << Msg;
+    }
+  }
+
   llvm::cl::OptionCategory Category_;
 
   std::string Usage_;
   std::vector<llvm::cl::extrahelp> Help_;
 
   std::unordered_map<std::string, std::any> Opts_;
-  std::unordered_set<std::string> OptsPresent_;
+  std::unordered_map<std::string, std::any> OptAssertions_;
 };
 
 template<>
@@ -343,10 +344,6 @@ llvm::StringRef OptionsRegistry::get<llvm::StringRef>(llvm::StringRef Name) cons
   auto Opt(instance().findOpt<std::string>(Name));
   return Opt->c_str();
 }
-
-template<>
-bool OptionsRegistry::get<bool>(llvm::StringRef Name) const
-{ return instance().present(Name); }
 
 inline OptionsRegistry &Options()
 { return OptionsRegistry::instance(); }
