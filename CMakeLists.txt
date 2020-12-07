@@ -83,7 +83,7 @@ if (CMAKE_BUILD_TYPE STREQUAL Debug)
     message(FATAL_ERROR "Catch2 submodule not found")
   endif()
 
-  add_subdirectory(${CATCH2_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/catch_build)
+  add_subdirectory(${CATCH2_DIR})
 
   list(APPEND CMAKE_MODULE_PATH ${CATCH2_DIR}/contrib/)
 endif()
