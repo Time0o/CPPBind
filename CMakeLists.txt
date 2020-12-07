@@ -28,6 +28,8 @@ set(SRC_DIR ${PROJECT_SOURCE_DIR}/source)
 set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
 set(TEST_DIR ${PROJECT_SOURCE_DIR}/test)
 set(TOOL_DIR ${PROJECT_SOURCE_DIR}/tool)
+set(DEPS_DIR ${PROJECT_SOURCE_DIR}/deps)
+set(CATCH2_DIR ${DEPS_DIR}/catch2)
 
 
 ################################################################################
@@ -61,20 +63,15 @@ endif()
 # find llvm
 find_package(LLVM REQUIRED CONFIG)
 
-# fetch catch2
+# find catch2
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
-  Include(FetchContent)
+  if(NOT EXISTS ${CATCH2_DIR}/CMakeLists.txt)
+    message(FATAL_ERROR "Catch2 submodule not found")
+  endif()
 
-  FetchContent_Declare(
-    Catch2
-    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-    GIT_TAG        v2.13.3)
+  add_subdirectory(${CATCH2_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/catch_build)
 
-  message(STATUS "Fetching Catch2")
-  FetchContent_MakeAvailable(Catch2)
-  message(STATUS "Fetching Catch2 - done")
-
-  list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/contrib)
+  list(APPEND CMAKE_MODULE_PATH ${CATCH2_DIR}/contrib/)
 endif()
 
 
