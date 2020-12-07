@@ -146,9 +146,6 @@ endfunction()
 # Subdirectories
 ################################################################################
 
-set(CMAKE_C_COMPILER ${CLANG})
-set(CMAKE_CXX_COMPILER ${CLANGXX})
-
 add_subdirectory(${SRC_DIR})
 
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
