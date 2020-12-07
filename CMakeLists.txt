@@ -47,11 +47,23 @@ if (NOT CMAKE_CXX_COMPILER_ID STREQUAL Clang)
   set(CMAKE_CXX_COMPILER ${CLANGXX})
 endif()
 
+# check version
+string(REPLACE "." ";" CLANG_VERSION_LIST ${CMAKE_CXX_COMPILER_VERSION})
+list(GET CLANG_VERSION_LIST 0 CLANG_VERSION_MAJOR)
+list(GET CLANG_VERSION_LIST 1 CLANG_VERSION_MINOR)
+list(GET CLANG_VERSION_LIST 2 CLANG_VERSION_PATCH)
+
+if (CLANG_VERSION_MAJOR LESS 7)
+  message(FATAL_ERROR "Clang version < 7 not supported")
+endif()
+
+# flags
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -pedantic")
 
+# libraries
 set(CLANG_LIBRARIES clang-cpp)
 
-# clang include paths
+# include paths
 set(ENV{CLANGXX} ${CMAKE_CXX_COMPILER})
 
 execute_process(COMMAND ${TOOL_DIR}/clang_include_paths.sh
@@ -63,7 +75,7 @@ if (NOT ${CLANG_INCLUDE_PATHS_ERROR} EQUAL 0)
 endif()
 
 # find llvm
-find_package(LLVM REQUIRED CONFIG)
+find_package(LLVM ${CLANG_VERSION_MAJOR} REQUIRED CONFIG)
 
 # find catch2
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
