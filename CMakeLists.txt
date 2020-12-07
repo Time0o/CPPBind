@@ -61,8 +61,6 @@ endif()
 # find llvm
 find_package(LLVM REQUIRED CONFIG)
 
-set(LLVM_LIBRARIES option)
-
 # fetch catch2
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
   Include(FetchContent)
@@ -113,10 +111,7 @@ function(target_llvm_config TARGET)
   # includes
   target_include_directories(${TARGET} PRIVATE ${LLVM_INCLUDE_DIRS})
 
-  # linking
-  target_link_directories(${TARGET} PRIVATE ${LLVM_LIBRARY_DIRS})
-
-  llvm_config(${TARGET} USE_SHARED ${LLVM_LIBRARIES})
+  llvm_config(${TARGET} USE_SHARED option)
 endfunction()
 
 function(target_cppbind_config TARGET)
