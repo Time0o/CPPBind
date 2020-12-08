@@ -38,13 +38,7 @@ set(CATCH2_DIR ${DEPS_DIR}/catch2)
 
 # find clang
 if (NOT CMAKE_CXX_COMPILER_ID STREQUAL Clang)
-  FIND_PROGRAM(CLANGXX clang++)
-
-  if(${CLANGXX} STREQUAL CLANGXX-NOTFOUND)
-    message(FATAL_ERROR "Failed to find clang")
-  endif()
-
-  set(CMAKE_CXX_COMPILER ${CLANGXX})
+  message(FATAL_ERROR "CMAKE_CXX_COMPILER must be Clang")
 endif()
 
 # check version
