@@ -13,6 +13,7 @@
 
 #include "llvm/Support/Casting.h"
 
+#include "CompilerState.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
 #include "Options.hpp"
@@ -118,7 +119,7 @@ public:
 
   explicit WrapperFunction(clang::FunctionDecl const *Decl)
   : IsMethod_(false),
-    Name_(determineName(Decl)),
+    Name_(Identifier(Decl)),
     OverloadName_(Name_),
     Params_(determineParams(Decl, IsMethod_)),
     ReturnType_(Decl->getReturnType())
@@ -133,7 +134,7 @@ public:
     OverloadName_(Name_),
     Params_(determineParams(Decl, IsMethod_)),
     ReturnType_(Decl->getReturnType()),
-    SelfType_(WrapperType(Decl->getThisType()).pointee())
+    SelfType_(WrapperType(thisType(Decl)).pointee())
   { assert(!Decl->isTemplateInstantiation()); } // XXX
 
   bool isMethod() const
@@ -177,8 +178,14 @@ public:
   { return strHeader(II) + "\n" + strBody(II); }
 
 private:
-  Identifier determineName(clang::FunctionDecl const *Decl) const
-  { return Identifier(Decl); }
+  static clang::QualType thisType(clang::CXXMethodDecl const *Decl)
+  {
+#if __clang_major__ >= 8
+    return Decl->getThisType();
+#else
+    return Decl->getThisType(CompilerState()->getASTContext());
+#endif
+  }
 
   Identifier determineName(clang::CXXMethodDecl const *Decl) const
   {
@@ -213,7 +220,7 @@ private:
       assert(!MethodDecl->isVirtual()); // XXX
 
       if (!MethodDecl->isStatic())
-        ParamList.emplace_back(MethodDecl->getThisType(), Identifier::Self);
+        ParamList.emplace_back(thisType(MethodDecl), Identifier::Self);
     }
 
     auto Params(Decl->parameters());
