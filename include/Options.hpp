@@ -318,7 +318,7 @@ private:
     decltype(Option<T>::Assertions_) Assertions;
 
     try {
-      Assertions = std::any_cast<decltype(Assertions)>(*It);
+      Assertions = std::any_cast<decltype(Assertions)>(It->second);
     } catch (std::bad_any_cast const &) {
       assert(false && "valid option assertions");
     }
