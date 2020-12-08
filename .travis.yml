@@ -1,7 +1,7 @@
 language: cpp
 
 os: linux
-dist: bionic
+dist: focal
 compiler: clang
 
 matrix:
@@ -31,6 +31,18 @@ matrix:
             - libclang-cpp10-dev
       env:
         - CLANGXX=clang++-10
+    - addons:
+        apt:
+          sources:
+            - sourceline: "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-11 main"
+              key_url: "https://apt.llvm.org/llvm-snapshot.gpg.key"
+          packages:
+            - clang-11
+            - llvm-11-dev
+            - libclang-11-dev
+            - libclang-cpp11-dev
+      env:
+        - CLANGXX=clang++-11
 
 script:
   - mkdir build

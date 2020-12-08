@@ -245,7 +245,7 @@ private:
     // XXX aliases
     // XXX indicate mandatory options and default values in Desc
 
-    assert(Opts_.find(Option.Name_) == Opts_.end());
+    assert(Opts_.find(Option.Name_.str()) == Opts_.end());
 
     auto Opt(packOpt<T>(Option.Name_, llvm::cl::cat(Category_)));
 
@@ -278,16 +278,16 @@ private:
       }
     }
 
-    Opts_[Option.Name_] = Opt;
+    Opts_[Option.Name_.str()] = Opt;
 
     if (!Option.Assertions_.empty())
-      OptAssertions_[Option.Name_] = Option.Assertions_;
+      OptAssertions_[Option.Name_.str()] = Option.Assertions_;
   }
 
   template<typename T>
   auto findOpt(llvm::StringRef Name) const
   {
-    auto OptIt(Opts_.find(Name));
+    auto OptIt(Opts_.find(Name.str()));
 
     assert(OptIt != Opts_.end() && "valid option name");
 
@@ -311,7 +311,7 @@ private:
   template<typename T>
   void assertOptValue(llvm::StringRef Name, T const &Value) const
   {
-    auto It(OptAssertions_.find(Name));
+    auto It(OptAssertions_.find(Name.str()));
     if (It == OptAssertions_.end())
       return;
 
@@ -356,7 +356,7 @@ inline OptionsRegistry &Options()
 #define MUX_MACRO(_1, _2, MACRO, ...) MACRO
 #define OPT(...) MUX_MACRO(__VA_ARGS__, OPT2, OPT1, _)(__VA_ARGS__)
 
-#define NAMESPACE                              OPT(llvm::StringRef, "namespace")
+#define NAMESPACE                              OPT("namespace")
 #define TYPE_CASE                              OPT(Identifier::Case, "type-case")
 #define FUNC_CASE                              OPT(Identifier::Case, "func-case")
 #define PARAM_CASE                             OPT(Identifier::Case, "param-case")
