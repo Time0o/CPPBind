@@ -63,7 +63,24 @@ endif()
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -pedantic")
 
 # libraries
-set(CLANG_LIBRARIES clang-cpp)
+if (CLANG_VERSION_MAJOR LESS 9)
+  set(CLANG_LIBRARIES
+      clangTooling
+      clangFrontend
+      clangDriver
+      clangSerialization
+      clangCodeGen
+      clangParse
+      clangSema
+      clangAnalysis
+      clangEdit
+      clangAST
+      clangASTMatchers
+      clangLex
+      clangBasic)
+else()
+  set(CLANG_LIBRARIES clang-cpp)
+endif()
 
 # include paths
 set(ENV{CLANGXX} ${CMAKE_CXX_COMPILER})
