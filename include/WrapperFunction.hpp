@@ -2,19 +2,29 @@
 #define GUARD_WRAPPER_FUNCTION_H
 
 #include <cassert>
+#include <cstddef>
 #include <list>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <variant>
 
+#include "clang/AST/APValue.h"
 #include "clang/AST/Decl.h"
+#include "clang/AST/Expr.h"
 
+#include "llvm/ADT/APFloat.h"
+#include "llvm/ADT/APSInt.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/Support/Casting.h"
 
+#include "CompilerState.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
+#include "Logging.hpp"
 #include "Options.hpp"
 #include "String.hpp"
 #include "WrapperType.hpp"
@@ -59,9 +69,79 @@ namespace detail
 class WrapperParam
 {
 public:
-  WrapperParam(WrapperType const &Type, Identifier const &Name)
+  class DefaultArg
+  {
+  public:
+    explicit DefaultArg(clang::Expr const *Expr)
+    {
+      auto &Ctx(CompilerState()->getASTContext());
+
+      if (Expr->HasSideEffects(Ctx))
+        error() << "Default value must not have side effects";
+
+      if (Expr->isValueDependent() || Expr->isTypeDependent())
+        error() << "Default value must not be value/type dependent";
+
+      if (Expr->isNullPointerConstant(Ctx, clang::Expr::NPC_NeverValueDependent)) {
+        Value_ = nullptr;
+        return;
+      }
+
+      clang::Expr::EvalResult Result;
+      if (!Expr->EvaluateAsRValue(Result, Ctx, true))
+        error() << "Default value must be constant foldable to rvalue";
+
+      switch(Result.Val.getKind()) {
+      case clang::APValue::Int:
+        Value_ = Result.Val.getInt();
+        break;
+      case clang::APValue::Float:
+        Value_ = Result.Val.getFloat();
+        break;
+      default:
+        error() << "Default value must have pointer, integer or floating point type"; // XXX
+      }
+    }
+
+    std::string str() const
+    {
+      if (is<std::nullptr_t>())
+        return "NULL";
+      else if (is<llvm::APSInt>())
+        return APToString(as<llvm::APSInt>());
+      else if (is<llvm::APFloat>())
+        return APToString(as<llvm::APFloat>());
+
+      __builtin_unreachable();
+    }
+
+  private:
+    template<typename T>
+    bool is() const
+    { return std::holds_alternative<T>(Value_); }
+
+    template<typename T>
+    T as() const
+    { return std::get<T>(Value_); }
+
+    template<typename T>
+    static std::string APToString(T const &Val)
+    {
+      llvm::SmallString<40> Str;
+      Val.toString(Str); // XXX format as C literal
+      return Str.str();
+    }
+
+  private:
+    std::variant<std::nullptr_t, llvm::APSInt, llvm::APFloat> Value_;
+  };
+
+  WrapperParam(WrapperType const &Type,
+               Identifier const &Name,
+               std::optional<DefaultArg> Default = std::nullopt)
   : Type_(Type),
-    Name_(Name)
+    Name_(Name),
+    Default_(Default)
   {}
 
   WrapperType type() const
@@ -69,6 +149,9 @@ public:
 
   Identifier name() const
   { return Name_; }
+
+  bool hasDefaultArg() const
+  { return static_cast<bool>(Default_); }
 
   std::string strHeader(std::shared_ptr<IdentifierIndex> II) const
   {
@@ -83,6 +166,9 @@ public:
 
   std::string strBody() const
   {
+    if (Default_)
+      return Default_->str();
+
     if (wrap()) {
       return Type_.isPointer() ?
         detail::typeCastUnwrapped(Type_, id()) :
@@ -101,6 +187,7 @@ private:
 
   WrapperType Type_;
   Identifier Name_;
+  std::optional<DefaultArg> Default_;
 };
 
 class WrapperFunctionBuilder;
@@ -121,6 +208,7 @@ public:
     Name_(determineName(Decl)),
     OverloadName_(Name_),
     Params_(determineParams(Decl, IsMethod_)),
+    FirstDefaultParam_(determineFirstDefaultParam(Params_)),
     ReturnType_(Decl->getReturnType())
   { assert(!Decl->isTemplateInstantiation()); } // XXX
 
@@ -132,6 +220,7 @@ public:
     Name_(determineName(Decl)),
     OverloadName_(Name_),
     Params_(determineParams(Decl, IsMethod_)),
+    FirstDefaultParam_(determineFirstDefaultParam(Params_)),
     ReturnType_(Decl->getReturnType()),
     SelfType_(WrapperType(Decl->getThisType()).pointee())
   { assert(!Decl->isTemplateInstantiation()); } // XXX
@@ -153,6 +242,20 @@ public:
 
   std::vector<WrapperParam> params() const
   { return Params_; }
+
+  bool hasDefaultParams() const
+  { return FirstDefaultParam_ < Params_.size(); }
+
+  void removeDefaultParam()
+  {
+    if (!hasDefaultParams())
+      return;
+
+    auto &Param = Params_[FirstDefaultParam_];
+    Param = WrapperParam(Param.type(), Param.name());
+
+    ++FirstDefaultParam_;
+  }
 
   void overload(std::shared_ptr<IdentifierIndex> II)
   {
@@ -220,11 +323,12 @@ private:
 
     for (unsigned i = 0u; i < Params.size(); ++i) {
       auto const &Param(Params[i]);
+
       auto ParamType(Param->getType());
       auto ParamName(Param->getNameAsString());
+      auto const *ParamDefaultArg(Param->getDefaultArg());
 
       assert(!ParamType->isReferenceType()); // XXX
-      assert(!Param->hasDefaultArg()); // XXX
 
       if (ParamName.empty()) {
         ParamName = WRAPPER_FUNC_UNNAMED_PARAM_PLACEHOLDER;
@@ -232,10 +336,28 @@ private:
         assert(replaceAllStrs(ParamName, "%p", std::to_string(i + 1u)) > 0u);
       }
 
-      ParamList.emplace_back(ParamType, ParamName);
+      if (ParamDefaultArg)
+        ParamList.emplace_back(ParamType, ParamName, WrapperParam::DefaultArg(ParamDefaultArg));
+      else
+        ParamList.emplace_back(ParamType, ParamName);
     }
 
     return ParamList;
+  }
+
+  static std::vector<WrapperParam>::size_type determineFirstDefaultParam(
+    std::vector<WrapperParam> const &Params)
+  {
+    for (decltype(Params.size()) P = 0u; P < Params.size(); ++P) {
+      if (Params[P].hasDefaultArg()) {
+        for (auto P_ = P + 1u; P_ < Params.size(); ++P_)
+          assert(Params[P].hasDefaultArg());
+
+        return P;
+      }
+    }
+
+    return Params.size();
   }
 
   bool hasParams() const
@@ -243,7 +365,7 @@ private:
 
   std::string strParams(std::shared_ptr<IdentifierIndex> II,
                         bool Body,
-                        std::size_t Skip = 0u) const
+                        std::vector<WrapperParam>::size_type Skip = 0u) const
   {
     std::stringstream SS;
 
@@ -252,14 +374,15 @@ private:
 
     SS << "(";
     if (Params_.size() > Skip) {
-      auto it = Params_.begin();
+      for (auto P = Skip; P < Params_.size(); ++P) {
+        if (!Body && Params_[P].hasDefaultArg())
+          break;
 
-      for (std::size_t i = 0u; i < Skip; ++i)
-        ++it;
+        if (P > Skip)
+          SS << ", ";
 
-      SS << strParam(*it);
-      while (++it != Params_.end())
-        SS << ", " << strParam(*it);
+        SS << strParam(Params_[P]);
+      }
     }
     SS << ")";
 
@@ -325,6 +448,7 @@ private:
   Identifier OverloadName_;
 
   std::vector<WrapperParam> Params_;
+  std::vector<WrapperParam>::size_type FirstDefaultParam_;
   WrapperType ReturnType_;
   WrapperType SelfType_;
 };
@@ -351,7 +475,22 @@ public:
 
   template<typename ...ARGS>
   WrapperFunctionBuilder &addParam(ARGS&&... Args)
-  { Wf_.Params_.emplace_back(std::forward<ARGS>(Args)...); return *this; }
+  {
+    WrapperParam Param(std::forward<ARGS>(Args)...);
+
+    if (!Param.hasDefaultArg()) {
+#ifndef NDEBUG
+      if (!Wf_.Params_.empty())
+        assert(!Wf_.Params_.back().hasDefaultArg());
+#endif
+
+      Wf_.FirstDefaultParam_ = Wf_.Params_.size() + 1u;
+    }
+
+    Wf_.Params_.emplace_back(Param);
+
+    return *this;
+  }
 
   WrapperFunction build() const
   { return Wf_; }

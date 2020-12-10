@@ -108,6 +108,11 @@ public:
       II_->add(Wf.name(), IdentifierIndex::FUNC);
 
     Functions_.push_back(Wf);
+
+    if (Wf.hasDefaultParams()) {
+      Wf.removeDefaultParam();
+      addWrapperFunction(Wf);
+    }
   }
 
   bool empty() const
