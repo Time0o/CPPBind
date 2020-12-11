@@ -11,7 +11,7 @@
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
 
-#include "FundamentalTypes.hpp"
+#include "FundamentalTypesHeader.hpp"
 
 namespace cppbind
 {
@@ -106,9 +106,8 @@ private:
     return Includes;
   }
 
-  static void adjustArguments(
-    clang::tooling::ClangTool &Tool,
-    std::string const &FundamentalTypesHeaderPath)
+  static void adjustArguments(clang::tooling::ClangTool &Tool,
+                              std::string const &FundamentalTypesHeaderPath)
   {
     std::vector<clang::tooling::ArgumentsAdjuster> ArgumentsAdjusters;
 

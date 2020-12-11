@@ -1,12 +1,8 @@
-#ifndef GUARD_BUILTIN_TYPES_H
-#define GUARD_BUILTIN_TYPES_H
+#ifndef GUARD_FUNDAMENTAL_TYPES_H
+#define GUARD_FUNDAMENTAL_TYPES_H
 
 #include <cassert>
-#include <cstdio>
-#include <cstdlib>
 #include <memory>
-#include <fstream>
-#include <stdexcept>
 #include <string>
 #include <unordered_map>
 
@@ -18,80 +14,6 @@
 
 namespace cppbind
 {
-
-class FundamentalTypesHeader
-{
-public:
-  FundamentalTypesHeader()
-  : Path_(createTmpPath())
-  {
-    std::ofstream Stream(path());
-    if (!Stream)
-      throw std::runtime_error("failed to generate temporary file");
-
-    Stream << Header_;
-    Stream.flush();
-  }
-
-  ~FundamentalTypesHeader()
-  { std::remove(c_path()); }
-
-  static std::string prepend(std::string &Code)
-  { return Header_ + ("\n" + Code); }
-
-  std::string path() const
-  { return Path_; }
-
-  char const *c_path() const
-  { return Path_.c_str(); }
-
-private:
-  static std::string createTmpPath()
-  {
-    char Tmpnam[6] = {'X', 'X', 'X', 'X', 'X', 'X'};
-    if (mkstemp(Tmpnam) == -1)
-      throw std::runtime_error("failed to create temporary path");
-
-    return Tmpnam;
-  }
-
-  static constexpr char const *Header_ = &R"(
-#include <cstddef>
-
-namespace __fundamental_types
-{
-
-extern void *_void;
-
-extern bool _bool;
-
-extern short int _short_int;
-extern int _int;
-extern long _long;
-extern long long _long_long;
-
-extern unsigned short int _unsigned_short_int;
-extern unsigned int _unsigned_int;
-extern unsigned long long _unsigned_long_long;
-extern unsigned long _unsigned_long;
-
-extern std::size_t _size_t;
-
-extern signed char _signed_char;
-extern unsigned char _unsigned_char;
-extern char _char;
-extern wchar_t _wchar_t;
-extern char16_t _char16_t;
-extern char32_t _char32_t;
-
-extern float _float;
-extern double _double;
-extern long double _long_double;
-
-} // namespace __fundamental_types)"[1];
-
-  std::string Path_;
-};
 
 class FundamentalTypeRegistry
 {
@@ -145,4 +67,4 @@ inline FundamentalTypeRegistry &FundamentalTypes()
 
 } // namespace cppbind
 
-#endif // GUARD_BUILTIN_TYPES_H
+#endif // GUARD_FUNDAMENTAL_TYPES_H
