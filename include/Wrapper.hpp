@@ -244,7 +244,7 @@ private:
   bool declareRecords(FileBuffer &File) const
   {
     auto cmp = [](WrapperType const &Wt1, WrapperType const &Wt2)
-    { return Wt1.name(true) < Wt2.name(true); };
+    { return Wt1.name() < Wt2.name(); };
 
     std::set<WrapperType, decltype(cmp)> WrappableParamTypes(cmp);
 
@@ -253,7 +253,7 @@ private:
         auto ParamBaseType(Param.type().base());
 
         if (ParamBaseType.isWrappable(II_)) {
-          WrappableParamTypes.insert(ParamBaseType.unqualifiedAndDesugared());
+          WrappableParamTypes.insert(ParamBaseType.unqualified());
 
         } else if (!ParamBaseType.isFundamental()) {
           error() << "Parameter type "

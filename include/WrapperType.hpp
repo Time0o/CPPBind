@@ -21,7 +21,7 @@ class WrapperType
 {
 public:
   WrapperType(clang::QualType const &Type)
-  : Type_(Type)
+  : Type_(Type.getDesugaredType(CompilerState()->getASTContext()))
   {}
 
   WrapperType(clang::Type const *Type)
@@ -51,12 +51,6 @@ public:
   WrapperType unqualified() const
   { return WrapperType(typePtr()); }
 
-  WrapperType desugared() const
-  { return WrapperType(Type_.getDesugaredType(CompilerState()->getASTContext())); }
-
-  WrapperType unqualifiedAndDesugared() const
-  { return WrapperType(typePtr()->getUnqualifiedDesugaredType()); }
-
   bool isQualified() const
   { return Type_.hasQualifiers(); }
 
@@ -72,7 +66,7 @@ public:
   }
 
   bool isWrappable(std::shared_ptr<IdentifierIndex> II) const
-  { return II->has(name(true), IdentifierIndex::TYPE); }
+  { return II->has(name(), IdentifierIndex::TYPE); }
 
   bool isPointer() const
   { return typePtr()->isPointerType(); }
@@ -107,8 +101,8 @@ public:
   WrapperType base() const
   { return pointee(true); }
 
-  Identifier name(bool desugar = false) const
-  { return strBaseUnwrapped(desugar); }
+  Identifier name() const
+  { return strBaseUnwrapped(); }
 
   std::string strWrapped(std::shared_ptr<IdentifierIndex> II) const
   {
@@ -144,14 +138,11 @@ public:
   std::string strBaseWrapped(std::shared_ptr<IdentifierIndex> II) const
   { return II->alias(name()).strQualified(TYPE_CASE, true); }
 
-  std::string strBaseUnwrapped(bool desugar = false) const
+  std::string strBaseUnwrapped() const
   {
     clang::PrintingPolicy PP(CompilerState()->getLangOpts());
 
-    auto T(desugar ? base().unqualifiedAndDesugared()
-                   : base().unqualified());
-
-    return T->getAsString(PP);
+    return base().unqualified()->getAsString(PP);
   }
 
   std::string strDeclaration(std::shared_ptr<IdentifierIndex> II) const
@@ -172,14 +163,7 @@ private:
 
 inline std::ostream &operator<<(std::ostream &Os, WrapperType const &Wt)
 {
-  auto Sugared(Wt.strBaseUnwrapped());
-  auto Desugared(Wt.strBaseUnwrapped(true));
-
-  Os << "Type " << Sugared;
-
-  if (Desugared != Sugared)
-    Os << " (alias " + Desugared + ")";
-
+  Os << "Type " << Wt.strBaseUnwrapped();
   return Os;
 }
 
