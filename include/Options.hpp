@@ -339,7 +339,8 @@ private:
 };
 
 template<>
-llvm::StringRef OptionsRegistry::get<llvm::StringRef>(llvm::StringRef Name) const
+inline llvm::StringRef OptionsRegistry::get<llvm::StringRef>(
+  llvm::StringRef Name) const
 {
   auto Opt(instance().findOpt<std::string>(Name));
   return Opt->c_str();
