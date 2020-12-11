@@ -24,6 +24,7 @@
 #include "llvm/Option/OptTable.h"
 #include "llvm/Support/CommandLine.h"
 
+#include "Identifier.hpp"
 #include "Logging.hpp"
 #include "String.hpp"
 
