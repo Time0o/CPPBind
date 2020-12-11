@@ -183,20 +183,15 @@ inline std::string normalizeWhitespaceStr(std::string &Str)
 
     auto ItNext(std::next(It));
 
-    if (std::isspace(*ItNext)) {
-      while (std::isspace(*ItNext))
-        ItNext = StrList.erase(ItNext);
-    }
+    while (std::isspace(*ItNext))
+      ItNext = StrList.erase(ItNext);
 
     It = ItNext;
   }
 
-  std::replace_if(StrList.begin(),
-                  StrList.end(),
-                  [](char c){ return std::isspace(c); },
-                  ' ');
+  Str = std::string(StrList.begin(), StrList.end());
 
-  return std::string(StrList.begin(), StrList.end());
+  return Str;
 }
 
 inline bool isAllStr(std::string const &Str, char c)
