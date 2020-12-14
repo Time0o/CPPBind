@@ -101,6 +101,10 @@ public:
       default:
         error() << "Default value must have pointer, integer or floating point type"; // XXX
       }
+
+      bool ResultBool;
+      if (Expr->EvaluateAsBooleanCondition(ResultBool, Ctx, true))
+        BoolValue_ = ResultBool;
     }
 
     std::string str() const
@@ -114,6 +118,9 @@ public:
 
       __builtin_unreachable();
     }
+
+    std::string strBool() const
+    { return BoolValue_ ? "true" : "false"; }
 
   private:
     template<typename T>
@@ -134,6 +141,7 @@ public:
 
   private:
     std::variant<std::nullptr_t, llvm::APSInt, llvm::APFloat> Value_;
+    bool BoolValue_;
   };
 
   WrapperParam(WrapperType const &Type,
@@ -167,7 +175,7 @@ public:
   std::string strBody() const
   {
     if (Default_)
-      return Default_->str();
+      return Type_.isFundamental("bool") ? Default_->strBool() : Default_->str();
 
     if (wrap()) {
       return Type_.isPointer() ?
