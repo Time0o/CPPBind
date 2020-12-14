@@ -40,6 +40,9 @@ public:
   FileBuffer const &source() const
   { return SourceFile_; }
 
+  std::vector<std::string> includes() const
+  { return Includes_; }
+
   void write() const
   {
     HeaderFile_.write(HeaderFilePath_);
@@ -62,6 +65,9 @@ private:
     SourceFilePath_ = Path;
   }
 
+  void addIncludes(std::vector<std::string> const &Includes)
+  { Includes_ = Includes; }
+
   bool Boilerplate_;
 
   FileBuffer HeaderFile_;
@@ -69,6 +75,8 @@ private:
 
   FileBuffer SourceFile_;
   std::string SourceFilePath_;
+
+  std::vector<std::string> Includes_;
 };
 
 class Wrapper
@@ -112,8 +120,18 @@ public:
     if (Wf.hasDefaultParams()) {
       Wf.removeDefaultParam();
       addWrapperFunction(Wf);
+    } else {
+      for (auto const &Type : Wf.types()) {
+        auto CHeader(Type.inCHeader());
+
+        if (CHeader)
+          addInclude(*CHeader);
+      }
     }
   }
+
+  void addInclude(std::string const &Include)
+  { Includes_.push_back(Include); }
 
   bool empty() const
   { return Functions_.empty(); }
@@ -128,6 +146,7 @@ public:
   {
     Files->addHeader(headerFile(Files->boilerplate()), headerFilePath());
     Files->addSource(sourceFile(Files->boilerplate()), sourceFilePath());
+    Files->addIncludes(includes());
   }
 
 private:
@@ -137,14 +156,15 @@ private:
 
     if (Boilerplate) {
       append(File, &Wrapper::openHeaderGuard);
-      append(File, &Wrapper::openExternCGuard, true);
+      append(File, &Wrapper::openExternCGuard, false);
+      append(File, &Wrapper::includeHeaders, false);
       append(File, &Wrapper::declareRecords);
     }
 
     append(File, &Wrapper::declareOrDefineFunctions, false);
 
     if (Boilerplate) {
-      append(File, &Wrapper::closeExternCGuard, true);
+      append(File, &Wrapper::closeExternCGuard, false);
       append(File, &Wrapper::closeHeaderGuard);
     }
 
@@ -163,14 +183,14 @@ private:
     FileBuffer File;
 
     if (Boilerplate) {
-      append(File, &Wrapper::includeHeaders);
-      append(File, &Wrapper::openExternCGuard, false);
+      append(File, &Wrapper::includeHeaders, true);
+      append(File, &Wrapper::openExternCGuard, true);
     }
 
     append(File, &Wrapper::declareOrDefineFunctions, true);
 
     if (Boilerplate) {
-      append(File, &Wrapper::closeExternCGuard, false);
+      append(File, &Wrapper::closeExternCGuard, true);
     }
 
     return File;
@@ -181,6 +201,16 @@ private:
     return wrapperFilePath(WRAPPER_SOURCE_OUTDIR,
                            WRAPPER_SOURCE_POSTFIX,
                            WRAPPER_SOURCE_EXT);
+  }
+
+  std::vector<std::string> includes() const
+  {
+    auto Includes(Includes_);
+
+    Includes.push_back(WrappedHeader_);
+    Includes.push_back(headerFilePath());
+
+    return Includes;
   }
 
   template<typename FUNC, typename ...ARGS>
@@ -209,33 +239,33 @@ private:
       File << FileBuffer::EmptyLine;
   }
 
-  bool openExternCGuard(FileBuffer &File, bool IfdefCpp) const
+  bool openExternCGuard(FileBuffer &File, bool Source) const
   {
     if (WRAPPER_HEADER_OMIT_EXTERN_C)
       return false;
 
-    if (IfdefCpp)
+    if (!Source)
       File << "#ifdef __cplusplus" << FileBuffer::EndLine;
 
     File << "extern \"C\" {" << FileBuffer::EndLine;
 
-    if (IfdefCpp)
+    if (!Source)
       File << "#endif" << FileBuffer::EndLine;
 
     return true;
   }
 
-  bool closeExternCGuard(FileBuffer &File, bool IfdefCpp) const
+  bool closeExternCGuard(FileBuffer &File, bool Source) const
   {
     if (WRAPPER_HEADER_OMIT_EXTERN_C)
       return false;
 
-    if (IfdefCpp)
+    if (!Source)
       File << "#ifdef __cplusplus" << FileBuffer::EndLine;
 
     File << "} // extern \"C\"" << FileBuffer::EndLine;
 
-    if (IfdefCpp)
+    if (!Source)
       File << "#endif" << FileBuffer::EndLine;
 
     return true;
@@ -272,7 +302,7 @@ private:
     return true;
   }
 
-  bool declareOrDefineFunctions(FileBuffer &File, bool IncludeBody) const
+  bool declareOrDefineFunctions(FileBuffer &File, bool Source) const
   {
     if (Functions_.empty())
       return false;
@@ -280,7 +310,7 @@ private:
     for (auto i = 0u; i < Functions_.size(); ++i) {
       auto &Wf(Functions_[i]);
 
-      if (IncludeBody) {
+      if (Source) {
         if (i > 0u)
           File << FileBuffer::EmptyLine;
 
@@ -313,16 +343,37 @@ private:
     return identifier.strUnqualified(Identifier::SNAKE_CASE_CAP_ALL);
   }
 
-  void includeHeaders(FileBuffer &File) const
+  bool includeHeaders(FileBuffer &File, bool Source) const
   {
-    auto include = [](std::string const &HeaderPath)
-    { return "#include \"" + pathFilename(HeaderPath) + "\""; };
+    auto include = [](std::string const &Header, bool System)
+    {
+      std::stringstream SS;
+      SS << "#include ";
 
-    File << include(WrappedHeader_) << FileBuffer::EndLine;
+      if (System)
+        SS << "\"" << pathFilename(Header) << "\"";
+      else
+        SS << "<" << Header << ">";
 
-    File << FileBuffer::EmptyLine;
+      return SS.str();
+    };
 
-    File << include(headerFilePath()) << FileBuffer::EndLine;
+    if (Source) {
+      File << include(WrappedHeader_, false) << FileBuffer::EndLine;
+
+      File << FileBuffer::EmptyLine;
+
+      File << include(headerFilePath(), false) << FileBuffer::EndLine;
+
+    } else {
+      if (Includes_.empty())
+        return false;
+
+      for (auto const &Header : Includes_)
+        File << include(Header, true) << FileBuffer::EndLine;
+    }
+
+    return true;
   }
 
   static constexpr char PathSep = '/';
@@ -361,6 +412,7 @@ private:
 
   std::vector<WrapperRecord> Records_;
   std::vector<WrapperFunction> Functions_;
+  std::vector<std::string> Includes_;
 };
 
 } // namespace cppbind

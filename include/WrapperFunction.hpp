@@ -50,17 +50,20 @@ namespace detail
   { return Type.strUnwrapped(true) + " " + What; }
 
   inline std::string typeCast(std::string const &Type,
-                              std::string const &What)
-  { return "reinterpret_cast<" + Type + ">" + "(" + What + ")"; }
+                              std::string const &What,
+                              std::string const &CastType = "reinterpret")
+  { return CastType + "_cast<" + Type + ">(" + What + ")"; }
 
   inline std::string typeCastWrapped(WrapperType const &Type,
                                      std::string const &What,
-                                     std::shared_ptr<IdentifierIndex> II)
-  { return typeCast(Type.strWrapped(II), What); }
+                                     std::shared_ptr<IdentifierIndex> II,
+                                     std::string const &CastType = "reinterpret")
+  { return typeCast(Type.strWrapped(II), What, CastType); }
 
   inline std::string typeCastUnwrapped(WrapperType const &Type,
-                                       std::string const &What)
-  { return typeCast(Type.strUnwrapped(true), What); }
+                                       std::string const &What,
+                                       std::string const &CastType = "reinterpret")
+  { return typeCast(Type.strUnwrapped(true), What, CastType); }
 
   inline std::string dereference(std::string const &What)
   { return "*" + What; }
@@ -163,13 +166,10 @@ public:
 
   std::string strHeader(std::shared_ptr<IdentifierIndex> II) const
   {
-    if (wrap()) {
-      return Type_.isPointer() ?
-        detail::typedWrapped(Type_, id(), II) :
-        detail::typedWrapped(Type_.withConst().pointerTo(), id(), II);
-    }
+    if (wrap() && Type_.isPointer())
+      return detail::typedWrapped(Type_.withConst().pointerTo(), id(), II);
 
-    return detail::typedUnwrapped(Type_, id());
+    return detail::typedWrapped(Type_, id(), II);
   }
 
   std::string strBody() const
@@ -182,6 +182,9 @@ public:
         detail::typeCastUnwrapped(Type_, id()) :
         detail::dereference(detail::typeCastUnwrapped(Type_.withConst().pointerTo(), id()));
     }
+
+    if (!Type_.base().isCType())
+      return detail::typeCastUnwrapped(Type_, id(), "static");
 
     return id();
   }
@@ -244,6 +247,17 @@ public:
 
   bool isOverloaded() const
   { return Overload_ > 0u; }
+
+  std::vector<WrapperType> types() const
+  {
+    std::vector<WrapperType> Types;
+    for (auto const &Param : Params_)
+      Types.push_back(Param.type());
+
+    Types.push_back(ReturnType_);
+
+    return Types;
+  }
 
   Identifier name() const
   { return Name_; }
@@ -430,12 +444,18 @@ private:
       if (!ReturnType_.isFundamental("void"))
         SS << "return ";
 
+      std::stringstream SS_;
       if (!IsMethod_ || IsStatic_) {
-        SS << name().strQualified() << strParams(II, true);
+        SS_ << name().strQualified() << strParams(II, true);
       } else {
-        SS << detail::typeCastUnwrapped(self(), Identifier::Self)
-           << "->" << name().strUnqualified() << strParams(II, true, 1);
+        SS_ << detail::typeCastUnwrapped(self(), Identifier::Self)
+            << "->" << name().strUnqualified() << strParams(II, true, 1);
       }
+
+      if (!ReturnType_.base().isCType())
+        SS << detail::typeCastWrapped(ReturnType_, SS_.str(), II, "static");
+      else
+        SS << SS_.str();
     }
 
     SS << "; }";
