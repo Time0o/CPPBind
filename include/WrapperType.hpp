@@ -12,6 +12,7 @@
 #include "FundamentalTypes.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
+#include "Print.hpp"
 #include "String.hpp"
 
 namespace cppbind
@@ -123,7 +124,7 @@ public:
 
   std::string strUnwrapped(bool Compact = false) const
   {
-    auto Unwrapped(Type_.getAsString());
+    auto Unwrapped(printQualType(Type_, PrintingPolicy::CURRENT));
 
     if (Compact) {
       if (base().isClass())
@@ -139,11 +140,7 @@ public:
   { return II->alias(name()).strQualified(TYPE_CASE, true); }
 
   std::string strBaseUnwrapped() const
-  {
-    clang::PrintingPolicy PP(CompilerState()->getLangOpts());
-
-    return base().unqualified()->getAsString(PP);
-  }
+  { return printQualType(*base().unqualified(), PrintingPolicy::DEFAULT); }
 
   std::string strDeclaration(std::shared_ptr<IdentifierIndex> II) const
   { return strWrapped(II) + ";"; }

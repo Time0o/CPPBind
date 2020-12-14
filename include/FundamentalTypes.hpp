@@ -11,6 +11,7 @@
 #include "clang/Tooling/Tooling.h"
 
 #include "CompilerState.hpp"
+#include "Print.hpp"
 
 namespace cppbind
 {
@@ -24,8 +25,7 @@ public:
   {
     assert(Type->isFundamentalType());
 
-    clang::PrintingPolicy PP(CompilerState()->getLangOpts());
-    auto TypeName(asQualType(Type).getAsString(PP));
+    auto TypeName(printQualType(asQualType(Type), PrintingPolicy::DEFAULT));
 
     FundamentalTypes_[TypeName] = Type;
   }
