@@ -16,6 +16,11 @@ class CompilerStateRegistry
   friend CompilerStateRegistry &CompilerState();
 
 public:
+  CompilerStateRegistry(CompilerStateRegistry const &) = delete;
+  CompilerStateRegistry(CompilerStateRegistry &&)      = delete;
+  void operator=(CompilerStateRegistry const &)        = delete;
+  void operator=(CompilerStateRegistry &&)             = delete;
+
   void updateFile(std::string const &File)
   { File_ = File; }
 
@@ -47,6 +52,8 @@ public:
   }
 
 private:
+  CompilerStateRegistry() = default;
+
   static CompilerStateRegistry &instance()
   {
     static CompilerStateRegistry CS;

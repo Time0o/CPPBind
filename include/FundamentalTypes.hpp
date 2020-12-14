@@ -21,6 +21,14 @@ class FundamentalTypeRegistry
   friend FundamentalTypeRegistry &FundamentalTypes();
 
 public:
+  FundamentalTypeRegistry(FundamentalTypeRegistry const &) = delete;
+  FundamentalTypeRegistry(FundamentalTypeRegistry &&)      = delete;
+  void operator=(FundamentalTypeRegistry const &)           = delete;
+  void operator=(FundamentalTypeRegistry &&)                = delete;
+
+  void clear()
+  { FundamentalTypes_.clear(); }
+
   void add(clang::Type const *Type)
   {
     assert(Type->isFundamentalType());
@@ -50,6 +58,8 @@ public:
   }
 
 private:
+  FundamentalTypeRegistry() = default;
+
   static FundamentalTypeRegistry &instance()
   {
     static FundamentalTypeRegistry Ftr;

@@ -12,6 +12,7 @@
 #include "clang/Tooling/Tooling.h"
 
 #include "FundamentalTypesHeader.hpp"
+#include "FundamentalTypes.hpp"
 
 namespace cppbind
 {
@@ -25,6 +26,8 @@ public:
     beforeRun();
 
     auto Factory(makeFactory());
+
+    FundamentalTypes().clear();
 
     bool Ret = clang::tooling::runToolOnCodeWithArgs(
       Factory->create(),
