@@ -106,7 +106,11 @@ public:
       }
 
       bool ResultBool;
+#if __clang_major >= 9
       if (Expr->EvaluateAsBooleanCondition(ResultBool, Ctx, true))
+#else
+      if (Expr->EvaluateAsBooleanCondition(ResultBool, Ctx))
+#endif
         BoolValue_ = ResultBool;
     }
 
