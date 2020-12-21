@@ -2,6 +2,7 @@
 #define GUARD_WRAPPER_TYPE_H
 
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <utility>
@@ -12,6 +13,7 @@
 #include "FundamentalTypes.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
+#include "Print.hpp"
 #include "String.hpp"
 
 namespace cppbind
@@ -48,9 +50,6 @@ public:
   clang::QualType const *operator->() const
   { return &Type_; }
 
-  WrapperType unqualified() const
-  { return WrapperType(typePtr()); }
-
   bool isQualified() const
   { return Type_.hasQualifiers(); }
 
@@ -80,6 +79,22 @@ public:
   bool isConst() const
   { return Type_.isConstQualified(); }
 
+  bool isCType() const
+  {
+    if (!isFundamental())
+      return false;
+
+    return !static_cast<bool>(FundamentalTypes().toC(typePtr()));
+  }
+
+  std::optional<std::string> inCHeader() const
+  {
+    if (!isFundamental())
+      return std::nullopt;
+
+    return FundamentalTypes().inCHeader(typePtr());
+  }
+
   WrapperType pointerTo() const
   { return WrapperType(CompilerState()->getASTContext().getPointerType(Type_)); }
 
@@ -95,6 +110,9 @@ public:
     return Pointee;
   }
 
+  WrapperType unqualified() const
+  { return WrapperType(typePtr()); }
+
   WrapperType withConst() const
   { return WrapperType(Type_.withConst()); }
 
@@ -107,7 +125,7 @@ public:
   std::string strWrapped(std::shared_ptr<IdentifierIndex> II) const
   {
     if (base().isFundamental())
-      return strUnwrapped();
+      return toC(strUnwrapped());
 
     assert(isWrappable(II));
 
@@ -123,7 +141,7 @@ public:
 
   std::string strUnwrapped(bool Compact = false) const
   {
-    auto Unwrapped(Type_.getAsString());
+    auto Unwrapped(printQualType(Type_, PrintingPolicy::CURRENT));
 
     if (Compact) {
       if (base().isClass())
@@ -136,19 +154,27 @@ public:
   }
 
   std::string strBaseWrapped(std::shared_ptr<IdentifierIndex> II) const
-  { return II->alias(name()).strQualified(TYPE_CASE, true); }
+  {
+    if (base().isFundamental())
+      return toC(base().strUnwrapped());
+
+    assert(isWrappable(II));
+
+    auto Alias(II->alias(name()));
+
+    return toC(Alias.strQualified(TYPE_CASE, true));
+  }
 
   std::string strBaseUnwrapped() const
-  {
-    clang::PrintingPolicy PP(CompilerState()->getLangOpts());
-
-    return base().unqualified()->getAsString(PP);
-  }
+  { return printQualType(*base().unqualified(), PrintingPolicy::DEFAULT); }
 
   std::string strDeclaration(std::shared_ptr<IdentifierIndex> II) const
   { return strWrapped(II) + ";"; }
 
 private:
+  clang::QualType qualType() const
+  { return Type_; }
+
   clang::Type const *typePtr() const
   { return Type_.getTypePtr(); }
 
@@ -157,6 +183,16 @@ private:
 
   clang::Type const *baseTypePtr() const
   { return baseQualType().getTypePtr(); }
+
+  std::string toC(std::string Str) const
+  {
+    auto CType(FundamentalTypes().toC(baseTypePtr()));
+
+    if (CType)
+      replaceStr(Str, strBaseUnwrapped(), *CType);
+
+    return Str;
+  }
 
   clang::QualType Type_;
 };

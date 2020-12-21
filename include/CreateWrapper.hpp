@@ -165,6 +165,9 @@ public:
   std::string strSource() const
   { return WrFiles_.front()->source().content(); }
 
+  std::vector<std::string> includes() const
+  { return WrFiles_.front()->includes(); }
+
 private:
   void afterRun() override
   { assert(WrFiles_.size() == 1u); }

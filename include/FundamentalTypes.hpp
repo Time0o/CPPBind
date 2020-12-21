@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 
@@ -11,6 +12,7 @@
 #include "clang/Tooling/Tooling.h"
 
 #include "CompilerState.hpp"
+#include "Print.hpp"
 
 namespace cppbind
 {
@@ -20,12 +22,22 @@ class FundamentalTypeRegistry
   friend FundamentalTypeRegistry &FundamentalTypes();
 
 public:
+  FundamentalTypeRegistry(FundamentalTypeRegistry const &) = delete;
+  FundamentalTypeRegistry(FundamentalTypeRegistry &&)      = delete;
+  void operator=(FundamentalTypeRegistry const &)           = delete;
+  void operator=(FundamentalTypeRegistry &&)                = delete;
+
+  void clear()
+  {
+    FundamentalTypes_.clear();
+    CTypeEquivalents_.clear();
+  }
+
   void add(clang::Type const *Type)
   {
     assert(Type->isFundamentalType());
 
-    clang::PrintingPolicy PP(CompilerState()->getLangOpts());
-    auto TypeName(asQualType(Type).getAsString(PP));
+    auto TypeName(printQualType(asQualType(Type), PrintingPolicy::DEFAULT));
 
     FundamentalTypes_[TypeName] = Type;
   }
@@ -49,7 +61,27 @@ public:
     return asQualType(Type) == asQualType(get(TypeName));
   }
 
+  std::optional<std::string> toC(clang::Type const *Type)
+  {
+    auto Equiv(getCTypeEquivalent(Type));
+    if (!Equiv || Equiv->CType == Equiv->CXXType)
+      return std::nullopt;
+
+    return Equiv->CType;
+  }
+
+  std::optional<std::string> inCHeader(clang::Type const *Type)
+  {
+    auto Equiv(getCTypeEquivalent(Type));
+    if (!Equiv)
+      return std::nullopt;
+
+    return Equiv->CHeader;
+  }
+
 private:
+  FundamentalTypeRegistry() = default;
+
   static FundamentalTypeRegistry &instance()
   {
     static FundamentalTypeRegistry Ftr;
@@ -59,7 +91,52 @@ private:
   static clang::QualType asQualType(clang::Type const *Type)
   { return clang::QualType(Type, 0); }
 
+  struct CTypeEquivalent
+  {
+    CTypeEquivalent(std::string CXXType, std::string CType, std::string CHeader)
+    : CXXType(CXXType),
+      CType(CType),
+      CHeader(CHeader)
+    {}
+
+    std::string CXXType;
+    std::string CType;
+    std::string CHeader;
+  };
+
+  std::optional<CTypeEquivalent> getCTypeEquivalent(clang::Type const *Type)
+  {
+    if (CTypeEquivalents_.empty())
+      initCTypeEquivalents();
+
+    auto IT(CTypeEquivalents_.find(Type));
+
+    if (IT == CTypeEquivalents_.end())
+      return std::nullopt;
+
+    return IT->second;
+  }
+
+  void initCTypeEquivalents()
+  {
+    auto insert = [&](std::string const &CXXType,
+                      std::string const &CType,
+                      std::string const &CHeader)
+    {
+      CTypeEquivalents_.emplace(get(CXXType),
+                                CTypeEquivalent(CXXType, CType, CHeader));
+    };
+
+    // XXX nullptr_t
+
+    insert("char16_t", "uint16_t", "stdint.h");
+    insert("char32_t", "uint32_t", "stdint.h");
+    insert("bool", "bool", "bool.h"),
+    insert("wchar_t", "wchar_t", "wchar.h");
+  }
+
   std::unordered_map<std::string, clang::Type const *> FundamentalTypes_;
+  std::unordered_map<clang::Type const *, CTypeEquivalent> CTypeEquivalents_;
 };
 
 inline FundamentalTypeRegistry &FundamentalTypes()

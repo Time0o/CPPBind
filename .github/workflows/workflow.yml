@@ -1,0 +1,77 @@
+name: build and run tests
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        CXX: [clang++-8, clang++-9, clang++-10, clang++-11]
+        include:
+        - CXX: clang++-8
+          DEPENDENCIES: clang-8 llvm-8-dev libclang-8-dev
+          COVERAGE: false
+
+        - CXX: clang++-9
+          DEPENDENCIES: clang-9 llvm-9-dev libclang-9-dev
+          COVERAGE: false
+
+        - CXX: clang++-10
+          DEPENDENCIES: clang-10 llvm-10-dev libclang-10-dev libclang-cpp10-dev
+          COVERAGE: false
+
+        - CXX: clang++-11
+          PREPARE_DEPENDENCIES: >
+            wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add - &&
+            sudo apt-add-repository "deb https://apt.llvm.org/bionic/ llvm-toolchain-bionic-11 main"
+          DEPENDENCIES: clang-11 llvm-11-dev libclang-11-dev libclang-cpp11-dev
+          COVERAGE: true
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: prepare-dependencies
+        run: ${{ matrix.PREPARE_DEPENDENCIES }}
+
+      - name: install-dependencies
+        run: sudo apt-get update && sudo apt-get install -yq ${{ matrix.DEPENDENCIES }}
+
+      - name: cmake-configure-coverage
+        if: ${{ matrix.COVERAGE }} == true
+        run: >
+          cmake -B build
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_COMPILER=${{ matrix.CXX }}
+          -DCOVERAGE=ON
+
+      - name: cmake-configure-no-coverage
+        if: ${{ matrix.COVERAGE }} == false
+        run: >
+          cmake -B build
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_COMPILER=${{ matrix.CXX }}
+
+      - name: cmake-build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: test-run-coverage
+        if: ${{ matrix.COVERAGE }} == true
+        run: cmake --build build --target test_coverage
+
+      - name: test-run-no-coverage
+        if: ${{ matrix.COVERAGE }} == false
+        run: cmake --build build --target test
+
+      - name: test-upload-coverage
+        if: ${{ matrix.COVERAGE }} == true
+        uses: codecov/codecov-action@v1
+        with:
+          file: build/coverage/coverage_cppbind.txt
+          name: cppbind_test
+          fail_ci_if_error: true

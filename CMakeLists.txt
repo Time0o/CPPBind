@@ -19,17 +19,22 @@ set(PROJECT_COPYRIGHT "2020")
 # Project Structure
 ################################################################################
 
-set(CPPBIND cppbind)
-set(CPPBIND_SRC CPPBind.cpp)
-set(CPPBIND_TEST cppbind_test)
-set(CPPBIND_TEST_SRC CPPBindTest.cpp)
-
 set(SRC_DIR ${PROJECT_SOURCE_DIR}/source)
 set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
 set(TEST_DIR ${PROJECT_SOURCE_DIR}/test)
 set(TOOL_DIR ${PROJECT_SOURCE_DIR}/tool)
 set(DEPS_DIR ${PROJECT_SOURCE_DIR}/deps)
 set(CATCH2_DIR ${DEPS_DIR}/catch2)
+set(COVERAGE_DIR ${PROJECT_BINARY_DIR}/coverage)
+
+set(CPPBIND cppbind)
+set(CPPBIND_SRC CPPBind.cpp)
+set(CPPBIND_TEST cppbind_test)
+set(CPPBIND_TEST_SRC CPPBindTest.cpp)
+
+set(CPPBIND_PROFRAW ${COVERAGE_DIR}/cppbind_%p.profraw)
+set(CPPBIND_PROFDATA ${COVERAGE_DIR}/cppbind.profdata)
+set(CPPBIND_COVERAGE_TXT ${COVERAGE_DIR}/coverage_cppbind.txt)
 
 
 ################################################################################
@@ -55,6 +60,10 @@ endif()
 
 # flags
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -pedantic")
+
+if (CMAKE_BUILD_TYPE STREQUAL Debug AND COVERAGE)
+  set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
+endif()
 
 # libraries
 if (CLANG_VERSION_MAJOR LESS 9)
@@ -108,11 +117,12 @@ endif()
 
 function(target_cpp_config TARGET)
   set_target_properties(
-    ${TARGET} PROPERTIES
-    LINKER_LANGUAGE CXX
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED ON
-    LINK_FLAGS ""
+    ${TARGET}
+    PROPERTIES
+      LINKER_LANGUAGE CXX
+      CXX_STANDARD 17
+      CXX_STANDARD_REQUIRED ON
+      LINK_FLAGS ""
   )
 endfunction()
 

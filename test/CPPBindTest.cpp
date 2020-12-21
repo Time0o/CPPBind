@@ -1,84 +1,105 @@
-#define CATCH_CONFIG_MAIN
-
-#include <cassert>
-#include <ostream>
-#include <sstream>
-#include <string>
-
-#include "clang/Tooling/Tooling.h"
+#define CATCH_CONFIG_RUNNER
 
 #include "catch2/catch.hpp"
 
-#include "CreateWrapper.hpp"
-#include "FundamentalTypes.hpp"
-#include "Options.hpp"
-#include "String.hpp"
+#include "CPPBindTestHelpers.hpp"
 
-namespace
+using namespace cppbind_test;
+
+TEST_CASE("Functions")
 {
+  WrapperTest("simplest possible function",
+    makeWrappable(
+      "void foo();"),
+    WrappedBy(
+      "void test_foo()\n"
+      "{ test::foo(); }"));
 
-class Snippet
-{
-public:
-  Snippet(std::string const &Code)
-  : Code_(Code),
-    WrappedCode_(wrapCode(Code))
-  {}
+  WrapperTest("function with arguments",
+    makeWrappable(
+      "int foo(int a, int b);"),
+    WrappedBy(
+      "int test_foo(int a, int b)\n"
+      "{ return test::foo(a, b); }"));
 
-  std::string code() const
-  { return Code_; }
+  WrapperTest("function with unnamed arguments",
+    makeWrappable(
+      "int foo(int a, int, int b, int);"),
+    WrappedBy(
+      "int test_foo(int a, int _2, int b, int _4)\n"
+      "{ return test::foo(a, _2, b, _4); }"));
 
-  std::string wrappedCode() const
-  { return WrappedCode_; }
+  WrapperTest("function with default arguments",
+     makeWrappable(
+       "int foo(int a, int b = 1, bool c = true, double d = 0.5, void *e = nullptr);"),
+     WrappedBy(
+       "int test_foo_1(int a)\n"
+       "{ return test::foo(a, 1, true, 0.5, NULL); }\n"
+       "int test_foo_2(int a, int b)\n"
+       "{ return test::foo(a, b, true, 0.5, NULL); }\n"
+       "int test_foo_3(int a, int b, bool c)\n"
+       "{ return test::foo(a, b, c, 0.5, NULL); }\n"
+       "int test_foo_4(int a, int b, bool c, double d)\n"
+       "{ return test::foo(a, b, c, d, NULL); }\n"
+       "int test_foo_5(int a, int b, bool c, double d, void * e)\n"
+       "{ return test::foo(a, b, c, d, e); }"));
 
-private:
-  using RunnerType = cppbind::CreateWrapperTestToolRunner;
-  using FactoryType = decltype(std::declval<RunnerType>().makeFactory());
+  // XXX variadic macros/varargs
 
-  static std::string wrapCode(std::string const &Code)
-  {
-    RunnerType Runner;
+  // XXX pass by reference
+  // XXX pass by rvalue reference
 
-    Runner.run("namespace test {" + Code + "}");
+  // XXX pass structure types (esp. move and copy construction)
 
-    std::string StrSource(Runner.strSource());
+  WrapperTest("function overloads",
+     makeWrappable(
+       "void foo(int a);\n"
+       "void foo(double a);"),
+     WrappedBy(
+       "void test_foo_1(int a);\n"
+       "void test_foo_2(double a);"));
 
-    return cppbind::normalizeWhitespaceStr(StrSource);
-  }
+  // XXX template functions
 
-  std::string Code_, WrappedCode_;
-};
-
-std::ostream &operator<<(std::ostream& OS, Snippet const &Snip)
-{
-  OS << Snip.code() << "\nwrapped as: \"" << Snip.wrappedCode() << "\"";
-  return OS;
+  // XXX more cases
+  WrapperTest("function naming conflicts",
+     makeWrappable(
+       "int foo(int a);\n"
+       "int foo(double a);\n"
+       "int foo_1();\n"
+       "int foo_1_();"),
+     WrappedBy(
+       "int test_foo_1__(int a);\n"
+       "int test_foo_2(double a);\n"
+       "int test_foo_1();\n"
+       "int test_foo_1_();"));
 }
 
-class WrappedAs : public Catch::MatcherBase<Snippet>
+TEST_CASE("Types")
 {
-public:
-  WrappedAs(std::string const &WrappedCodeExpected)
-  : WrappedCodeExpected_(WrappedCodeExpected)
-  {}
+  WrapperTest("fundamental type conversion",
+    makeWrappable(
+      "char32_t foo(const char16_t * a);"),
+    WrappedBy(
+      "uint32_t test_foo(const uint16_t * a)\n"
+      "{ return static_cast<uint32_t>(test::foo(static_cast<const char16_t *>(a))); }",
+      WrapperIncludes({"stdint.h"})));
 
-  bool match(Snippet const &Snip) const override
-  { return Snip.wrappedCode() == WrappedCodeExpected_; }
+  WrapperTest("fundamental type includes",
+    makeWrappable(
+      "void foo(bool a, wchar_t b);"),
+    WrappedBy(
+      "void test_foo(bool a, wchar_t b);",
+      WrapperIncludes({"bool.h", "wchar.h"})));
 
-  std::string describe() const override
-  { return "\nbut should be wrapped as: \"" + WrappedCodeExpected_ + "\""; }
-
-private:
-  std::string WrappedCodeExpected_;
-};
-
-} // namespace
-
-TEST_CASE("CPPBindTest")
-{
-  cppbind::Options().init();
-  cppbind::Options().set<std::string>("namespace", "test");
-
-  REQUIRE_THAT(Snippet("void foo() {}"),
-               WrappedAs("void test_foo() { test::foo(); }"));
+  WrapperTest("typedefs resolution",
+    makeWrappable(
+      "typedef int INT;\n"
+      "using FLOAT = double;\n"
+      "INT round(FLOAT f);"),
+    WrappedBy(
+      "int test_round(double f);"));
 }
+
+int main(int argc, char **argv)
+{ return wrapperTestMain(argc, argv); }
