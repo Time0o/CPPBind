@@ -139,7 +139,7 @@ public:
     {
       llvm::SmallString<40> Str;
       Val.toString(Str); // XXX format as C literal
-      return Str.str();
+      return Str.str().str();
     }
 
   private:
