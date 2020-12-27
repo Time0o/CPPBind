@@ -22,6 +22,40 @@ namespace cppbind
 
 class Wrapper;
 
+class WrapperInclude
+{
+public:
+  enum IncludeIn
+  {
+    HEADER,
+    SOURCE,
+    BOTH
+  };
+
+  WrapperInclude(std::string const &Header, bool System, IncludeIn In)
+  : Header_(Header),
+    System_(System),
+    In_(In)
+  {}
+
+  std::string header() const
+  { return Header_; }
+
+  bool system() const
+  { return System_; }
+
+  bool inHeader() const
+  { return In_ == HEADER || In_ == BOTH; }
+
+  bool inSource() const
+  { return In_ == SOURCE || In_ == BOTH; }
+
+private:
+  std::string Header_;
+  bool System_;
+  IncludeIn In_;
+};
+
 class WrapperFiles
 {
   friend class Wrapper;
@@ -40,7 +74,7 @@ public:
   FileBuffer const &source() const
   { return SourceFile_; }
 
-  std::vector<std::string> includes() const
+  std::vector<WrapperInclude> includes() const
   { return Includes_; }
 
   void write() const
@@ -65,7 +99,7 @@ private:
     SourceFilePath_ = Path;
   }
 
-  void addIncludes(std::vector<std::string> const &Includes)
+  void addIncludes(std::vector<WrapperInclude> const &Includes)
   { Includes_ = Includes; }
 
   bool Boilerplate_;
@@ -76,18 +110,20 @@ private:
   FileBuffer SourceFile_;
   std::string SourceFilePath_;
 
-  std::vector<std::string> Includes_;
+  std::vector<WrapperInclude> Includes_;
 };
 
 class Wrapper
 {
 public:
-
   Wrapper(std::shared_ptr<IdentifierIndex> IdentifierIndex,
           std::string const &WrappedHeader)
   : II_(IdentifierIndex),
     WrappedHeader_(WrappedHeader)
-  {}
+  {
+    Includes_.emplace_back(WrappedHeader_, false, WrapperInclude::SOURCE);
+    Includes_.emplace_back(headerFilePath(), false, WrapperInclude::SOURCE);
+  }
 
   template<typename ...ARGS>
   void addWrapperRecord(ARGS&&... args)
@@ -125,13 +161,17 @@ public:
         auto CHeader(Type.inCHeader());
 
         if (CHeader)
-          addInclude(*CHeader);
+          addInclude(*CHeader, true, WrapperInclude::BOTH);
+
+        if (Type.isRValueReference())
+          addInclude("utility", true, WrapperInclude::SOURCE);
       }
     }
   }
 
-  void addInclude(std::string const &Include)
-  { Includes_.push_back(Include); }
+  template<typename ...ARGS>
+  void addInclude(ARGS&&... args)
+  { Includes_.emplace_back(std::forward<ARGS>(args)...); }
 
   bool empty() const
   { return Functions_.empty(); }
@@ -146,7 +186,8 @@ public:
   {
     Files->addHeader(headerFile(Files->boilerplate()), headerFilePath());
     Files->addSource(sourceFile(Files->boilerplate()), sourceFilePath());
-    Files->addIncludes(includes());
+
+    Files->addIncludes(Includes_);
   }
 
 private:
@@ -201,16 +242,6 @@ private:
     return wrapperFilePath(WRAPPER_SOURCE_OUTDIR,
                            WRAPPER_SOURCE_POSTFIX,
                            WRAPPER_SOURCE_EXT);
-  }
-
-  std::vector<std::string> includes() const
-  {
-    auto Includes(Includes_);
-
-    Includes.push_back(WrappedHeader_);
-    Includes.push_back(headerFilePath());
-
-    return Includes;
   }
 
   template<typename FUNC, typename ...ARGS>
@@ -358,22 +389,15 @@ private:
       return SS.str();
     };
 
-    if (Source) {
-      File << include(WrappedHeader_, false) << FileBuffer::EndLine;
-
-      File << FileBuffer::EmptyLine;
-
-      File << include(headerFilePath(), false) << FileBuffer::EndLine;
-
-    } else {
-      if (Includes_.empty())
-        return false;
-
-      for (auto const &Header : Includes_)
-        File << include(Header, true) << FileBuffer::EndLine;
+    bool NoIncludes = true;
+    for (auto const &Include : Includes_) {
+      if ((Source && Include.inSource()) || (!Source && Include.inHeader())) {
+        File << include(Include.header(), Include.system()) << FileBuffer::EndLine;
+        NoIncludes = false;
+      }
     }
 
-    return true;
+    return !NoIncludes;
   }
 
   static constexpr char PathSep = '/';
@@ -412,7 +436,7 @@ private:
 
   std::vector<WrapperRecord> Records_;
   std::vector<WrapperFunction> Functions_;
-  std::vector<std::string> Includes_;
+  std::vector<WrapperInclude> Includes_;
 };
 
 } // namespace cppbind

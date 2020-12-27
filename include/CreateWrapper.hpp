@@ -165,7 +165,7 @@ public:
   std::string strSource() const
   { return WrFiles_.front()->source().content(); }
 
-  std::vector<std::string> includes() const
+  std::vector<WrapperInclude> includes() const
   { return WrFiles_.front()->includes(); }
 
 private:

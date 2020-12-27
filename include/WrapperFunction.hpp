@@ -178,8 +178,11 @@ public:
     if (Default_)
       return Type_.isFundamental("bool") ? Default_->strBool() : Default_->str();
 
-    if (Type_.isReference())
+    if (Type_.isLValueReference())
       return "*" + id();
+
+    if (Type_.isRValueReference())
+      return "std::move(" + id() + ")";
 
     if (wrap()) {
       return Type_.isPointer() ?

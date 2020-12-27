@@ -41,7 +41,9 @@ public:
     cppbind::normalizeWhitespaceStr(WrapperHeader_);
     cppbind::normalizeWhitespaceStr(WrapperSource_);
 
-    WrapperIncludes_ =  Runner.includes();
+    // XXX differentiate header/source
+    for (auto const &Include : Runner.includes())
+      WrapperIncludes_.push_back(Include.header());
 
     std::sort(WrapperIncludes_.begin(), WrapperIncludes_.end());
   }

@@ -46,14 +46,20 @@ TEST_CASE("Functions")
 
   // XXX variadic macros/varargs
 
-  WrapperTest("function with reference parameters",
+  WrapperTest("function with lvalue reference parameters",
      makeWrappable(
        "int & foo(int &a, int const &b);"),
      WrappedBy(
        "int * test_foo(int * a, const int * b)\n"
        "{ return &test::foo(*a, *b); }"));
 
-  // XXX pass by rvalue reference
+  WrapperTest("function with rvalue reference parameters",
+     makeWrappable(
+       "void foo(int &&a, int const &&b);"),
+     WrappedBy(
+       "void test_foo(int a, const int b)\n"
+       "{ test::foo(std::move(a), std::move(b)); }",
+       WrapperIncludes({"utility"})));
 
   // XXX pass structure types (also by pointer, ref, handle move and copy construction)
 

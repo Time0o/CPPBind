@@ -70,6 +70,12 @@ public:
   bool isReference() const
   { return typePtr()->isReferenceType(); }
 
+  bool isLValueReference() const
+  { return typePtr()->isLValueReferenceType(); }
+
+  bool isRValueReference() const
+  { return typePtr()->isRValueReferenceType(); }
+
   bool isPointer() const
   { return typePtr()->isPointerType(); }
 
@@ -141,8 +147,11 @@ public:
 
   std::string strWrapped(std::shared_ptr<IdentifierIndex> II) const
   {
-    if (isReference())
+    if (isLValueReference())
       return referenced().pointerTo().strWrapped(II);
+
+    if (isRValueReference())
+      return referenced().strWrapped(II);
 
     if (base().isFundamental())
       return toC(strUnwrapped());
