@@ -117,7 +117,7 @@ public:
   { return WrapperType(Type_.withConst()); }
 
   WrapperType base() const
-  { return pointee(true); }
+  { return pointee(true).unqualified(); }
 
   Identifier name() const
   { return strBaseUnwrapped(); }
@@ -166,7 +166,7 @@ public:
   }
 
   std::string strBaseUnwrapped() const
-  { return printQualType(*base().unqualified(), PrintingPolicy::DEFAULT); }
+  { return printQualType(baseQualType(), PrintingPolicy::DEFAULT); }
 
   std::string strDeclaration(std::shared_ptr<IdentifierIndex> II) const
   { return strWrapped(II) + ";"; }
