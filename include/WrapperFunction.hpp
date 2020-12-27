@@ -64,9 +64,6 @@ namespace detail
                                        std::string const &What,
                                        std::string const &CastType = "reinterpret")
   { return typeCast(Type.strUnwrapped(true), What, CastType); }
-
-  inline std::string dereference(std::string const &What)
-  { return "*" + What; }
 }
 
 class WrapperParam
@@ -181,10 +178,13 @@ public:
     if (Default_)
       return Type_.isFundamental("bool") ? Default_->strBool() : Default_->str();
 
+    if (Type_.isReference())
+      return "*" + id();
+
     if (wrap()) {
       return Type_.isPointer() ?
         detail::typeCastUnwrapped(Type_, id()) :
-        detail::dereference(detail::typeCastUnwrapped(Type_.withConst().pointerTo(), id()));
+        "*" + detail::typeCastUnwrapped(Type_.withConst().pointerTo(), id());
     }
 
     if (!Type_.base().isCType())
@@ -354,8 +354,6 @@ private:
       auto ParamName(Param->getNameAsString());
       auto const *ParamDefaultArg(Param->getDefaultArg());
 
-      assert(!ParamType->isReferenceType()); // XXX
-
       if (ParamName.empty()) {
         ParamName = WRAPPER_FUNC_UNNAMED_PARAM_PLACEHOLDER;
 
@@ -447,6 +445,9 @@ private:
     } else {
       if (!ReturnType_.isFundamental("void"))
         SS << "return ";
+
+      if (ReturnType_.isReference())
+        SS << "&";
 
       std::stringstream SS_;
       if (!IsMethod_ || IsStatic_) {

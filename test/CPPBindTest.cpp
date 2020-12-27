@@ -46,10 +46,16 @@ TEST_CASE("Functions")
 
   // XXX variadic macros/varargs
 
-  // XXX pass by reference
+  WrapperTest("function with reference parameters",
+     makeWrappable(
+       "int & foo(int &a, int const &b);"),
+     WrappedBy(
+       "int * test_foo(int * a, const int * b)\n"
+       "{ return &test::foo(*a, *b); }"));
+
   // XXX pass by rvalue reference
 
-  // XXX pass structure types (esp. move and copy construction)
+  // XXX pass structure types (also by pointer, ref, handle move and copy construction)
 
   WrapperTest("function overloads",
      makeWrappable(

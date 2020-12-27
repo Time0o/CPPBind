@@ -67,6 +67,9 @@ public:
   bool isWrappable(std::shared_ptr<IdentifierIndex> II) const
   { return II->has(name(), IdentifierIndex::TYPE); }
 
+  bool isReference() const
+  { return typePtr()->isReferenceType(); }
+
   bool isPointer() const
   { return typePtr()->isPointerType(); }
 
@@ -95,6 +98,12 @@ public:
     return FundamentalTypes().inCHeader(typePtr());
   }
 
+  WrapperType referenceTo() const
+  { return WrapperType(CompilerState()->getASTContext().getLValueReferenceType(Type_)); }
+
+  WrapperType referenced() const
+  { return WrapperType(Type_.getNonReferenceType()); }
+
   WrapperType pointerTo() const
   { return WrapperType(CompilerState()->getASTContext().getPointerType(Type_)); }
 
@@ -116,14 +125,25 @@ public:
   WrapperType withConst() const
   { return WrapperType(Type_.withConst()); }
 
+  WrapperType withoutConst() const
+  {
+    auto TypeCopy(Type_);
+    TypeCopy.removeLocalConst();
+
+    return WrapperType(TypeCopy);
+  }
+
   WrapperType base() const
-  { return pointee(true).unqualified(); }
+  { return referenced().pointee(true).unqualified(); }
 
   Identifier name() const
   { return strBaseUnwrapped(); }
 
   std::string strWrapped(std::shared_ptr<IdentifierIndex> II) const
   {
+    if (isReference())
+      return referenced().pointerTo().strWrapped(II);
+
     if (base().isFundamental())
       return toC(strUnwrapped());
 
