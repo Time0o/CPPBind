@@ -191,7 +191,7 @@ public:
 
     auto Alias(II->alias(name()));
 
-    return toC(Alias.strQualified(TYPE_CASE, true));
+    return toC(Alias.strQualified(Options().get<Identifier::Case>("type-case"), true));
   }
 
   std::string strBaseUnwrapped() const

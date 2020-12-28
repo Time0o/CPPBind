@@ -198,7 +198,7 @@ public:
 
 private:
   std::string id() const
-  { return Name_.strUnqualified(PARAM_CASE); }
+  { return Name_.strUnqualified(Options().get<Identifier::Case>("param-case")); }
 
   bool wrap() const
   { return !Type_.base().isFundamental(); }
@@ -299,7 +299,7 @@ public:
         return;
     }
 
-    auto Postfix(WRAPPER_FUNC_OVERLOAD_POSTFIX);
+    auto Postfix(Options().get<>("wrapper-func-overload-postfix"));
 
     assert(replaceAllStrs(Postfix, "%o", std::to_string(Overload_)) > 0u);
 
@@ -364,7 +364,7 @@ private:
       auto const *ParamDefaultArg(Param->getDefaultArg());
 
       if (ParamName.empty()) {
-        ParamName = WRAPPER_FUNC_UNNAMED_PARAM_PLACEHOLDER;
+        ParamName = Options().get<>("wrapper-func-unnamed-param-placeholder");
 
         assert(replaceAllStrs(ParamName, "%p", std::to_string(i + 1u)) > 0u);
       }
@@ -430,7 +430,7 @@ private:
 
     SS << ReturnType_.strWrapped(II)
        << ' '
-       << II->alias(Name).strQualified(FUNC_CASE, true);
+       << II->alias(Name).strQualified(Options().get<Identifier::Case>("func-case"), true);
 
     SS << strParams(II, false);
 

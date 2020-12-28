@@ -37,7 +37,7 @@ private:
 
     // XXX check for clashes
     auto inFundamentalTypeNs = inNs("__fundamental_types");
-    auto inWrappedNs = inNs(NAMESPACE);
+    auto inWrappedNs = inNs(Options().get<>("namespace"));
 
     addHandler<clang::ValueDecl>(
       "fundamentalTypeValueDecl",

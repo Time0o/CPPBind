@@ -206,7 +206,7 @@ public:
       .done();
   }
 
-  template<typename T>
+  template<typename T = std::string>
   T get(llvm::StringRef Name) const
   {
     T Value = *instance().findOpt<T>(Name);
@@ -356,28 +356,5 @@ inline OptionsRegistry &Options()
 { return OptionsRegistry::instance(); }
 
 } // namespace cppbind
-
-#define OPT1(name)       Options().get<std::string>(name)
-#define OPT2(type, name) Options().get<type>(name)
-
-#define MUX_MACRO(_1, _2, MACRO, ...) MACRO
-#define OPT(...) MUX_MACRO(__VA_ARGS__, OPT2, OPT1, _)(__VA_ARGS__)
-
-#define NAMESPACE                              OPT("namespace")
-#define OVERLOAD_DEFAULT_PARAMS                OPT(bool, "overload-default-params")
-#define TYPE_CASE                              OPT(Identifier::Case, "type-case")
-#define FUNC_CASE                              OPT(Identifier::Case, "func-case")
-#define PARAM_CASE                             OPT(Identifier::Case, "param-case")
-#define WRAPPER_FUNC_OVERLOAD_POSTFIX          OPT("wrapper-func-overload-postfix")
-#define WRAPPER_FUNC_UNNAMED_PARAM_PLACEHOLDER OPT("wrapper-func-unnamed-param-placeholder")
-#define WRAPPER_HEADER_POSTFIX                 OPT("wrapper-header-postfix")
-#define WRAPPER_HEADER_EXT                     OPT("wrapper-header-ext")
-#define WRAPPER_HEADER_GUARD_PREFIX            OPT("wrapper-header-guard-prefix")
-#define WRAPPER_HEADER_GUARD_POSTFIX           OPT("wrapper-header-guard-postfix")
-#define WRAPPER_HEADER_OMIT_EXTERN_C           OPT(bool, "wrapper-header-omit-extern-c")
-#define WRAPPER_SOURCE_POSTFIX                 OPT("wrapper-source-postfix")
-#define WRAPPER_SOURCE_EXT                     OPT("wrapper-source-ext")
-#define WRAPPER_HEADER_OUTDIR                  OPT("wrapper-header-outdir")
-#define WRAPPER_SOURCE_OUTDIR                  OPT("wrapper-source-outdir")
 
 #endif // GUARD_OPTIONS_H

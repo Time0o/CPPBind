@@ -151,7 +151,7 @@ public:
     else
       II_->add(Wf.name(), IdentifierIndex::FUNC);
 
-    if (!OVERLOAD_DEFAULT_PARAMS)
+    if (!Options().get<bool>("overload-default-params"))
       Wf.removeAllDefaultParams();
 
     Functions_.push_back(Wf);
@@ -217,9 +217,9 @@ private:
 
   std::string headerFilePath() const
   {
-    return wrapperFilePath(WRAPPER_HEADER_OUTDIR,
-                           WRAPPER_HEADER_POSTFIX,
-                           WRAPPER_HEADER_EXT);
+    return wrapperFilePath(Options().get<>("wrapper-header-outdir"),
+                           Options().get<>("wrapper-header-postfix"),
+                           Options().get<>("wrapper-header-ext"));
   }
 
   FileBuffer sourceFile(bool Boilerplate = false) const
@@ -242,9 +242,9 @@ private:
 
   std::string sourceFilePath() const
   {
-    return wrapperFilePath(WRAPPER_SOURCE_OUTDIR,
-                           WRAPPER_SOURCE_POSTFIX,
-                           WRAPPER_SOURCE_EXT);
+    return wrapperFilePath(Options().get<>("wrapper-source-outdir"),
+                           Options().get<>("wrapper-source-postfix"),
+                           Options().get<>("wrapper-source-ext"));
   }
 
   template<typename FUNC, typename ...ARGS>
@@ -275,7 +275,7 @@ private:
 
   bool openExternCGuard(FileBuffer &File, bool Source) const
   {
-    if (WRAPPER_HEADER_OMIT_EXTERN_C)
+    if (Options().get<bool>("wrapper-header-omit-extern-c"))
       return false;
 
     if (!Source)
@@ -291,7 +291,7 @@ private:
 
   bool closeExternCGuard(FileBuffer &File, bool Source) const
   {
-    if (WRAPPER_HEADER_OMIT_EXTERN_C)
+    if (Options().get<bool>("wrapper-header-omit-extern-c"))
       return false;
 
     if (!Source)
@@ -368,9 +368,9 @@ private:
 
   std::string headerGuardToken() const
   {
-    auto Token(WRAPPER_HEADER_GUARD_PREFIX +
+    auto Token(Options().get<>("wrapper-header-guard-prefix") +
                pathFilename(WrappedHeader_, false) +
-               WRAPPER_HEADER_GUARD_POSTFIX);
+               Options().get<>("wrapper-header-guard-postfix"));
 
     auto identifier(Identifier::makeUnqualifiedIdentifier(Token, false));
 

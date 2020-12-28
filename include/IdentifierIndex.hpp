@@ -171,9 +171,9 @@ private:
       case ANY:
         assert(false);
       case TYPE:
-        return TYPE_CASE;
+        return Options().get<Identifier::Case>("type-case");
       case FUNC:
-        return FUNC_CASE;
+        return Options().get<Identifier::Case>("func-case");
     }
   }
 
