@@ -8,6 +8,8 @@
 #include <utility>
 #include <vector>
 
+#include "llvm/ADT/StringRef.h"
+
 #include "catch2/catch.hpp"
 
 #include "CreateWrapper.hpp"
@@ -171,6 +173,10 @@ int wrapperTestMain(int argc, char **argv)
 
   return Catch::Session().run(argc, argv);
 }
+
+template<typename T>
+void config(llvm::StringRef Name, T const &Value)
+{ cppbind::Options().set<T>(Name, Value); }
 
 } // namespace cppbind_test
 

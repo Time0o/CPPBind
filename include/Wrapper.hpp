@@ -151,10 +151,13 @@ public:
     else
       II_->add(Wf.name(), IdentifierIndex::FUNC);
 
+    if (!OVERLOAD_DEFAULT_PARAMS)
+      Wf.removeAllDefaultParams();
+
     Functions_.push_back(Wf);
 
     if (Wf.hasDefaultParams()) {
-      Wf.removeDefaultParam();
+      Wf.removeFirstDefaultParam();
       addWrapperFunction(Wf);
     } else {
       for (auto const &Type : Wf.types()) {

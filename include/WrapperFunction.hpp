@@ -275,7 +275,7 @@ public:
   bool hasDefaultParams() const
   { return FirstDefaultParam_ < Params_.size(); }
 
-  void removeDefaultParam()
+  void removeFirstDefaultParam()
   {
     if (!hasDefaultParams())
       return;
@@ -284,6 +284,12 @@ public:
     Param = WrapperParam(Param.type(), Param.name());
 
     ++FirstDefaultParam_;
+  }
+
+  void removeAllDefaultParams()
+  {
+    while (hasDefaultParams())
+      removeFirstDefaultParam();
   }
 
   void overload(std::shared_ptr<IdentifierIndex> II)

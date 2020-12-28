@@ -102,6 +102,11 @@ public:
       .setOptional(false)
       .done();
 
+    add<bool>("overload-default-params")
+      .setDescription("Create overloads for functions with default parameters")
+      .setDefault(false)
+      .done();
+
     OptionChoices<Identifier::Case> CaseChoices{
       {"camel-case", Identifier::CAMEL_CASE, "camelCase"},
       {"pascal-case", Identifier::PASCAL_CASE, "PascalCase"},
@@ -359,6 +364,7 @@ inline OptionsRegistry &Options()
 #define OPT(...) MUX_MACRO(__VA_ARGS__, OPT2, OPT1, _)(__VA_ARGS__)
 
 #define NAMESPACE                              OPT("namespace")
+#define OVERLOAD_DEFAULT_PARAMS                OPT(bool, "overload-default-params")
 #define TYPE_CASE                              OPT(Identifier::Case, "type-case")
 #define FUNC_CASE                              OPT(Identifier::Case, "func-case")
 #define PARAM_CASE                             OPT(Identifier::Case, "param-case")

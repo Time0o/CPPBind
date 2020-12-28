@@ -29,7 +29,18 @@ TEST_CASE("Functions")
       "int test_foo(int a, int _2, int b, int _4)\n"
       "{ return test::foo(a, _2, b, _4); }"));
 
+  config("overload-default-params", false);
+
   WrapperTest("function with default arguments",
+     makeWrappable(
+       "int foo(int a, int b = 1, bool c = true, double d = 0.5, void *e = nullptr);"),
+     WrappedBy(
+       "int test_foo(int a, int b, bool c, double d, void * e)\n"
+       "{ return test::foo(a, b, c, d, e); }"));
+
+  config("overload-default-params", true);
+
+  WrapperTest("function with default arguments (overloading)",
      makeWrappable(
        "int foo(int a, int b = 1, bool c = true, double d = 0.5, void *e = nullptr);"),
      WrappedBy(
@@ -43,8 +54,6 @@ TEST_CASE("Functions")
        "{ return test::foo(a, b, c, d, NULL); }\n"
        "int test_foo_5(int a, int b, bool c, double d, void * e)\n"
        "{ return test::foo(a, b, c, d, e); }"));
-
-  // XXX variadic macros/varargs
 
   WrapperTest("function with lvalue reference parameters",
      makeWrappable(
