@@ -25,6 +25,7 @@ set(TEST_DIR ${PROJECT_SOURCE_DIR}/test)
 set(TOOL_DIR ${PROJECT_SOURCE_DIR}/tool)
 set(DEPS_DIR ${PROJECT_SOURCE_DIR}/deps)
 set(CATCH2_DIR ${DEPS_DIR}/catch2)
+set(PYBIND11_DIR ${DEPS_DIR}/pybind11)
 set(COVERAGE_DIR ${PROJECT_BINARY_DIR}/coverage)
 
 set(CPPBIND cppbind)
@@ -110,6 +111,13 @@ if (CMAKE_BUILD_TYPE STREQUAL Debug)
   list(APPEND CMAKE_MODULE_PATH ${CATCH2_DIR}/contrib/)
 endif()
 
+# find pybind11
+if(NOT EXISTS ${CATCH2_DIR}/CMakeLists.txt)
+  message(FATAL_ERROR "pybind11 submodule not found")
+endif()
+
+add_subdirectory(${PYBIND11_DIR})
+
 
 ################################################################################
 # Helper Functions
@@ -147,6 +155,11 @@ function(target_llvm_config TARGET)
   llvm_config(${TARGET} USE_SHARED option)
 endfunction()
 
+function(target_pybind11_config TARGET)
+  # linking
+  target_link_libraries(${TARGET} PRIVATE pybind11::embed)
+endfunction()
+
 function(target_cppbind_config TARGET)
   # includes
   target_include_directories(${TARGET} PRIVATE ${INCLUDE_DIR})
@@ -161,6 +174,7 @@ function(target_basic_config TARGET)
   target_cpp_config(${TARGET})
   target_clang_config(${TARGET})
   target_llvm_config(${TARGET})
+  target_pybind11_config(${TARGET})
   target_cppbind_config(${TARGET})
 endfunction()
 
