@@ -4,13 +4,14 @@
 #include "Identifier.hpp"
 #include "Logging.hpp"
 #include "Options.hpp"
+#include "OptionsInit.hpp"
 #include "String.hpp"
 
 using namespace cppbind;
 
 int main(int argc, char const **argv)
 {
-  Options().init();
+  initOptions();
 
   auto Parser(Options().parser(argc, argv));
 

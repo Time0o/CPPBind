@@ -24,7 +24,6 @@
 #include "llvm/Option/OptTable.h"
 #include "llvm/Support/CommandLine.h"
 
-#include "Identifier.hpp"
 #include "Logging.hpp"
 #include "String.hpp"
 
@@ -37,6 +36,7 @@ using OptionChoices =
 
 class OptionsRegistry
 {
+  friend void initOptions();
   friend OptionsRegistry &Options();
 
   template<typename T = std::string>
@@ -94,117 +94,6 @@ public:
   OptionsRegistry(OptionsRegistry &&)       = delete;
   void operator=(OptionsRegistry const &) = delete;
   void operator=(OptionsRegistry &&)      = delete;
-
-  void init()
-  {
-    add<std::string>("namespace")
-      .setDescription("Namespace in which to look for classes", "ns")
-      .setOptional(false)
-      .done();
-
-    add<bool>("overload-default-params")
-      .setDescription("Create overloads for functions with default parameters")
-      .setDefault(false)
-      .done();
-
-    OptionChoices<Identifier::Case> CaseChoices{
-      {"camel-case", Identifier::CAMEL_CASE, "camelCase"},
-      {"pascal-case", Identifier::PASCAL_CASE, "PascalCase"},
-      {"snake-case", Identifier::SNAKE_CASE, "snake_case"},
-      {"snake-case-cap-first", Identifier::SNAKE_CASE_CAP_FIRST, "Snake_case"},
-      {"snake-case-cap-all", Identifier::SNAKE_CASE_CAP_ALL, "SNAKE_CASE"}
-    };
-
-    Identifier::Case CaseDefault = Identifier::SNAKE_CASE;
-
-    add<Identifier::Case>("type-case")
-      .setDescription("Wrapper type name case:", "case")
-      .setChoices(CaseChoices)
-      .setDefault(CaseDefault)
-      .done();
-
-    add<Identifier::Case>("func-case")
-      .setDescription("Wrapper function name case:", "case")
-      .setChoices(CaseChoices)
-      .setDefault(CaseDefault)
-      .done();
-
-    add<Identifier::Case>("param-case")
-      .setDescription("Wrapper function parameter name case:", "case")
-      .setChoices(CaseChoices)
-      .setDefault(CaseDefault)
-      .done();
-
-    auto validPostfix = [](char const *Pat){
-      return [=](std::string Postfix){
-        if (replaceAllStrs(Postfix, Pat, "x") == 0)
-          return false;
-
-        return Identifier::isIdentifier(Postfix) && Postfix.back() != '_';
-      };
-    };
-
-    add<std::string>("wrapper-func-overload-postfix")
-      .setDescription("Wrapper function overload postfix, "
-                      "use %o to denote #overload", "postfix")
-      .setDefault("_%o")
-      .addAssertion(validPostfix("%o"),
-                    "postfix must create valid identifiers")
-      .done();
-
-    add<std::string>("wrapper-func-unnamed-param-placeholder")
-      .setDescription("Wrapper function unnamed parameter placeholder, "
-                       "use %p to denote parameter number", "placeholder")
-      .setDefault("_%p")
-      .addAssertion(validPostfix("%p"),
-                    "postfix must create valid identifiers")
-      .done();
-
-    add<std::string>("wrapper-header-postfix")
-      .setDescription("Output header file basename postfix", "postfix")
-      .setDefault("_c")
-      .done();
-
-    add<std::string>("wrapper-header-ext")
-      .setDescription("Output header file extension", "ext")
-      .setDefault("h")
-      .done();
-
-    add<std::string>("wrapper-header-guard-prefix")
-      .setDescription("Output header guard prefix", "prefix")
-      .setDefault("GUARD_")
-      .done();
-
-    add<std::string>("wrapper-header-guard-postfix")
-      .setDescription("Output header guard postfix", "postfix")
-      .setDefault("_C_H")
-      .done();
-
-    add<bool>("wrapper-header-omit-extern-c")
-      .setDescription("Do not use 'extern \"C\"' guards")
-      .setDefault(false)
-      .done();
-
-    add<std::string>("wrapper-source-postfix")
-      .setDescription("Output source file basename postfix", "postfix")
-      .setDefault("_c")
-      .done();
-
-    add<std::string>("wrapper-source-ext")
-      .setDescription("Output source file extension", "ext")
-      .setDefault("cc")
-      .done();
-
-    add<std::string>("wrapper-header-outdir")
-      .setDescription("Output header file directory", "dir")
-      .setDefault(".")
-      .done();
-
-    add<std::string>("wrapper-source-outdir")
-      .setDescription("Output source file directory", "dir")
-      .setDefault(".")
-      .done();
-  }
 
   template<typename T = std::string>
   T get(llvm::StringRef Name) const
