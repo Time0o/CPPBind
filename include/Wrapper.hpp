@@ -13,6 +13,7 @@
 #include "FileBuffer.hpp"
 #include "IdentifierIndex.hpp"
 #include "Logging.hpp"
+#include "Path.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperInclude.hpp"
 #include "WrapperRecord.hpp"
@@ -358,9 +359,6 @@ private:
     return !NoIncludes;
   }
 
-  static constexpr char PathSep = '/';
-  static constexpr char ExtSep = '.';
-
   std::string wrapperFilePath(std::string const &Outdir,
                               std::string const &Postfix,
                               std::string const &Ext) const
@@ -369,25 +367,6 @@ private:
 
     return pathConcat(Outdir, Filename);
   }
-
-  static std::string pathFilename(std::string Path, bool WithExt = true)
-  {
-    auto LastSlash = Path.find_last_of(PathSep);
-    if (LastSlash != std::string::npos)
-      Path.erase(0, LastSlash + 1);
-
-    if (!WithExt) {
-      auto LastDot = Path.find_last_of(ExtSep);
-      if (LastDot != std::string::npos)
-        Path.erase(LastDot);
-    }
-
-    return Path;
-  }
-
-  static std::string pathConcat(std::string const &Path1,
-                                std::string const &Path2)
-  { return Path1 + PathSep + Path2; }
 
   std::shared_ptr<IdentifierIndex> II_;
   std::string WrappedHeader_;
