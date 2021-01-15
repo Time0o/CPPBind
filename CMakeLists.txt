@@ -26,7 +26,13 @@ set(DEPS_DIR ${PROJECT_SOURCE_DIR}/deps)
 set(PYBIND11_DIR ${DEPS_DIR}/pybind11)
 set(COVERAGE_DIR ${PROJECT_BINARY_DIR}/coverage)
 
-set(CPPBIND cppbind)
+set(BACKEND_DIR ${PROJECT_SOURCE_DIR}/backends)
+set(BACKEND_IMPL_DIR ${BACKEND_DIR}/impl)
+set(BACKEND_IMPL_COMMON_DIR ${BACKEND_IMPL_DIR}/_common)
+set(BACKEND_IMPL_MODULE_POSTFIX _backend)
+set(BACKEND_IMPL_ENTRY run)
+
+set(CPPBIND cppbind_tool)
 set(CPPBIND_SRC CPPBind.cpp)
 
 set(CPPBIND_PROFRAW ${COVERAGE_DIR}/cppbind_%p.profraw)
@@ -141,6 +147,13 @@ function(target_llvm_config TARGET)
 endfunction()
 
 function(target_pybind11_config TARGET)
+  # definitions
+  target_compile_definitions(
+    ${TARGET} PRIVATE -DBACKEND_IMPL_DIR="${BACKEND_IMPL_DIR}"
+                      -DBACKEND_IMPL_COMMON_DIR="${BACKEND_IMPL_COMMON_DIR}"
+                      -DBACKEND_IMPL_MODULE_POSTFIX="${BACKEND_IMPL_MODULE_POSTFIX}"
+                      -DBACKEND_IMPL_ENTRY="${BACKEND_IMPL_ENTRY}")
+
   # linking
   target_link_libraries(${TARGET} PRIVATE pybind11::embed)
 endfunction()
