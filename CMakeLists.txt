@@ -21,17 +21,13 @@ set(PROJECT_COPYRIGHT "2020")
 
 set(SRC_DIR ${PROJECT_SOURCE_DIR}/source)
 set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
-set(TEST_DIR ${PROJECT_SOURCE_DIR}/test)
 set(TOOL_DIR ${PROJECT_SOURCE_DIR}/tool)
 set(DEPS_DIR ${PROJECT_SOURCE_DIR}/deps)
-set(CATCH2_DIR ${DEPS_DIR}/catch2)
 set(PYBIND11_DIR ${DEPS_DIR}/pybind11)
 set(COVERAGE_DIR ${PROJECT_BINARY_DIR}/coverage)
 
 set(CPPBIND cppbind)
 set(CPPBIND_SRC CPPBind.cpp)
-set(CPPBIND_TEST cppbind_test)
-set(CPPBIND_TEST_SRC CPPBindTest.cpp)
 
 set(CPPBIND_PROFRAW ${COVERAGE_DIR}/cppbind_%p.profraw)
 set(CPPBIND_PROFDATA ${COVERAGE_DIR}/cppbind.profdata)
@@ -100,19 +96,8 @@ endif()
 # find llvm
 find_package(LLVM ${CLANG_VERSION_MAJOR} REQUIRED CONFIG)
 
-# find catch2
-if (CMAKE_BUILD_TYPE STREQUAL Debug)
-  if(NOT EXISTS ${CATCH2_DIR}/CMakeLists.txt)
-    message(FATAL_ERROR "Catch2 submodule not found")
-  endif()
-
-  add_subdirectory(${CATCH2_DIR})
-
-  list(APPEND CMAKE_MODULE_PATH ${CATCH2_DIR}/contrib/)
-endif()
-
 # find pybind11
-if(NOT EXISTS ${CATCH2_DIR}/CMakeLists.txt)
+if(NOT EXISTS ${PYBIND11_DIR}/CMakeLists.txt)
   message(FATAL_ERROR "pybind11 submodule not found")
 endif()
 
@@ -165,11 +150,6 @@ function(target_cppbind_config TARGET)
   target_include_directories(${TARGET} PRIVATE ${INCLUDE_DIR})
 endfunction()
 
-function(target_catch2_config TARGET)
-  # linking
-  target_link_libraries(${TARGET} PRIVATE Catch2)
-endfunction()
-
 function(target_basic_config TARGET)
   target_cpp_config(${TARGET})
   target_clang_config(${TARGET})
@@ -184,8 +164,3 @@ endfunction()
 ################################################################################
 
 add_subdirectory(${SRC_DIR})
-
-if (CMAKE_BUILD_TYPE STREQUAL Debug)
-  enable_testing()
-  add_subdirectory(${TEST_DIR})
-endif()
