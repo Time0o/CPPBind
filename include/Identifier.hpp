@@ -13,6 +13,7 @@
 
 #include "clang/AST/Decl.h"
 #include "clang/Basic/IdentifierTable.h"
+#include "clang/Lex/Preprocessor.h"
 
 #include "CompilerState.hpp"
 #include "Logging.hpp"
