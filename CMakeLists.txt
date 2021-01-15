@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 3.6)
 
 project("cppbind"
         VERSION 0.1
-        LANGUAGES "CXX")
+        LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -31,6 +31,9 @@ set(BACKEND_IMPL_DIR ${BACKEND_DIR}/impl)
 set(BACKEND_IMPL_COMMON_DIR ${BACKEND_IMPL_DIR}/_common)
 set(BACKEND_IMPL_MODULE_POSTFIX _backend)
 set(BACKEND_IMPL_ENTRY run)
+set(BACKEND_TEST_DIR ${BACKEND_DIR}/test)
+set(BACKEND_TEST_COMMON_DIR ${BACKEND_TEST_DIR}/_common)
+set(BACKEND_TEST_RUNNER ${BACKEND_TEST_COMMON_DIR}/backend_testrunner)
 
 set(CPPBIND cppbind_tool)
 set(CPPBIND_SRC CPPBind.cpp)
@@ -45,6 +48,10 @@ set(CPPBIND_COVERAGE_TXT ${COVERAGE_DIR}/coverage_cppbind.txt)
 ################################################################################
 
 # find clang
+if (NOT CMAKE_C_COMPILER_ID STREQUAL Clang)
+  message(FATAL_ERROR "CMAKE_C_COMPILER must be Clang")
+endif()
+
 if (NOT CMAKE_CXX_COMPILER_ID STREQUAL Clang)
   message(FATAL_ERROR "CMAKE_CXX_COMPILER must be Clang")
 endif()
@@ -173,7 +180,24 @@ endfunction()
 
 
 ################################################################################
-# Subdirectories
+# Source
 ################################################################################
 
 add_subdirectory(${SRC_DIR})
+
+
+################################################################################
+# Tests
+################################################################################
+
+if(CMAKE_BUILD_TYPE STREQUAL Debug)
+  add_test(
+    NAME backend_test
+    COMMAND ${BACKEND_TEST_RUNNER} $<TARGET_FILE:${CPPBIND}>
+                                   ${CMAKE_C_COMPILER}
+                                   ${CMAKE_CXX_COMPILER}
+                                   ${BACKEND_TEST_DIR}
+  )
+
+  enable_testing()
+endif()
