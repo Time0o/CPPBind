@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <iostream>
 
 #include "CreateWrapper.hpp"
@@ -21,5 +22,8 @@ int main(int argc, char const **argv)
     Runner.run(Parser);
   } catch (CPPBindError const &Err) {
     std::cerr << Err.what() << std::endl;
+    return EXIT_FAILURE;
   }
+
+  return EXIT_SUCCESS;
 }
