@@ -1,0 +1,286 @@
+import argparse
+import functools
+import logging
+import os
+import re
+import subprocess
+import sys
+import unittest
+
+
+def logger_create(name):
+    logging.basicConfig(format='%(levelname)s %(message)s')
+
+    return logging.getLogger(name)
+
+
+def logger_set_verbosity(logger, verbosity):
+    logger.verbosity = verbosity
+    logger.verbose = verbosity > 1
+
+    if verbosity > 1:
+        logger.setLevel(logging.DEBUG)
+    elif verbosity > 0:
+        logger.setLevel(logging.INFO)
+    else:
+        logger.setLevel(logging.WARN)
+
+
+log = logger_create('backend_testrunner')
+
+
+class BackendTestGenerator:
+    INPUT_DIR = '_input'
+    OUTPUT_ROOT_DIR = '_output'
+
+    TEST_INPUT_PATTERN = 'test_(.*)\..*'
+    TEST_PATTERN = 'test_(.*)\..*'
+
+    def __init__(self, test_root_dir, languages):
+        self._test_root_dir = test_root_dir
+        self._test_input_dir = os.path.join(test_root_dir, self.INPUT_DIR)
+        self._test_output_root_dir = os.path.join(test_root_dir, self.OUTPUT_ROOT_DIR)
+
+        self._tests = []
+
+        self._parse_tests()
+
+        self._langs = []
+        self._lang_tests = {}
+
+        if languages != 'all':
+            languages = languages.split(',')
+
+        self._parse_lang_tests(languages)
+
+    def wrap_tests(self, cppbind):
+        log.info("wrapping test inputs...")
+
+        for lang in sorted(self._langs):
+            log.debug(f"language: {lang}")
+
+            output_dir = self._test_output_dir(lang)
+
+            if not os.path.isdir(output_dir):
+                os.mkdir(output_dir)
+
+            for test in self._tests:
+                test_input = self._test_input(test)
+
+                log.debug(f"wrapping {test_input}...")
+
+                self._subprocess([
+                    cppbind,
+                    test_input,
+                    '--namespace', 'test',
+                    '--backend', f'{lang}',
+                    '--output-directory', f'{output_dir}',
+                ])
+
+    def compile_tests(self, clang, clangpp):
+        log.info("compiling tests...")
+
+        for lang in sorted(self._langs):
+            log.debug(f"language: {lang}")
+
+            if lang == 'c':
+                compile_cmd = self._compile_c_test
+            elif lang == 'lua':
+                compile_cmd = self._compile_lua_test
+
+            for test in self._lang_tests[lang]:
+                log.debug(f"compiling {test}...")
+
+                compile_cmd(test, clang, clangpp)
+
+    def run_tests(self):
+        log.info("running tests...")
+
+        test_loader = unittest.defaultTestLoader
+
+        lang_test_suites = []
+
+        for lang in sorted(self._langs):
+            class TestCase(unittest.TestCase):
+                __qualname__ = f'{lang}_tests'
+
+            if lang == 'c':
+                run_test = self._run_c_test
+            elif lang == 'lua':
+                run_test = self._run_lua_test
+
+            for test in self._lang_tests[lang]:
+                def run_test_closure(_, run_test=run_test, test=test):
+                    run_test(test)
+
+                setattr(TestCase, f'test_{test}', run_test_closure)
+
+            lang_test_suites.append(test_loader.loadTestsFromTestCase(TestCase))
+
+        test_suite = unittest.TestSuite(lang_test_suites)
+
+        test_runner = unittest.TextTestRunner(verbosity=log.verbosity)
+
+        return test_runner.run(test_suite)
+
+    def _parse_tests(self):
+        for test_file in os.listdir(self._test_input_dir):
+            m = re.match(self.TEST_INPUT_PATTERN, test_file)
+
+            if m is None:
+                self._warn(f"failed to parse test input file '{test_file}'")
+                continue
+
+            test = m[1]
+
+            self._tests.append(test)
+
+        log.debug("found tests:")
+        for test in self._tests:
+            log.debug(f"* {test}")
+
+    def _parse_lang_tests(self, langs):
+        for lang_dir in os.scandir(self._test_root_dir):
+            lang = lang_dir.name
+
+            if lang.startswith('_'):
+                continue
+
+            if langs != 'all' and lang not in langs:
+                continue
+
+            self._langs.append(lang)
+            self._lang_tests[lang] = []
+
+            for test_file in os.listdir(lang_dir.path):
+                m = re.match(self.TEST_PATTERN, test_file)
+
+                if m is None:
+                    self._warn(f"failed to parse test file '{test_file}'")
+                    continue
+
+                test = m[1]
+
+                if test not in self._tests:
+                    self._warn(f"unmatched test '{test}'")
+                    continue
+
+                self._lang_tests[lang].append(test)
+
+        log.debug("found tests for the following languages:")
+        for lang in self._langs:
+            log.debug(f"* {lang}")
+
+    def _compile_c_test(self, test, clang, clangpp):
+        cpp_src = self._test_wrapper(test, 'c', ext='.cpp')
+        c_src = self._test_source(test, 'c', ext='.c')
+
+        cpp_obj = self._test_output(test, 'c', ext='_cpp.o')
+        c_obj = self._test_output(test, 'c', ext='_c.o')
+
+        test_bin = self._test_output(test, 'c', '_bin')
+
+        self._subprocess([
+            clangpp,
+            '-c', cpp_src,
+            '-o', cpp_obj
+        ] + self._test_include_dirs('c'))
+
+        self._subprocess([
+            clang,
+            '-c', c_src,
+            '-o', c_obj
+        ] + self._test_include_dirs('c'))
+
+        self._subprocess([
+            clangpp,
+            cpp_obj,
+            c_obj,
+            '-o', test_bin
+        ])
+
+    def _compile_lua_test(self, test, clang, clangpp):
+        mod_src = self._test_wrapper(test, 'lua', ext='.cpp')
+        mod = self._test_output(test, 'lua', ext='.so')
+
+        self._subprocess([
+            clangpp,
+            '-shared', '-fPIC', mod_src,
+            '-o', mod
+        ] + self._test_include_dirs('lua'))
+
+    def _run_c_test(self, test):
+        test_bin = self._test_output(test, 'c', '_bin')
+
+        self._subprocess([f'./{test_bin}'], quiet=True)
+
+    def _run_lua_test(self, test):
+        test_lua = self._test_source(test, 'lua', ext='.lua')
+
+        lua_cpath = os.path.join(self._test_output_root_dir, 'lua', '?.so')
+
+        self._subprocess(['lua', test_lua],
+                         env={'LUA_CPATH': lua_cpath},
+                         quiet=True)
+
+    def _test_source_dir(self, lang):
+        return os.path.join(self._test_root_dir, lang)
+
+    def _test_output_dir(self, lang):
+        return os.path.join(self._test_output_root_dir, lang)
+
+    def _test_include_dirs(self, lang):
+        return [
+            '-I', self._test_input_dir,
+            '-I', self._test_output_dir(lang)
+        ]
+
+    def _test_source(self, test, lang, ext):
+        return os.path.join(self._test_source_dir(lang), f"test_{test}{ext}")
+
+    def _test_wrapper(self, test, lang, ext):
+        return os.path.join(self._test_output_dir(lang), f"test_{test}_{lang}{ext}")
+
+    def _test_input(self, test):
+        return os.path.join(self._test_input_dir, f"test_{test}.hpp")
+
+    def _test_output(self, test, lang, ext):
+        return os.path.join(self._test_output_dir(lang), f"test_{test}{ext}")
+
+    @staticmethod
+    def _subprocess(args, quiet=False, **kwargs):
+        if not quiet:
+            log.debug("running subprocess: " + ' '.join(args))
+
+        subprocess.run(args,
+                       check=True,
+                       capture_output=not log.verbose,
+                       **kwargs)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('cppbind', metavar='CPPBIND',
+                        help="cppbind executable")
+    parser.add_argument('clang', metavar='CLANG',
+                        help="clang executable (C)")
+    parser.add_argument('clangpp', metavar='CLANGPP',
+                        help="clang executable (C++)")
+    parser.add_argument('test_root_dir', metavar='TEST_ROOT_DIR',
+                        help="test root directory")
+    parser.add_argument('-l', '--languages', default='all',
+                        help="backend languages for which to run tests")
+    parser.add_argument('-v', '--verbosity', type=int, default=0,
+                        help="more verbose output")
+
+    args = parser.parse_args()
+
+    # configure logger
+    logger_set_verbosity(log, args.verbosity)
+
+    # run tests
+    generator = BackendTestGenerator(args.test_root_dir, args.languages)
+
+    generator.wrap_tests(args.cppbind)
+    generator.compile_tests(args.clang, args.clangpp)
+    generator.run_tests()

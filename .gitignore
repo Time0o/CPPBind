@@ -1,2 +1,6 @@
 todo.md
 build*
+
+backend/**/__pycache__
+backend/test/_output/*
+!backend/test/_output/.gitkeep
