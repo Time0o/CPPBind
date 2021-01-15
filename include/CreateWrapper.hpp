@@ -8,6 +8,7 @@
 
 #include "clang/ASTMatchers/ASTMatchers.h"
 
+#include "Backend.hpp"
 #include "CompilerState.hpp"
 #include "FundamentalTypes.hpp"
 #include "GenericASTConsumer.hpp"
@@ -88,10 +89,8 @@ class CreateWrapperFrontendAction
 : public GenericFrontendAction<CreateWrapperConsumer>
 {
 public:
-  CreateWrapperFrontendAction(std::shared_ptr<IdentifierIndex> II,
-                              std::shared_ptr<WrapperFiles> WrFiles)
-  : II_(II),
-    WrFiles_(WrFiles)
+  CreateWrapperFrontendAction(std::shared_ptr<IdentifierIndex> II)
+  : II_(II)
   {}
 
 private:
@@ -110,67 +109,25 @@ private:
     if (Wr_->empty())
       return;
 
+    // XXX too early?
     Wr_->overload();
 
-    Wr_->write(WrFiles_);
+    backend::run(CompilerState().currentFile(), Wr_->records(), Wr_->functions());
   }
 
   std::shared_ptr<IdentifierIndex> II_;
   std::shared_ptr<Wrapper> Wr_;
-  std::shared_ptr<WrapperFiles> WrFiles_;
 };
 
-template<bool BOILERPLATE>
 class CreateWrapperToolRunner
 : public GenericToolRunner<CreateWrapperFrontendAction>
 {
 public:
   std::unique_ptr<clang::tooling::FrontendActionFactory> makeFactory() override
-  { return makeFactoryWithArgs(II_, newWrapperFiles()); }
+  { return makeFactoryWithArgs(II_); }
 
 protected:
-  std::shared_ptr<WrapperFiles> newWrapperFiles()
-  {
-    WrFiles_.push_back(std::make_shared<WrapperFiles>(BOILERPLATE));
-
-    return WrFiles_.back();
-  }
-
   std::shared_ptr<IdentifierIndex> II_ = std::make_shared<IdentifierIndex>();
-  std::vector<std::shared_ptr<WrapperFiles>> WrFiles_;
-};
-
-class CreateAndWriteWrapperToolRunner
-: public CreateWrapperToolRunner<true>
-{
-private:
-  void afterRun() override
-  {
-    for (auto const &WF : WrFiles_) {
-      if (WF->empty())
-        continue;
-
-      WF->write();
-    }
-  }
-};
-
-class CreateWrapperTestToolRunner
-: public cppbind::CreateWrapperToolRunner<false>
-{
-public:
-  std::string strHeader() const
-  { return WrFiles_.front()->header().content(); }
-
-  std::string strSource() const
-  { return WrFiles_.front()->source().content(); }
-
-  std::set<WrapperInclude> includes() const
-  { return WrFiles_.front()->includes(); }
-
-private:
-  void afterRun() override
-  { assert(WrFiles_.size() == 1u); }
 };
 
 } // namespace cppbind

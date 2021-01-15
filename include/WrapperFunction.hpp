@@ -111,13 +111,25 @@ public:
         BoolValue_ = ResultBool;
     }
 
+    bool isNullptrT() const
+    { return is<std::nullptr_t>(); }
+
+    bool isInt() const
+    { return is<llvm::APSInt>(); }
+
+    bool isFloat() const
+    { return is<llvm::APFloat>(); }
+
+    bool isTrue() const
+    { return BoolValue_; }
+
     std::string str() const
     {
-      if (is<std::nullptr_t>())
-        return "NULL";
-      else if (is<llvm::APSInt>())
+      if (isNullptrT())
+        return "nullptr";
+      else if (isInt())
         return APToString(as<llvm::APSInt>());
-      else if (is<llvm::APFloat>())
+      else if (isFloat())
         return APToString(as<llvm::APFloat>());
 
       __builtin_unreachable();
@@ -164,6 +176,12 @@ public:
 
   bool hasDefaultArg() const
   { return static_cast<bool>(Default_); }
+
+  DefaultArg defaultArg() const
+  {
+    assert(hasDefaultArg());
+    return *Default_;
+  }
 
   std::string strHeader(std::shared_ptr<IdentifierIndex> II) const
   {
@@ -255,6 +273,18 @@ public:
   bool isOverloaded() const
   { return Overload_ > 0u; }
 
+  WrapperType returnType() const
+  { return ReturnType_; }
+
+  std::vector<WrapperType> parameterTypes() const
+  {
+    std::vector<WrapperType> Types;
+    for (auto const &Param : Params_)
+      Types.push_back(Param.type());
+
+    return Types;
+  }
+
   std::vector<WrapperType> types() const
   {
     std::vector<WrapperType> Types;
@@ -268,6 +298,12 @@ public:
 
   Identifier name() const
   { return Name_; }
+
+  std::vector<WrapperParam>::size_type numParams() const
+  { return Params_.size(); }
+
+  std::vector<WrapperParam>::size_type numRequiredParams() const
+  { return FirstDefaultParam_; }
 
   std::vector<WrapperParam> params() const
   { return Params_; }
@@ -301,12 +337,19 @@ public:
 
     auto Postfix(Options().get<>("wrapper-func-overload-postfix"));
 
-    assert(replaceAllStrs(Postfix, "%o", std::to_string(Overload_)) > 0u);
+    auto numReplaced = replaceAllStrs(Postfix, "%o", std::to_string(Overload_));
+    assert(numReplaced > 0u);
 
     OverloadName_ = name() + Postfix;
 
     II->add(OverloadName_, IdentifierIndex::FUNC);
   }
+
+  bool overloaded() const
+  { return Overload_ > 0u; }
+
+  Identifier overloadName() const
+  { return OverloadName_; }
 
   std::string strDeclaration(std::shared_ptr<IdentifierIndex> II) const
   { return strHeader(II) + ";"; }
@@ -366,12 +409,13 @@ private:
       if (ParamName.empty()) {
         ParamName = Options().get<>("wrapper-func-unnamed-param-placeholder");
 
-        assert(replaceAllStrs(ParamName, "%p", std::to_string(i + 1u)) > 0u);
+        auto numReplaced = replaceAllStrs(ParamName, "%p", std::to_string(i + 1u));
+        assert(numReplaced > 0u);
       }
 
-      if (ParamDefaultArg)
+      if (ParamDefaultArg) {
         ParamList.emplace_back(ParamType, ParamName, WrapperParam::DefaultArg(ParamDefaultArg));
-      else
+      } else
         ParamList.emplace_back(ParamType, ParamName);
     }
 

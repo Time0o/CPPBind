@@ -15,7 +15,7 @@ int main(int argc, char const **argv)
 
   auto Parser(Options().parser(argc, argv));
 
-  CreateAndWriteWrapperToolRunner Runner;
+  CreateWrapperToolRunner Runner;
 
   try {
     Runner.run(Parser);

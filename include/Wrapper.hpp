@@ -119,24 +119,16 @@ public:
     else
       II_->add(Wf.name(), IdentifierIndex::FUNC);
 
-    if (!Options().get<bool>("overload-default-params"))
-      Wf.removeAllDefaultParams();
-
     Functions_.push_back(Wf);
 
-    if (Wf.hasDefaultParams()) {
-      Wf.removeFirstDefaultParam();
-      addWrapperFunction(Wf);
-    } else {
-      for (auto const &Type : Wf.types()) {
-        auto CHeader(Type.inCHeader());
+    for (auto const &Type : Wf.types()) {
+      auto CHeader(Type.inCHeader());
 
-        if (CHeader)
-          addInclude(*CHeader, true, true);
+      if (CHeader)
+        addInclude(*CHeader, true, true);
 
-        if (Type.isRValueReference())
-          addInclude("utility", true, false);
-      }
+      if (Type.isRValueReference())
+        addInclude("utility", true, false);
     }
   }
 
@@ -144,14 +136,20 @@ public:
   void addInclude(ARGS&&... args)
   { Includes_.emplace(std::forward<ARGS>(args)...); }
 
-  bool empty() const
-  { return Functions_.empty(); }
-
   void overload()
   {
     for (auto &Wf : Functions_)
       Wf.overload(II_);
   }
+
+  bool empty() const
+  { return Functions_.empty(); }
+
+  std::vector<WrapperRecord> records() const
+  { return Records_; }
+
+  std::vector<WrapperFunction> functions() const
+  { return Functions_; }
 
   void write(std::shared_ptr<WrapperFiles> Files)
   {
@@ -276,7 +274,7 @@ private:
   bool declareRecords(FileBuffer &File) const
   {
     auto cmp = [](WrapperType const &Wt1, WrapperType const &Wt2)
-    { return Wt1.name() < Wt2.name(); };
+    { return Wt1.strBaseUnwrapped() < Wt2.strBaseUnwrapped(); };
 
     std::set<WrapperType, decltype(cmp)> WrappableParamTypes(cmp);
 

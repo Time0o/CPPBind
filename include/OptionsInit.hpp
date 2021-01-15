@@ -3,6 +3,7 @@
 
 #include <string>
 
+#include "Backend.hpp"
 #include "Identifier.hpp"
 
 namespace cppbind
@@ -10,10 +11,28 @@ namespace cppbind
 
 inline void initOptions()
 {
+  OptionChoices<backend::Backend> BackendChoices{
+    {"c", backend::C, "C"},
+    {"lua", backend::Lua, "Lua"}
+  };
+
+  Options().add<backend::Backend>("backend")
+    .setDescription("language for which to create bindings", "be")
+    .setChoices(BackendChoices)
+    .setOptional(false)
+    .done();
+
   Options().add<std::string>("namespace")
     .setDescription("Namespace in which to look for classes", "ns")
     .setOptional(false)
     .done();
+
+  Options().add<std::string>("output-directory")
+    .setDescription("Directory in which to place generated files", "ns")
+    .setDefault("")
+    .done();
+
+  // XXX remove below
 
   Options().add<bool>("overload-default-params")
     .setDescription("Create overloads for functions with default parameters")

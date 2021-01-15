@@ -50,6 +50,9 @@ public:
   clang::QualType const *operator->() const
   { return &Type_; }
 
+  clang::Type const *typePtr() const
+  { return Type_.getTypePtr(); }
+
   bool isQualified() const
   { return Type_.hasQualifiers(); }
 
@@ -64,8 +67,17 @@ public:
     return FundamentalTypes().is(typePtr(), Which);
   }
 
+  bool isVoid() const
+  { return typePtr()->isVoidType(); }
+
+  bool isIntegral() const
+  { return typePtr()->isIntegralType(CompilerState()->getASTContext()); }
+
+  bool isFloating() const
+  { return typePtr()->isFloatingType(); }
+
   bool isWrappable(std::shared_ptr<IdentifierIndex> II) const
-  { return II->has(name(), IdentifierIndex::TYPE); }
+  { return II->has(strBaseUnwrapped(), IdentifierIndex::TYPE); }
 
   bool isReference() const
   { return typePtr()->isReferenceType(); }
@@ -142,9 +154,6 @@ public:
   WrapperType base() const
   { return referenced().pointee(true).unqualified(); }
 
-  Identifier name() const
-  { return strBaseUnwrapped(); }
-
   std::string strWrapped(std::shared_ptr<IdentifierIndex> II) const
   {
     if (isLValueReference())
@@ -189,7 +198,7 @@ public:
 
     assert(isWrappable(II));
 
-    auto Alias(II->alias(name()));
+    auto Alias(II->alias(strBaseUnwrapped()));
 
     return toC(Alias.strQualified(Options().get<Identifier::Case>("type-case"), true));
   }
@@ -203,9 +212,6 @@ public:
 private:
   clang::QualType qualType() const
   { return Type_; }
-
-  clang::Type const *typePtr() const
-  { return Type_.getTypePtr(); }
 
   clang::QualType baseQualType() const
   { return *base(); }
