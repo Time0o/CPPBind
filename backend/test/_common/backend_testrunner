@@ -18,7 +18,6 @@ def logger_create(name):
 
 def logger_set_verbosity(logger, verbosity):
     logger.verbosity = verbosity
-    logger.verbose = verbosity > 1
 
     if verbosity > 1:
         logger.setLevel(logging.DEBUG)
@@ -254,10 +253,12 @@ class BackendTestGenerator:
         if not quiet:
             log.debug("running subprocess: " + ' '.join(args))
 
-        subprocess.run(args,
-                       check=True,
-                       capture_output=not log.verbose,
-                       **kwargs)
+        run = functools.partial(subprocess.run, args, check=True, **kwargs)
+
+        if not quiet and log.verbosity > 1:
+            run(stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+        else:
+            run()
 
 
 if __name__ == '__main__':
