@@ -97,18 +97,14 @@ private:
   std::unique_ptr<CreateWrapperConsumer> makeConsumer() override
   {
     // XXX skip source files, filter headers?
-
     return std::make_unique<CreateWrapperConsumer>(Wr_);
   }
 
   void beforeProcessing() override
-  { Wr_ = std::make_shared<Wrapper>(II_,  CompilerState().currentFile()); }
+  { Wr_ = std::make_shared<Wrapper>(II_); }
 
   void afterProcessing() override
   {
-    if (Wr_->empty())
-      return;
-
     // XXX too early?
     Wr_->overload();
 
