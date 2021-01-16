@@ -11,14 +11,8 @@ namespace cppbind
 
 inline void initOptions()
 {
-  OptionChoices<backend::Backend> BackendChoices{
-    {"c", backend::C, "C"},
-    {"lua", backend::Lua, "Lua"}
-  };
-
-  Options().add<backend::Backend>("backend")
-    .setDescription("language for which to create bindings", "be")
-    .setChoices(BackendChoices)
+  Options().add<std::string>("backend")
+    .setDescription("Language for which to create bindings", "be")
     .setOptional(false)
     .done();
 

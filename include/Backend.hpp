@@ -28,22 +28,6 @@ namespace cppbind
 namespace backend
 {
 
-enum Backend
-{
-  C,
-  Lua
-};
-
-static std::string backendToStr(Backend BE)
-{
-  switch (BE) {
-  case C:
-    return "c";
-  case Lua:
-    return "lua";
-  }
-}
-
 static auto importModule(std::string const &Mod)
 { return py::module_::import(Mod.c_str()); }
 
@@ -58,17 +42,15 @@ static void run(std::string const &InputFile,
                 std::vector<WrapperRecord> const &Records,
                 std::vector<WrapperFunction> const &Functions)
 {
-  auto BE = Options().get<Backend>("backend");
-
-  auto BEStr = backendToStr(BE);
+  auto BE = Options().get<>("backend");
 
   py::scoped_interpreter Guard;
 
   try {
     addModuleSearchPath(BACKEND_IMPL_COMMON_DIR);
-    addModuleSearchPath(pathConcat(BACKEND_IMPL_DIR, BEStr));
+    addModuleSearchPath(pathConcat(BACKEND_IMPL_DIR, BE));
 
-    auto Module(importModule(BEStr + BACKEND_IMPL_MODULE_POSTFIX));
+    auto Module(importModule(BE + BACKEND_IMPL_MODULE_POSTFIX));
 
     Module.attr(BACKEND_IMPL_ENTRY)(InputFile, Records, Functions, &Options());
 
