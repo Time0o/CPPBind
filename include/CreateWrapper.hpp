@@ -112,7 +112,7 @@ private:
     // XXX too early?
     Wr_->overload();
 
-    backend::run(CompilerState().currentFile(), Wr_->records(), Wr_->functions());
+    Backend::run(Wr_->records(), Wr_->functions());
   }
 
   std::shared_ptr<IdentifierIndex> II_;

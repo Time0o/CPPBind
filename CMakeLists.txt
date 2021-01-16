@@ -36,8 +36,6 @@ set(BACKEND_TEST_COMMON_DIR ${BACKEND_TEST_DIR}/_common)
 set(BACKEND_TEST_RUNNER ${BACKEND_TEST_COMMON_DIR}/backend_testrunner)
 
 set(CPPBIND cppbind_tool)
-set(CPPBIND_SRC CPPBind.cpp)
-
 set(CPPBIND_PROFRAW ${COVERAGE_DIR}/cppbind_%p.profraw)
 set(CPPBIND_PROFDATA ${COVERAGE_DIR}/cppbind.profdata)
 set(CPPBIND_COVERAGE_TXT ${COVERAGE_DIR}/coverage_cppbind.txt)
