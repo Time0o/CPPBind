@@ -116,6 +116,11 @@ endif()
 
 add_subdirectory(${PYBIND11_DIR})
 
+# find lua
+find_package(Lua 5.2 REQUIRED)
+
+set(LUA_BINARY lua${LUA_VERSION_STRING})
+
 
 ################################################################################
 # Helper Functions
@@ -194,9 +199,11 @@ if(CMAKE_BUILD_TYPE STREQUAL Debug)
   add_test(
     NAME backend_test
     COMMAND ${BACKEND_TEST_RUNNER} $<TARGET_FILE:${CPPBIND}>
-                                   ${CMAKE_C_COMPILER}
-                                   ${CMAKE_CXX_COMPILER}
                                    ${BACKEND_TEST_DIR}
+                                   --clang ${CMAKE_C_COMPILER}
+                                   --clangpp ${CMAKE_CXX_COMPILER}
+                                   --lua-binary ${LUA_BINARY}
+                                   --lua-include-dir ${LUA_INCLUDE_DIR}
   )
 
   enable_testing()

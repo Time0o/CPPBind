@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 
 import argparse
-import functools
 import logging
 import os
 import re
 import subprocess
 import sys
 import unittest
+
+from functools import partial
 
 
 def logger_create(name):
@@ -78,7 +79,7 @@ class BackendTestGenerator:
                     '--output-directory', f'{output_dir}',
                 ])
 
-    def compile_tests(self, clang, clangpp):
+    def compile_tests(self, **kwargs):
         log.info("compiling tests...")
 
         for lang in sorted(self._langs):
@@ -92,9 +93,9 @@ class BackendTestGenerator:
             for test in self._lang_tests[lang]:
                 log.debug(f"compiling {test}...")
 
-                compile_cmd(test, clang, clangpp)
+                compile_cmd(test, **kwargs)
 
-    def run_tests(self):
+    def run_tests(self, **kwargs):
         log.info("running tests...")
 
         test_loader = unittest.defaultTestLoader
@@ -112,7 +113,7 @@ class BackendTestGenerator:
 
             for test in self._lang_tests[lang]:
                 def run_test_closure(_, run_test=run_test, test=test):
-                    run_test(test)
+                    run_test(test, **kwargs)
 
                 setattr(TestCase, f'test_{test}', run_test_closure)
 
@@ -172,7 +173,7 @@ class BackendTestGenerator:
         for lang in self._langs:
             log.debug(f"* {lang}")
 
-    def _compile_c_test(self, test, clang, clangpp):
+    def _compile_c_test(self, test, **kwargs):
         cpp_src = self._test_wrapper(test, 'c', ext='.cpp')
         c_src = self._test_source(test, 'c', ext='.c')
 
@@ -182,45 +183,50 @@ class BackendTestGenerator:
         test_bin = self._test_output(test, 'c', '_bin')
 
         self._subprocess([
-            clangpp,
+            kwargs['clangpp'],
             '-c', cpp_src,
-            '-o', cpp_obj
-        ] + self._test_include_dirs('c'))
+            '-o', cpp_obj,
+            '-I', self._test_input_dir,
+            '-I', self._test_output_dir('c')
+        ])
 
         self._subprocess([
-            clang,
+            kwargs['clang'],
             '-c', c_src,
-            '-o', c_obj
-        ] + self._test_include_dirs('c'))
+            '-o', c_obj,
+            '-I', self._test_output_dir('c')
+        ])
 
         self._subprocess([
-            clangpp,
+            kwargs['clangpp'],
             cpp_obj,
             c_obj,
             '-o', test_bin
         ])
 
-    def _compile_lua_test(self, test, clang, clangpp):
+    def _compile_lua_test(self, test, **kwargs):
         mod_src = self._test_wrapper(test, 'lua', ext='.cpp')
         mod = self._test_output(test, 'lua', ext='.so')
 
         self._subprocess([
-            clangpp,
+            kwargs['clangpp'],
             '-shared', '-fPIC', mod_src,
-            '-o', mod
-        ] + self._test_include_dirs('lua'))
+            '-o', mod,
+            '-I', kwargs['lua_include_dir'],
+            '-I', self._test_input_dir
+        ])
 
-    def _run_c_test(self, test):
+    def _run_c_test(self, test, **kwargs):
         test_bin = self._test_output(test, 'c', '_bin')
 
         self._subprocess([f'./{test_bin}'], quiet=True)
 
-    def _run_lua_test(self, test):
+    def _run_lua_test(self, test, **kwargs):
         test_lua = self._test_source(test, 'lua', ext='.lua')
 
         lua_cpath = os.path.join(self._test_output_root_dir, 'lua', '?.so')
 
-        self._subprocess(['lua', test_lua],
+        self._subprocess([kwargs['lua'], test_lua],
                          env={'LUA_CPATH': lua_cpath},
                          quiet=True)
 
@@ -229,12 +235,6 @@ class BackendTestGenerator:
 
     def _test_output_dir(self, lang):
         return os.path.join(self._test_output_root_dir, lang)
-
-    def _test_include_dirs(self, lang):
-        return [
-            '-I', self._test_input_dir,
-            '-I', self._test_output_dir(lang)
-        ]
 
     def _test_source(self, test, lang, ext):
         return os.path.join(self._test_source_dir(lang), f"test_{test}{ext}")
@@ -253,7 +253,7 @@ class BackendTestGenerator:
         if not quiet:
             log.debug("running subprocess: " + ' '.join(args))
 
-        run = functools.partial(subprocess.run, args, check=True, **kwargs)
+        run = partial(subprocess.run, args, check=True, **kwargs)
 
         if not quiet and log.verbosity > 1:
             run(stdin=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -263,18 +263,26 @@ class BackendTestGenerator:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+
+    # general arguments
     parser.add_argument('cppbind', metavar='CPPBIND',
                         help="cppbind executable")
-    parser.add_argument('clang', metavar='CLANG',
-                        help="clang executable (C)")
-    parser.add_argument('clangpp', metavar='CLANGPP',
-                        help="clang executable (C++)")
     parser.add_argument('test_root_dir', metavar='TEST_ROOT_DIR',
                         help="test root directory")
-    parser.add_argument('-l', '--languages', default='all',
-                        help="backend languages for which to run tests")
+    parser.add_argument('--clang', default='clang',
+                        help="clang executable (C)")
+    parser.add_argument('--clangpp', default='clang++',
+                        help="clang executable (C++)")
     parser.add_argument('-v', '--verbosity', type=int, default=0,
                         help="more verbose output")
+
+    # language specific arguments
+    parser.add_argument('-l', '--languages', default='all',
+                        help="backend languages for which to run tests")
+    parser.add_argument('--lua-binary', default='lua',
+                        help="lua binary")
+    parser.add_argument('--lua-include-dir', default='/usr/include',
+                        help="lua include directory")
 
     args = parser.parse_args()
 
@@ -285,5 +293,17 @@ if __name__ == '__main__':
     generator = BackendTestGenerator(args.test_root_dir, args.languages)
 
     generator.wrap_tests(args.cppbind)
-    generator.compile_tests(args.clang, args.clangpp)
-    generator.run_tests()
+
+    compile_kwargs = {
+        'clang': args.clang,
+        'clangpp': args.clangpp,
+        'lua_include_dir': args.lua_include_dir
+    }
+
+    generator.compile_tests(**compile_kwargs)
+
+    run_kwargs = {
+        'lua_binary': args.lua_binary
+    }
+
+    generator.run_tests(**run_kwargs)
