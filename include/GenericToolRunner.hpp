@@ -21,24 +21,6 @@ template<typename T>
 class GenericToolRunner
 {
 public:
-  bool run(std::string Code)
-  {
-    beforeRun();
-
-    auto Factory(makeFactory());
-
-    FundamentalTypes().clear();
-
-    bool Ret = clang::tooling::runToolOnCodeWithArgs(
-      Factory->create(),
-      FundamentalTypesHeader::prepend(Code),
-      clangIncludes());
-
-    afterRun();
-
-    return Ret;
-  }
-
   int run(clang::tooling::CommonOptionsParser &Parser)
   {
     clang::tooling::ClangTool Tool(Parser.getCompilations(),
