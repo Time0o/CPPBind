@@ -196,15 +196,26 @@ add_subdirectory(${SRC_DIR})
 ################################################################################
 
 if(CMAKE_BUILD_TYPE STREQUAL Debug)
-  add_test(
-    NAME backend_test
-    COMMAND ${BACKEND_TEST_RUNNER} $<TARGET_FILE:${CPPBIND}>
-                                   ${BACKEND_TEST_DIR}
-                                   --clang ${CMAKE_C_COMPILER}
-                                   --clangpp ${CMAKE_CXX_COMPILER}
-                                   --lua-binary ${LUA_BINARY}
-                                   --lua-include-dir ${LUA_INCLUDE_DIR}
-  )
-
   enable_testing()
+
+  file(GLOB BACKEND_TEST_LANGUAGE_DIRS ${BACKEND_TEST_DIR}/*)
+
+  foreach(BACKEND_TEST_LANGUAGE_DIR ${BACKEND_TEST_LANGUAGE_DIRS})
+    get_filename_component(BACKEND_LANGUAGE ${BACKEND_TEST_LANGUAGE_DIR} NAME)
+
+    if(BACKEND_LANGUAGE MATCHES "^_.*")
+      continue()
+    endif()
+
+    add_test(
+      NAME ${BACKEND_LANGUAGE}_backend_test
+      COMMAND ${BACKEND_TEST_RUNNER} $<TARGET_FILE:${CPPBIND}>
+                                     ${BACKEND_TEST_DIR}
+                                     --language ${BACKEND_LANGUAGE}
+                                     --clang ${CMAKE_C_COMPILER}
+                                     --clangpp ${CMAKE_CXX_COMPILER}
+                                     --lua-binary ${LUA_BINARY}
+                                     --lua-include-dir ${LUA_INCLUDE_DIR}
+    )
+  endforeach()
 endif()
