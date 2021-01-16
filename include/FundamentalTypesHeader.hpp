@@ -1,11 +1,10 @@
 #ifndef GUARD_FUNDAMENTAL_TYPES_HEADER_H
 #define GUARD_FUNDAMENTAL_TYPES_HEADER_H
 
-#include <cstdio>
-#include <cstdlib>
 #include <fstream>
 #include <string>
 
+#include "Path.hpp"
 #include "Logging.hpp"
 
 namespace cppbind
@@ -15,7 +14,7 @@ class FundamentalTypesHeader
 {
 public:
   FundamentalTypesHeader()
-  : Path_(createTmpPath())
+  : Path_(pathTmp())
   {
     std::ofstream Stream(path());
     if (!Stream)
@@ -26,7 +25,7 @@ public:
   }
 
   ~FundamentalTypesHeader()
-  { std::remove(Path_.c_str()); }
+  { pathRemove(Path_); }
 
   static std::string prepend(std::string &Code)
   { return Header_ + ("\n" + Code); }
@@ -35,15 +34,6 @@ public:
   { return Path_; }
 
 private:
-  static std::string createTmpPath()
-  {
-    char Tmpnam[6] = {'X', 'X', 'X', 'X', 'X', 'X'};
-    if (mkstemp(Tmpnam) == -1)
-      throw std::runtime_error("failed to create temporary path");
-
-    return Tmpnam;
-  }
-
   static constexpr char const *Header_ = &R"(
 #include <cstddef>
 

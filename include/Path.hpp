@@ -1,6 +1,9 @@
 #ifndef GUARD_PATH_H
 #define GUARD_PATH_H
 
+#include <cstdio>
+#include <cstdlib>
+#include <stdexcept>
 #include <string>
 
 namespace cppbind
@@ -39,6 +42,18 @@ inline std::string pathDirname(std::string Path, bool WithExt = true)
 inline std::string pathConcat(std::string const &Path1,
                               std::string const &Path2)
 { return Path1 + PathSep + Path2; }
+
+inline std::string pathTmp()
+{
+  char Tmpnam[7] = "XXXXXX";
+  if (mkstemp(Tmpnam) == -1)
+    throw std::runtime_error("failed to create temporary path");
+
+  return Tmpnam;
+}
+
+inline void pathRemove(std::string const &Path)
+{ std::remove(Path.c_str()); }
 
 } // namespace cppbind
 
