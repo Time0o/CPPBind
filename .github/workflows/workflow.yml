@@ -14,22 +14,22 @@ jobs:
         include:
         - CC: clang-8
           CXX: clang++-8
-          DEPENDENCIES: clang-8 llvm-8-dev libclang-8-dev
+          DEPENDENCIES: clang-8 llvm-8-dev libclang-8-dev lua5.3 lua5.3-dev
 
         - CC: clang-9
           CXX: clang++-9
-          DEPENDENCIES: clang-9 llvm-9-dev libclang-9-dev
+          DEPENDENCIES: clang-9 llvm-9-dev libclang-9-dev lua5.3 lua5.3-dev
 
         - CC: clang-10
           CXX: clang++-10
-          DEPENDENCIES: clang-10 llvm-10-dev libclang-10-dev libclang-cpp10-dev
+          DEPENDENCIES: clang-10 llvm-10-dev libclang-10-dev libclang-cpp10-dev lua5.3 lua5.3-dev
 
         - CC: clang-11
           CXX: clang++-11
           PREPARE_DEPENDENCIES: >
             wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add - &&
             sudo apt-add-repository "deb https://apt.llvm.org/bionic/ llvm-toolchain-bionic-11 main"
-          DEPENDENCIES: clang-11 llvm-11-dev libclang-11-dev libclang-cpp11-dev
+          DEPENDENCIES: clang-11 llvm-11-dev libclang-11-dev libclang-cpp11-dev lua5.3 lua5.3-dev
 
     steps:
       - uses: actions/checkout@v2
