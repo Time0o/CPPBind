@@ -27,9 +27,6 @@ public:
   ~FundamentalTypesHeader()
   { pathRemove(Path_); }
 
-  static std::string prepend(std::string &Code)
-  { return Header_ + ("\n" + Code); }
-
   std::string path() const
   { return Path_; }
 
