@@ -104,7 +104,11 @@ void WrapperFunction::overload(std::shared_ptr<IdentifierIndex> II)
   auto Postfix(Options().get<>("wrapper-func-overload-postfix"));
 
   auto numReplaced = string::replaceAll(Postfix, "%o", std::to_string(Overload_));
+#ifdef NDEBUG
+  (void)numReplaced;
+#else
   assert(numReplaced > 0u);
+#endif
 
   OverloadName_ = name() + Identifier(Postfix);
 
@@ -163,7 +167,11 @@ std::vector<WrapperParam> WrapperFunction::determineParams(
       ParamName = Options().get<>("wrapper-func-unnamed-param-placeholder");
 
       auto numReplaced = string::replaceAll(ParamName, "%p", std::to_string(i + 1u));
+#ifdef NDEBUG
+      (void)numReplaced;
+#else
       assert(numReplaced > 0u);
+#endif
     }
 
     if (ParamDefaultArg) {

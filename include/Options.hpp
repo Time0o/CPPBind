@@ -200,6 +200,8 @@ private:
     } catch (std::bad_any_cast const &) {
       assert(false && "valid option type");
     }
+
+    __builtin_unreachable();
   }
 
   template<typename T>
