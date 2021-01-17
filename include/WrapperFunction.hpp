@@ -17,11 +17,12 @@
 #include "llvm/Support/Casting.h"
 
 #include "Identifier.hpp"
-#include "IdentifierIndex.hpp"
 #include "WrapperType.hpp"
 
 namespace cppbind
 {
+
+class IdentifierIndex;
 
 class WrapperParam
 {

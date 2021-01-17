@@ -10,7 +10,6 @@
 #include "clang/AST/Type.h"
 
 #include "Identifier.hpp"
-#include "IdentifierIndex.hpp"
 #include "WrapperType.hpp"
 
 namespace cppbind

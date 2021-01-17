@@ -9,17 +9,17 @@
 #include "clang/ASTMatchers/ASTMatchers.h"
 
 #include "Backend.hpp"
-#include "CompilerState.hpp"
 #include "FundamentalTypes.hpp"
 #include "GenericASTConsumer.hpp"
 #include "GenericFrontendAction.hpp"
 #include "GenericToolRunner.hpp"
-#include "IdentifierIndex.hpp"
 #include "Options.hpp"
 #include "Wrapper.hpp"
 
 namespace cppbind
 {
+
+class IdentifierIndex;
 
 class CreateWrapperConsumer : public GenericASTConsumer
 {

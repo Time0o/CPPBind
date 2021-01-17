@@ -4,7 +4,6 @@
 
 #include <string>
 
-#include "Backend.hpp"
 #include "Identifier.hpp"
 
 namespace cppbind

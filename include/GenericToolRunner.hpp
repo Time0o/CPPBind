@@ -12,7 +12,6 @@
 #include "clang/Tooling/Tooling.h"
 
 #include "FundamentalTypesHeader.hpp"
-#include "FundamentalTypes.hpp"
 
 namespace cppbind
 {

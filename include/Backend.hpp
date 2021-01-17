@@ -4,11 +4,11 @@
 #include <string>
 #include <vector>
 
-#include "WrapperFunction.hpp"
-#include "WrapperRecord.hpp"
-
 namespace cppbind
 {
+
+class WrapperFunction;
+class WrapperRecord;
 
 class Backend
 {

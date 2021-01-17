@@ -9,8 +9,6 @@
 #include <unordered_set>
 
 #include "Identifier.hpp"
-#include "Logging.hpp"
-#include "Options.hpp"
 
 namespace cppbind
 {

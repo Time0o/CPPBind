@@ -8,10 +8,7 @@
 #include "clang/AST/Type.h"
 
 #include "FundamentalTypes.hpp"
-#include "Identifier.hpp"
-#include "IdentifierIndex.hpp"
 #include "Print.hpp"
-#include "String.hpp"
 
 namespace cppbind
 {
