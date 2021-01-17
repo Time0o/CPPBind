@@ -9,6 +9,7 @@
 
 #include "clang/AST/APValue.h"
 #include "clang/AST/Decl.h"
+#include "clang/AST/DeclCXX.h"
 #include "clang/AST/Expr.h"
 
 #include "llvm/ADT/APFloat.h"

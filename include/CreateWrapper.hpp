@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+#include "clang/AST/Decl.h"
+#include "clang/AST/DeclCXX.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 
 #include "Backend.hpp"
