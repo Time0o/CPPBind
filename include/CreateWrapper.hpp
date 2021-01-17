@@ -47,19 +47,19 @@ private:
       &CreateWrapperConsumer::handleFundamentalTypeValueDecl);
 
     addHandler<clang::CXXRecordDecl>(
-      "classDecl",
+      "structOrClassDecl",
       cxxRecordDecl(allOf(inWrappedNs, anyOf(isClass(), isStruct()), isDefinition())),
-      &CreateWrapperConsumer::handleClassDecl);
+      &CreateWrapperConsumer::handleStructOrClassDecl);
 
     addHandler<clang::CXXMethodDecl>(
-      "publicMethodDecl",
+      "publicMemberFunctionDecl",
       cxxMethodDecl(allOf(isPublic(), hasParent(cxxRecordDecl(inWrappedNs)))),
-      &CreateWrapperConsumer::handlePublicMethodDecl);
+      &CreateWrapperConsumer::handlePublicMemberFunctionDecl);
 
     addHandler<clang::FunctionDecl>(
-      "nonClassFunctionDecl",
+      "functionDecl",
       functionDecl(inWrappedNs),
-      &CreateWrapperConsumer::handleNonClassFunctionDecl);
+      &CreateWrapperConsumer::handlefunctionDecl);
   }
 
 private:
@@ -73,13 +73,13 @@ private:
     FundamentalTypes().add(Type);
   }
 
-  void handleClassDecl(clang::CXXRecordDecl const *Decl)
-  { Wr_->addWrapperRecord(Decl); }
-
-  void handlePublicMethodDecl(clang::CXXMethodDecl const *Decl)
+  void handlefunctionDecl(clang::FunctionDecl const *Decl)
   { Wr_->addWrapperFunction(Decl); }
 
-  void handleNonClassFunctionDecl(clang::FunctionDecl const *Decl)
+  void handleStructOrClassDecl(clang::CXXRecordDecl const *Decl)
+  { Wr_->addWrapperRecord(Decl); }
+
+  void handlePublicMemberFunctionDecl(clang::CXXMethodDecl const *Decl)
   { Wr_->addWrapperFunction(Decl); }
 
   std::shared_ptr<Wrapper> Wr_;
