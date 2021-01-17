@@ -42,7 +42,7 @@ void Backend::run(std::vector<WrapperRecord> const &Records,
 
   try {
     addModuleSearchPath(BACKEND_IMPL_COMMON_DIR);
-    addModuleSearchPath(pathConcat(BACKEND_IMPL_DIR, BE));
+    addModuleSearchPath(path::concat(BACKEND_IMPL_DIR, BE));
 
     auto Module(importModule(BE + BACKEND_IMPL_MODULE_POSTFIX));
     auto ModuleEntry(Module.attr(BACKEND_IMPL_ENTRY));

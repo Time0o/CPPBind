@@ -9,41 +9,14 @@
 namespace cppbind
 {
 
-constexpr char PathSep = '/';
-constexpr char ExtSep = '.';
-
-inline std::string pathFilename(std::string Path, bool WithExt = true)
+namespace path
 {
-  auto LastSlash = Path.find_last_of(PathSep);
-  if (LastSlash != std::string::npos)
-    Path.erase(0, LastSlash + 1);
 
-  if (!WithExt) {
-    auto LastDot = Path.find_last_of(ExtSep);
-    if (LastDot != std::string::npos)
-      Path.erase(LastDot);
-  }
+inline std::string concat(std::string const &Path1,
+                          std::string const &Path2)
+{ return Path1 + "/" + Path2; }
 
-  return Path;
-}
-
-inline std::string pathDirname(std::string Path, bool WithExt = true)
-{
-  auto FileName(pathFilename(Path));
-
-  auto DirName(Path.substr(0, Path.size() - FileName.size()));
-
-  if (DirName.size() > 1 && DirName.back() == PathSep)
-    DirName.pop_back();
-
-  return DirName;
-}
-
-inline std::string pathConcat(std::string const &Path1,
-                              std::string const &Path2)
-{ return Path1 + PathSep + Path2; }
-
-inline std::string pathTmp()
+inline std::string temporary()
 {
   char Tmpnam[7] = "XXXXXX";
   if (mkstemp(Tmpnam) == -1)
@@ -52,8 +25,10 @@ inline std::string pathTmp()
   return Tmpnam;
 }
 
-inline void pathRemove(std::string const &Path)
+inline void remove(std::string const &Path)
 { std::remove(Path.c_str()); }
+
+} // namespace path
 
 } // namespace cppbind
 

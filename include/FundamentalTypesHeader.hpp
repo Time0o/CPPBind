@@ -14,7 +14,7 @@ class FundamentalTypesHeader
 {
 public:
   FundamentalTypesHeader()
-  : Path_(pathTmp())
+  : Path_(path::temporary())
   {
     std::ofstream Stream(path());
     if (!Stream)
@@ -25,7 +25,7 @@ public:
   }
 
   ~FundamentalTypesHeader()
-  { pathRemove(Path_); }
+  { path::remove(Path_); }
 
   std::string path() const
   { return Path_; }
