@@ -2,7 +2,7 @@
 #define GUARD_WRAPPER_H
 
 #include <memory>
-#include <string>
+#include <utility>
 #include <vector>
 
 #include "IdentifierIndex.hpp"

@@ -5,6 +5,8 @@
 #include <string>
 
 #include "Identifier.hpp"
+#include "Options.hpp"
+#include "String.hpp"
 
 namespace cppbind
 {

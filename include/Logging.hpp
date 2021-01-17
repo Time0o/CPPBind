@@ -2,7 +2,6 @@
 #define GUARD_LOGGING_H
 
 #include <array>
-#include <exception>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -52,7 +51,7 @@ public:
 private:
   int Lvl_;
   std::ostream &Stdout_, &Stderr_;
-  std::stringstream Buf_;
+  std::ostringstream Buf_;
 };
 
 inline CPPBindLogger debug()

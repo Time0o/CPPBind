@@ -2,23 +2,31 @@
 #define GUARD_WRAPPER_FUNCTION_H
 
 #include <cassert>
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <variant>
+#include <vector>
 
-#include "clang/AST/APValue.h"
-#include "clang/AST/Decl.h"
-#include "clang/AST/DeclCXX.h"
-#include "clang/AST/Expr.h"
-
-#include "llvm/ADT/APFloat.h"
-#include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/SmallString.h"
-#include "llvm/Support/Casting.h"
 
 #include "Identifier.hpp"
 #include "WrapperType.hpp"
+
+namespace clang
+{
+  class CXXMethodDecl;
+  class Expr;
+  class FunctionDecl;
+}
+
+namespace llvm
+{
+  class APSInt;
+  class APFloat;
+}
 
 namespace cppbind
 {

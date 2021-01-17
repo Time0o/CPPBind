@@ -6,7 +6,6 @@
 #include <unordered_map>
 
 #include "clang/AST/Type.h"
-#include "clang/Tooling/Tooling.h"
 
 #include "Print.hpp"
 

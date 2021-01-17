@@ -1,16 +1,12 @@
 #ifndef GUARD_WRAPPER_RECORD_H
 #define GUARD_WRAPPER_RECORD_H
 
-#include <cassert>
-#include <memory>
 #include <string>
-#include <utility>
 
-#include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
-#include "clang/AST/Type.h"
 
 #include "Identifier.hpp"
+#include "WrapperFunction.hpp"
 #include "WrapperType.hpp"
 
 namespace cppbind

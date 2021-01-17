@@ -7,21 +7,15 @@
 #include <initializer_list>
 #include <memory>
 #include <optional>
-#include <sstream>
-#include <stdexcept>
 #include <string>
 #include <tuple>
-#include <type_traits>
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
+#include <vector>
 
-#include "clang/Driver/Options.h"
 #include "clang/Tooling/CommonOptionsParser.h"
-#include "clang/Tooling/Tooling.h"
 
 #include "llvm/ADT/StringRef.h"
-#include "llvm/Option/OptTable.h"
 #include "llvm/Support/CommandLine.h"
 
 #include "Error.hpp"

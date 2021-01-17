@@ -1,12 +1,13 @@
 #ifndef GUARD_WRAPPER_TYPE_H
 #define GUARD_WRAPPER_TYPE_H
 
-#include <memory>
 #include <string>
 
+#include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Type.h"
 
+#include "CompilerState.hpp"
 #include "FundamentalTypes.hpp"
 #include "Print.hpp"
 

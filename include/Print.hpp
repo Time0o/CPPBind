@@ -3,6 +3,7 @@
 
 #include <string>
 
+#include "clang/AST/ASTContext.h"
 #include "clang/AST/PrettyPrinter.h"
 #include "clang/AST/Type.h"
 

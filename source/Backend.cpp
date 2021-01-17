@@ -11,13 +11,13 @@
 #include "Backend.hpp"
 #include "CompilerState.hpp"
 #include "Error.hpp"
-#include "FundamentalTypes.hpp"
 #include "Identifier.hpp"
 #include "Logging.hpp"
 #include "Options.hpp"
 #include "Path.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperRecord.hpp"
+#include "WrapperType.hpp"
 
 namespace py = pybind11;
 

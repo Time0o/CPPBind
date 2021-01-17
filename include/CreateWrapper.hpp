@@ -1,13 +1,13 @@
 #ifndef GUARD_CREATE_WRAPPER_H
 #define GUARD_CREATE_WRAPPER_H
 
-#include <cassert>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
+#include "clang/AST/Type.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 
 #include "Backend.hpp"
@@ -15,13 +15,12 @@
 #include "GenericASTConsumer.hpp"
 #include "GenericFrontendAction.hpp"
 #include "GenericToolRunner.hpp"
+#include "IdentifierIndex.hpp"
 #include "Options.hpp"
 #include "Wrapper.hpp"
 
 namespace cppbind
 {
-
-class IdentifierIndex;
 
 class CreateWrapperConsumer : public GenericASTConsumer
 {

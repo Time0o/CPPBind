@@ -4,16 +4,15 @@
 #include <algorithm>
 #include <cassert>
 #include <cctype>
-#include <memory>
 #include <sstream>
-#include <stdexcept>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "clang/AST/Decl.h"
 #include "clang/Basic/IdentifierTable.h"
 #include "clang/Lex/Preprocessor.h"
+
+#include "llvm/ADT/StringRef.h"
 
 #include "CompilerState.hpp"
 #include "Error.hpp"

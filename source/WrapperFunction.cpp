@@ -4,14 +4,21 @@
 #include <memory>
 #include <string>
 
+#include "clang/AST/APValue.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/Expr.h"
+#include "clang/Frontend/CompilerInstance.h"
+
+#include "llvm/ADT/APFloat.h"
+#include "llvm/ADT/APSInt.h"
+#include "llvm/Support/Casting.h"
 
 #include "CompilerState.hpp"
 #include "Error.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
+#include "Logging.hpp"
 #include "Options.hpp"
 #include "String.hpp"
 

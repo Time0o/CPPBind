@@ -1,8 +1,5 @@
 #include <algorithm>
 #include <cassert>
-#include <cctype>
-#include <cstddef>
-#include <iterator>
 #include <locale>
 #include <sstream>
 #include <string>

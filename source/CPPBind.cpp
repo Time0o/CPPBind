@@ -1,12 +1,9 @@
 #include <cstdlib>
-#include <iostream>
 
 #include "CreateWrapper.hpp"
-#include "Identifier.hpp"
-#include "Logging.hpp"
+#include "Error.hpp"
 #include "Options.hpp"
 #include "OptionsInit.hpp"
-#include "String.hpp"
 
 using namespace cppbind;
 
