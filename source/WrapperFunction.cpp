@@ -8,6 +8,7 @@
 #include "clang/AST/Expr.h"
 
 #include "CompilerState.hpp"
+#include "Error.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
 #include "Options.hpp"
@@ -20,11 +21,15 @@ WrapperParam::DefaultArg::DefaultArg(clang::Expr const *Expr)
 {
   auto &Ctx(CompilerState()->getASTContext());
 
-  if (Expr->HasSideEffects(Ctx))
-    error() << "Default value must not have side effects";
+  if (Expr->HasSideEffects(Ctx)) {
+    log::error() << "Default value must not have side effects";
+    throw CPPBindError();
+  }
 
-  if (Expr->isValueDependent() || Expr->isTypeDependent())
-    error() << "Default value must not be value/type dependent";
+  if (Expr->isValueDependent() || Expr->isTypeDependent()) {
+    log::error() << "Default value must not be value/type dependent";
+    throw CPPBindError();
+  }
 
   if (Expr->isNullPointerConstant(Ctx, clang::Expr::NPC_NeverValueDependent)) {
     Value_ = nullptr;
@@ -32,8 +37,10 @@ WrapperParam::DefaultArg::DefaultArg(clang::Expr const *Expr)
   }
 
   clang::Expr::EvalResult Result;
-  if (!Expr->EvaluateAsRValue(Result, Ctx, true))
-    error() << "Default value must be constant foldable to rvalue";
+  if (!Expr->EvaluateAsRValue(Result, Ctx, true)) {
+    log::error() << "Default value must be constant foldable to rvalue";
+    throw CPPBindError();
+  }
 
   switch(Result.Val.getKind()) {
   case clang::APValue::Int:
@@ -43,7 +50,8 @@ WrapperParam::DefaultArg::DefaultArg(clang::Expr const *Expr)
     Value_ = Result.Val.getFloat();
     break;
   default:
-    error() << "Default value must have pointer, integer or floating point type"; // XXX
+    log::error() << "Default value must have pointer, integer or floating point type"; // XXX
+    throw CPPBindError();
   }
 
   bool ResultBool;

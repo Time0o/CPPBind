@@ -21,7 +21,6 @@ int main(int argc, char const **argv)
   try {
     Runner.run(Parser);
   } catch (CPPBindError const &Err) {
-    std::cerr << Err.what() << std::endl;
     return EXIT_FAILURE;
   }
 

@@ -4,19 +4,13 @@
 #include <exception>
 #include <iostream>
 #include <sstream>
-#include <stdexcept>
 #include <string>
 
 namespace cppbind
 {
 
-class CPPBindError : public std::runtime_error
+namespace log
 {
-public:
-  explicit CPPBindError(std::string const &Msg)
-  : std::runtime_error(Msg)
-  {}
-};
 
 class CPPBindLogger
 {
@@ -34,15 +28,12 @@ public:
     Stderr_(Stderr)
   { Buf_ << _Headers[Lvl_ - 1] << ": "; }
 
-  ~CPPBindLogger() noexcept(false)
+  ~CPPBindLogger()
   {
     auto Msg(Buf_.str());
 
     if (Lvl_ == ERROR) {
-      if (std::uncaught_exceptions() == 0)
-        throw CPPBindError(Msg);
-      else
-        Stderr_ << Msg << std::endl;
+      Stderr_ << Msg << std::endl;
     } else if (Lvl_ == WARNING) {
       Stderr_ << Msg << std::endl;
     } else {
@@ -74,6 +65,8 @@ inline CPPBindLogger warn()
 
 inline CPPBindLogger error()
 { return CPPBindLogger(CPPBindLogger::ERROR); }
+
+} // namespace log
 
 } // namespace cppbind
 

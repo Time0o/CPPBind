@@ -24,6 +24,7 @@
 #include "llvm/Option/OptTable.h"
 #include "llvm/Support/CommandLine.h"
 
+#include "Error.hpp"
 #include "Logging.hpp"
 #include "String.hpp"
 
@@ -217,8 +218,10 @@ private:
     }
 
     for (auto const &[Assert, Msg] : Assertions) {
-      if (!Assert(Value))
-        error() << Name.str() << ": " << Msg;
+      if (!Assert(Value)) {
+        log::error() << Name.str() << ": " << Msg;
+        throw CPPBindError();
+      }
     }
   }
 

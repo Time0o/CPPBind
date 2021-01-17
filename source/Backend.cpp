@@ -10,6 +10,7 @@
 
 #include "Backend.hpp"
 #include "CompilerState.hpp"
+#include "Error.hpp"
 #include "FundamentalTypes.hpp"
 #include "Identifier.hpp"
 #include "Logging.hpp"
@@ -52,7 +53,8 @@ void Backend::run(std::vector<WrapperRecord> const &Records,
     ModuleEntry(Inputfile, Records, Functions, &Options());
 
   } catch (std::runtime_error const &e) {
-    error() << "in backend:\n" << e.what();
+    log::error() << "in backend:\n" << e.what();
+    throw CPPBindError();
   }
 }
 

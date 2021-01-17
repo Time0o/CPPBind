@@ -4,8 +4,9 @@
 #include <fstream>
 #include <string>
 
-#include "Path.hpp"
+#include "Error.hpp"
 #include "Logging.hpp"
+#include "Path.hpp"
 
 namespace cppbind
 {
@@ -17,8 +18,10 @@ public:
   : Path_(path::temporary())
   {
     std::ofstream Stream(path());
-    if (!Stream)
-      error() << "failed to generate temporary file";
+    if (!Stream) {
+      log::error() << "failed to generate temporary file";
+      throw CPPBindError();
+    }
 
     Stream << Header_;
     Stream.flush();

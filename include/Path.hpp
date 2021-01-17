@@ -3,8 +3,10 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <stdexcept>
 #include <string>
+
+#include "Error.hpp"
+#include "Logging.hpp"
 
 namespace cppbind
 {
@@ -19,8 +21,10 @@ inline std::string concat(std::string const &Path1,
 inline std::string temporary()
 {
   char Tmpnam[7] = "XXXXXX";
-  if (mkstemp(Tmpnam) == -1)
-    throw std::runtime_error("failed to create temporary path");
+  if (mkstemp(Tmpnam) == -1) {
+    log::error() << "failed to create temporary path";
+    throw CPPBindError();
+  }
 
   return Tmpnam;
 }

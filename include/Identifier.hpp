@@ -16,6 +16,7 @@
 #include "clang/Lex/Preprocessor.h"
 
 #include "CompilerState.hpp"
+#include "Error.hpp"
 #include "Logging.hpp"
 #include "String.hpp"
 
@@ -139,8 +140,10 @@ public:
         UnqualifiedIdentifier.push_back(replaceSpecial);
     }
 
-    if (!isIdentifier(UnqualifiedIdentifier, false, allowReserved))
-      error() << "failed to create unqualified identifier";
+    if (!isIdentifier(UnqualifiedIdentifier, false, allowReserved)) {
+      log::error() << "failed to create unqualified identifier";
+      throw CPPBindError();
+    }
 
     return Identifier(UnqualifiedIdentifier);
   }
