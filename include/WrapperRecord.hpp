@@ -48,10 +48,7 @@ public:
   }
 
   Identifier name() const
-  { return Type_.strBaseUnwrapped(); }
-
-  std::string strDeclaration(std::shared_ptr<IdentifierIndex> II) const
-  { return Type_.strDeclaration(II); }
+  { return Type_.str(); }
 
 private:
   Identifier qualifiedMemberName(std::string const &Name) const
