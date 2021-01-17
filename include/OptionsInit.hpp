@@ -29,7 +29,7 @@ inline void initOptions()
 
   auto validPostfix = [](char const *Pat){
     return [=](std::string Postfix){
-      if (replaceAllStrs(Postfix, Pat, "x") == 0)
+      if (string::replaceAll(Postfix, Pat, "x") == 0)
         return false;
 
       return Identifier::isIdentifier(Postfix) && Postfix.back() != '_';

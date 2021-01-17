@@ -43,7 +43,7 @@ public:
   : Name_(stripUnderscores(removeQuals(Name), LeadingUs_, TrailingUs_, OnlyUs_)),
     NameQuals_(extractQuals(Name)),
     NameComponents_(splitName(Name_)),
-    NameQualsComponents_(splitStr(NameQuals_, "::"))
+    NameQualsComponents_(string::split(NameQuals_, "::"))
   { assertValid(); }
 
   Identifier(char const *Name)
@@ -66,7 +66,7 @@ public:
       return false;
 
     if (allowQualified) {
-      auto NameComponents(splitStr(Name, "::"));
+      auto NameComponents(string::split(Name, "::"));
 
       if (NameComponents.size() > 1u && NameComponents.front() == "std")
         return false;
@@ -123,7 +123,7 @@ public:
     if (isIdentifier(Name, true, allowReserved))
       return Name;
 
-    auto NameComponents(splitStr(Name, "::"));
+    auto NameComponents(string::split(Name, "::"));
 
     for (auto &NameComponent : NameComponents) {
       std::replace_if(NameComponent.begin(),
@@ -133,7 +133,7 @@ public:
     }
 
     auto UnqualifiedIdentifier(
-      pasteStrs(NameComponents, std::string(1, replaceSpecial)));
+      string::paste(NameComponents, std::string(1, replaceSpecial)));
 
     if (!isIdentifierChar(UnqualifiedIdentifier.front(), true))
       UnqualifiedIdentifier.front() = replaceSpecial;
@@ -254,9 +254,9 @@ private:
     std::vector<std::string> const &Components,
     Case Case)
   {
-    return transformAndPasteStrs(Components,
-                                 caseTransform(Case),
-                                 caseDelim(Case));
+    return string::transformAndPaste(Components,
+                                     caseTransform(Case),
+                                     caseDelim(Case));
   }
 
   static std::string transformStr(std::string Str, int (*transform)(int))
@@ -298,7 +298,7 @@ private:
     if (Name.size() == 1)
         return {Name};
 
-    if (isAllStr(Name, '_'))
+    if (string::isAll(Name, '_'))
       return {};
 
     std::vector<std::string> NameComponents;
@@ -337,7 +337,7 @@ private:
   }
 
   static std::vector<std::string> splitNameSnakeCase(std::string const &Name)
-  { return splitStr(Name, caseDelim(SNAKE_CASE)); }
+  { return string::split(Name, caseDelim(SNAKE_CASE)); }
 
   static std::vector<std::string> splitNamePascalCase(std::string const &Name)
   {
@@ -441,7 +441,7 @@ private:
     assert(!Name_.empty());
 
     if (OnlyUs_) {
-      assert(isAllStr(Name_, '_'));
+      assert(string::isAll(Name_, '_'));
 
       assert(LeadingUs_.empty());
       assert(TrailingUs_.empty());
@@ -451,8 +451,8 @@ private:
       assert(Name_.front() != '_');
       assert(Name_.back() != '_');
 
-      assert(isAllStr(LeadingUs_, '_'));
-      assert(isAllStr(TrailingUs_, '_'));
+      assert(string::isAll(LeadingUs_, '_'));
+      assert(string::isAll(TrailingUs_, '_'));
     }
 
     for (auto const &NameQualsComponent : NameQualsComponents_)

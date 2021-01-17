@@ -114,11 +114,9 @@ public:
 
 private:
   OptionsRegistry(llvm::StringRef Category, llvm::StringRef Usage)
-  : Category_(Category)
+  : Category_(Category),
+    Usage_(string::indent(string::trim(Usage.str())))
   {
-    Usage_ = Usage.str();
-    Usage_ = indentStr(trimStr(Usage_));
-
     Help_.emplace_back(clang::tooling::CommonOptionsParser::HelpMessage);
     Help_.emplace_back(Usage_.c_str());
   }
