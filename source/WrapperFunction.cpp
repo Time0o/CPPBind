@@ -76,8 +76,7 @@ std::string WrapperParam::DefaultArg::str() const
 }
 
 WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
-: IsMethod_(false),
-  Name_(determineName(Decl)),
+: Name_(determineName(Decl)),
   OverloadName_(Name_),
   Params_(determineParams(Decl)),
   ReturnType_(Decl->getReturnType())

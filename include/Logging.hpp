@@ -1,6 +1,7 @@
 #ifndef GUARD_LOGGING_H
 #define GUARD_LOGGING_H
 
+#include <array>
 #include <exception>
 #include <iostream>
 #include <sstream>
@@ -14,8 +15,8 @@ namespace log
 
 class CPPBindLogger
 {
-  static constexpr char const * _Headers[]
-  { "debug ", "info", "warning", "error" };
+  static constexpr std::array<char const *, 4> Headers_ =
+    { "debug ", "info", "warning", "error" };
 
 public:
   enum Level { DEBUG = 1, INFO = 2, WARNING = 3, ERROR = 4 };
@@ -26,7 +27,7 @@ public:
   : Lvl_(Lvl),
     Stdout_(Stdout),
     Stderr_(Stderr)
-  { Buf_ << _Headers[Lvl_ - 1] << ": "; }
+  { Buf_ << Headers_[Lvl_ - 1] << ": "; }
 
   ~CPPBindLogger()
   {

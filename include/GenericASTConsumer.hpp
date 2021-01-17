@@ -80,7 +80,7 @@ private:
 
   template<typename M, typename C>
   struct MemberFunctionPointerClass<M C::*>
-  { typedef C type; };
+  { using type = C; };
 
   template<typename M>
   using MemberFunctionPointerClassT =

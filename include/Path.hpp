@@ -1,6 +1,7 @@
 #ifndef GUARD_PATH_H
 #define GUARD_PATH_H
 
+#include <array>
 #include <cstdio>
 #include <cstdlib>
 #include <string>
@@ -20,13 +21,14 @@ inline std::string concat(std::string const &Path1,
 
 inline std::string temporary()
 {
-  char Tmpnam[7] = "XXXXXX";
-  if (mkstemp(Tmpnam) == -1) {
+  std::array<char, 7> Tmpnam = {'X', 'X', 'X', 'X', 'X', 'X', '\0'};
+
+  if (mkstemp(Tmpnam.data()) == -1) {
     log::error() << "failed to create temporary path";
     throw CPPBindError();
   }
 
-  return Tmpnam;
+  return std::string(Tmpnam.begin(), Tmpnam.end());
 }
 
 inline void remove(std::string const &Path)

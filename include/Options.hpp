@@ -111,7 +111,7 @@ public:
   { *findOpt<T>(Name) = Value; }
 
   clang::tooling::CommonOptionsParser parser(int Argc, char const **Argv)
-  { return clang::tooling::CommonOptionsParser(Argc, Argv, Category_); }
+  { return {Argc, Argv, Category_}; }
 
 private:
   OptionsRegistry(llvm::StringRef Category, llvm::StringRef Usage)
