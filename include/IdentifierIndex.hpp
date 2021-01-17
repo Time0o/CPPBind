@@ -31,8 +31,6 @@ private:
     Props(Type Type) : Type(Type) {}
 
     Type Type;
-
-    std::optional<Identifier> Alias;
   };
 
   struct AnyProps : public Props
@@ -68,13 +66,6 @@ public:
         break;
     }
 
-    if (!createCIdentifier(Id, Type)) {
-      P->Alias = createCAlias(Id, Type);
-
-      warn() << "creating alias "
-             << cIdentifier(Id, Type) << " => " << cIdentifier(*P->Alias, Type);
-    }
-
     Index_[Id] = P;
   }
 
@@ -88,14 +79,6 @@ public:
       return false;
 
     return Props->Type == Type;
-  }
-
-  Identifier alias(Identifier const &Id) const
-  {
-    auto P(props<AnyProps>(Id));
-    assert(P);
-
-    return P->Alias ? *P->Alias : Id;
   }
 
   void pushOverload(Identifier const &Id)
@@ -140,45 +123,7 @@ private:
     return std::static_pointer_cast<T>(Props);
   }
 
-  bool createCIdentifier(Identifier const &Id, Type Type)
-  {
-    auto CId(cIdentifier(Id, Type));
-
-    return CIdentifiers_.insert(CId).second;
-  }
-
-  Identifier createCAlias(Identifier const &Id, Type Type)
-  {
-    std::string CAlias(cIdentifier(Id, Type));
-    std::string TrailingUs;
-
-    while (CIdentifiers_.find(CAlias) != CIdentifiers_.end()) {
-      CAlias += "_";
-      TrailingUs += "_";
-    }
-
-    CIdentifiers_.insert(CAlias);
-
-    return Id + TrailingUs;
-  }
-
-  static std::string cIdentifier(Identifier const &Id, Type Type)
-  { return Id.strQualified(cCase(Type), true); }
-
-  static Identifier::Case cCase(Type Type)
-  {
-    switch (Type) {
-      case ANY:
-        assert(false);
-      case TYPE:
-        return Options().get<Identifier::Case>("type-case");
-      case FUNC:
-        return Options().get<Identifier::Case>("func-case");
-    }
-  }
-
   std::map<Identifier, std::shared_ptr<Props>> Index_;
-  std::unordered_set<std::string> CIdentifiers_;
 };
 
 } // namespace cppbind
