@@ -26,7 +26,7 @@ std::string paste(std::vector<std::string> const &Strs,
                   std::string const &Delim);
 
 std::string transformAndPaste(std::vector<std::string> const &Strs,
-                              std::string (*transform)(std::string, bool),
+                              std::string (*transform)(std::string const &, bool),
                               std::string const &Delim);
 
 bool replace(std::string &Str,

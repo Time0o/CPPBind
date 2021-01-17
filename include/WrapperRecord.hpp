@@ -30,7 +30,7 @@ public:
 
   WrapperFunction implicitDefaultConstructor() const
   {
-    return WrapperFunctionBuilder(qualifiedMemberName(Identifier::New), Type_)
+    return WrapperFunctionBuilder(qualifiedMemberName("new"), Type_)
            .setReturnType(TypePointer_)
            .isConstructor()
            .build();
@@ -41,18 +41,18 @@ public:
 
   WrapperFunction implicitDestructor() const
   {
-    return WrapperFunctionBuilder(qualifiedMemberName(Identifier::Delete), Type_)
-           .addParam(TypePointer_, Identifier::Self)
+    return WrapperFunctionBuilder(qualifiedMemberName("delete"), Type_)
+           .addParam(TypePointer_, Identifier("self"))
            .isDestructor()
            .build();
   }
 
   Identifier name() const
-  { return Type_.str(); }
+  { return Identifier(Type_.str()); }
 
 private:
   Identifier qualifiedMemberName(std::string const &Name) const
-  { return Identifier(Name).qualify(Decl_); }
+  { return Identifier(Name).qualify(Identifier(Decl_)); }
 
   clang::CXXRecordDecl const *Decl_;
   WrapperType Type_, TypePointer_;

@@ -99,7 +99,7 @@ void WrapperFunction::overload(std::shared_ptr<IdentifierIndex> II)
   auto numReplaced = string::replaceAll(Postfix, "%o", std::to_string(Overload_));
   assert(numReplaced > 0u);
 
-  OverloadName_ = name() + Postfix;
+  OverloadName_ = name() + Identifier(Postfix);
 
   II->add(OverloadName_, IdentifierIndex::FUNC);
 }
@@ -114,14 +114,14 @@ Identifier WrapperFunction::determineName(
     assert(!ConstructorDecl->isCopyConstructor()); // XXX
     assert(!ConstructorDecl->isMoveConstructor()); // XXX
 
-    return Identifier(Identifier::New).qualify(ConstructorDecl->getParent());
+    return Identifier("new").qualify(Identifier(ConstructorDecl->getParent()));
   }
 
   if (IsDestructor_) {
     auto const *DestructorDecl =
       llvm::dyn_cast<clang::CXXDestructorDecl>(Decl);
 
-    return Identifier(Identifier::Delete).qualify(DestructorDecl->getParent());
+    return Identifier("delete").qualify(Identifier(DestructorDecl->getParent()));
   }
 
   return Identifier(Decl);
@@ -139,7 +139,8 @@ std::vector<WrapperParam> WrapperFunction::determineParams(
     assert(!MethodDecl->isVirtual()); // XXX
 
     if (!MethodDecl->isStatic())
-      ParamList.emplace_back(MethodDecl->getThisType(), Identifier::Self);
+      ParamList.emplace_back(WrapperType(MethodDecl->getThisType()),
+                             Identifier("self"));
   }
 
   auto Params(Decl->parameters());
@@ -159,11 +160,12 @@ std::vector<WrapperParam> WrapperFunction::determineParams(
     }
 
     if (ParamDefaultArg) {
-      ParamList.emplace_back(ParamType,
-                             ParamName,
+      ParamList.emplace_back(WrapperType(ParamType),
+                             Identifier(ParamName),
                              WrapperParam::DefaultArg(ParamDefaultArg));
     } else
-      ParamList.emplace_back(ParamType, ParamName);
+      ParamList.emplace_back(WrapperType(ParamType),
+                             Identifier(ParamName));
   }
 
   return ParamList;

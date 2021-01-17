@@ -15,7 +15,7 @@ namespace cppbind
 class Wrapper
 {
 public:
-  Wrapper(std::shared_ptr<IdentifierIndex> IdentifierIndex)
+  explicit Wrapper(std::shared_ptr<IdentifierIndex> IdentifierIndex)
   : II_(IdentifierIndex)
   {}
 

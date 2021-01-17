@@ -19,19 +19,19 @@ namespace cppbind
 class WrapperType
 {
 public:
-  WrapperType(clang::QualType const &Type)
-  : Type_(Type.getDesugaredType(CompilerState()->getASTContext()))
-  {}
-
-  WrapperType(clang::Type const *Type)
-  : WrapperType(clang::QualType(Type, 0))
-  {}
-
   WrapperType()
   : WrapperType(FundamentalTypes().get("void"))
   {}
 
-  WrapperType(clang::TypeDecl const *Decl)
+  explicit WrapperType(clang::QualType const &Type)
+  : Type_(Type.getDesugaredType(CompilerState()->getASTContext()))
+  {}
+
+  explicit WrapperType(clang::Type const *Type)
+  : WrapperType(clang::QualType(Type, 0))
+  {}
+
+  explicit WrapperType(clang::TypeDecl const *Decl)
   : WrapperType(Decl->getTypeForDecl())
   {}
 
@@ -106,7 +106,7 @@ public:
   WrapperType pointee(bool recursive = false) const
   {
     if (!recursive)
-      return Type_->getPointeeType();
+      return WrapperType(Type_->getPointeeType());
 
     WrapperType Pointee(*this);
     while (Pointee.isPointer())

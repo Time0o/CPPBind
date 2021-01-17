@@ -24,7 +24,7 @@ namespace cppbind
 class CreateWrapperConsumer : public GenericASTConsumer
 {
 public:
-  CreateWrapperConsumer(std::shared_ptr<Wrapper> Wrapper)
+  explicit CreateWrapperConsumer(std::shared_ptr<Wrapper> Wrapper)
   : Wr_(Wrapper)
   {}
 
@@ -89,7 +89,7 @@ class CreateWrapperFrontendAction
 : public GenericFrontendAction<CreateWrapperConsumer>
 {
 public:
-  CreateWrapperFrontendAction(std::shared_ptr<IdentifierIndex> II)
+  explicit CreateWrapperFrontendAction(std::shared_ptr<IdentifierIndex> II)
   : II_(II)
   {}
 

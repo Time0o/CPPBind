@@ -47,7 +47,7 @@ class OptionsRegistry
     using Assertion = std::function<bool(T const &)>;
 
   public:
-    Option(llvm::StringRef Name)
+    explicit Option(llvm::StringRef Name)
     : Name_(Name)
     {}
 

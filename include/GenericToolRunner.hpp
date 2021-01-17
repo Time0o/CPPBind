@@ -58,7 +58,7 @@ protected:
     class Factory : public clang::tooling::FrontendActionFactory
     {
     public:
-      Factory(ARGS&&... Args)
+      explicit Factory(ARGS&&... Args)
       : StoredArgs_(std::forward_as_tuple(std::forward<ARGS>(Args)...))
       {}
 

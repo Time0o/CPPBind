@@ -59,10 +59,10 @@ std::vector<std::string> split(std::string const &Str,
 
   std::vector<std::string> Split;
 
-  std::size_t Pos = 0u, Nextpos;
+  std::size_t Pos = 0u;
 
   for (;;) {
-    Nextpos = Str.find(Delim, Pos);
+    std::size_t Nextpos = Str.find(Delim, Pos);
 
     std::string Next;
 
@@ -108,7 +108,7 @@ std::string paste(std::vector<std::string> const &Strs,
 }
 
 std::string transformAndPaste(std::vector<std::string> const &Strs,
-                              std::string (*transform)(std::string, bool),
+                              std::string (*transform)(std::string const &, bool),
                               std::string const &Delim)
 {
   if (Strs.empty())

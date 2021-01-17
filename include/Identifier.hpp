@@ -25,10 +25,6 @@ namespace cppbind
 class Identifier
 {
 public:
-  static constexpr char const * Self = "self",
-                              * New = "new",
-                              * Delete = "delete";
-
   enum Case
   {
     ORIG_CASE,
@@ -39,22 +35,22 @@ public:
     SNAKE_CASE_CAP_ALL
   };
 
-  Identifier(std::string const &Name)
+  explicit Identifier(std::string const &Name)
   : Name_(stripUnderscores(removeQuals(Name), LeadingUs_, TrailingUs_, OnlyUs_)),
     NameQuals_(extractQuals(Name)),
     NameComponents_(splitName(Name_)),
     NameQualsComponents_(string::split(NameQuals_, "::"))
   { assertValid(); }
 
-  Identifier(char const *Name)
+  explicit Identifier(char const *Name)
   : Identifier(std::string(Name))
   {}
 
-  Identifier(llvm::StringRef Name)
+  explicit Identifier(llvm::StringRef Name)
   : Identifier(Name.str())
   {}
 
-  Identifier(clang::NamedDecl const *Decl)
+  explicit Identifier(clang::NamedDecl const *Decl)
   : Identifier(Decl->getQualifiedNameAsString())
   {}
 
@@ -121,7 +117,7 @@ public:
     assert(isIdentifierChar(replaceSpecial, true));
 
     if (isIdentifier(Name, true, allowReserved))
-      return Name;
+      return Identifier(Name);
 
     auto NameComponents(string::split(Name, "::"));
 
@@ -146,7 +142,7 @@ public:
     if (!isIdentifier(UnqualifiedIdentifier, false, allowReserved))
       error() << "failed to create unqualified identifier";
 
-    return UnqualifiedIdentifier;
+    return Identifier(UnqualifiedIdentifier);
   }
 
   static Identifier makeUnqualifiedIdentifier(llvm::StringRef Name,
@@ -196,7 +192,7 @@ public:
     return *this;
   }
 
-  Identifier qualify(Identifier Qualifiers) const
+  Identifier qualify(Identifier const &Qualifiers) const
   { return Identifier(Qualifiers.strQualified() + "::" + strQualified()); }
 
   std::string strQualified(Case Case = ORIG_CASE,
@@ -266,34 +262,35 @@ private:
     return Str;
   }
 
-  static std::string identity(std::string Str)
-  { return Str; }
+  static std::string capitalize(std::string const &Str_)
+  {
+    auto Str(Str_);
+    Str.front() = std::toupper(Str.front());
+    return Str;
+  }
 
-  static std::string capitalize(std::string Str)
-  { Str.front() = std::toupper(Str.front()); return Str; }
-
-  static std::string lower(std::string Str)
+  static std::string lower(std::string const &Str)
   { return transformStr(Str, std::tolower); }
 
-  static std::string upper(std::string Str)
+  static std::string upper(std::string const &Str)
   { return transformStr(Str, std::toupper); }
 
-  static std::string transformStrCamelCase(std::string Str, bool first)
+  static std::string transformStrCamelCase(std::string const &Str, bool first)
   { return first ? lower(Str) : capitalize(Str); }
 
-  static std::string transformStrPascalCase(std::string Str, bool)
+  static std::string transformStrPascalCase(std::string const &Str, bool)
   { return capitalize(Str); }
 
-  static std::string transformStrSnakeCase(std::string Str, bool)
+  static std::string transformStrSnakeCase(std::string const &Str, bool)
   { return lower(Str); }
 
-  static std::string transformStrSnakeCaseCapFirst(std::string Str, bool first)
+  static std::string transformStrSnakeCaseCapFirst(std::string const &Str, bool first)
   { return first ? capitalize(Str) : lower(Str); }
 
-  static std::string transformStrSnakeCaseCapAll(std::string Str, bool)
+  static std::string transformStrSnakeCaseCapAll(std::string const &Str, bool)
   { return upper(Str); }
 
-  static std::vector<std::string> splitName(std::string Name)
+  static std::vector<std::string> splitName(std::string const &Name)
   {
     if (Name.size() == 1)
         return {Name};
@@ -343,16 +340,15 @@ private:
   {
     std::vector<std::string> NameComponents;
 
-    std::size_t i = 0, j = 1, next;
+    std::size_t i = 0, j = 1;
 
     for (;;) {
-      next = std::min(j + 1, Name.size() - 1);
-
       while (j < Name.size()) {
-        next = std::min(j + 1, Name.size() - 1);
+        std::size_t next = std::min(j + 1, Name.size() - 1);
 
         if (std::isupper(Name[j]) != std::isupper(Name[next]))
           break;
+
         ++j;
       }
 
@@ -384,7 +380,7 @@ private:
     }
   }
 
-  static std::string (*caseTransform(Case Case))(std::string, bool)
+  static std::string (*caseTransform(Case Case))(std::string const &, bool)
   {
     switch (Case) {
       case ORIG_CASE:

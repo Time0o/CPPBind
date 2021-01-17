@@ -28,7 +28,7 @@ public:
 private:
   struct Props
   {
-    Props(Type Type) : Type(Type) {}
+    explicit Props(Type Type) : Type(Type) {}
 
     Type Type;
   };

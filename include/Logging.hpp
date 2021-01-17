@@ -13,7 +13,7 @@ namespace cppbind
 class CPPBindError : public std::runtime_error
 {
 public:
-  CPPBindError(std::string const &Msg)
+  explicit CPPBindError(std::string const &Msg)
   : std::runtime_error(Msg)
   {}
 };
@@ -26,9 +26,9 @@ class CPPBindLogger
 public:
   enum Level { DEBUG = 1, INFO = 2, WARNING = 3, ERROR = 4 };
 
-  CPPBindLogger(Level Lvl,
-         std::ostream &Stdout = std::cout,
-         std::ostream &Stderr = std::cerr)
+  explicit CPPBindLogger(Level Lvl,
+                         std::ostream &Stdout = std::cout,
+                         std::ostream &Stderr = std::cerr)
   : Lvl_(Lvl),
     Stdout_(Stdout),
     Stderr_(Stderr)
