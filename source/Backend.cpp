@@ -146,19 +146,18 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
 
   py::class_<WrapperFunction>(m, "WrapperFunction")
     .def("name", STR(WrapperFunction, name))
+    .def("overload_name", STR(WrapperFunction, overloadName))
     .def("return_type", &WrapperFunction::returnType)
     .def("num_parameters",
          [](WrapperFunction const &Self, bool RequiredOnly)
          {
            if (RequiredOnly)
-             return Self.numRequiredParams();
+             return Self.numParamsRequired();
 
            return Self.numParams();
          },
          "required_only"_a = false)
-    .def("parameters", &WrapperFunction::params)
-    .def("overloaded", &WrapperFunction::overloaded)
-    .def("overload_name", STR(WrapperFunction, overloadName));
+    .def("parameters", &WrapperFunction::params);
 
   #define OPTION(NAME) [](OptionsRegistry const &Self) \
                        { return Self.get<>(NAME); }
