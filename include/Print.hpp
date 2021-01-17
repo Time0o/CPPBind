@@ -39,6 +39,8 @@ inline std::string printQualType(clang::QualType const &Type, PrintingPolicy PP)
   }
 }
 
+inline std::string printType(clang::Type const *Type, PrintingPolicy PP)
+{ return printQualType(clang::QualType(Type, 0), PP); }
 
 } // namespace cppbind
 
