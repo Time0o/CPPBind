@@ -1,211 +1,98 @@
 #include "Identifier.hpp"
 
+#include <algorithm>
+#include <cctype>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include "clang/AST/Decl.h"
+#include "clang/Basic/IdentifierTable.h"
+#include "clang/Lex/Preprocessor.h"
+
+#include "CompilerState.hpp"
+#include "String.hpp"
+
+namespace
+{
+
+template<typename T, typename FUNC>
+std::string
+transformAndPaste(std::vector<T> const &Strs,
+                  FUNC &&transform,
+                  std::string const &Delim)
+{
+  if (Strs.empty())
+    return "";
+
+  std::stringstream SS;
+
+  SS << transform(Strs.front(), true);
+  for (std::size_t i = 1; i < Strs.size(); ++i)
+    SS << Delim << transform(Strs[i], false);
+
+  return SS.str();
+}
+
+} // namespace
+
 namespace cppbind
 {
 
-Identifier::Identifier(std::string const &Name)
-: Name_(stripUnderscores(removeQuals(Name), LeadingUs_, TrailingUs_, OnlyUs_)),
-  NameQuals_(extractQuals(Name)),
-  NameComponents_(splitName(Name_)),
-  NameQualsComponents_(string::split(NameQuals_, "::"))
-{ assertValid(); }
+Identifier::Component::Component(std::string const &Name)
+: Name_(stripUnderscores(Name, LeadingUs_, TrailingUs_, OnlyUs_)),
+  NameWords_(splitName(Name_))
+{}
 
-bool Identifier::isIdentifier(std::string const &Name,
-                              bool allowQualified,
-                              bool allowReserved)
-{
-  if (Name.empty())
-    return false;
-
-  if (allowQualified) {
-    auto NameComponents(string::split(Name, "::"));
-
-    if (NameComponents.size() > 1u && NameComponents.front() == "std")
-      return false;
-
-    return std::all_of(
-      NameComponents.begin(),
-      NameComponents.end(),
-      [=](std::string const &NameComponent){
-        return isIdentifier(NameComponent, false, allowReserved);
-      });
-  }
-
-  bool isIdentifier_ =
-    isIdentifierChar(Name.front(), true) &&
-    std::all_of(Name.begin(),
-                Name.end(),
-                [](char c){ return isIdentifierChar(c, false); });
-
-  if (!isIdentifier_)
-    return false;
-
-  if (allowReserved)
-    return true;
-
-  auto &IdentifierTable = CompilerState()->getPreprocessor().getIdentifierTable();
-
-  auto &Info = IdentifierTable.getOwn(Name.c_str());
-
-  return !Info.isKeyword(CompilerState()->getLangOpts()) &&
-         !isReservedIdentifier(Info);
-}
-
-Identifier &Identifier::operator+=(Identifier const &ID)
-{
-  if (OnlyUs_ && ID.OnlyUs_) {
-    Name_ += ID.Name_;
-
-  } else if (OnlyUs_) {
-    LeadingUs_ = Name_ + ID.LeadingUs_;
-
-    Name_ = ID.Name_;
-    NameComponents_ = ID.NameComponents_;
-
-    TrailingUs_ = ID.TrailingUs_;
-
-    OnlyUs_ = false;
-
-  } else if (ID.OnlyUs_) {
-    TrailingUs_ += ID.Name_;
-
-  } else {
-    Name_ += ID.Name_;
-
-    NameComponents_.insert(NameComponents_.end(),
-                           ID.NameComponents_.begin(),
-                           ID.NameComponents_.end());
-
-    TrailingUs_ = ID.TrailingUs_;
-  }
-
-  assertValid();
-
-  return *this;
-}
-
-std::string Identifier::strQualified(Case Case, bool replaceScopeResolutions) const
-{
-  if (replaceScopeResolutions) {
-    assert(Case != ORIG_CASE);
-
-    if (NameQualsComponents_.empty())
-      return strUnqualified(Case);
-
-    return transformAndPasteComponents(NameQualsComponents_, Case) +
-           caseDelim(Case) +
-           strUnqualified(Case);
-
-  } else {
-    return NameQuals_ + strUnqualified(Case);
-  }
-}
-
-std::string Identifier::strUnqualified(Case Case) const
+std::string Identifier::Component::str(Case Case) const
 {
   if (OnlyUs_)
     return Name_;
 
   std::string Str;
 
-  if (Case == ORIG_CASE)
+  if (Case == ORIG_CASE) {
     Str = Name_;
-  else
-    Str = transformAndPasteComponents(NameComponents_, Case);
+  } else {
+    Str = transformAndPaste(NameWords_,
+                            caseTransform(Case),
+                            caseDelim(Case));
+  }
 
   return LeadingUs_ + Str + TrailingUs_;
 }
 
-bool Identifier::isIdentifierChar(char c, bool first)
-{
-  auto isUnderscore = [](char c){
-    return c == '_';
-  };
-
-  auto isLetter = [](char c){
-    return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
-  };
-
-  auto isNumber = [](char c){
-    return '0' <= c && c <= '9';
-  };
-
-  return first ? isUnderscore(c) || isLetter(c)
-               : isUnderscore(c) || isLetter(c) || isNumber(c);
-}
-
-bool Identifier::isReservedIdentifier(clang::IdentifierInfo &Info)
-{
-#if __clang_major__ >= 10
-  return Info.isReservedName();
-#else
-  if (Info.getLength() < 2)
-     return false;
-
-  char const *NameStart = Info.getNameStart();
-
-  char C1 = NameStart[0];
-  char C2 = NameStart[1];
-
-  return C1 == '_' && (C2 == '_' || (C2 >= 'A' && C2 <= 'Z'));
-#endif
-}
-
-
-std::string Identifier::removeQuals(std::string const &Name)
-{
-  auto pos = Name.rfind("::");
-
-  if (pos == std::string::npos)
-    return Name;
-
-  return Name.substr(pos + 2);
-}
-
-std::string Identifier::extractQuals(std::string const &Name)
-{
-  auto NameNoQuals(removeQuals(Name));
-
-  return Name.substr(0, Name.size() - NameNoQuals.size());
-}
-
-std::string Identifier::transformAndPasteComponents(
-  std::vector<std::string> const &Components,
-  Case Case)
-{
-  return string::transformAndPaste(Components,
-                                   caseTransform(Case),
-                                   caseDelim(Case));
-}
-
-std::string Identifier::transformStr(std::string Str, int (*transform)(int))
+std::string
+Identifier::Component::transformStr(std::string Str, int (*transform)(int))
 {
   std::transform(Str.begin(), Str.end(), Str.begin(),
                  [&](int c){ return transform(c); });
   return Str;
 }
 
-std::vector<std::string> Identifier::splitName(std::string const &Name)
+std::vector<std::string>
+Identifier::Component::splitName(std::string const &Name)
 {
   if (Name.size() == 1)
       return {Name};
 
-  if (string::isAll(Name, '_'))
+  if (std::all_of(Name.begin(), Name.end(), [](char c){ return c == '_'; }))
     return {};
 
-  std::vector<std::string> NameComponents;
+  std::vector<std::string> NameWords;
   if (Name.find(caseDelim(SNAKE_CASE)) != std::string::npos)
-    NameComponents = splitNameSnakeCase(Name);
+    NameWords = splitNameSnakeCase(Name);
   else
-    NameComponents = splitNamePascalCase(Name);
+    NameWords = splitNamePascalCase(Name);
 
-  return NameComponents;
+  return NameWords;
 }
 
-std::string Identifier::stripUnderscores(std::string const &Name,
-                                         std::string &LeadingUs,
-                                         std::string &TrailingUs,
-                                         bool &OnlyUs)
+std::string
+Identifier::Component::stripUnderscores(std::string const &Name,
+                                        std::string &LeadingUs,
+                                        std::string &TrailingUs,
+                                        bool &OnlyUs)
 {
   std::size_t LeadingUsEnd = 0u;
   while (LeadingUsEnd < Name.size() && Name[LeadingUsEnd] == '_')
@@ -228,9 +115,10 @@ std::string Identifier::stripUnderscores(std::string const &Name,
   return Name.substr(LeadingUsEnd, TrailingUsBeg - LeadingUsEnd + 1u);
 }
 
-std::vector<std::string> Identifier::splitNamePascalCase(std::string const &Name)
+std::vector<std::string>
+Identifier::Component::splitNamePascalCase(std::string const &Name)
 {
-  std::vector<std::string> NameComponents;
+  std::vector<std::string> NameWords;
 
   std::size_t i = 0, j = 1;
 
@@ -245,22 +133,23 @@ std::vector<std::string> Identifier::splitNamePascalCase(std::string const &Name
     }
 
     if (j == Name.size()) {
-      NameComponents.push_back(Name.substr(i, j - i));
+      NameWords.push_back(Name.substr(i, j - i));
       break;
     }
 
     int Offs = std::isupper(Name[j]) ? -1 : 1;
 
-    NameComponents.push_back(Name.substr(i, j - i + Offs));
+    NameWords.push_back(Name.substr(i, j - i + Offs));
 
     i = j + Offs;
     j = i + 1;
   }
 
-  return NameComponents;
+  return NameWords;
 }
 
-std::string Identifier::caseDelim(Case Case)
+std::string
+Identifier::Component::caseDelim(Case Case)
 {
   switch (Case) {
     case SNAKE_CASE:
@@ -272,7 +161,8 @@ std::string Identifier::caseDelim(Case Case)
   }
 }
 
-std::string (*Identifier::caseTransform(Case Case))(std::string const &, bool)
+std::string
+(*Identifier::Component::caseTransform(Case Case))(std::string const &, bool)
 {
   switch (Case) {
     case ORIG_CASE:
@@ -290,28 +180,146 @@ std::string (*Identifier::caseTransform(Case Case))(std::string const &, bool)
   }
 }
 
-void Identifier::assertValid() const
+Identifier::Identifier(std::string const &Id)
 {
-#ifndef NDEBUG
-  assert(!Name_.empty());
+  auto Components(string::split(Id, "::"));
 
-  if (OnlyUs_) {
-    assert(string::isAll(Name_, '_'));
+  Components_.reserve(Components.size());
+  for (auto const &Component : Components)
+    Components_.emplace_back(Component);
+}
 
-    assert(LeadingUs_.empty());
-    assert(TrailingUs_.empty());
+bool
+Identifier::isIdentifier(std::string const &Name,
+                         bool allowQualified,
+                         bool allowReserved)
+{
+  if (Name.empty())
+    return false;
 
-  } else {
-    assert(isIdentifier(LeadingUs_ + Name_ + TrailingUs_));
-    assert(Name_.front() != '_');
-    assert(Name_.back() != '_');
+  if (allowQualified) {
+    auto NameWords(string::split(Name, "::"));
 
-    assert(string::isAll(LeadingUs_, '_'));
-    assert(string::isAll(TrailingUs_, '_'));
+    if (NameWords.size() > 1u && NameWords.front() == "std")
+      return false;
+
+    return std::all_of(
+      NameWords.begin(),
+      NameWords.end(),
+      [=](std::string const &NameComponent)
+      { return isIdentifier(NameComponent, false, allowReserved); });
   }
 
-  for (auto const &NameQualsComponent : NameQualsComponents_)
-    assert(isIdentifier(NameQualsComponent));
+  bool isIdentifier_ =
+    isIdentifierChar(Name.front(), true) &&
+    std::all_of(Name.begin(),
+                Name.end(),
+                [](char c){ return isIdentifierChar(c, false); });
+
+  if (!isIdentifier_)
+    return false;
+
+  if (allowReserved)
+    return true;
+
+  return !isKeyword(Name) && !isReserved(Name);
+}
+
+Identifier
+Identifier::qualified(Identifier const &Qualifiers) const
+{
+  auto Qualified(Qualifiers);
+
+  Qualified.Components_.insert(Qualifiers.Components_.end(),
+                               Components_.begin(),
+                               Components_.end());
+  return Qualified;
+}
+
+Identifier
+Identifier::unqualified() const
+{
+  auto Unqualified(*this);
+
+  if (Components_.size() > 1u) {
+    Unqualified.Components_.erase(Unqualified.Components_.begin(),
+                                  Unqualified.Components_.end() - 1);
+  }
+
+  return Unqualified;
+}
+
+Identifier
+Identifier::unscoped() const
+{
+  auto Str(str());
+
+  string::replaceAll(Str, "::", "_");
+
+  return Identifier(Str);
+}
+
+std::string
+Identifier::str(Identifier::Case Case) const
+{
+  auto ToStr = [&](Component const &Id, bool)
+               { return Id.str(Case); };
+
+  return transformAndPaste(Components_, ToStr, "::");
+}
+
+clang::IdentifierInfo &
+Identifier::info(std::string const &Name)
+{
+  auto &IdentifierTable = CompilerState()->getPreprocessor().getIdentifierTable();
+
+  return IdentifierTable.getOwn(Name.c_str());
+}
+
+bool
+Identifier::isIdentifierChar(char c, bool first)
+{
+  auto isUnderscore = [](char c){
+    return c == '_';
+  };
+
+  auto isLetter = [](char c){
+    return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
+  };
+
+  auto isNumber = [](char c){
+    return '0' <= c && c <= '9';
+  };
+
+  return first ? isUnderscore(c) || isLetter(c)
+               : isUnderscore(c) || isLetter(c) || isNumber(c);
+}
+
+bool
+Identifier::isKeyword(std::string const &Name)
+{
+  auto &Info(info(Name));
+
+  return Info.isKeyword(CompilerState()->getLangOpts());
+}
+
+bool
+Identifier::isReserved(std::string const &Name)
+{
+  auto &Info(info(Name));
+
+#if __clang_major__ >= 10
+  return Info.isReservedName();
+#else
+  if (Info.getLength() < 2)
+     return false;
+
+  char const *NameStart = Info.getNameStart();
+
+  char C1 = NameStart[0];
+  char C2 = NameStart[1];
+
+  return C1 == '_' && (C2 == '_' || (C2 >= 'A' && C2 <= 'Z'));
 #endif
 }
 

@@ -1,22 +1,12 @@
 #ifndef GUARD_IDENTIFIER_H
 #define GUARD_IDENTIFIER_H
 
-#include <algorithm>
-#include <cassert>
-#include <cctype>
-#include <sstream>
 #include <string>
 #include <vector>
 
 #include "clang/AST/Decl.h"
 #include "clang/Basic/IdentifierTable.h"
-#include "clang/Lex/Preprocessor.h"
 
-#include "llvm/ADT/StringRef.h"
-
-#include "CompilerState.hpp"
-#include "Error.hpp"
-#include "Logging.hpp"
 #include "String.hpp"
 
 namespace cppbind
@@ -35,15 +25,69 @@ public:
     SNAKE_CASE_CAP_ALL
   };
 
-  explicit Identifier(std::string const &Name);
+  class Component
+  {
+  public:
+    explicit Component(std::string const &Name);
 
-  explicit Identifier(char const *Name)
-  : Identifier(std::string(Name))
-  {}
+    std::string str(Case Case = ORIG_CASE) const;
 
-  explicit Identifier(llvm::StringRef Name)
-  : Identifier(Name.str())
-  {}
+  private:
+    static std::string transformStr(std::string Str, int (*transform)(int));
+
+    static std::string capitalize(std::string const &Str_)
+    {
+      auto Str(Str_);
+      Str.front() = std::toupper(Str.front());
+      return Str;
+    }
+
+    static std::string lower(std::string const &Str)
+    { return transformStr(Str, std::tolower); }
+
+    static std::string upper(std::string const &Str)
+    { return transformStr(Str, std::toupper); }
+
+    static std::string transformStrCamelCase(std::string const &Str, bool first)
+    { return first ? lower(Str) : capitalize(Str); }
+
+    static std::string transformStrPascalCase(std::string const &Str, bool)
+    { return capitalize(Str); }
+
+    static std::string transformStrSnakeCase(std::string const &Str, bool)
+    { return lower(Str); }
+
+    static std::string transformStrSnakeCaseCapFirst(std::string const &Str, bool first)
+    { return first ? capitalize(Str) : lower(Str); }
+
+    static std::string transformStrSnakeCaseCapAll(std::string const &Str, bool)
+    { return upper(Str); }
+
+    static std::string stripUnderscores(std::string const &Name,
+                                        std::string &LeadingUs,
+                                        std::string &TrailingUs,
+                                        bool &OnlyUs);
+
+    static std::vector<std::string> splitName(std::string const &Name);
+
+    static std::vector<std::string> splitNameSnakeCase(std::string const &Name)
+    { return string::split(Name, caseDelim(SNAKE_CASE)); }
+
+    static std::vector<std::string> splitNamePascalCase(std::string const &Name);
+
+    static std::string caseDelim(Case Case);
+
+    static std::string (*caseTransform(Case Case))(std::string const &, bool);
+
+    std::string LeadingUs_;
+    std::string TrailingUs_;
+    bool OnlyUs_;
+
+    std::string Name_;
+    std::vector<std::string> NameWords_;
+  };
+
+  explicit Identifier(std::string const &Id);
 
   explicit Identifier(clang::NamedDecl const *Decl)
   : Identifier(Decl->getQualifiedNameAsString())
@@ -53,103 +97,39 @@ public:
                            bool allowQualified = true,
                            bool allowReserved = true);
 
-  static bool isIdentifier(llvm::StringRef Name,
-                           bool allowQualified = true,
-                           bool allowReserved = true)
-  { return isIdentifier(Name.str(), allowQualified, allowReserved); }
-
   bool operator==(Identifier const &ID) const
-  { return strQualified() == ID.strQualified(); }
+  { return str() == ID.str(); }
 
   bool operator!=(Identifier const &ID) const
   { return !(*this == ID); }
 
-  bool operator<(Identifier const &ID) const
-  { return strQualified() < ID.strQualified(); }
+  bool operator<(Identifier const &Id) const
+  { return str() < Id.str(); }
 
-  Identifier &operator+=(Identifier const &ID);
+  bool operator>(Identifier const &Id) const
+  { return Id < *this; }
 
-  Identifier qualify(Identifier const &Qualifiers) const
-  { return Identifier(Qualifiers.strQualified() + "::" + strQualified()); }
+  bool operator<=(Identifier const &Id) const
+  { return !(*this > Id); }
 
-  std::string strQualified(Case Case = ORIG_CASE,
-                           bool replaceScopeResolutions = false) const;
+  bool operator>=(Identifier const &Id) const
+  { return !(*this < Id); }
 
-  std::string strUnqualified(Case Case = ORIG_CASE) const;
+  Identifier qualified(Identifier const &Qualifiers) const;
+  Identifier unqualified() const;
+  Identifier unscoped() const;
+
+  std::string str(Identifier::Case Case = Identifier::ORIG_CASE) const;
 
 private:
+  static clang::IdentifierInfo &info(std::string const &Name);
+
   static bool isIdentifierChar(char c, bool first);
-  static bool isReservedIdentifier(clang::IdentifierInfo &Info);
+  static bool isKeyword(std::string const &Name);
+  static bool isReserved(std::string const &Name);
 
-  static std::string removeQuals(std::string const &Name);
-
-  static std::string extractQuals(std::string const &Name);
-
-  static std::string transformAndPasteComponents(
-    std::vector<std::string> const &Components,
-    Case Case);
-
-  static std::string transformStr(std::string Str, int (*transform)(int));
-
-  static std::string capitalize(std::string const &Str_)
-  {
-    auto Str(Str_);
-    Str.front() = std::toupper(Str.front());
-    return Str;
-  }
-
-  static std::string lower(std::string const &Str)
-  { return transformStr(Str, std::tolower); }
-
-  static std::string upper(std::string const &Str)
-  { return transformStr(Str, std::toupper); }
-
-  static std::string transformStrCamelCase(std::string const &Str, bool first)
-  { return first ? lower(Str) : capitalize(Str); }
-
-  static std::string transformStrPascalCase(std::string const &Str, bool)
-  { return capitalize(Str); }
-
-  static std::string transformStrSnakeCase(std::string const &Str, bool)
-  { return lower(Str); }
-
-  static std::string transformStrSnakeCaseCapFirst(std::string const &Str, bool first)
-  { return first ? capitalize(Str) : lower(Str); }
-
-  static std::string transformStrSnakeCaseCapAll(std::string const &Str, bool)
-  { return upper(Str); }
-
-  static std::vector<std::string> splitName(std::string const &Name);
-
-  static std::string stripUnderscores(std::string const &Name,
-                                      std::string &LeadingUs,
-                                      std::string &TrailingUs,
-                                      bool &OnlyUs);
-
-  static std::vector<std::string> splitNameSnakeCase(std::string const &Name)
-  { return string::split(Name, caseDelim(SNAKE_CASE)); }
-
-  static std::vector<std::string> splitNamePascalCase(std::string const &Name);
-
-  static std::string caseDelim(Case Case);
-
-  static std::string (*caseTransform(Case Case))(std::string const &, bool);
-
-  void assertValid() const;
-
-  std::string LeadingUs_;
-  std::string TrailingUs_;
-  bool OnlyUs_;
-
-  std::string Name_, NameQuals_;
-  std::vector<std::string> NameComponents_, NameQualsComponents_;
+  std::vector<Component> Components_;
 };
-
-inline Identifier operator+(Identifier ID1, Identifier const &ID2)
-{
-  ID1 += ID2;
-  return ID1;
-}
 
 } // namespace cppbind
 

@@ -48,7 +48,7 @@ public:
 
 private:
   Identifier qualifiedMemberName(std::string const &Name) const
-  { return Identifier(Name).qualify(Identifier(Decl_)); }
+  { return Identifier(Name).qualified(Identifier(Decl_)); }
 
   clang::CXXRecordDecl const *Decl_;
   WrapperType Type_, TypePointer_;

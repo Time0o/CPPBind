@@ -87,11 +87,11 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
       throw std::invalid_argument("invalid argument to 'case'");
 
     if (Qualifiers == "keep")
-      return Id.strQualified(Case);
+      return Id.str(Case);
     else if (Qualifiers == "replace")
-      return Id.strQualified(Case, true);
+      return Id.unscoped().str(Case);
     else if (Qualifiers == "remove")
-      return Id.strUnqualified(Case);
+      return Id.unqualified().str(Case);
     else
       throw std::invalid_argument("invalid argument to 'qualifiers'");
   };

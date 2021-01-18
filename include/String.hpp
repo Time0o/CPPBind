@@ -10,12 +10,9 @@ namespace cppbind
 namespace string
 {
 
-bool isAll(std::string const &Str, char c);
-
 std::string ltrim(std::string const &Str);
 std::string rtrim(std::string const &Str);
 std::string trim(std::string const &Str);
-
 std::string indent(std::string const &Str);
 
 std::vector<std::string> split(std::string const &Str,
@@ -24,10 +21,6 @@ std::vector<std::string> split(std::string const &Str,
 
 std::string paste(std::vector<std::string> const &Strs,
                   std::string const &Delim);
-
-std::string transformAndPaste(std::vector<std::string> const &Strs,
-                              std::string (*transform)(std::string const &, bool),
-                              std::string const &Delim);
 
 bool replace(std::string &Str,
              std::string const &Pat,

@@ -16,6 +16,7 @@ public:
   enum Type
   {
     ANY,
+    CONST,
     TYPE,
     FUNC
   };
@@ -30,6 +31,9 @@ private:
 
   struct AnyProps : public Props
   { AnyProps() : Props(ANY) {} };
+
+  struct ConstProps : public Props
+  { ConstProps() : Props(CONST) {} };
 
   struct TypeProps : public Props
   { TypeProps() : Props(TYPE) {} };
@@ -52,6 +56,9 @@ public:
     switch (Type) {
       case ANY:
         P = std::make_shared<AnyProps>();
+        break;
+      case CONST:
+        P = std::make_shared<ConstProps>();
         break;
       case TYPE:
         P = std::make_shared<TypeProps>();
@@ -109,7 +116,9 @@ private:
     auto Props(It->second);
 
 #ifndef NDEBUG
-    if constexpr (std::is_same_v<T, TypeProps>)
+    if constexpr (std::is_same_v<T, ConstProps>)
+      assert(Props->Type = CONST);
+    else if constexpr (std::is_same_v<T, TypeProps>)
       assert(Props->Type = TYPE);
     else if constexpr (std::is_same_v<T, FuncProps>)
       assert(Props->Type = FUNC);

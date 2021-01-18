@@ -13,9 +13,6 @@ namespace cppbind
 namespace string
 {
 
-bool isAll(std::string const &Str, char c)
-{ return std::all_of(Str.begin(), Str.end(), [=](char c_){ return c_ == c; }); }
-
 std::string ltrim(std::string const &Str_)
 {
   auto Str(Str_);
@@ -100,22 +97,6 @@ std::string paste(std::vector<std::string> const &Strs,
   SS << Strs.front();
   for (std::size_t i = 1; i < Strs.size(); ++i)
     SS << Delim << Strs[i];
-
-  return SS.str();
-}
-
-std::string transformAndPaste(std::vector<std::string> const &Strs,
-                              std::string (*transform)(std::string const &, bool),
-                              std::string const &Delim)
-{
-  if (Strs.empty())
-    return "";
-
-  std::stringstream SS;
-
-  SS << transform(Strs.front(), true);
-  for (std::size_t i = 1; i < Strs.size(); ++i)
-    SS << Delim << transform(Strs[i], false);
 
   return SS.str();
 }

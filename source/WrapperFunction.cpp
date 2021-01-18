@@ -118,7 +118,7 @@ void WrapperFunction::overload(std::shared_ptr<IdentifierIndex> II)
   assert(numReplaced > 0u);
 #endif
 
-  OverloadName_ = name() + Identifier(Postfix);
+  OverloadName_ = Identifier(name().str() + Postfix);
 
   II->add(OverloadName_, IdentifierIndex::FUNC);
 }
@@ -133,14 +133,14 @@ Identifier WrapperFunction::determineName(
     assert(!ConstructorDecl->isCopyConstructor()); // XXX
     assert(!ConstructorDecl->isMoveConstructor()); // XXX
 
-    return Identifier("new").qualify(Identifier(ConstructorDecl->getParent()));
+    return Identifier("new").qualified(Identifier(ConstructorDecl->getParent()));
   }
 
   if (IsDestructor_) {
     auto const *DestructorDecl =
       llvm::dyn_cast<clang::CXXDestructorDecl>(Decl);
 
-    return Identifier("delete").qualify(Identifier(DestructorDecl->getParent()));
+    return Identifier("delete").qualified(Identifier(DestructorDecl->getParent()));
   }
 
   return Identifier(Decl);
