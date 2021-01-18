@@ -107,6 +107,9 @@ endif()
 # find llvm
 find_package(LLVM ${CLANG_VERSION_MAJOR} REQUIRED CONFIG)
 
+# find boost
+find_package(Boost 1.32 REQUIRED COMPONENTS regex)
+
 # find pybind11
 if(NOT EXISTS ${PYBIND11_DIR}/CMakeLists.txt)
   message(FATAL_ERROR "pybind11 submodule not found")
@@ -156,6 +159,15 @@ function(target_llvm_config TARGET)
   llvm_config(${TARGET} USE_SHARED option)
 endfunction()
 
+function(target_boost_config TARGET)
+  # includes
+  target_include_directories(${TARGET} PRIVATE ${Boost_INCLUDE_DIRS})
+
+  # linking
+  target_link_directories(${TARGET} PRIVATE ${Boost_LIBRARY_DIRS})
+  target_link_libraries(${TARGET} PRIVATE ${Boost_LIBRARIES})
+endfunction()
+
 function(target_pybind11_config TARGET)
   # definitions
   target_compile_definitions(
@@ -177,6 +189,7 @@ function(target_basic_config TARGET)
   target_cpp_config(${TARGET})
   target_clang_config(${TARGET})
   target_llvm_config(${TARGET})
+  target_boost_config(${TARGET})
   target_pybind11_config(${TARGET})
   target_cppbind_config(${TARGET})
 endfunction()

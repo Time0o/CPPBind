@@ -6,6 +6,9 @@
 #include <string>
 #include <vector>
 
+#include "boost/algorithm/string/regex.hpp"
+#include "boost/regex.hpp"
+
 #include "clang/AST/Decl.h"
 #include "clang/Basic/IdentifierTable.h"
 #include "clang/Lex/Preprocessor.h"
@@ -80,10 +83,15 @@ Identifier::Component::splitName(std::string const &Name)
     return {};
 
   std::vector<std::string> NameWords;
-  if (Name.find(caseDelim(SNAKE_CASE)) != std::string::npos)
-    NameWords = splitNameSnakeCase(Name);
-  else
+  if (Name.find(caseDelim(SNAKE_CASE)) != std::string::npos) {
+    for (auto const &SnakeWord : splitNameSnakeCase(Name)) {
+      auto PascalWords(splitNamePascalCase(SnakeWord));
+
+      NameWords.insert(NameWords.end(), PascalWords.begin(), PascalWords.end());
+    }
+  } else {
     NameWords = splitNamePascalCase(Name);
+  }
 
   return NameWords;
 }
@@ -118,32 +126,15 @@ Identifier::Component::stripUnderscores(std::string const &Name,
 std::vector<std::string>
 Identifier::Component::splitNamePascalCase(std::string const &Name)
 {
+  static boost::regex R(
+    "(?<=[A-Z])(?=[A-Z][a-z])"
+    "|(?<=[^A-Z])(?=[A-Z])"
+    "|(?<=[A-Za-z])(?=[^A-Za-z])"
+  );
+
   std::vector<std::string> NameWords;
 
-  std::size_t i = 0, j = 1;
-
-  for (;;) {
-    while (j < Name.size()) {
-      std::size_t next = std::min(j + 1, Name.size() - 1);
-
-      if (std::isupper(Name[j]) != std::isupper(Name[next]))
-        break;
-
-      ++j;
-    }
-
-    if (j == Name.size()) {
-      NameWords.push_back(Name.substr(i, j - i));
-      break;
-    }
-
-    int Offs = std::isupper(Name[j]) ? -1 : 1;
-
-    NameWords.push_back(Name.substr(i, j - i + Offs));
-
-    i = j + Offs;
-    j = i + 1;
-  }
+  boost::algorithm::split_regex(NameWords, Name, R);
 
   return NameWords;
 }
