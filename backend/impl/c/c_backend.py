@@ -7,13 +7,13 @@ class CBackend(Backend):
     def __init__(self, *args):
         super().__init__(*args)
 
-        input_path = self.input_path()
+        input_file = self.input_file()
 
         self._wrapper_header = self.output_file(
-            input_path.modified(filename='{filename}_c', ext='.h'))
+            input_file.modified(filename='{filename}_c', ext='.h'))
 
         self._wrapper_source = self.output_file(
-            input_path.modified(filename='{filename}_c', ext='.cpp'))
+            input_file.modified(filename='{filename}_c', ext='.cpp'))
 
         self._header_include_set = set()
         self._source_include_set = set()
@@ -59,7 +59,7 @@ class CBackend(Backend):
             {wrapper_include}
             """,
             source_includes=self._source_includes(),
-            input_include=text.include(self.input_path().basename()),
+            input_include=text.include(self.input_file().basename()),
             wrapper_include=text.include(self._wrapper_header.basename()),
         ))
 
@@ -68,6 +68,18 @@ class CBackend(Backend):
             } // extern "C"
             """
         ))
+
+    def wrap_variable(self, v):
+        cpp_name = v.name()
+
+        c_name = self._c_variable_name(v)
+        c_type = self._c_type(v.type())
+
+        self._wrapper_header.append(text.code(
+            f"extern {c_type} {c_name};"))
+
+        self._wrapper_source.append(text.code(
+            f"{c_type} {c_name} = static_cast<{c_type}>({cpp_name});"))
 
     def wrap_function(self, f):
         self._wrapper_header.append(self._function_declaration(f))
@@ -86,7 +98,7 @@ class CBackend(Backend):
         self._source_include_set.add(text.include(header, system=True))
 
     def _header_guard(self):
-        guard_id = self.input_path().filename().upper()
+        guard_id = self.input_file().filename().upper()
 
         return f"GUARD_{guard_id}_C_H"
 
@@ -165,14 +177,6 @@ class CBackend(Backend):
     def _function_non_default_parameters(self, f):
         return [p for p in f.parameters() if not p.has_default_argument()]
 
-    @staticmethod
-    def _c_function_name(f):
-        return f.overload_name(qualifiers='replace', case='snake')
-
-    @staticmethod
-    def _c_parameter_name(p):
-        return p.name(case='snake')
-
     # XXX
     def _c_type(self, t):
         if not t.is_fundamental():
@@ -197,3 +201,15 @@ class CBackend(Backend):
         for k, v in in_header.items():
             if t.is_fundamental(k):
                 return f'{v}.h'
+
+    @staticmethod
+    def _c_variable_name(v):
+        return v.name(qualifiers='replace', case='snake-cap-all')
+
+    @staticmethod
+    def _c_function_name(f):
+        return f.overload_name(qualifiers='replace', case='snake')
+
+    @staticmethod
+    def _c_parameter_name(p):
+        return p.name(case='snake')

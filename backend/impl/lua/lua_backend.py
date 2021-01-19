@@ -7,10 +7,10 @@ class LuaBackend(Backend):
     def __init__(self, *args):
         super().__init__(*args)
 
-        input_path = self.input_path()
+        input_file = self.input_file()
 
         self._wrapper_module = self.output_file(
-            input_path.modified(filename='{filename}_lua', ext='.cpp'))
+            input_file.modified(filename='{filename}_lua', ext='.cpp'))
 
     def wrap_before(self):
         self._wrapper_module.append(text.code(
@@ -31,7 +31,7 @@ class LuaBackend(Backend):
 
             {wrapper_utils}
             """,
-            input_include=text.include(self.input_path().basename()),
+            input_include=text.include(self.input_file().basename()),
             wrapper_utils=self._wrapper_utils()
         ))
 
@@ -39,25 +39,30 @@ class LuaBackend(Backend):
         ## XXX support different Lua versions
         self._wrapper_module.append(text.code(
             """
+            {module_create}
+
+            {module_properties}
+
             }} // namespace
 
             extern "C" {{
 
-            luaL_Reg {module}_lib[] = {{
-              {function_table}
-            }};
-
             LUALIB_API int luaopen_{module}(lua_State *L)
             {{
-              luaL_newlib(L, {module}_lib);
+              {module}_create(L);
+              {module}_properties(L);
               return 1;
             }}
 
             }} // extern "C"
             """,
-            function_table=self._function_table(),
-            module=self._module()
+            module=self._module(),
+            module_create=self._module_create(),
+            module_properties=self._module_properties()
         ))
+
+    def wrap_variable(self, c):
+        pass
 
     def wrap_function(self, f):
         self._wrapper_module.append(text.code(
@@ -285,21 +290,63 @@ class LuaBackend(Backend):
 
         return ref_parameters
 
-    def _function_table(self):
-        table = (self._lua_function_name(f) for f in self.functions())
-
-        return ',\n'.join(f'{{"{entry}", {entry}}}' for entry in table)
-
     def _module(self):
-        return self.input_path().filename()
+        return self.input_file().filename()
 
-    @staticmethod
-    def _lua_function_name(f):
-        return f.overload_name(qualifiers='replace', case='snake')
+    def _module_create(self):
+        if not self.functions():
+            return text.code(
+                """
+                void {module}_create(lua_State *L)
+                {{ lua_newtable(L); }}
+                """,
+                module=self._module())
+        else:
+            module_function_table = []
 
-    @staticmethod
-    def _lua_parameter_name(p):
-        return p.name(case='snake')
+            for f in self.functions():
+                entry = self._lua_function_name(f)
+
+                module_function_table.append(f'{{"{entry}", {entry}}}')
+
+            return text.code(
+                """
+                luaL_Reg lib[] = {{
+                  {module_function_table}
+                }};
+
+                void {module}_create(lua_State *L)
+                {{
+                  luaL_newlib(L, lib);
+                }}
+                """,
+                module=self._module(),
+                module_function_table='\n'.join(module_function_table))
+
+    def _module_properties(self):
+        module_properties = []
+
+        for v in self.variables():
+            lua_name = self._lua_variable_name(v)
+            lua_type = self._lua_type(v.type())
+
+            module_properties.append(text.code(
+                f"""
+                lua_pushstring(L, "{lua_name}");
+                lua_push{lua_type}(L, static_cast<{v.type()}>({v.name()}));
+                lua_settable(L, -3);
+                """,
+                end=''))
+
+        return text.code(
+            """
+            void {module}_properties(lua_State *L)
+            {{
+              {module_properties}
+            }}
+            """,
+            module=self._module(),
+            module_properties='\n\n'.join(module_properties))
 
     @staticmethod
     def _lua_type(t):
@@ -324,3 +371,15 @@ class LuaBackend(Backend):
             return 'LUA_TLIGHTUSERDATA'
         else:
             raise ValueError('TODO')
+
+    @staticmethod
+    def _lua_variable_name(v):
+        return v.name(qualifiers='replace', case='snake-cap-all')
+
+    @staticmethod
+    def _lua_function_name(f):
+        return f.overload_name(qualifiers='replace', case='snake')
+
+    @staticmethod
+    def _lua_parameter_name(p):
+        return p.name(case='snake')

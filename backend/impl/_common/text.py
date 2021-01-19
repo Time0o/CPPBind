@@ -10,7 +10,7 @@ def code(txt, **kwargs):
     if kwargs:
         txt = _format(txt, kwargs)
 
-    return txt + os.linesep
+    return txt + kwargs.get('end', os.linesep)
 
 
 def include(header, system=False):

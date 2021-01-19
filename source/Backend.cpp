@@ -1,3 +1,4 @@
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -9,12 +10,13 @@
 #include "pybind11/stl.h"
 
 #include "Backend.hpp"
-#include "CompilerState.hpp"
 #include "Error.hpp"
 #include "Identifier.hpp"
 #include "Logging.hpp"
 #include "Options.hpp"
 #include "Path.hpp"
+#include "Wrapper.hpp"
+#include "WrapperVariable.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperRecord.hpp"
 #include "WrapperType.hpp"
@@ -34,8 +36,7 @@ auto Backend::addModuleSearchPath(std::string const &Path)
   Sys.attr("path").cast<py::list>().append(Path);
 }
 
-void Backend::run(std::vector<WrapperRecord> const &Records,
-                  std::vector<WrapperFunction> const &Functions)
+void Backend::run(std::shared_ptr<Wrapper> Wrapper)
 {
   auto BE = Options().get<>("backend");
 
@@ -48,9 +49,7 @@ void Backend::run(std::vector<WrapperRecord> const &Records,
     auto Module(importModule(BE + BACKEND_IMPL_MODULE_POSTFIX));
     auto ModuleEntry(Module.attr(BACKEND_IMPL_ENTRY));
 
-    auto Inputfile(CompilerState().currentFile());
-
-    ModuleEntry(Inputfile, Records, Functions, &Options());
+    ModuleEntry(Wrapper, &Options());
 
   } catch (std::runtime_error const &e) {
     log::error() << "in backend:\n" << e.what();
@@ -102,6 +101,12 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
                              { return str(Self.FUNC(), Case, Qualifiers); }, \
                              "case"_a = "orig", "qualifiers"_a = "keep"
 
+  py::class_<Wrapper, std::shared_ptr<Wrapper>>(m, "Wrapper")
+    .def("wrapped_file", &Wrapper::wrappedFile)
+    .def("variables", &Wrapper::constants)
+    .def("records", &Wrapper::records)
+    .def("functions", &Wrapper::functions);
+
   py::class_<WrapperType>(m, "WrapperType")
     .def(py::self == py::self)
     .def(py::self != py::self)
@@ -124,6 +129,10 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("pointee", &WrapperType::pointee, "recursive"_a = false)
     .def("with_const", &WrapperType::withConst)
     .def("without_const", &WrapperType::withoutConst);
+
+  py::class_<WrapperVariable>(m, "WrapperVariable")
+    .def("name", STR(WrapperVariable, name))
+    .def("type", &WrapperVariable::type);
 
   py::class_<WrapperRecord>(m, "WrapperRecord");
 

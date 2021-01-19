@@ -11,13 +11,18 @@
 #include "clang/ASTMatchers/ASTMatchers.h"
 
 #include "Backend.hpp"
+#include "CompilerState.hpp"
+#include "Error.hpp"
 #include "FundamentalTypes.hpp"
 #include "GenericASTConsumer.hpp"
 #include "GenericFrontendAction.hpp"
 #include "GenericToolRunner.hpp"
+#include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
+#include "Logging.hpp"
 #include "Options.hpp"
 #include "Wrapper.hpp"
+#include "WrapperType.hpp"
 
 namespace cppbind
 {
@@ -46,6 +51,16 @@ private:
       valueDecl(inFundamentalTypeNs),
       &CreateWrapperConsumer::handleFundamentalTypeValueDecl);
 
+    addHandler<clang::VarDecl>(
+      "varDecl",
+      varDecl(inWrappedNs),
+      &CreateWrapperConsumer::handleVarDecl);
+
+    addHandler<clang::EnumDecl>(
+      "enumDecl",
+      enumDecl(inWrappedNs),
+      &CreateWrapperConsumer::handleEnumDecl);
+
     addHandler<clang::CXXRecordDecl>(
       "structOrClassDecl",
       cxxRecordDecl(allOf(inWrappedNs, anyOf(isClass(), isStruct()), isDefinition())),
@@ -71,6 +86,33 @@ private:
       Type = Type->getPointeeType().getTypePtr();
 
     FundamentalTypes().add(Type);
+  }
+
+  void handleVarDecl(clang::VarDecl const *Decl)
+  {
+    auto SC = Decl->getStorageClass();
+
+    if (SC == clang::SC_Extern || SC == clang::SC_PrivateExtern) {
+      log::warn() << "global variable with external linkage ignored"; // XXX
+      return;
+    }
+
+    WrapperType Type(Decl->getType());
+
+    if (!Decl->isConstexpr() && !(SC == clang::SC_Static && Type.isConst())) {
+      log::error() << "global variables without external linkage should have static storage and be constant"; // XXX
+      throw CPPBindError();
+    }
+
+    Wr_->addWrapperVariable(Identifier(Decl), Type);
+  }
+
+  void handleEnumDecl(clang::EnumDecl const *Decl)
+  {
+    WrapperType IntegerType(Decl->getIntegerType());
+
+    for (auto const &ConstantDecl : Decl->enumerators())
+      Wr_->addWrapperVariable(Identifier(ConstantDecl), IntegerType);
   }
 
   void handlefunctionDecl(clang::FunctionDecl const *Decl)
@@ -102,14 +144,14 @@ private:
   }
 
   void beforeProcessing() override
-  { Wr_ = std::make_shared<Wrapper>(II_); }
+  { Wr_ = std::make_shared<Wrapper>(II_, CompilerState().currentFile()); }
 
   void afterProcessing() override
   {
     // XXX too early?
     Wr_->overload();
 
-    Backend::run(Wr_->records(), Wr_->functions());
+    Backend::run(Wr_);
   }
 
   std::shared_ptr<IdentifierIndex> II_;

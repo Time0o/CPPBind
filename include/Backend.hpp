@@ -1,20 +1,19 @@
 #ifndef GUARD_BACKEND_H
 #define GUARD_BACKEND_H
 
+#include <memory>
 #include <string>
 #include <vector>
 
 namespace cppbind
 {
 
-class WrapperFunction;
-class WrapperRecord;
+class Wrapper;
 
 class Backend
 {
 public:
-  static void run(std::vector<WrapperRecord> const &Records,
-                  std::vector<WrapperFunction> const &Functions);
+  static void run(std::shared_ptr<Wrapper> Wrapper);
 
 private:
   static auto addModuleSearchPath(std::string const &Path);

@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "IdentifierIndex.hpp"
+#include "WrapperVariable.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperRecord.hpp"
 
@@ -15,9 +16,21 @@ namespace cppbind
 class Wrapper
 {
 public:
-  explicit Wrapper(std::shared_ptr<IdentifierIndex> IdentifierIndex)
-  : II_(IdentifierIndex)
+  explicit Wrapper(std::shared_ptr<IdentifierIndex> IdentifierIndex,
+                   std::string const &WrappedFile)
+  : II_(IdentifierIndex),
+    WrappedFile_(WrappedFile)
   {}
+
+  template<typename ...ARGS>
+  void addWrapperVariable(ARGS&&... args)
+  {
+    WrapperVariable Wc(std::forward<ARGS>(args)...);
+
+    II_->add(Wc.name(), IdentifierIndex::CONST);
+
+    Variables_.push_back(Wc);
+  }
 
   template<typename ...ARGS>
   void addWrapperRecord(ARGS&&... args)
@@ -54,6 +67,12 @@ public:
       Wf.overload(II_);
   }
 
+  std::string wrappedFile() const
+  { return WrappedFile_; }
+
+  std::vector<WrapperVariable> constants() const
+  { return Variables_; }
+
   std::vector<WrapperRecord> records() const
   { return Records_; }
 
@@ -63,6 +82,9 @@ public:
 private:
   std::shared_ptr<IdentifierIndex> II_;
 
+  std::string WrappedFile_;
+
+  std::vector<WrapperVariable> Variables_;
   std::vector<WrapperRecord> Records_;
   std::vector<WrapperFunction> Functions_;
 };
