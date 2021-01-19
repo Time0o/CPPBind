@@ -14,26 +14,26 @@ jobs:
         include:
         - CC: clang-8
           CXX: clang++-8
-          DEPENDENCIES: clang-8 llvm-8-dev libclang-8-dev lua5.3 lua5.3-dev
+          LLVM_DEPENDENCIES: clang-8 llvm-8-dev libclang-8-dev
 
         - CC: clang-9
           CXX: clang++-9
-          DEPENDENCIES: clang-9 llvm-9-dev libclang-9-dev lua5.3 lua5.3-dev
+          LLVM_DEPENDENCIES: clang-9 llvm-9-dev libclang-9-dev
 
         - CC: clang-10
           CXX: clang++-10
-          DEPENDENCIES: clang-10 llvm-10-dev libclang-10-dev libclang-cpp10-dev lua5.3 lua5.3-dev
+          LLVM_DEPENDENCIES: clang-10 llvm-10-dev libclang-10-dev libclang-cpp10-dev
 
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
 
-      - name: prepare-dependencies
-        run: ${{ matrix.PREPARE_DEPENDENCIES }}
-
       - name: install-dependencies
-        run: sudo apt-get update && sudo apt-get install -yq ${{ matrix.DEPENDENCIES }}
+        run: >
+          sudo apt-get update &&
+          sudo apt-get install -yq libboost-dev libboost-regex-dev lua5.3 lua5.3-dev &&
+          sudo apt-get install -yq ${{ matrix.LLVM_DEPENDENCIES }}
 
       - name: cmake-configure
         run: >
