@@ -120,7 +120,7 @@ add_subdirectory(${PYBIND11_DIR})
 # find lua
 find_package(Lua 5.2 REQUIRED)
 
-set(LUA_BINARY lua${LUA_VERSION_STRING})
+set(LUA lua${LUA_VERSION_MAJOR}.${LUA_VERSION_MINOR})
 
 
 ################################################################################
@@ -225,7 +225,7 @@ if(CMAKE_BUILD_TYPE STREQUAL Debug)
                                      --language ${BACKEND_LANGUAGE}
                                      --clang ${CMAKE_C_COMPILER}
                                      --clangpp ${CMAKE_CXX_COMPILER}
-                                     --lua-binary ${LUA_BINARY}
+                                     --lua ${LUA}
                                      --lua-include-dir ${LUA_INCLUDE_DIR}
     )
   endforeach()
