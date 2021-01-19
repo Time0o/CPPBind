@@ -7,7 +7,6 @@
 #include <string>
 
 #include "Error.hpp"
-#include "Logging.hpp"
 
 namespace cppbind
 {
@@ -23,10 +22,8 @@ inline std::string temporary()
 {
   std::array<char, 7> Tmpnam = {'X', 'X', 'X', 'X', 'X', 'X', '\0'};
 
-  if (mkstemp(Tmpnam.data()) == -1) {
-    log::error() << "failed to create temporary path";
-    throw CPPBindError();
-  }
+  if (mkstemp(Tmpnam.data()) == -1)
+    throw CPPBindError("failed to create temporary path");
 
   return std::string(Tmpnam.begin(), Tmpnam.end());
 }

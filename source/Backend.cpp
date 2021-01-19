@@ -52,8 +52,7 @@ void Backend::run(std::shared_ptr<Wrapper> Wrapper)
     ModuleEntry(Wrapper, &Options());
 
   } catch (std::runtime_error const &e) {
-    log::error() << "in backend:\n" << e.what();
-    throw CPPBindError();
+    throw CPPBindError(ErrorMsg() << "in backend:" << ErrorMsg::endl << e.what());
   }
 }
 

@@ -100,8 +100,7 @@ private:
     WrapperType Type(Decl->getType());
 
     if (!Decl->isConstexpr() && !(SC == clang::SC_Static && Type.isConst())) {
-      log::error() << "global variables without external linkage should have static storage and be constant"; // XXX
-      throw CPPBindError();
+      throw CPPBindError("global variables without external linkage should have static storage and be constant"); // XXX
     }
 
     Wr_->addWrapperVariable(Identifier(Decl), Type);

@@ -19,7 +19,6 @@
 #include "llvm/Support/CommandLine.h"
 
 #include "Error.hpp"
-#include "Logging.hpp"
 #include "String.hpp"
 
 namespace cppbind
@@ -214,10 +213,8 @@ private:
     }
 
     for (auto const &[Assert, Msg] : Assertions) {
-      if (!Assert(Value)) {
-        log::error() << Name.str() << ": " << Msg;
-        throw CPPBindError();
-      }
+      if (!Assert(Value))
+        throw CPPBindError(ErrorMsg() << Name.str() << ": " << Msg);
     }
   }
 
