@@ -66,6 +66,7 @@ class BackendTestGenerator:
                 '--namespace', 'test',
                 '--backend', f'{self._lang}',
                 '--output-directory', f'{output_dir}',
+                '--'
             ])
 
     def compile_tests(self, **kwargs):
