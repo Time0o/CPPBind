@@ -42,9 +42,15 @@ private:
     auto inNs = [](std::string const &Ns)
     { return hasParent(namespaceDecl(hasName(Ns))); };
 
+    auto inNsRecursive = [](std::string const &Ns)
+    {
+      return allOf(hasParent(namespaceDecl()),
+                   hasAncestor(namespaceDecl(hasName(Ns))));
+    };
+
     // XXX check for clashes
     auto inFundamentalTypeNs = inNs("__fundamental_types");
-    auto inWrappedNs = inNs(Options().get<>("namespace"));
+    auto inWrappedNs = inNsRecursive(Options().get<>("namespace"));
 
     addHandler<clang::ValueDecl>(
       "fundamentalTypeValueDecl",
