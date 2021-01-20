@@ -316,12 +316,10 @@ class LuaBackend(Backend):
                 }};
 
                 void {module}_create(lua_State *L)
-                {{
-                  luaL_newlib(L, lib);
-                }}
+                {{ luaL_newlib(L, lib); }}
                 """,
                 module=self._module(),
-                module_function_table='\n'.join(module_function_table))
+                module_function_table=',\n'.join(module_function_table))
 
     def _module_properties(self):
         module_properties = []
