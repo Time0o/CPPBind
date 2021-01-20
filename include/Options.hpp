@@ -240,4 +240,10 @@ inline OptionsRegistry &Options()
 
 } // namespace cppbind
 
+#define OPT1(name)       Options().get(name)
+#define OPT2(type, name) Options().get<type>(name)
+
+#define OPT_MUX(_1, _2, MACRO, ...) MACRO
+#define OPT(...) OPT_MUX(__VA_ARGS__, OPT2, OPT1, _)(__VA_ARGS__)
+
 #endif // GUARD_OPTIONS_H

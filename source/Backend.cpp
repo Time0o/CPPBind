@@ -38,7 +38,7 @@ auto Backend::addModuleSearchPath(std::string const &Path)
 
 void Backend::run(std::shared_ptr<Wrapper> Wrapper)
 {
-  auto BE = Options().get<>("backend");
+  auto BE = OPT("backend");
 
   py::scoped_interpreter Guard;
 
@@ -169,9 +169,10 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
          "required_only"_a = false)
     .def("parameters", &WrapperFunction::params);
 
-  #define OPTION(NAME) [](OptionsRegistry const &Self) \
-                       { return Self.get<>(NAME); }
+
+  #define GET_OPT(NAME) [](OptionsRegistry const &Self) \
+                        { return Self.get<>(NAME); }
 
   py::class_<OptionsRegistry>(m, "Options")
-    .def("output-directory", OPTION("output-directory"));
+    .def("output-directory", GET_OPT("output-directory"));
 }

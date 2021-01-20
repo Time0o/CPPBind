@@ -26,12 +26,10 @@ CreateWrapperConsumer::addHandlers()
 {
   addFundamentalTypesHandler();
 
-  auto WrapperNamespace = Options().get<>("namespace");
-
-  if (Options().get<bool>("ignore-nested-namespaces"))
-    addWrapperHandlers(inNamespace(WrapperNamespace));
+  if (OPT(bool, "ignore-nested-namespaces"))
+    addWrapperHandlers(inNamespace(OPT("namespace")));
   else
-    addWrapperHandlers(inNamespace<true>(WrapperNamespace));
+    addWrapperHandlers(inNamespace<true>(OPT("namespace")));
 }
 
 void
