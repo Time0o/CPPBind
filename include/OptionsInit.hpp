@@ -19,8 +19,13 @@ inline void initOptions()
     .done();
 
   Options().add<std::string>("namespace")
-    .setDescription("Namespace in which to look for classes", "ns")
+    .setDescription("Namespace in which to look for bindable entities", "ns")
     .setOptional(false)
+    .done();
+
+  Options().add<bool>("ignore-nested-namespaces")
+    .setDescription("Don't look for bindable entities in nested namespaces")
+    .setDefault(false)
     .done();
 
   Options().add<std::string>("output-directory")
