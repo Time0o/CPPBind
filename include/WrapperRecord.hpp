@@ -17,8 +17,7 @@ class WrapperRecord
 public:
   explicit WrapperRecord(clang::CXXRecordDecl const *Decl)
   : Decl_(Decl),
-    Type_(Decl_->getTypeForDecl()),
-    TypePointer_(Type_.pointerTo())
+    Type_(Decl_->getTypeForDecl())
   {}
 
   bool needsImplicitDefaultConstructor() const
@@ -27,7 +26,7 @@ public:
   WrapperFunction implicitDefaultConstructor() const
   {
     return WrapperFunctionBuilder(qualifiedMemberName("new"), Type_)
-           .setReturnType(TypePointer_)
+           .setReturnType(Type_.pointerTo())
            .isConstructor()
            .build();
   }
@@ -38,7 +37,7 @@ public:
   WrapperFunction implicitDestructor() const
   {
     return WrapperFunctionBuilder(qualifiedMemberName("delete"), Type_)
-           .addParam(TypePointer_, Identifier("self"))
+           .addParam(Type_.pointerTo(), Identifier("self"))
            .isDestructor()
            .build();
   }
@@ -51,7 +50,7 @@ private:
   { return Identifier(Name).qualified(Identifier(Decl_)); }
 
   clang::CXXRecordDecl const *Decl_;
-  WrapperType Type_, TypePointer_;
+  WrapperType Type_;
 };
 
 } // namespace cppbind
