@@ -143,8 +143,7 @@ class CBackend(Backend):
 
             return f"{c_type} {c_name}"
 
-        return ', '.join(declaration(p)
-                         for p in self._function_non_default_parameters(f))
+        return ', '.join(declaration(p) for p in f.parameters())
 
     def _function_parameter_forwardings(self, f):
         def forward(p):
@@ -158,12 +157,7 @@ class CBackend(Backend):
 
             return fwd
 
-        return ', '.join(forward(p)
-                         for p in self._function_non_default_parameters(f))
-
-    @staticmethod
-    def _function_non_default_parameters(f):
-        return [p for p in f.parameters() if p.default_argument() is None]
+        return ', '.join(forward(p) for p in f.parameters())
 
     def _enum_cast(self, pt, what, remove):
         if not pt.base.is_scoped_enum():

@@ -203,7 +203,12 @@ class LuaBackend(Backend):
             declaration = f"{t} {p.name}"
 
             if p.default_argument() is not None:
-                declaration = f"{declaration} = {p.default_argument()}"
+                if t.is_scoped_enum():
+                    default = f"static_cast<{t}>({p.default_argument()})"
+                else:
+                    default = f"{p.default_argument()}"
+
+                declaration = f"{declaration} = {default}"
 
             return f"{declaration};"
 
