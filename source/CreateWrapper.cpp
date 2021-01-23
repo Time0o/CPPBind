@@ -76,10 +76,8 @@ CreateWrapperConsumer::handleVarDecl(clang::VarDecl const *Decl)
 void
 CreateWrapperConsumer::handleEnumDecl(clang::EnumDecl const *Decl)
 {
-  WrapperType IntegerType(Decl->getIntegerType());
-
   for (auto const &ConstantDecl : Decl->enumerators())
-    Wr_->addWrapperVariable(Identifier(ConstantDecl), IntegerType);
+    Wr_->addWrapperVariable(Identifier(ConstantDecl), WrapperType(Decl));
 }
 
 void
