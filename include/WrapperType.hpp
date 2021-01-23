@@ -1,6 +1,7 @@
 #ifndef GUARD_WRAPPER_TYPE_H
 #define GUARD_WRAPPER_TYPE_H
 
+#include <stack>
 #include <string>
 
 #include "clang/AST/ASTContext.h"
@@ -45,9 +46,6 @@ public:
   clang::QualType const *operator->() const
   { return &Type_; }
 
-  clang::Type const *typePtr() const
-  { return Type_.getTypePtr(); }
-
   bool isFundamental(char const *Which = nullptr) const
   {
     if (!typePtr()->isFundamentalType())
@@ -62,8 +60,22 @@ public:
   bool isVoid() const
   { return typePtr()->isVoidType(); }
 
+  bool isBoolean() const
+  { return isFundamental("bool"); }
+
+  bool isEnum() const
+  { return typePtr()->isEnumeralType(); }
+
+  bool isScopedEnum() const
+  { return typePtr()->isScopedEnumeralType(); }
+
   bool isIntegral() const
-  { return typePtr()->isIntegralType(CompilerState()->getASTContext()); }
+  {
+    if (!typePtr()->isIntegralType(CompilerState()->getASTContext()))
+      return false;
+
+    return !isBoolean() && !isScopedEnum();
+  }
 
   bool isFloating() const
   { return typePtr()->isFloatingType(); }
@@ -86,14 +98,14 @@ public:
   bool isStruct() const
   { return typePtr()->isStructureType(); }
 
-  bool isQualified() const
-  { return Type_.hasQualifiers(); }
-
   bool isConst() const
   { return Type_.isConstQualified(); }
 
-  WrapperType referenceTo() const
+  WrapperType lvalueReferenceTo() const
   { return WrapperType(CompilerState()->getASTContext().getLValueReferenceType(Type_)); }
+
+  WrapperType rvalueReferenceTo() const
+  { return WrapperType(CompilerState()->getASTContext().getRValueReferenceType(Type_)); }
 
   WrapperType referenced() const
   { return WrapperType(Type_.getNonReferenceType()); }
@@ -113,9 +125,6 @@ public:
     return Pointee;
   }
 
-  WrapperType unqualified() const
-  { return WrapperType(typePtr()); }
-
   WrapperType withConst() const
   { return WrapperType(Type_.withConst()); }
 
@@ -127,13 +136,77 @@ public:
     return WrapperType(TypeCopy);
   }
 
+  WrapperType withoutEnum() const
+  {
+    auto OldBase(base());
+
+    if (!OldBase.isEnum())
+      return *this;
+
+    auto const *EnumType((*OldBase)->getAs<clang::EnumType>());
+
+    WrapperType UnderlyingType(EnumType->getDecl()->getIntegerType());
+
+    return changeBase(UnderlyingType);
+  }
+
   WrapperType base() const
-  { return referenced().pointee(true).unqualified(); }
+  { return WrapperType(referenced().pointee(true)->getUnqualifiedType()); }
+
+  WrapperType changeBase(WrapperType const &NewBase) const
+  {
+    enum Indirection
+    {
+      POINTER,
+      LVALUE_REFERENCE,
+      RVALUE_REFERENCE
+    };
+
+    std::stack<Indirection> Indirections;
+
+    WrapperType Base(*this);
+
+    if (Base.isLValueReference()) {
+      Indirections.push(LVALUE_REFERENCE);
+      Base = Base.referenced();
+    } else if (Base.isRValueReference()) {
+      Indirections.push(RVALUE_REFERENCE);
+      Base = Base.referenced();
+    }
+
+    while (Base.isPointer()) {
+      Indirections.push(POINTER);
+      Base = Base.pointee();
+    }
+
+    Base = NewBase;
+
+    while (!Indirections.empty()) {
+      switch (Indirections.top()) {
+      case POINTER:
+        Base = Base.pointerTo();
+        break;
+      case LVALUE_REFERENCE:
+        Base = Base.lvalueReferenceTo();
+        break;
+      case RVALUE_REFERENCE:
+        Base = Base.rvalueReferenceTo();
+        break;
+      }
+
+      Indirections.pop();
+    }
+
+    return Base;
+  }
 
   std::string str() const
   { return printQualType(Type_, PrintingPolicy::CURRENT); }
 
 private:
+  clang::Type const *typePtr() const
+  { return Type_.getTypePtr(); }
+
   clang::QualType Type_;
 };
 
