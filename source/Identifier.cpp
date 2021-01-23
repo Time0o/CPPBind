@@ -47,7 +47,8 @@ Identifier::Component::Component(std::string const &Name)
   NameWords_(splitName(Name_))
 {}
 
-std::string Identifier::Component::str(Case Case) const
+std::string
+Identifier::Component::format(Case Case) const
 {
   if (OnlyUs_)
     return Name_;
@@ -251,12 +252,26 @@ Identifier::unscoped() const
 }
 
 std::string
-Identifier::str(Identifier::Case Case) const
+Identifier::format(Identifier::Case Case, Identifier::Quals Quals) const
 {
-  auto ToStr = [&](Component const &Id, bool)
-               { return Id.str(Case); };
+  Identifier Id(*this);
 
-  return transformAndPaste(Components_, ToStr, "::");
+  switch (Quals)
+  {
+  case KEEP_QUALS:
+    break;
+  case REMOVE_QUALS:
+    Id = Id.unqualified();
+    break;
+  case REPLACE_QUALS:
+    Id = Id.unscoped();
+    break;
+  }
+
+  auto ToStr = [&](Component const &Id, bool)
+               { return Id.format(Case); };
+
+  return transformAndPaste(Id.Components_, ToStr, "::");
 }
 
 clang::IdentifierInfo &

@@ -146,28 +146,26 @@ public:
   Identifier name() const
   { return Name_; }
 
-  Identifier overloadName() const
+  Identifier nameOverloaded() const
   { return OverloadName_; }
 
-  std::vector<WrapperParam>::size_type numParams() const
-  { return Params_.size(); }
-
-  std::vector<WrapperParam>::size_type numParamsRequired() const
+  std::vector<WrapperParam> parameters(bool RequiredOnly = false) const
   {
-    decltype(Params_.size()) P = 0u;
+    if (!RequiredOnly)
+      return Params_;
 
-    while (P < Params_.size()) {
-      if (Params_[P].hasDefaultArg())
+    std::vector<WrapperParam> RequiredParams;
+    RequiredParams.reserve(Params_.size());
+
+    for (auto const &Param : Params_) {
+      if (Param.hasDefaultArg())
         break;
 
-      ++P;
+      RequiredParams.push_back(Param);
     }
 
-    return P;
+    return RequiredParams;
   }
-
-  std::vector<WrapperParam> params() const
-  { return Params_; }
 
 private:
   Identifier determineName(

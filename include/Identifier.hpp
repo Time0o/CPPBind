@@ -25,12 +25,19 @@ public:
     SNAKE_CASE_CAP_ALL
   };
 
+  enum Quals
+  {
+    KEEP_QUALS,
+    REMOVE_QUALS,
+    REPLACE_QUALS
+  };
+
   class Component
   {
   public:
     explicit Component(std::string const &Name);
 
-    std::string str(Case Case = ORIG_CASE) const;
+    std::string format(Case Case = ORIG_CASE) const;
 
   private:
     static std::string transformStr(std::string Str, int (*transform)(int));
@@ -119,7 +126,10 @@ public:
   Identifier unqualified() const;
   Identifier unscoped() const;
 
-  std::string str(Identifier::Case Case = Identifier::ORIG_CASE) const;
+  std::string str() const
+  { return format(ORIG_CASE, KEEP_QUALS); }
+
+  std::string format(Case Case, Quals Quals) const;
 
 private:
   static clang::IdentifierInfo &info(std::string const &Name);

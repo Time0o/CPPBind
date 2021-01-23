@@ -63,42 +63,28 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
   using namespace cppbind;
   using namespace py::literals;
 
-  auto str = [](Identifier const &Id,
-                std::string const &Case_,
-                std::string const &Qualifiers)
-  {
-    Identifier::Case Case;
+  py::class_<Identifier> PyIdentifier(m, "Identifier");
 
-    if (Case_ == "orig")
-      Case = Identifier::ORIG_CASE;
-    else if (Case_ == "camel")
-      Case = Identifier::CAMEL_CASE;
-    else if (Case_ == "pascal")
-      Case = Identifier::PASCAL_CASE;
-    else if (Case_ == "snake")
-      Case = Identifier::SNAKE_CASE;
-    else if (Case_ == "snake-cap-first")
-      Case = Identifier::SNAKE_CASE_CAP_FIRST;
-    else if (Case_ == "snake-cap-all")
-      Case = Identifier::SNAKE_CASE_CAP_ALL;
-    else
-      throw std::invalid_argument("invalid argument to 'case'");
+  py::enum_<Identifier::Case>(PyIdentifier, "Case")
+    .value("ORIG_CASE", Identifier::ORIG_CASE)
+    .value("CAMEL_CASE", Identifier::CAMEL_CASE)
+    .value("PASCAL_CASE", Identifier::PASCAL_CASE)
+    .value("SNAKE_CASE", Identifier::SNAKE_CASE)
+    .value("SNAKE_CASE_CAP_FIRST", Identifier::SNAKE_CASE_CAP_FIRST)
+    .value("SNAKE_CASE_CAP_ALL", Identifier::SNAKE_CASE_CAP_ALL)
+    .export_values();
 
-    if (Qualifiers == "keep")
-      return Id.str(Case);
-    else if (Qualifiers == "replace")
-      return Id.unscoped().str(Case);
-    else if (Qualifiers == "remove")
-      return Id.unqualified().str(Case);
-    else
-      throw std::invalid_argument("invalid argument to 'qualifiers'");
-  };
+  py::enum_<Identifier::Quals>(PyIdentifier, "Quals")
+    .value("KEEP_QUALS", Identifier::KEEP_QUALS)
+    .value("REMOVE_QUALS", Identifier::REMOVE_QUALS)
+    .value("REPLACE_QUALS", Identifier::REPLACE_QUALS)
+    .export_values();
 
-  #define STR(T, FUNC) [&str](T const &Self, \
-                              std::string const &Case, \
-                              std::string const &Qualifiers) \
-                             { return str(Self.FUNC(), Case, Qualifiers); }, \
-                             "case"_a = "orig", "qualifiers"_a = "keep"
+  PyIdentifier
+    .def("__str__", &Identifier::str)
+    .def("format", &Identifier::format,
+         "case"_a = Identifier::ORIG_CASE,
+         "quals"_a = Identifier::KEEP_QUALS);
 
   py::class_<Wrapper, std::shared_ptr<Wrapper>>(m, "Wrapper")
     .def("wrapped_file", &Wrapper::wrappedFile)
@@ -135,15 +121,14 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def_property("base", &WrapperType::base, &WrapperType::changeBase);
 
   py::class_<WrapperVariable>(m, "WrapperVariable")
-    .def("name", STR(WrapperVariable, name))
-    .def("type", &WrapperVariable::type);
+    .def_property_readonly("name", &WrapperVariable::name)
+    .def_property_readonly("type", &WrapperVariable::type);
 
   py::class_<WrapperRecord>(m, "WrapperRecord");
 
   auto WrapperParam_ = py::class_<WrapperParam>(m, "WrapperParam")
-    .def("name", STR(WrapperParam, name))
-    .def("type", &WrapperParam::type)
-    .def("has_default_argument", &WrapperParam::hasDefaultArg)
+    .def_property_readonly("name", &WrapperParam::name)
+    .def_property_readonly("type", &WrapperParam::type)
     .def("default_argument",
          [](WrapperParam const &Self) -> std::optional<WrapperParam::DefaultArg>
          {
@@ -160,20 +145,11 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_true", &WrapperParam::DefaultArg::isTrue);
 
   py::class_<WrapperFunction>(m, "WrapperFunction")
-    .def("name", STR(WrapperFunction, name))
-    .def("overload_name", STR(WrapperFunction, overloadName))
-    .def("return_type", &WrapperFunction::returnType)
-    .def("num_parameters",
-         [](WrapperFunction const &Self, bool RequiredOnly)
-         {
-           if (RequiredOnly)
-             return Self.numParamsRequired();
-
-           return Self.numParams();
-         },
-         "required_only"_a = false)
-    .def("parameters", &WrapperFunction::params);
-
+    .def_property_readonly("name", &WrapperFunction::name)
+    .def_property_readonly("name_overloaded", &WrapperFunction::nameOverloaded)
+    .def_property_readonly("return_type", &WrapperFunction::returnType)
+    .def("parameters", &WrapperFunction::parameters,
+         "required_only"_a = false);
 
   #define GET_OPT(NAME) [](OptionsRegistry const &Self) \
                         { return Self.get<>(NAME); }
