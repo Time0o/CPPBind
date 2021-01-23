@@ -1,4 +1,5 @@
 from backend import *
+from cppbind import Identifier
 
 import text
 
@@ -70,16 +71,14 @@ class CBackend(Backend):
         ))
 
     def wrap_variable(self, v):
-        cpp_name = v.name()
-
         c_name = self._c_variable_name(v)
-        c_type = self._c_type(v.type())
+        c_type = self._c_type(v.type)
 
         self._wrapper_header.append(text.code(
             f"extern {c_type} {c_name};"))
 
         self._wrapper_source.append(text.code(
-            f"{c_type} {c_name} = static_cast<{c_type}>({cpp_name});"))
+            f"{c_type} {c_name} = static_cast<{c_type}>({v.name});"))
 
     def wrap_function(self, f):
         self._wrapper_header.append(self._function_declaration(f))
@@ -118,69 +117,76 @@ class CBackend(Backend):
             """)
 
     def _function_header(self, f):
-        return_type = f.return_type()
-        if return_type.is_lvalue_reference():
-            return_type = return_type.referenced().pointer_to()
-
         c_name = self._c_function_name(f)
-        c_return_type = self._c_type(return_type)
-        parameters = self._function_parameter_declarations(f)
+        c_return_type = self._c_type(f.return_type)
+        c_parameters = self._function_parameter_declarations(f)
 
-        return f"{c_return_type} {c_name}({parameters})"
+        return f"{c_return_type} {c_name}({c_parameters})"
 
     def _function_body(self, f):
-        cpp_name = f.name()
-        cpp_return_type = f.return_type()
-        parameters = self._function_parameter_forwardings(f)
+        body = f"{f.name}({self._function_parameter_forwardings(f)})"
 
-        body = f"{cpp_name}({parameters});"
+        if f.return_type.is_void():
+            return f"{body};"
 
-        if cpp_return_type.is_lvalue_reference():
+        if f.return_type.is_lvalue_reference():
             body = '&' + body
 
-        if not cpp_return_type.is_fundamental('void'):
-            body = 'return ' + body
+        body = self._enum_cast(f.return_type, body, remove=True)
 
-        return body
+        return f"return {body};";
 
     def _function_parameter_declarations(self, f):
         def declaration(p):
-            p_type = self._c_type(p.type())
-            p_name = self._c_parameter_name(p)
+            c_type = self._c_type(p.type)
+            c_name = self._c_parameter_name(p)
 
-            if p_type.is_lvalue_reference():
-                p_type = p_type.referenced().pointer_to()
-            elif p_type.is_rvalue_reference():
-                p_type = p_type.referenced()
-
-            return f"{p_type} {p_name}"
+            return f"{c_type} {c_name}"
 
         return ', '.join(declaration(p)
                          for p in self._function_non_default_parameters(f))
 
     def _function_parameter_forwardings(self, f):
-        def forwarding(p):
-            p_type = self._c_type(p.type())
-            p_forward = self._c_parameter_name(p)
+        def forward(p):
+            fwd = self._enum_cast(p.type, self._c_parameter_name(p), remove=False)
 
-            if p_type.is_lvalue_reference():
-                p_forward = '*' + p_forward
-            elif p_type.is_rvalue_reference():
+            if p.type.is_lvalue_reference():
+                fwd = '*' + fwd
+            elif p.type.is_rvalue_reference():
                 self._add_source_include('utility')
-                p_forward = f"std::move({p_forward})"
+                fwd = f"std::move({fwd})"
 
-            return f"{p_forward}"
+            return fwd
 
-        return ', '.join(forwarding(p)
+        return ', '.join(forward(p)
                          for p in self._function_non_default_parameters(f))
 
-    def _function_non_default_parameters(self, f):
-        return [p for p in f.parameters() if not p.has_default_argument()]
+    @staticmethod
+    def _function_non_default_parameters(f):
+        return [p for p in f.parameters() if p.default_argument() is None]
+
+    def _enum_cast(self, pt, what, remove):
+        if not pt.base.is_scoped_enum():
+            return what
+
+        if pt.is_lvalue_reference() or pt.is_pointer():
+            cast = 'reinterpret_cast'
+        else:
+            cast = 'static_cast'
+
+        cast_to = self._c_type(pt, without_enum=remove)
+
+        return f"{cast}<{cast_to}>({what})"
 
     # XXX
-    def _c_type(self, t):
-        if not t.is_fundamental():
-            return t
+    def _c_type(self, t, without_enum=True):
+        if without_enum:
+            t = t.without_enum()
+
+        if t.is_lvalue_reference():
+            t = t.referenced().pointer_to()
+        elif t.is_rvalue_reference():
+            t = t.referenced()
 
         c_header = self._c_header(t)
         if c_header is not None:
@@ -189,13 +195,13 @@ class CBackend(Backend):
         return t
 
     # XXX
-    def _c_header(self, t):
+    @staticmethod
+    def _c_header(t):
         if not t.is_fundamental():
             return None
 
         in_header = {
-            'bool': 'stdbool',
-            'wchar_t': 'wchar'
+            'bool': 'stdbool'
         }
 
         for k, v in in_header.items():
@@ -204,12 +210,14 @@ class CBackend(Backend):
 
     @staticmethod
     def _c_variable_name(v):
-        return v.name(qualifiers='replace', case='snake-cap-all')
+        return v.name.format(case=Identifier.SNAKE_CASE_CAP_ALL,
+                             quals=Identifier.REPLACE_QUALS)
 
     @staticmethod
     def _c_function_name(f):
-        return f.overload_name(qualifiers='replace', case='snake')
+        return f.name_overloaded.format(case=Identifier.SNAKE_CASE,
+                                        quals=Identifier.REPLACE_QUALS)
 
     @staticmethod
     def _c_parameter_name(p):
-        return p.name(case='snake')
+        return p.name.format(case=Identifier.SNAKE_CASE)

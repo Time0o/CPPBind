@@ -1,4 +1,5 @@
 from backend import *
+from cppbind import Identifier
 
 import text
 
@@ -20,19 +21,21 @@ class LuaBackend(Backend):
             #include <limits>
             #include <utility>
 
-            extern "C" {{
+            extern "C"
+            {{
               #include "lua.h"
               #include "lauxlib.h"
             }}
 
             {input_include}
 
-            namespace {{
+            namespace
+            {{
 
-            {wrapper_utils}
+            {util}
             """,
             input_include=text.include(self.input_file().basename()),
-            wrapper_utils=self._wrapper_utils()
+            util=self._util()
         ))
 
     def wrap_after(self):
@@ -45,7 +48,8 @@ class LuaBackend(Backend):
 
             }} // namespace
 
-            extern "C" {{
+            extern "C"
+            {{
 
             LUALIB_API int luaopen_{module}(lua_State *L)
             {{
@@ -91,11 +95,12 @@ class LuaBackend(Backend):
             num_returns=self._function_num_returns(f)
         ))
 
-    def _wrapper_utils(self):
+    @staticmethod
+    def _util():
         return text.code(
             """
             template<typename T>
-            T lua_tointegral(lua_State *L, int arg)
+            T _lua_tointegral(lua_State *L, int arg)
             {
               int valid = 0;
               auto i = lua_tointegerx(L, arg, &valid);
@@ -113,7 +118,7 @@ class LuaBackend(Backend):
             }
 
             template<typename T>
-            T lua_tofloating(lua_State *L, int arg)
+            T _lua_tofloating(lua_State *L, int arg)
             {
               int valid = 0;
               auto f = lua_tonumberx(L, arg, &valid);
@@ -127,18 +132,50 @@ class LuaBackend(Backend):
 
               return static_cast<T>(f);
             }
+
+            #define _lua_pushintegral_constexpr(L, VAL) \\
+              static_assert(VAL >= std::numeric_limits<lua_Integer>::min() && \\
+                            VAL <= std::numeric_limits<lua_Integer>::max(), \\
+                            "parameter not representable by lua_Integer"); \\
+              lua_pushinteger(L, VAL);
+
+            template<typename T>
+            void _lua_pushintegral(lua_State *L, T val)
+            {
+              if (val < std::numeric_limits<lua_Integer>::min() ||
+                  val > std::numeric_limits<lua_Integer>::max())
+                luaL_error(L, "result not representable by lua_Integer");
+
+              lua_pushinteger(L, val);
+            }
+
+            #define _lua_pushfloating_constexpr(L, VAL) \\
+              static_assert(VAL >= std::numeric_limits<lua_Number>::min() && \\
+                            VAL <= std::numeric_limits<lua_Number>::max(), \\
+                            "parameter not representable by lua_Number"); \\
+              lua_pushnumber(L, VAL);
+
+            template<typename T>
+            void _lua_pushfloating(lua_State *L, T val)
+            {
+              if (val < std::numeric_limits<lua_Number>::min() ||
+                  val > std::numeric_limits<lua_Number>::max())
+                luaL_error(L, "result not representable by lua_Number");
+
+              lua_pushnumber(L, val);
+            }
             """)
 
-    def _function_check_num_parameters(self, f):
-        num_min = f.num_parameters(required_only=True)
-        num_max = f.num_parameters()
+    @staticmethod
+    def _function_check_num_parameters(f):
+        num_min = len(f.parameters(required_only=True))
+        num_max = len(f.parameters())
 
         if num_min == num_max:
-            num = num_min
             return text.code(
                 f"""
-                if (lua_gettop(L) != {num})
-                  return luaL_error(L, "function expects {num} arguments");
+                if (lua_gettop(L) != {num_min})
+                  return luaL_error(L, "function expects {num_min} arguments");
                 """)
 
         return text.code(
@@ -147,143 +184,130 @@ class LuaBackend(Backend):
               return luaL_error(L, "function expects between {num_min} and {num_max} arguments");
             """)
 
-    def _function_declare_parameters(self, f):
-        if f.num_parameters() == 0:
+    @staticmethod
+    def _function_declare_parameters(f):
+        if len(f.parameters()) == 0:
             return
 
         declarations = []
 
-        for p in f.parameters():
-            p_type = p.type()
+        def declare(p):
+            t = p.type
 
-            if p_type.is_reference():
-                p_type = p_type.referenced()
+            if t.is_reference():
+                t = t.referenced()
 
-            if p_type.is_const():
-                p_type = p_type.without_const()
+            if t.is_const():
+                t = t.without_const()
 
-            declaration = f"{p_type} {p.name()}"
+            declaration = f"{t} {p.name}"
 
-            if p.has_default_argument():
+            if p.default_argument() is not None:
                 declaration = f"{declaration} = {p.default_argument()}"
 
-            declarations.append(f"{declaration};")
+            return f"{declaration};"
 
-        return '\n'.join(declarations)
+        return '\n'.join(declare(p) for p in f.parameters())
 
-    def _function_peek_parameters(self, f):
-        if f.num_parameters() == 0:
+    @classmethod
+    def _function_peek_parameters(cls, f):
+        if len(f.parameters()) == 0:
             return
 
-        return '\n'.join(self._function_peek_parameter(p, i)
+        return '\n'.join(cls._function_peek_parameter(p, i)
                          for i, p in enumerate(f.parameters(), start=1))
 
-    def _function_peek_parameter(self, p, i):
-        p_type = p.type()
+    @classmethod
+    def _function_peek_parameter(cls, p, i):
+        t = p.type
 
-        if p_type.is_reference():
-            p_type = p_type.referenced()
+        if t.is_reference():
+            t = t.referenced()
 
         # check
-        lua_type_encoding = self._lua_type_encoding(p_type)
-        check_type = f"luaL_checktype(L, {i}, {lua_type_encoding})"
+        check_type = f"luaL_checktype(L, {i}, {cls._lua_type_encoding(t)})"
 
         # peek
-        if p_type.is_fundamental('bool'):
-            to_type = f"lua_toboolean(L, {i})"
-        elif p_type.is_integral():
-            to_type = f"lua_tointegral<{p_type}>(L, {i})"
-        elif p_type.is_floating():
-            to_type = f"lua_tofloating<{p_type}>(L, {i})"
-        elif p_type.is_pointer():
-            to_type = f"lua_touserdata(L, {i})"
-        else:
-            raise ValueError('TODO')
+        to_type = cls._lua_peek(t, i)
 
         # cast
         cast_type = None
 
-        if p_type.is_pointer():
-            cast_type = f"static_cast<{p_type}>"
+        if t.is_pointer():
+            cast_type = f"static_cast<{t}>"
 
         if cast_type is not None:
             to_type = f"{cast_type}({to_type})"
 
-        if p.has_default_argument():
+        if p.default_argument() is not None:
             # optional
             peek = text.code(
                 f"""
                 if (lua_gettop(L) >= {i}) {{
                   {check_type};
-                  {p.name()} = {to_type};
+                  {p.name} = {to_type};
                 }}
                 """)
         else:
             peek = text.code(
                 f"""
                 {check_type};
-                {p.name()} = {to_type};
+                {p.name} = {to_type};
                 """)
 
         return peek
 
-    def _function_forward(self, f):
-        forward_parameters = []
-
-        for p in f.parameters():
-            p_type = p.type()
-
-            if p_type.is_rvalue_reference():
-                p_str = f"std::move({p.name()})"
+    @classmethod
+    def _function_forward(cls, f):
+        def forward_parameter(p):
+            if p.type.is_rvalue_reference():
+                return f"std::move({p.name})"
             else:
-                p_str = p.name()
+                return f"{p.name}"
 
-            forward_parameters.append(p_str)
+        forward_parameters = ', '.join(forward_parameter(p) for p in f.parameters())
 
-        forward_parameters = ', '.join(p for p in forward_parameters)
+        forward = f"{f.name}({forward_parameters})"
 
-        forward = f"{f.name()}({forward_parameters})"
+        if not f.return_type.is_void():
+            t = f.return_type
 
-        return_type = f.return_type()
+            if t.is_lvalue_reference():
+                t = t.referenced()
 
-        if not return_type.is_void():
-            if return_type.is_lvalue_reference():
-                return_type = return_type.referenced()
-
-            lua_return_type = self._lua_type(return_type)
-
-            forward = f"lua_push{lua_return_type}(L, {forward})"
+            forward = cls._lua_push(t, forward)
 
         return f"{forward};"
 
-    def _function_return_references(self, f):
+    @classmethod
+    def _function_return_references(cls, f):
         ref_returns = []
 
-        for p in self._function_non_const_lvalue_reference_parameters(f):
-            lua_type = self._lua_type(p.type().referenced())
+        for p in cls._function_non_const_lvalue_reference_parameters(f):
+            ref_returns.append(cls._lua_push(p.type.referenced(), p.name))
 
-            ref_returns.append(f"lua_push{lua_type}(L, {p.name()});")
+        return '\n'.join(f"{ret};" for ret in ref_returns)
 
-        return '\n'.join(ref_returns)
-
-    def _function_num_returns(self, f):
-        num_regular_returns = int(not f.return_type().is_void())
-        num_reference_returns = len(self._function_non_const_lvalue_reference_parameters(f))
+    @classmethod
+    def _function_num_returns(cls, f):
+        num_regular_returns = int(not f.return_type.is_void())
+        num_reference_returns = len(cls._function_non_const_lvalue_reference_parameters(f))
 
         return num_regular_returns + num_reference_returns
 
-    def _function_non_const_lvalue_reference_parameters(self, f):
+    @staticmethod
+    def _function_non_const_lvalue_reference_parameters(f):
         ref_parameters = []
 
         for p in f.parameters():
-            p_type = p.type()
+            t = p.type
 
-            if not p_type.is_reference():
+            if not t.is_lvalue_reference():
                 continue
 
-            p_type = p_type.referenced()
+            t = t.referenced()
 
-            if p_type.is_const():
+            if t.is_const():
                 continue
 
             ref_parameters.append(p)
@@ -326,14 +350,16 @@ class LuaBackend(Backend):
 
         for v in self.variables():
             lua_name = self._lua_variable_name(v)
-            lua_type = self._lua_type(v.type())
+            lua_type = self._lua_type(v.type)
 
             module_properties.append(text.code(
-                f"""
+                """
                 lua_pushstring(L, "{lua_name}");
-                lua_push{lua_type}(L, static_cast<{v.type()}>({v.name()}));
+                {lua_push};
                 lua_settable(L, -3);
                 """,
+                lua_name=self._lua_variable_name(v),
+                lua_push=self._lua_push(v.type, v.name, constexpr=True),
                 end=''))
 
         return text.code(
@@ -346,25 +372,59 @@ class LuaBackend(Backend):
             module=self._module(),
             module_properties='\n\n'.join(module_properties))
 
+    @classmethod
+    def _lua_peek(cls, t, i):
+        if t.is_scoped_enum():
+            it = t.without_enum()
+            return f"static_cast<{t}>(_lua_tointegral<{it}>(L, {i}))"
+        elif t.is_integral():
+            return f"_lua_tointegral<{t}>(L, {i})"
+        elif t.is_floating():
+            return f"_lua_tofloating<{t}>(L, {i})"
+        else:
+            lua_type = cls._lua_type(t)
+            return f"lua_to{lua_type}(L, {i})"
+
+    @classmethod
+    def _lua_push(cls, t, v, constexpr=False):
+        if t.is_scoped_enum():
+            it = t.without_enum()
+            return f"_lua_pushintegral<{it}>(L, static_cast<{it}>({v}))"
+        elif t.is_integral():
+            if constexpr:
+                return f"_lua_pushintegral_constexpr(L, {v})"
+            else:
+                return f"_lua_pushintegral<{t}>(L, {v})"
+        elif t.is_floating():
+            if constexpr:
+                return f"_lua_pushfloating_constexpr(L, {v})"
+            else:
+                return f"_lua_pushfloating<{t}>(L, {v})"
+        elif t.is_pointer():
+            return f"lua_pushlightuserdata(L, {v})"
+        else:
+            lua_type = cls._lua_type(t)
+            return f"lua_push{lua_type}(L, {v})"
+
     @staticmethod
     def _lua_type(t):
-        if t.is_fundamental('bool'):
-            return 'boolean'
-        elif t.is_integral():
+        if t.is_integral() or t.is_enum():
             return 'integer'
         elif t.is_floating():
             return 'number'
+        elif t.is_boolean():
+            return 'boolean'
         elif t.is_pointer():
-            return 'lightuserdata'
+            return 'userdata'
         else:
             raise ValueError('TODO')
 
     @staticmethod
     def _lua_type_encoding(t):
-        if t.is_fundamental('bool'):
-            return 'LUA_TBOOLEAN'
-        elif t.is_integral() or t.is_floating():
+        if t.is_integral() or t.is_floating() or t.is_enum():
             return 'LUA_TNUMBER'
+        elif t.is_boolean():
+            return 'LUA_TBOOLEAN'
         elif t.is_pointer():
             return 'LUA_TLIGHTUSERDATA'
         else:
@@ -372,12 +432,14 @@ class LuaBackend(Backend):
 
     @staticmethod
     def _lua_variable_name(v):
-        return v.name(qualifiers='replace', case='snake-cap-all')
+        return v.name.format(case=Identifier.SNAKE_CASE_CAP_ALL,
+                             quals=Identifier.REPLACE_QUALS)
 
     @staticmethod
     def _lua_function_name(f):
-        return f.overload_name(qualifiers='replace', case='snake')
+        return f.name_overloaded.format(case=Identifier.SNAKE_CASE,
+                                        quals=Identifier.REPLACE_QUALS)
 
     @staticmethod
     def _lua_parameter_name(p):
-        return p.name(case='snake')
+        return p.name.format(case=Identifier.SNAKE_CASE)
