@@ -4,15 +4,20 @@
 
 int main()
 {
-  assert(TEST_ENUM_1 == 1);
-  assert(TEST_ENUM_2 == 2);
+  assert(TEST_ENUM_1 == 1u);
+  assert(TEST_ENUM_2 == 2u);
 
-  assert(TEST_ANONYMOUS_ENUM_1 == 1);
-  assert(TEST_ANONYMOUS_ENUM_2 == 2);
+  assert(TEST_ANONYMOUS_ENUM_1 == 1u);
+  assert(TEST_ANONYMOUS_ENUM_2 == 2u);
 
-  assert(TEST_SCOPED_ENUM_SCOPED_ENUM_1 == 1);
-  assert(TEST_SCOPED_ENUM_SCOPED_ENUM_2 == 2);
+  assert(TEST_SCOPED_ENUM_SCOPED_ENUM_1 == 1u);
+  assert(TEST_SCOPED_ENUM_SCOPED_ENUM_2 == 2u);
 
-  assert(TEST_CONSTEXPR_1 == 1);
-  assert(TEST_STATIC_CONST_1 == 1);
+  assert(TEST_UNSIGNED_CONSTEXPR_1 == 1u);
+  assert(TEST_DOUBLE_CONSTEXPR_1 == 1.0);
+
+  assert(TEST_UNSIGNED_STATIC_CONST_1 == 1u);
+  assert(TEST_DOUBLE_STATIC_CONST_1 == 1.0);
+
+  return 0;
 }
