@@ -222,7 +222,7 @@ Identifier::qualified(Identifier const &Qualifiers) const
 {
   auto Qualified(Qualifiers);
 
-  Qualified.Components_.insert(Qualifiers.Components_.end(),
+  Qualified.Components_.insert(Qualified.Components_.end(),
                                Components_.begin(),
                                Components_.end());
   return Qualified;
