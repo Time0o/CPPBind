@@ -1,8 +1,6 @@
 #ifndef GUARD_WRAPPER_TYPE_H
 #define GUARD_WRAPPER_TYPE_H
 
-#include <cassert>
-#include <stack>
 #include <string>
 
 #include "clang/AST/ASTContext.h"
@@ -12,8 +10,6 @@
 #include "CompilerState.hpp"
 #include "FundamentalTypes.hpp"
 #include "Identifier.hpp"
-#include "Print.hpp"
-#include "String.hpp"
 
 namespace cppbind
 {
@@ -49,16 +45,7 @@ public:
   clang::QualType const *operator->() const
   { return &Type_; }
 
-  bool isFundamental(char const *Which = nullptr) const
-  {
-    if (!typePtr()->isFundamentalType())
-      return false;
-
-    if (!Which)
-      return true;
-
-    return FundamentalTypes().is(typePtr(), Which);
-  }
+  bool isFundamental(char const *Which = nullptr) const;
 
   bool isVoid() const
   { return typePtr()->isVoidType(); }
@@ -72,13 +59,7 @@ public:
   bool isScopedEnum() const
   { return typePtr()->isScopedEnumeralType(); }
 
-  bool isIntegral() const
-  {
-    if (!typePtr()->isIntegralType(CompilerState()->getASTContext()))
-      return false;
-
-    return !isBoolean() && !isScopedEnum();
-  }
+  bool isIntegral() const;
 
   bool isFloating() const
   { return typePtr()->isFloatingType(); }
@@ -98,15 +79,7 @@ public:
   bool isClass() const
   { return typePtr()->isClassType(); }
 
-  bool isRecord() const
-  {
-    if (isStruct() || isClass())
-      return true;
-
-    assert(!typePtr()->isRecordType()); // XXX
-
-    return false;
-  }
+  bool isRecord() const;
 
   bool isStruct() const
   { return typePtr()->isStructureType(); }
@@ -126,17 +99,7 @@ public:
   WrapperType pointerTo() const
   { return WrapperType(CompilerState()->getASTContext().getPointerType(Type_)); }
 
-  WrapperType pointee(bool recursive = false) const
-  {
-    if (!recursive)
-      return WrapperType(Type_->getPointeeType());
-
-    WrapperType Pointee(*this);
-    while (Pointee.isPointer())
-      Pointee = Pointee.pointee();
-
-    return Pointee;
-  }
+  WrapperType pointee(bool recursive = false) const;
 
   WrapperType withConst() const
   { return WrapperType(Type_.withConst()); }
@@ -149,86 +112,15 @@ public:
     return WrapperType(TypeCopy);
   }
 
-  WrapperType withoutEnum() const
-  {
-    auto OldBase(base());
+  WrapperType withoutEnum() const;
 
-    if (!OldBase.isEnum())
-      return *this;
+  WrapperType base() const;
 
-    auto const *EnumType((*OldBase)->getAs<clang::EnumType>());
+  WrapperType changeBase(WrapperType const &NewBase) const;
 
-    WrapperType UnderlyingType(EnumType->getDecl()->getIntegerType());
+  std::string str(bool Compact = false) const;
 
-    return changeBase(UnderlyingType);
-  }
-
-  WrapperType base() const
-  { return WrapperType(referenced().pointee(true)->getUnqualifiedType()); }
-
-  WrapperType changeBase(WrapperType const &NewBase) const
-  {
-    enum Indirection
-    {
-      POINTER,
-      LVALUE_REFERENCE,
-      RVALUE_REFERENCE
-    };
-
-    std::stack<Indirection> Indirections;
-
-    WrapperType Base(*this);
-
-    if (Base.isLValueReference()) {
-      Indirections.push(LVALUE_REFERENCE);
-      Base = Base.referenced();
-    } else if (Base.isRValueReference()) {
-      Indirections.push(RVALUE_REFERENCE);
-      Base = Base.referenced();
-    }
-
-    while (Base.isPointer()) {
-      Indirections.push(POINTER);
-      Base = Base.pointee();
-    }
-
-    Base = NewBase;
-
-    while (!Indirections.empty()) {
-      switch (Indirections.top()) {
-      case POINTER:
-        Base = Base.pointerTo();
-        break;
-      case LVALUE_REFERENCE:
-        Base = Base.lvalueReferenceTo();
-        break;
-      case RVALUE_REFERENCE:
-        Base = Base.rvalueReferenceTo();
-        break;
-      }
-
-      Indirections.pop();
-    }
-
-    return Base;
-  }
-
-  std::string str(bool Compact = false) const
-  {
-    PrintingPolicy PP = Compact ? PrintingPolicy::DEFAULT : PrintingPolicy::NONE;
-
-    return printQualType(Type_, PP);
-  }
-
-  std::string format(Identifier::Case Case, Identifier::Quals Quals) const
-  {
-    auto BaseCompact(base().str(true));
-
-    auto Str(str());
-    string::replace(Str, BaseCompact, Identifier(BaseCompact).format(Case, Quals));
-
-    return Str;
-  }
+  std::string format(Identifier::Case Case, Identifier::Quals Quals) const;
 
 private:
   clang::Type const *typePtr() const
