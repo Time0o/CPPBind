@@ -1,6 +1,7 @@
 #ifndef GUARD_WRAPPER_TYPE_H
 #define GUARD_WRAPPER_TYPE_H
 
+#include <cassert>
 #include <stack>
 #include <string>
 
@@ -94,6 +95,16 @@ public:
 
   bool isClass() const
   { return typePtr()->isClassType(); }
+
+  bool isRecord() const
+  {
+    if (isStruct() || isClass())
+      return true;
+
+    assert(!typePtr()->isRecordType()); // XXX
+
+    return false;
+  }
 
   bool isStruct() const
   { return typePtr()->isStructureType(); }
