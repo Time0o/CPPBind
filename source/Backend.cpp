@@ -84,10 +84,13 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def_readonly_static("SELF", &Identifier::SELF)
     .def_readonly_static("NEW", &Identifier::NEW)
     .def_readonly_static("DELETE", &Identifier::DELETE)
+    .def(py::init<std::string>())
     .def("__str__", &Identifier::str)
     .def("format", &Identifier::format,
          "case"_a = Identifier::ORIG_CASE,
          "quals"_a = Identifier::KEEP_QUALS);
+
+  py::implicitly_convertible<std::string, Identifier>();
 
   py::class_<Wrapper, std::shared_ptr<Wrapper>>(m, "Wrapper")
     .def("wrapped_file", &Wrapper::wrappedFile)
@@ -159,7 +162,9 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def_property_readonly("self_type", &WrapperFunction::selfType)
     .def_property_readonly("return_type", &WrapperFunction::returnType)
     .def("parameters", &WrapperFunction::parameters,
-         "required_only"_a = false);
+         "required_only"_a = false)
+    .def("add_parameter", &WrapperFunction::addParameter,
+         "index"_a, "name"_a, "type"_a);
 
   #define GET_OPT(NAME) [](OptionsRegistry const &Self) \
                         { return Self.get<>(NAME); }

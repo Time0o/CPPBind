@@ -171,6 +171,11 @@ public:
     return RequiredParams;
   }
 
+  void addParameter(std::size_t Idx,
+                    Identifier const &Name,
+                    WrapperType const &Type)
+  { Params_.emplace(Params_.begin() + Idx, Name, Type); }
+
 private:
   Identifier determineName(
     clang::FunctionDecl const *Decl) const;
