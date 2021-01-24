@@ -101,7 +101,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
   py::class_<WrapperType>(m, "WrapperType")
     .def(py::self == py::self)
     .def(py::self != py::self)
-    .def("__str__", &WrapperType::str)
+    .def("__str__", &WrapperType::str, "compact"_a = false)
     .def("format", &WrapperType::format,
          "case"_a = Identifier::ORIG_CASE,
          "quals"_a = Identifier::KEEP_QUALS)

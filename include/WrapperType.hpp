@@ -213,16 +213,19 @@ public:
     return Base;
   }
 
-  std::string str() const
-  { return printQualType(Type_, PrintingPolicy::CURRENT); }
+  std::string str(bool Compact = false) const
+  {
+    PrintingPolicy PP = Compact ? PrintingPolicy::DEFAULT : PrintingPolicy::NONE;
+
+    return printQualType(Type_, PP);
+  }
 
   std::string format(Identifier::Case Case, Identifier::Quals Quals) const
   {
-    auto BaseStr(base().str());
-    auto BaseFmt(Identifier(BaseStr).format(Case, Quals));
+    auto BaseCompact(base().str(true));
 
     auto Str(str());
-    string::replace(Str, BaseStr, BaseFmt);
+    string::replace(Str, BaseCompact, Identifier(BaseCompact).format(Case, Quals));
 
     return Str;
   }
