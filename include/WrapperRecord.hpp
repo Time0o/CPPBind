@@ -43,6 +43,9 @@ public:
   Identifier name() const
   { return Identifier(Type_.str()); }
 
+  WrapperType type() const
+  { return Type_; }
+
 private:
   Identifier qualifiedMemberName(std::string const &Name) const
   { return Identifier(Name).qualified(Identifier(Decl_)); }

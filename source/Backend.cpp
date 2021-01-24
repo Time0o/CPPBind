@@ -124,7 +124,9 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def_property_readonly("name", &WrapperVariable::name)
     .def_property_readonly("type", &WrapperVariable::type);
 
-  py::class_<WrapperRecord>(m, "WrapperRecord");
+  py::class_<WrapperRecord>(m, "WrapperRecord")
+    .def_property_readonly("name", &WrapperRecord::name)
+    .def_property_readonly("type", &WrapperRecord::type);
 
   auto PyWrapperParameter = py::class_<WrapperParameter>(m, "WrapperParameter")
     .def_property_readonly("name", &WrapperParameter::name)
