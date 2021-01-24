@@ -25,7 +25,7 @@
 namespace cppbind
 {
 
-WrapperParam::DefaultArg::DefaultArg(clang::Expr const *Expr)
+WrapperParameter::DefaultArg::DefaultArg(clang::Expr const *Expr)
 {
   auto &Ctx(CompilerState()->getASTContext());
 
@@ -64,7 +64,7 @@ WrapperParam::DefaultArg::DefaultArg(clang::Expr const *Expr)
     BoolValue_ = ResultBool;
 }
 
-std::string WrapperParam::DefaultArg::str() const
+std::string WrapperParameter::DefaultArg::str() const
 {
   if (isNullptrT())
     return "nullptr";
@@ -138,10 +138,10 @@ Identifier WrapperFunction::determineName(
   return Identifier(Decl);
 }
 
-std::vector<WrapperParam> WrapperFunction::determineParams(
+std::vector<WrapperParameter> WrapperFunction::determineParams(
   clang::FunctionDecl const *Decl) const
 {
-  std::vector<WrapperParam> ParamList;
+  std::vector<WrapperParameter> ParamList;
 
   if (isMember()) {
     auto const *MethodDecl = dynamic_cast<clang::CXXMethodDecl const *>(Decl);
@@ -171,12 +171,12 @@ std::vector<WrapperParam> WrapperFunction::determineParams(
     }
 
     if (ParamDefaultArg) {
-      ParamList.emplace_back(WrapperType(ParamType),
-                             Identifier(ParamName),
-                             WrapperParam::DefaultArg(ParamDefaultArg));
+      ParamList.emplace_back(Identifier(ParamName),
+                             WrapperType(ParamType),
+                             WrapperParameter::DefaultArg(ParamDefaultArg));
     } else
-      ParamList.emplace_back(WrapperType(ParamType),
-                             Identifier(ParamName));
+      ParamList.emplace_back(Identifier(ParamName),
+                             WrapperType(ParamType));
   }
 
   return ParamList;

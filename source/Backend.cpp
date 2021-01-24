@@ -126,11 +126,11 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
 
   py::class_<WrapperRecord>(m, "WrapperRecord");
 
-  auto WrapperParam_ = py::class_<WrapperParam>(m, "WrapperParam")
-    .def_property_readonly("name", &WrapperParam::name)
-    .def_property_readonly("type", &WrapperParam::type)
+  auto PyWrapperParameter = py::class_<WrapperParameter>(m, "WrapperParameter")
+    .def_property_readonly("name", &WrapperParameter::name)
+    .def_property_readonly("type", &WrapperParameter::type)
     .def("default_argument",
-         [](WrapperParam const &Self) -> std::optional<WrapperParam::DefaultArg>
+         [](WrapperParameter const &Self) -> std::optional<WrapperParameter::DefaultArg>
          {
             if (!Self.hasDefaultArg())
               return std::nullopt;
@@ -138,11 +138,11 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
             return Self.defaultArg();
          });
 
-  py::class_<WrapperParam::DefaultArg>(WrapperParam_, "DefaultArgument")
-    .def("__str__", &WrapperParam::DefaultArg::str)
-    .def("is_int", &WrapperParam::DefaultArg::isInt)
-    .def("is_float", &WrapperParam::DefaultArg::isFloat)
-    .def("is_true", &WrapperParam::DefaultArg::isTrue);
+  py::class_<WrapperParameter::DefaultArg>(PyWrapperParameter, "DefaultArgument")
+    .def("__str__", &WrapperParameter::DefaultArg::str)
+    .def("is_int", &WrapperParameter::DefaultArg::isInt)
+    .def("is_float", &WrapperParameter::DefaultArg::isFloat)
+    .def("is_true", &WrapperParameter::DefaultArg::isTrue);
 
   py::class_<WrapperFunction>(m, "WrapperFunction")
     .def_property_readonly("name", &WrapperFunction::name)

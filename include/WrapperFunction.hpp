@@ -33,7 +33,7 @@ namespace cppbind
 
 class IdentifierIndex;
 
-class WrapperParam
+class WrapperParameter
 {
 public:
   class DefaultArg
@@ -80,19 +80,19 @@ public:
     bool BoolValue_;
   };
 
-  WrapperParam(WrapperType const &Type,
-               Identifier const &Name,
-               std::optional<DefaultArg> Default = std::nullopt)
-  : Type_(Type),
-    Name_(Name),
+  WrapperParameter(Identifier const &Name,
+                   WrapperType const &Type,
+                   std::optional<DefaultArg> Default = std::nullopt)
+  : Name_(Name),
+    Type_(Type),
     Default_(Default)
   {}
 
-  WrapperType type() const
-  { return Type_; }
-
   Identifier name() const
   { return Name_; }
+
+  WrapperType type() const
+  { return Type_; }
 
   bool hasDefaultArg() const
   { return static_cast<bool>(Default_); }
@@ -104,8 +104,8 @@ public:
   }
 
 private:
-  WrapperType Type_;
   Identifier Name_;
+  WrapperType Type_;
   std::optional<DefaultArg> Default_;
 };
 
@@ -153,12 +153,12 @@ public:
   Identifier nameOverloaded() const
   { return NameOverloaded_; }
 
-  std::vector<WrapperParam> parameters(bool RequiredOnly = false) const
+  std::vector<WrapperParameter> parameters(bool RequiredOnly = false) const
   {
     if (!RequiredOnly)
       return Params_;
 
-    std::vector<WrapperParam> RequiredParams;
+    std::vector<WrapperParameter> RequiredParams;
     RequiredParams.reserve(Params_.size());
 
     for (auto const &Param : Params_) {
@@ -175,7 +175,7 @@ private:
   Identifier determineName(
     clang::FunctionDecl const *Decl) const;
 
-  std::vector<WrapperParam> determineParams(
+  std::vector<WrapperParameter> determineParams(
     clang::FunctionDecl const *Decl) const;
 
   bool IsConstructor_ = false;
@@ -189,7 +189,7 @@ private:
 
   WrapperType SelfType_;
   WrapperType ReturnType_;
-  std::vector<WrapperParam> Params_;
+  std::vector<WrapperParameter> Params_;
 };
 
 class WrapperFunctionBuilder
@@ -216,7 +216,7 @@ public:
   template<typename ...ARGS>
   WrapperFunctionBuilder &addParam(ARGS&&... Args)
   {
-    WrapperParam Param(std::forward<ARGS>(Args)...);
+    WrapperParameter Param(std::forward<ARGS>(Args)...);
 
     if (!Param.hasDefaultArg()) {
 #ifndef NDEBUG
