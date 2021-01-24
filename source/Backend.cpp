@@ -147,6 +147,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
   py::class_<WrapperFunction>(m, "WrapperFunction")
     .def_property_readonly("name", &WrapperFunction::name)
     .def_property_readonly("name_overloaded", &WrapperFunction::nameOverloaded)
+    .def_property_readonly("self_type", &WrapperFunction::selfType)
     .def_property_readonly("return_type", &WrapperFunction::returnType)
     .def("parameters", &WrapperFunction::parameters,
          "required_only"_a = false);

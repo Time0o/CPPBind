@@ -26,7 +26,6 @@ public:
   WrapperFunction implicitDefaultConstructor() const
   {
     return WrapperFunctionBuilder(qualifiedMemberName("new"), Type_)
-           .setReturnType(Type_.pointerTo())
            .isConstructor()
            .build();
   }
@@ -37,7 +36,6 @@ public:
   WrapperFunction implicitDestructor() const
   {
     return WrapperFunctionBuilder(qualifiedMemberName("delete"), Type_)
-           .addParam(Type_.pointerTo(), Identifier("self"))
            .isDestructor()
            .build();
   }

@@ -79,20 +79,19 @@ std::string WrapperParam::DefaultArg::str() const
 WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
 : Name_(determineName(Decl)),
   NameOverloaded_(Name_),
-  Params_(determineParams(Decl)),
-  ReturnType_(Decl->getReturnType())
+  ReturnType_(Decl->getReturnType()),
+  Params_(determineParams(Decl))
 { assert(!Decl->isTemplateInstantiation()); } // XXX
 
 WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
-: IsMethod_(true),
-  IsConstructor_(llvm::isa<clang::CXXConstructorDecl>(Decl)),
+: IsConstructor_(llvm::isa<clang::CXXConstructorDecl>(Decl)),
   IsDestructor_(llvm::isa<clang::CXXDestructorDecl>(Decl)),
   IsStatic_(Decl->isStatic()),
   Name_(determineName(Decl)),
   NameOverloaded_(Name_),
-  Params_(determineParams(Decl)),
+  SelfType_(WrapperType(Decl->getThisType()).pointee()),
   ReturnType_(Decl->getReturnType()),
-  SelfType_(WrapperType(Decl->getThisType()).pointee())
+  Params_(determineParams(Decl))
 { assert(!Decl->isTemplateInstantiation()); } // XXX
 
 void WrapperFunction::overload(std::shared_ptr<IdentifierIndex> II)
@@ -119,7 +118,7 @@ void WrapperFunction::overload(std::shared_ptr<IdentifierIndex> II)
 Identifier WrapperFunction::determineName(
   clang::FunctionDecl const *Decl) const
 {
-  if (IsConstructor_) {
+  if (isConstructor()) {
     auto const *ConstructorDecl =
       llvm::dyn_cast<clang::CXXConstructorDecl>(Decl);
 
@@ -129,7 +128,7 @@ Identifier WrapperFunction::determineName(
     return Identifier("new").qualified(Identifier(ConstructorDecl->getParent()));
   }
 
-  if (IsDestructor_) {
+  if (isDestructor()) {
     auto const *DestructorDecl =
       llvm::dyn_cast<clang::CXXDestructorDecl>(Decl);
 
@@ -144,15 +143,11 @@ std::vector<WrapperParam> WrapperFunction::determineParams(
 {
   std::vector<WrapperParam> ParamList;
 
-  if (IsMethod_) {
+  if (isMember()) {
     auto const *MethodDecl = dynamic_cast<clang::CXXMethodDecl const *>(Decl);
 
     assert(!MethodDecl->isOverloadedOperator()); // XXX
     assert(!MethodDecl->isVirtual()); // XXX
-
-    if (!MethodDecl->isStatic())
-      ParamList.emplace_back(WrapperType(MethodDecl->getThisType()),
-                             Identifier("self"));
   }
 
   auto Params(Decl->parameters());

@@ -116,7 +116,8 @@ class WrapperFunction
   friend WrapperFunctionBuilder;
 
 public:
-  WrapperFunction(Identifier const &Name, WrapperType const &SelfType)
+  WrapperFunction(Identifier const &Name,
+                  WrapperType const &SelfType = WrapperType())
   : Name_(Name),
     NameOverloaded_(Name),
     SelfType_(SelfType)
@@ -128,8 +129,8 @@ public:
 
   void overload(std::shared_ptr<IdentifierIndex> II);
 
-  bool isMethod() const
-  { return IsMethod_; }
+  bool isMember() const
+  { return !SelfType_.isVoid(); }
 
   bool isConstructor() const
   { return IsConstructor_; }
@@ -139,6 +140,9 @@ public:
 
   bool isOverloaded() const
   { return Overload_ > 0u; }
+
+  WrapperType selfType() const
+  { return SelfType_; }
 
   WrapperType returnType() const
   { return ReturnType_; }
@@ -174,7 +178,6 @@ private:
   std::vector<WrapperParam> determineParams(
     clang::FunctionDecl const *Decl) const;
 
-  bool IsMethod_ = false;
   bool IsConstructor_ = false;
   bool IsDestructor_ = false;
   bool IsStatic_ = false;
@@ -184,15 +187,16 @@ private:
   Identifier Name_;
   Identifier NameOverloaded_;
 
-  std::vector<WrapperParam> Params_;
-  WrapperType ReturnType_;
   WrapperType SelfType_;
+  WrapperType ReturnType_;
+  std::vector<WrapperParam> Params_;
 };
 
 class WrapperFunctionBuilder
 {
 public:
-  WrapperFunctionBuilder(Identifier const &Name, WrapperType const &SelfType)
+  WrapperFunctionBuilder(Identifier const &Name,
+                         WrapperType const &SelfType = WrapperType())
   : Wf_(Name, SelfType)
   {}
 
