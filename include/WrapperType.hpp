@@ -11,7 +11,9 @@
 
 #include "CompilerState.hpp"
 #include "FundamentalTypes.hpp"
+#include "Identifier.hpp"
 #include "Print.hpp"
+#include "String.hpp"
 
 namespace cppbind
 {
@@ -213,6 +215,17 @@ public:
 
   std::string str() const
   { return printQualType(Type_, PrintingPolicy::CURRENT); }
+
+  std::string format(Identifier::Case Case, Identifier::Quals Quals) const
+  {
+    auto BaseStr(base().str());
+    auto BaseFmt(Identifier(BaseStr).format(Case, Quals));
+
+    auto Str(str());
+    string::replace(Str, BaseStr, BaseFmt);
+
+    return Str;
+  }
 
 private:
   clang::Type const *typePtr() const

@@ -96,6 +96,9 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def(py::self == py::self)
     .def(py::self != py::self)
     .def("__str__", &WrapperType::str)
+    .def("format", &WrapperType::format,
+         "case"_a = Identifier::ORIG_CASE,
+         "quals"_a = Identifier::KEEP_QUALS)
     .def("is_const", &WrapperType::isConst)
     .def("is_fundamental", &WrapperType::isFundamental, "which"_a = nullptr)
     .def("is_void", &WrapperType::isVoid)
