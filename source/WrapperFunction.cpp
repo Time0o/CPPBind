@@ -78,7 +78,7 @@ std::string WrapperParam::DefaultArg::str() const
 
 WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
 : Name_(determineName(Decl)),
-  OverloadName_(Name_),
+  NameOverloaded_(Name_),
   Params_(determineParams(Decl)),
   ReturnType_(Decl->getReturnType())
 { assert(!Decl->isTemplateInstantiation()); } // XXX
@@ -89,7 +89,7 @@ WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
   IsDestructor_(llvm::isa<clang::CXXDestructorDecl>(Decl)),
   IsStatic_(Decl->isStatic()),
   Name_(determineName(Decl)),
-  OverloadName_(Name_),
+  NameOverloaded_(Name_),
   Params_(determineParams(Decl)),
   ReturnType_(Decl->getReturnType()),
   SelfType_(WrapperType(Decl->getThisType()).pointee())
@@ -111,9 +111,9 @@ void WrapperFunction::overload(std::shared_ptr<IdentifierIndex> II)
   assert(numReplaced > 0u);
 #endif
 
-  OverloadName_ = Identifier(name().str() + Postfix);
+  NameOverloaded_ = Identifier(name().str() + Postfix);
 
-  II->add(OverloadName_, IdentifierIndex::FUNC);
+  II->add(NameOverloaded_, IdentifierIndex::FUNC);
 }
 
 Identifier WrapperFunction::determineName(

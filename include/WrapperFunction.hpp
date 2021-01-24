@@ -118,7 +118,7 @@ class WrapperFunction
 public:
   WrapperFunction(Identifier const &Name, WrapperType const &SelfType)
   : Name_(Name),
-    OverloadName_(Name),
+    NameOverloaded_(Name),
     SelfType_(SelfType)
   {}
 
@@ -147,7 +147,7 @@ public:
   { return Name_; }
 
   Identifier nameOverloaded() const
-  { return OverloadName_; }
+  { return NameOverloaded_; }
 
   std::vector<WrapperParam> parameters(bool RequiredOnly = false) const
   {
@@ -182,7 +182,7 @@ private:
   unsigned Overload_ = 0u;
 
   Identifier Name_;
-  Identifier OverloadName_;
+  Identifier NameOverloaded_;
 
   std::vector<WrapperParam> Params_;
   WrapperType ReturnType_;
