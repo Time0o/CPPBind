@@ -81,6 +81,9 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .export_values();
 
   PyIdentifier
+    .def_readonly_static("SELF", &Identifier::SELF)
+    .def_readonly_static("NEW", &Identifier::NEW)
+    .def_readonly_static("DELETE", &Identifier::DELETE)
     .def("__str__", &Identifier::str)
     .def("format", &Identifier::format,
          "case"_a = Identifier::ORIG_CASE,

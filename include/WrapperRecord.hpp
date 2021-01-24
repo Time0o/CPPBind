@@ -25,7 +25,7 @@ public:
 
   WrapperFunction implicitDefaultConstructor() const
   {
-    return WrapperFunctionBuilder(qualifiedMemberName("new"), Type_)
+    return WrapperFunctionBuilder(qualifiedMemberName(Identifier::NEW), Type_)
            .isConstructor()
            .build();
   }
@@ -35,7 +35,7 @@ public:
 
   WrapperFunction implicitDestructor() const
   {
-    return WrapperFunctionBuilder(qualifiedMemberName("delete"), Type_)
+    return WrapperFunctionBuilder(qualifiedMemberName(Identifier::DELETE), Type_)
            .isDestructor()
            .build();
   }

@@ -125,14 +125,18 @@ Identifier WrapperFunction::determineName(
     assert(!ConstructorDecl->isCopyConstructor()); // XXX
     assert(!ConstructorDecl->isMoveConstructor()); // XXX
 
-    return Identifier("new").qualified(Identifier(ConstructorDecl->getParent()));
+    Identifier Parent(Identifier(ConstructorDecl->getParent()));
+
+    return Identifier(Identifier::NEW).qualified(Parent);
   }
 
   if (isDestructor()) {
     auto const *DestructorDecl =
       llvm::dyn_cast<clang::CXXDestructorDecl>(Decl);
 
-    return Identifier("delete").qualified(Identifier(DestructorDecl->getParent()));
+    Identifier Parent(Identifier(DestructorDecl->getParent()));
+
+    return Identifier(Identifier::DELETE).qualified(Parent);
   }
 
   return Identifier(Decl);

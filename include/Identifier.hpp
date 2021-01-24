@@ -15,6 +15,10 @@ namespace cppbind
 class Identifier
 {
 public:
+  static constexpr char const *SELF = "self";
+  static constexpr char const *NEW = "new";
+  static constexpr char const *DELETE = "delete";
+
   enum Case
   {
     ORIG_CASE,
