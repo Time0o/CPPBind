@@ -138,6 +138,9 @@ public:
   bool isDestructor() const
   { return IsDestructor_; }
 
+  bool isStatic() const
+  { return IsStatic_; }
+
   bool isOverloaded() const
   { return Overload_ > 0u; }
 

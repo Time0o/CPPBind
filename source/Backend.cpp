@@ -161,6 +161,11 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def_property_readonly("name_overloaded", &WrapperFunction::nameOverloaded)
     .def_property_readonly("self_type", &WrapperFunction::selfType)
     .def_property_readonly("return_type", &WrapperFunction::returnType)
+    .def("is_member", &WrapperFunction::isMember)
+    .def("is_constructor", &WrapperFunction::isConstructor)
+    .def("is_destructor", &WrapperFunction::isDestructor)
+    .def("is_static", &WrapperFunction::isStatic)
+    .def("is_overloaded", &WrapperFunction::isOverloaded)
     .def("parameters", &WrapperFunction::parameters,
          "required_only"_a = false)
     .def("add_parameter", &WrapperFunction::addParameter,
