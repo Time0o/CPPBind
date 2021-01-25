@@ -25,8 +25,8 @@ public:
   : Type_(Type.getDesugaredType(CompilerState()->getASTContext()))
   {}
 
-  explicit WrapperType(clang::Type const *Type)
-  : WrapperType(clang::QualType(Type, 0))
+  explicit WrapperType(clang::Type const *Type, unsigned Qualifiers = 0u)
+  : WrapperType(clang::QualType(Type, Qualifiers))
   {}
 
   explicit WrapperType(clang::TypeDecl const *Decl)
@@ -94,6 +94,12 @@ public:
   { return WrapperType(CompilerState()->getASTContext().getPointerType(type())); }
 
   WrapperType pointee(bool recursive = false) const;
+
+  WrapperType qualified(unsigned Qualifiers) const
+  { return WrapperType(typePtr(), Qualifiers); }
+
+  WrapperType unqualified() const
+  { return WrapperType(typePtr()); }
 
   WrapperType withConst() const
   { return WrapperType(type().withConst()); }

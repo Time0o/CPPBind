@@ -74,7 +74,7 @@ WrapperType::withoutEnum() const
 
 WrapperType
 WrapperType::base() const
-{ return WrapperType(referenced().pointee(true).type().getUnqualifiedType()); }
+{ return referenced().pointee(true); }
 
 WrapperType
 WrapperType::changeBase(WrapperType const &NewBase) const
@@ -135,10 +135,10 @@ WrapperType::str(bool Compact) const
 std::string
 WrapperType::format(Identifier::Case Case, Identifier::Quals Quals) const
 {
-  auto BaseCompact(base().str(true));
-
   auto Str(str());
-  string::replace(Str, BaseCompact, Identifier(BaseCompact).format(Case, Quals));
+  auto StrBase(base().unqualified().str(true));
+
+  string::replace(Str, StrBase, Identifier(StrBase).format(Case, Quals));
 
   return Str;
 }
