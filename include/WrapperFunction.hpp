@@ -10,6 +10,9 @@
 #include <variant>
 #include <vector>
 
+#include "clang/AST/Decl.h"
+#include "clang/AST/Expr.h"
+
 #include "llvm/ADT/SmallString.h"
 
 #include "Identifier.hpp"
@@ -36,10 +39,10 @@ class IdentifierIndex;
 class WrapperParameter
 {
 public:
-  class DefaultArg
+  class DefaultArgument
   {
   public:
-    explicit DefaultArg(clang::Expr const *Expr);
+    explicit DefaultArgument(clang::Expr const *Expr);
 
     bool isNullptrT() const
     { return is<std::nullptr_t>(); }
@@ -82,10 +85,18 @@ public:
 
   WrapperParameter(Identifier const &Name,
                    WrapperType const &Type,
-                   std::optional<DefaultArg> Default = std::nullopt)
+                   clang::Expr const *DefaultExpr = nullptr)
   : Name_(Name),
-    Type_(Type),
-    Default_(Default)
+    Type_(Type)
+  {
+    if (DefaultExpr)
+      Default_ = DefaultArgument(DefaultExpr);
+  }
+
+  WrapperParameter(clang::ParmVarDecl const *Decl)
+  : WrapperParameter(Identifier(Decl->getNameAsString()),
+                     WrapperType(Decl->getType()),
+                     Decl->getDefaultArg())
   {}
 
   Identifier name() const
@@ -94,19 +105,19 @@ public:
   WrapperType type() const
   { return Type_; }
 
-  bool hasDefaultArg() const
+  bool hasDefaultArgument() const
   { return static_cast<bool>(Default_); }
 
-  DefaultArg defaultArg() const
+  DefaultArgument defaultArgument() const
   {
-    assert(hasDefaultArg());
+    assert(hasDefaultArgument());
     return *Default_;
   }
 
 private:
   Identifier Name_;
   WrapperType Type_;
-  std::optional<DefaultArg> Default_;
+  std::optional<DefaultArgument> Default_;
 };
 
 class WrapperFunctionBuilder;
@@ -165,7 +176,7 @@ public:
     RequiredParams.reserve(Params_.size());
 
     for (auto const &Param : Params_) {
-      if (Param.hasDefaultArg())
+      if (Param.hasDefaultArgument())
         break;
 
       RequiredParams.push_back(Param);
@@ -226,10 +237,10 @@ public:
   {
     WrapperParameter Param(std::forward<ARGS>(Args)...);
 
-    if (!Param.hasDefaultArg()) {
+    if (!Param.hasDefaultArgument()) {
 #ifndef NDEBUG
       if (!Wf_.Params_.empty())
-        assert(!Wf_.Params_.back().hasDefaultArg());
+        assert(!Wf_.Params_.back().hasDefaultArgument());
 #endif
     }
 

@@ -19,16 +19,16 @@ namespace cppbind
 class WrapperType
 {
 public:
-  WrapperType()
-  : WrapperType(FundamentalTypes().get("void"))
-  {}
-
   explicit WrapperType(clang::QualType const &Type)
   : Type_(Type.getDesugaredType(CompilerState()->getASTContext()))
   {}
 
   explicit WrapperType(clang::Type const *Type, unsigned Qualifiers = 0u)
   : WrapperType(clang::QualType(Type, Qualifiers))
+  {}
+
+  explicit WrapperType(std::string const &Which = "void")
+  : WrapperType(FundamentalTypes().get(Which))
   {}
 
   explicit WrapperType(clang::TypeDecl const *Decl)

@@ -70,7 +70,7 @@ CreateWrapperConsumer::handleVarDecl(clang::VarDecl const *Decl)
     throw CPPBindError("global variables without external linkage should have static storage and be constant"); // XXX
   }
 
-  Wr_->addWrapperVariable(Identifier(Decl), Type);
+  Wr_->addWrapperVariable(Decl);
 }
 
 void

@@ -15,13 +15,18 @@ namespace cppbind
 class WrapperRecord
 {
 public:
+  explicit WrapperRecord(WrapperType const &Type)
+  : Decl_(nullptr),
+    Type_(Type)
+  {}
+
   explicit WrapperRecord(clang::CXXRecordDecl const *Decl)
   : Decl_(Decl),
     Type_(Decl_->getTypeForDecl())
   {}
 
   bool needsImplicitDefaultConstructor() const
-  { return Decl_->needsImplicitDefaultConstructor(); }
+  { return Decl_ && Decl_->needsImplicitDefaultConstructor(); }
 
   WrapperFunction implicitDefaultConstructor() const
   {
@@ -31,7 +36,7 @@ public:
   }
 
   bool needsImplicitDestructor() const
-  { return Decl_->needsImplicitDestructor(); }
+  { return Decl_ && Decl_->needsImplicitDestructor(); }
 
   WrapperFunction implicitDestructor() const
   {
