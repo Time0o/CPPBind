@@ -127,6 +127,7 @@ class WrapperFunction
   friend WrapperFunctionBuilder;
 
 public:
+  // TODO: private...
   WrapperFunction(Identifier const &Name,
                   WrapperType const &SelfType = WrapperType())
   : Name_(Name),
@@ -185,11 +186,6 @@ public:
     return RequiredParams;
   }
 
-  void addParameter(std::size_t Idx,
-                    Identifier const &Name,
-                    WrapperType const &Type)
-  { Params_.emplace(Params_.begin() + Idx, Name, Type); }
-
 private:
   Identifier determineName(
     clang::FunctionDecl const *Decl) const;
@@ -214,29 +210,24 @@ private:
 class WrapperFunctionBuilder
 {
 public:
-  WrapperFunctionBuilder(Identifier const &Name,
-                         WrapperType const &SelfType = WrapperType())
-  : Wf_(Name, SelfType)
+  WrapperFunctionBuilder(Identifier const &Name)
+  : Wf_(Name)
   {}
 
-  WrapperFunctionBuilder &isConstructor()
-  { Wf_.IsConstructor_ = true; return *this; }
-
-  WrapperFunctionBuilder &isDestructor()
-  { Wf_.IsDestructor_ = true; return *this; }
-
-  WrapperFunctionBuilder &isStatic()
-  { Wf_.IsStatic_ = true; return *this; }
-
-  template<typename TYPE>
-  WrapperFunctionBuilder &setReturnType(TYPE const &Type)
-  { Wf_.ReturnType_ = Type; return *this; }
-
-  template<typename ...ARGS>
-  WrapperFunctionBuilder &addParam(ARGS&&... Args)
+  WrapperFunctionBuilder &setSelfType(WrapperType const &Type)
   {
-    WrapperParameter Param(std::forward<ARGS>(Args)...);
+    Wf_.SelfType_ = Type;
+    return *this;
+  }
 
+  WrapperFunctionBuilder &setReturnType(WrapperType const &Type)
+  {
+    Wf_.ReturnType_ = Type;
+    return *this;
+  }
+
+  WrapperFunctionBuilder &addParameter(WrapperParameter const &Param)
+  {
     if (!Param.hasDefaultArgument()) {
 #ifndef NDEBUG
       if (!Wf_.Params_.empty())
@@ -246,6 +237,27 @@ public:
 
     Wf_.Params_.emplace_back(Param);
 
+    return *this;
+  }
+
+  WrapperFunctionBuilder &setIsConstructor()
+  {
+    assert(Wf_.isMember());
+    Wf_.IsConstructor_ = true;
+    return *this;
+  }
+
+  WrapperFunctionBuilder &setIsDestructor()
+  {
+    assert(Wf_.isMember());
+    Wf_.IsDestructor_ = true;
+    return *this;
+  }
+
+  WrapperFunctionBuilder &setIsStatic()
+  {
+    assert(Wf_.isMember());
+    Wf_.IsStatic_ = true;
     return *this;
   }
 

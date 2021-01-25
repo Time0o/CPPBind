@@ -98,7 +98,8 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("records", &Wrapper::records)
     .def("functions", &Wrapper::functions);
 
-  py::class_<WrapperType>(m, "WrapperType")
+  py::class_<WrapperType>(m, "Type")
+    .def(py::init<std::string>(), "which"_a = "void")
     .def(py::self == py::self)
     .def(py::self != py::self)
     .def("__str__", &WrapperType::str, "compact"_a = false)
@@ -134,15 +135,18 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("without_enum", &WrapperType::withoutEnum)
     .def_property("base", &WrapperType::base, &WrapperType::changeBase);
 
-  py::class_<WrapperVariable>(m, "WrapperVariable")
+  py::class_<WrapperVariable>(m, "Variable")
+    .def(py::init<Identifier, WrapperType>(), "name"_a, "type"_a)
     .def_property_readonly("name", &WrapperVariable::name)
     .def_property_readonly("type", &WrapperVariable::type);
 
-  py::class_<WrapperRecord>(m, "WrapperRecord")
+  py::class_<WrapperRecord>(m, "Record")
+    .def(py::init<WrapperType>(), "type"_a)
     .def_property_readonly("name", &WrapperRecord::name)
     .def_property_readonly("type", &WrapperRecord::type);
 
-  auto PyWrapperParameter = py::class_<WrapperParameter>(m, "WrapperParameter")
+  auto PyWrapperParameter = py::class_<WrapperParameter>(m, "Parameter")
+    .def(py::init<Identifier, WrapperType>(), "name"_a, "type"_a)
     .def_property_readonly("name", &WrapperParameter::name)
     .def_property_readonly("type", &WrapperParameter::type)
     .def("default_argument",
@@ -161,7 +165,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_float", &WrapperParameter::DefaultArgument::isFloat)
     .def("is_true", &WrapperParameter::DefaultArgument::isTrue);
 
-  py::class_<WrapperFunction>(m, "WrapperFunction")
+  py::class_<WrapperFunction>(m, "Function")
     .def_property_readonly("name", &WrapperFunction::name)
     .def_property_readonly("name_overloaded", &WrapperFunction::nameOverloaded)
     .def_property_readonly("self_type", &WrapperFunction::selfType)
@@ -171,10 +175,17 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_destructor", &WrapperFunction::isDestructor)
     .def("is_static", &WrapperFunction::isStatic)
     .def("is_overloaded", &WrapperFunction::isOverloaded)
-    .def("parameters", &WrapperFunction::parameters,
-         "required_only"_a = false)
-    .def("add_parameter", &WrapperFunction::addParameter,
-         "index"_a, "name"_a, "type"_a);
+    .def("parameters", &WrapperFunction::parameters, "required_only"_a = false);
+
+  py::class_<WrapperFunctionBuilder>(m, "FunctionBuilder")
+    .def(py::init<Identifier>(), "name"_a)
+    .def("set_self_type", &WrapperFunctionBuilder::setSelfType, "type"_a)
+    .def("set_return_type", &WrapperFunctionBuilder::setReturnType, "type"_a)
+    .def("add_parameter", &WrapperFunctionBuilder::addParameter, "param"_a)
+    .def("set_is_constructor", &WrapperFunctionBuilder::setIsConstructor)
+    .def("set_is_destructor", &WrapperFunctionBuilder::setIsDestructor)
+    .def("set_is_static", &WrapperFunctionBuilder::setIsStatic)
+    .def("build", &WrapperFunctionBuilder::build);
 
   #define GET_OPT(NAME) [](OptionsRegistry const &Self) \
                         { return Self.get<>(NAME); }

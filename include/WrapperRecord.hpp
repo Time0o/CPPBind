@@ -30,8 +30,9 @@ public:
 
   WrapperFunction implicitDefaultConstructor() const
   {
-    return WrapperFunctionBuilder(qualifiedMemberName(Identifier::NEW), Type_)
-           .isConstructor()
+    return WrapperFunctionBuilder(qualifiedMemberName(Identifier::NEW))
+           .setSelfType(Type_)
+           .setIsConstructor()
            .build();
   }
 
@@ -40,8 +41,9 @@ public:
 
   WrapperFunction implicitDestructor() const
   {
-    return WrapperFunctionBuilder(qualifiedMemberName(Identifier::DELETE), Type_)
-           .isDestructor()
+    return WrapperFunctionBuilder(qualifiedMemberName(Identifier::DELETE))
+           .setSelfType(Type_)
+           .setIsDestructor()
            .build();
   }
 
