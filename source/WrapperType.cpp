@@ -48,33 +48,44 @@ WrapperType
 WrapperType::pointee(bool recursive) const
 {
   if (!recursive)
-    return WrapperType(type()->getPointeeType());
+    return modified(type()->getPointeeType());
 
   WrapperType Pointee(*this);
   while (Pointee.isPointer())
     Pointee = Pointee.pointee();
 
-  return Pointee;
+  return modified(Pointee);
+}
+
+WrapperType
+WrapperType::withEnum() const
+{
+  assert(EnumBaseType_);
+
+  WrapperType EnumBaseType(*EnumBaseType_);
+
+  return changeBase(EnumBaseType);
 }
 
 WrapperType
 WrapperType::withoutEnum() const
 {
-  auto OldBase(base());
+  auto EnumBaseType(enumBaseType());
 
-  if (!OldBase.isEnum())
+  if (!EnumBaseType)
     return *this;
 
-  auto const *EnumType(OldBase.typePtr()->getAs<clang::EnumType>());
+  auto const *EnumBaseTypePtr = (*EnumBaseType)->getAs<clang::EnumType>();
 
-  WrapperType UnderlyingType(EnumType->getDecl()->getIntegerType());
+  WrapperType UnderlyingType(EnumBaseTypePtr->getDecl()->getIntegerType());
+  UnderlyingType.EnumBaseType_ = EnumBaseType;
 
   return changeBase(UnderlyingType);
 }
 
 WrapperType
 WrapperType::base() const
-{ return referenced().pointee(true); }
+{ return modified(referenced().pointee(true)); }
 
 WrapperType
 WrapperType::changeBase(WrapperType const &NewBase) const
@@ -120,6 +131,8 @@ WrapperType::changeBase(WrapperType const &NewBase) const
 
     Indirections.pop();
   }
+
+  Base.EnumBaseType_ = NewBase.EnumBaseType_;
 
   return Base;
 }

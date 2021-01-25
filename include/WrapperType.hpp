@@ -1,7 +1,9 @@
 #ifndef GUARD_WRAPPER_TYPE_H
 #define GUARD_WRAPPER_TYPE_H
 
+#include <optional>
 #include <string>
+#include <utility>
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
@@ -55,6 +57,9 @@ public:
 
   bool isIntegral() const;
 
+  bool isIntegralUnderlyingEnum() const
+  { return isIntegral() && EnumBaseType_; }
+
   bool isFloating() const
   { return typePtr()->isFloatingType(); }
 
@@ -82,16 +87,16 @@ public:
   { return type().isConstQualified(); }
 
   WrapperType lvalueReferenceTo() const
-  { return WrapperType(CompilerState()->getASTContext().getLValueReferenceType(type())); }
+  { return modified(CompilerState()->getASTContext().getLValueReferenceType(type())); }
 
   WrapperType rvalueReferenceTo() const
-  { return WrapperType(CompilerState()->getASTContext().getRValueReferenceType(type())); }
+  { return modified(CompilerState()->getASTContext().getRValueReferenceType(type())); }
 
   WrapperType referenced() const
-  { return WrapperType(type().getNonReferenceType()); }
+  { return modified(type().getNonReferenceType()); }
 
   WrapperType pointerTo() const
-  { return WrapperType(CompilerState()->getASTContext().getPointerType(type())); }
+  { return modified(CompilerState()->getASTContext().getPointerType(type())); }
 
   WrapperType pointee(bool recursive = false) const;
 
@@ -99,23 +104,23 @@ public:
   { return WrapperType(typePtr(), Qualifiers); }
 
   WrapperType unqualified() const
-  { return WrapperType(typePtr()); }
+  { return modified(typePtr()); }
 
   WrapperType withConst() const
-  { return WrapperType(type().withConst()); }
+  { return modified(type().withConst()); }
 
   WrapperType withoutConst() const
   {
     auto TypeCopy(type());
     TypeCopy.removeLocalConst();
 
-    return WrapperType(TypeCopy);
+    return modified(TypeCopy);
   }
 
+  WrapperType withEnum() const;
   WrapperType withoutEnum() const;
 
   WrapperType base() const;
-
   WrapperType changeBase(WrapperType const &NewBase) const;
 
   std::string str(bool Compact = false) const;
@@ -126,10 +131,38 @@ private:
   clang::QualType const &type() const
   { return Type_; }
 
+  clang::QualType baseType() const
+  { return base().type(); }
+
+  std::optional<clang::QualType> enumBaseType() const
+  {
+    auto Base(base());
+
+    if (Base.isEnum()) {
+      auto const *EnumBaseTypePtr = Base.typePtr()->getAs<clang::EnumType>();
+      return clang::QualType(EnumBaseTypePtr, qualifiers());
+    }
+
+    return std::nullopt;
+  }
+
   clang::Type const *typePtr() const
-  { return Type_.getTypePtr(); }
+  { return type().getTypePtr(); }
+
+  unsigned qualifiers() const
+  { return type().getQualifiers().getAsOpaqueValue(); }
+
+  template<typename ...ARGS>
+  WrapperType modified(ARGS &&...args) const
+  {
+    WrapperType Modified(std::forward<ARGS>(args)...);
+    Modified.EnumBaseType_ = EnumBaseType_;
+
+    return Modified;
+  }
 
   clang::QualType Type_;
+  std::optional<clang::QualType> EnumBaseType_;
 };
 
 } // namespace cppbind
