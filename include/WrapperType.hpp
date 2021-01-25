@@ -34,16 +34,10 @@ public:
   {}
 
   bool operator==(WrapperType const &Wt) const
-  { return Type_ == Wt.Type_; }
+  { return type() == Wt.type(); }
 
   bool operator!=(WrapperType const &Wt) const
   { return !(*this == Wt); }
-
-  clang::QualType const &operator*() const
-  { return Type_; }
-
-  clang::QualType const *operator->() const
-  { return &Type_; }
 
   bool isFundamental(char const *Which = nullptr) const;
 
@@ -85,28 +79,28 @@ public:
   { return typePtr()->isStructureType(); }
 
   bool isConst() const
-  { return Type_.isConstQualified(); }
+  { return type().isConstQualified(); }
 
   WrapperType lvalueReferenceTo() const
-  { return WrapperType(CompilerState()->getASTContext().getLValueReferenceType(Type_)); }
+  { return WrapperType(CompilerState()->getASTContext().getLValueReferenceType(type())); }
 
   WrapperType rvalueReferenceTo() const
-  { return WrapperType(CompilerState()->getASTContext().getRValueReferenceType(Type_)); }
+  { return WrapperType(CompilerState()->getASTContext().getRValueReferenceType(type())); }
 
   WrapperType referenced() const
-  { return WrapperType(Type_.getNonReferenceType()); }
+  { return WrapperType(type().getNonReferenceType()); }
 
   WrapperType pointerTo() const
-  { return WrapperType(CompilerState()->getASTContext().getPointerType(Type_)); }
+  { return WrapperType(CompilerState()->getASTContext().getPointerType(type())); }
 
   WrapperType pointee(bool recursive = false) const;
 
   WrapperType withConst() const
-  { return WrapperType(Type_.withConst()); }
+  { return WrapperType(type().withConst()); }
 
   WrapperType withoutConst() const
   {
-    auto TypeCopy(Type_);
+    auto TypeCopy(type());
     TypeCopy.removeLocalConst();
 
     return WrapperType(TypeCopy);
@@ -123,6 +117,9 @@ public:
   std::string format(Identifier::Case Case, Identifier::Quals Quals) const;
 
 private:
+  clang::QualType const &type() const
+  { return Type_; }
+
   clang::Type const *typePtr() const
   { return Type_.getTypePtr(); }
 

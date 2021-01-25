@@ -48,7 +48,7 @@ WrapperType
 WrapperType::pointee(bool recursive) const
 {
   if (!recursive)
-    return WrapperType(Type_->getPointeeType());
+    return WrapperType(type()->getPointeeType());
 
   WrapperType Pointee(*this);
   while (Pointee.isPointer())
@@ -65,7 +65,7 @@ WrapperType::withoutEnum() const
   if (!OldBase.isEnum())
     return *this;
 
-  auto const *EnumType((*OldBase)->getAs<clang::EnumType>());
+  auto const *EnumType(OldBase.typePtr()->getAs<clang::EnumType>());
 
   WrapperType UnderlyingType(EnumType->getDecl()->getIntegerType());
 
@@ -74,7 +74,7 @@ WrapperType::withoutEnum() const
 
 WrapperType
 WrapperType::base() const
-{ return WrapperType(referenced().pointee(true)->getUnqualifiedType()); }
+{ return WrapperType(referenced().pointee(true).type().getUnqualifiedType()); }
 
 WrapperType
 WrapperType::changeBase(WrapperType const &NewBase) const
@@ -129,7 +129,7 @@ WrapperType::str(bool Compact) const
 {
   PrintingPolicy PP = Compact ? PrintingPolicy::DEFAULT : PrintingPolicy::CURRENT;
 
-  return printQualType(Type_, PP);
+  return printQualType(type(), PP);
 }
 
 std::string
