@@ -174,18 +174,19 @@ WrapperType::changeBase(WrapperType const &NewBase) const
 }
 
 std::string
-WrapperType::str(bool Compact) const
-{
-  PrintingPolicy PP = Compact ? PrintingPolicy::DEFAULT : PrintingPolicy::CURRENT;
-
-  return printQualType(type(), PP);
-}
+WrapperType::str() const
+{ return format(); }
 
 std::string
-WrapperType::format(Identifier::Case Case, Identifier::Quals Quals) const
+WrapperType::format(bool Compact,
+                    Identifier::Case Case,
+                    Identifier::Quals Quals) const
 {
-  auto Str(str());
-  auto StrBase(base().unqualified().str(true));
+  static PrintingPolicy PPCompact = PrintingPolicy::DEFAULT,
+                        PPNonCompact = PrintingPolicy::CURRENT;
+
+  auto Str(printQualType(type(), Compact ? PPCompact : PPNonCompact));
+  auto StrBase(printQualType(requalifyType(baseType(), 0u), PPCompact));
 
   string::replace(Str, StrBase, Identifier(StrBase).format(Case, Quals));
 

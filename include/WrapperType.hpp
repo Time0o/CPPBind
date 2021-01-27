@@ -102,8 +102,11 @@ public:
   WrapperType base() const;
   WrapperType changeBase(WrapperType const &NewBase) const;
 
-  std::string str(bool Compact = false) const;
-  std::string format(Identifier::Case Case, Identifier::Quals Quals) const;
+  std::string str() const;
+
+  std::string format(bool Compact = false,
+                     Identifier::Case Case = Identifier::ORIG_CASE,
+                     Identifier::Quals Quals = Identifier::KEEP_QUALS) const;
 
 private:
   clang::QualType const &type() const

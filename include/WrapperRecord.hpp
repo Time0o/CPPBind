@@ -48,7 +48,7 @@ public:
   }
 
   Identifier name() const
-  { return Identifier(Type_.str()); }
+  { return Identifier(Type_.format(true)); }
 
   WrapperType type() const
   { return Type_; }

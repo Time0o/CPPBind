@@ -48,6 +48,10 @@ Identifier::Component::Component(std::string const &Name)
 {}
 
 std::string
+Identifier::str() const
+{ return format(); }
+
+std::string
 Identifier::Component::format(Case Case) const
 {
   if (OnlyUs_)

@@ -130,10 +130,9 @@ public:
   Identifier unqualified() const;
   Identifier unscoped() const;
 
-  std::string str() const
-  { return format(ORIG_CASE, KEEP_QUALS); }
+  std::string str() const;
 
-  std::string format(Case Case, Quals Quals) const;
+  std::string format(Case Case = ORIG_CASE, Quals Quals = KEEP_QUALS) const;
 
 private:
   static clang::IdentifierInfo &info(std::string const &Name);
