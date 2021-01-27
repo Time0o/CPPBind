@@ -174,7 +174,7 @@ class CBackend(Backend):
 
     # XXX
     def _c_type(self, t, without_enum=True):
-        if without_enum:
+        if without_enum and t.base.is_enum():
             t = t.without_enum()
 
         if t.is_lvalue_reference():
