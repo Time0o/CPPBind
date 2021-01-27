@@ -12,6 +12,10 @@
 namespace cppbind
 {
 
+WrapperType::WrapperType(clang::QualType const &Type)
+: Type_(Type.getDesugaredType(CompilerState()->getASTContext()))
+{}
+
 bool
 WrapperType::isFundamental(char const *Which) const
 {
@@ -45,9 +49,25 @@ WrapperType::isRecord() const
 }
 
 WrapperType
-WrapperType::pointee(bool recursive) const
+WrapperType::lvalueReferenceTo() const
+{ return modified(CompilerState()->getASTContext().getLValueReferenceType(type())); }
+
+WrapperType
+WrapperType::rvalueReferenceTo() const
+{ return modified(CompilerState()->getASTContext().getRValueReferenceType(type())); }
+
+WrapperType
+WrapperType::referenced() const
+{ return modified(type().getNonReferenceType()); }
+
+WrapperType
+WrapperType::pointerTo() const
+{ return modified(CompilerState()->getASTContext().getPointerType(type())); }
+
+WrapperType
+WrapperType::pointee(bool Recursive) const
 {
-  if (!recursive)
+  if (!Recursive)
     return modified(type()->getPointeeType());
 
   WrapperType Pointee(*this);
@@ -58,24 +78,40 @@ WrapperType::pointee(bool recursive) const
 }
 
 WrapperType
+WrapperType::qualified(unsigned Qualifiers) const
+{ return modified(requalifyType(type(), Qualifiers)); }
+
+WrapperType
+WrapperType::unqualified() const
+{ return modified(typePtr()); }
+
+WrapperType
+WrapperType::withConst() const
+{ return modified(type().withConst()); }
+
+WrapperType
+WrapperType::withoutConst() const
+{
+  auto TypeCopy(type());
+  TypeCopy.removeLocalConst();
+
+  return modified(TypeCopy);
+}
+
+WrapperType
 WrapperType::withEnum() const
 {
-  auto Base(base());
+  assert(base().isEnum());
 
-  assert(Base.isEnum());
-
-  return modified(changeBase(Base));
+  return modified(changeBase(base()));
 }
 
 WrapperType
 WrapperType::withoutEnum() const
 {
-  auto Base(base());
+  assert(base().isEnum());
 
-  if (!Base.isEnum())
-    return *this;
-
-  auto const *EnumType = Base.typePtr()->getAs<clang::EnumType>();
+  auto const *EnumType = baseTypePtr()->getAs<clang::EnumType>();
 
   WrapperType UnderlyingType(EnumType->getDecl()->getIntegerType());
 
@@ -87,7 +123,7 @@ WrapperType::withoutEnum() const
 
 WrapperType
 WrapperType::base() const
-{ return WrapperType(baseType()); }
+{ return referenced().pointee(true); }
 
 WrapperType
 WrapperType::changeBase(WrapperType const &NewBase) const
@@ -149,7 +185,7 @@ std::string
 WrapperType::format(Identifier::Case Case, Identifier::Quals Quals) const
 {
   auto Str(str());
-  auto StrBase(WrapperType(baseTypePtr()).str(true));
+  auto StrBase(base().unqualified().str(true));
 
   string::replace(Str, StrBase, Identifier(StrBase).format(Case, Quals));
 

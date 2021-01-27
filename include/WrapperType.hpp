@@ -9,7 +9,6 @@
 #include "clang/AST/Decl.h"
 #include "clang/AST/Type.h"
 
-#include "CompilerState.hpp"
 #include "FundamentalTypes.hpp"
 #include "Identifier.hpp"
 
@@ -19,20 +18,18 @@ namespace cppbind
 class WrapperType
 {
 public:
-  explicit WrapperType(clang::QualType const &Type)
-  : Type_(Type.getDesugaredType(CompilerState()->getASTContext()))
-  {}
+  explicit WrapperType(clang::QualType const &Type);
 
-  explicit WrapperType(clang::Type const *Type)
-  : WrapperType(clang::QualType(Type, 0u))
-  {}
-
-  explicit WrapperType(clang::TypeDecl const *Decl)
-  : WrapperType(Decl->getTypeForDecl())
+  explicit WrapperType(clang::Type const *Type, unsigned Qualifiers = 0u)
+  : WrapperType(clang::QualType(Type, Qualifiers))
   {}
 
   explicit WrapperType(std::string const &Which = "void")
   : WrapperType(FundamentalTypes().get(Which))
+  {}
+
+  explicit WrapperType(clang::TypeDecl const *Decl)
+  : WrapperType(Decl->getTypeForDecl())
   {}
 
   bool operator==(WrapperType const &Wt) const
@@ -86,30 +83,18 @@ public:
   bool isConst() const
   { return type().isConstQualified(); }
 
-  WrapperType lvalueReferenceTo() const
-  { return modified(CompilerState()->getASTContext().getLValueReferenceType(type())); }
+  WrapperType lvalueReferenceTo() const;
+  WrapperType rvalueReferenceTo() const;
+  WrapperType referenced() const;
 
-  WrapperType rvalueReferenceTo() const
-  { return modified(CompilerState()->getASTContext().getRValueReferenceType(type())); }
+  WrapperType pointerTo() const;
+  WrapperType pointee(bool Recursive = false) const;
 
-  WrapperType referenced() const
-  { return modified(type().getNonReferenceType()); }
+  WrapperType qualified(unsigned Qualifiers) const;
+  WrapperType unqualified() const;
 
-  WrapperType pointerTo() const
-  { return modified(CompilerState()->getASTContext().getPointerType(type())); }
-
-  WrapperType pointee(bool recursive = false) const;
-
-  WrapperType withConst() const
-  { return modified(type().withConst()); }
-
-  WrapperType withoutConst() const
-  {
-    auto TypeCopy(type());
-    TypeCopy.removeLocalConst();
-
-    return modified(TypeCopy);
-  }
+  WrapperType withConst() const;
+  WrapperType withoutConst() const;
 
   WrapperType withEnum() const;
   WrapperType withoutEnum() const;
@@ -118,7 +103,6 @@ public:
   WrapperType changeBase(WrapperType const &NewBase) const;
 
   std::string str(bool Compact = false) const;
-
   std::string format(Identifier::Case Case, Identifier::Quals Quals) const;
 
 private:
@@ -128,10 +112,13 @@ private:
   clang::Type const *typePtr() const
   { return type().getTypePtr(); }
 
+  bool hasSpecialBaseType() const
+  { return !BaseType_.isNull(); }
+
   clang::QualType baseType() const
   {
-    if (BaseType_.isNull())
-      return referenced().pointee(true).type();
+    if (!hasSpecialBaseType())
+      return base().type();
 
     return BaseType_;
   }
@@ -142,15 +129,17 @@ private:
   unsigned qualifiers() const
   { return type().getQualifiers().getAsOpaqueValue(); }
 
+  clang::QualType requalifyType(clang::QualType const &Type,
+                                unsigned Qualifiers) const
+  { return clang::QualType(Type.getTypePtr(), Qualifiers); }
+
   template<typename ...ARGS>
   WrapperType modified(ARGS &&...args) const
   {
     WrapperType Modified(std::forward<ARGS>(args)...);
 
-    if (!BaseType_.isNull()) {
-      Modified.BaseType_ = clang::QualType(BaseType_.getTypePtr(),
-                                           Modified.qualifiers());
-    }
+    if (hasSpecialBaseType())
+      Modified.BaseType_ = requalifyType(baseType(), Modified.qualifiers());
 
     return Modified;
   }
