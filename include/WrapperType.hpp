@@ -23,16 +23,16 @@ public:
   : Type_(Type.getDesugaredType(CompilerState()->getASTContext()))
   {}
 
-  explicit WrapperType(clang::Type const *Type, unsigned Qualifiers = 0u)
-  : WrapperType(clang::QualType(Type, Qualifiers))
-  {}
-
-  explicit WrapperType(std::string const &Which = "void")
-  : WrapperType(FundamentalTypes().get(Which))
+  explicit WrapperType(clang::Type const *Type)
+  : WrapperType(clang::QualType(Type, 0u))
   {}
 
   explicit WrapperType(clang::TypeDecl const *Decl)
   : WrapperType(Decl->getTypeForDecl())
+  {}
+
+  explicit WrapperType(std::string const &Which = "void")
+  : WrapperType(FundamentalTypes().get(Which))
   {}
 
   bool operator==(WrapperType const &Wt) const
@@ -58,7 +58,7 @@ public:
   bool isIntegral() const;
 
   bool isIntegralUnderlyingEnum() const
-  { return isIntegral() && EnumBaseType_; }
+  { return isIntegral() && base().isEnum(); }
 
   bool isFloating() const
   { return typePtr()->isFloatingType(); }
@@ -100,12 +100,6 @@ public:
 
   WrapperType pointee(bool recursive = false) const;
 
-  WrapperType qualified(unsigned Qualifiers) const
-  { return WrapperType(typePtr(), Qualifiers); }
-
-  WrapperType unqualified() const
-  { return modified(typePtr()); }
-
   WrapperType withConst() const
   { return modified(type().withConst()); }
 
@@ -131,23 +125,19 @@ private:
   clang::QualType const &type() const
   { return Type_; }
 
-  clang::QualType baseType() const
-  { return base().type(); }
-
-  std::optional<clang::QualType> enumBaseType() const
-  {
-    auto Base(base());
-
-    if (Base.isEnum()) {
-      auto const *EnumBaseTypePtr = Base.typePtr()->getAs<clang::EnumType>();
-      return clang::QualType(EnumBaseTypePtr, qualifiers());
-    }
-
-    return std::nullopt;
-  }
-
   clang::Type const *typePtr() const
   { return type().getTypePtr(); }
+
+  clang::QualType baseType() const
+  {
+    if (BaseType_.isNull())
+      return referenced().pointee(true).type();
+
+    return BaseType_;
+  }
+
+  clang::Type const *baseTypePtr() const
+  { return baseType().getTypePtr(); }
 
   unsigned qualifiers() const
   { return type().getQualifiers().getAsOpaqueValue(); }
@@ -156,13 +146,16 @@ private:
   WrapperType modified(ARGS &&...args) const
   {
     WrapperType Modified(std::forward<ARGS>(args)...);
-    Modified.EnumBaseType_ = EnumBaseType_;
+
+    if (!BaseType_.isNull()) {
+      Modified.BaseType_ = clang::QualType(BaseType_.getTypePtr(),
+                                           Modified.qualifiers());
+    }
 
     return Modified;
   }
 
-  clang::QualType Type_;
-  std::optional<clang::QualType> EnumBaseType_;
+  clang::QualType Type_, BaseType_;
 };
 
 } // namespace cppbind

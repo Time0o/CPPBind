@@ -60,32 +60,34 @@ WrapperType::pointee(bool recursive) const
 WrapperType
 WrapperType::withEnum() const
 {
-  assert(EnumBaseType_);
+  auto Base(base());
 
-  WrapperType EnumBaseType(*EnumBaseType_);
+  assert(Base.isEnum());
 
-  return changeBase(EnumBaseType);
+  return modified(changeBase(Base));
 }
 
 WrapperType
 WrapperType::withoutEnum() const
 {
-  auto EnumBaseType(enumBaseType());
+  auto Base(base());
 
-  if (!EnumBaseType)
+  if (!Base.isEnum())
     return *this;
 
-  auto const *EnumBaseTypePtr = (*EnumBaseType)->getAs<clang::EnumType>();
+  auto const *EnumType = Base.typePtr()->getAs<clang::EnumType>();
 
-  WrapperType UnderlyingType(EnumBaseTypePtr->getDecl()->getIntegerType());
-  UnderlyingType.EnumBaseType_ = EnumBaseType;
+  WrapperType UnderlyingType(EnumType->getDecl()->getIntegerType());
 
-  return changeBase(UnderlyingType);
+  WrapperType NewType(changeBase(UnderlyingType));
+  NewType.BaseType_ = baseType();
+
+  return NewType;
 }
 
 WrapperType
 WrapperType::base() const
-{ return modified(referenced().pointee(true)); }
+{ return WrapperType(baseType()); }
 
 WrapperType
 WrapperType::changeBase(WrapperType const &NewBase) const
@@ -99,42 +101,40 @@ WrapperType::changeBase(WrapperType const &NewBase) const
 
   std::stack<Indirection> Indirections;
 
-  WrapperType Base(*this);
+  WrapperType NewType(*this);
 
-  if (Base.isLValueReference()) {
+  if (NewType.isLValueReference()) {
     Indirections.push(LVALUE_REFERENCE);
-    Base = Base.referenced();
-  } else if (Base.isRValueReference()) {
+    NewType = NewType.referenced();
+  } else if (NewType.isRValueReference()) {
     Indirections.push(RVALUE_REFERENCE);
-    Base = Base.referenced();
+    NewType = NewType.referenced();
   }
 
-  while (Base.isPointer()) {
+  while (NewType.isPointer()) {
     Indirections.push(POINTER);
-    Base = Base.pointee();
+    NewType = NewType.pointee();
   }
 
-  Base = NewBase;
+  NewType = NewBase;
 
   while (!Indirections.empty()) {
     switch (Indirections.top()) {
     case POINTER:
-      Base = Base.pointerTo();
+      NewType = NewType.pointerTo();
       break;
     case LVALUE_REFERENCE:
-      Base = Base.lvalueReferenceTo();
+      NewType = NewType.lvalueReferenceTo();
       break;
     case RVALUE_REFERENCE:
-      Base = Base.rvalueReferenceTo();
+      NewType = NewType.rvalueReferenceTo();
       break;
     }
 
     Indirections.pop();
   }
 
-  Base.EnumBaseType_ = NewBase.EnumBaseType_;
-
-  return Base;
+  return NewType;
 }
 
 std::string
@@ -149,7 +149,7 @@ std::string
 WrapperType::format(Identifier::Case Case, Identifier::Quals Quals) const
 {
   auto Str(str());
-  auto StrBase(base().unqualified().str(true));
+  auto StrBase(WrapperType(baseTypePtr()).str(true));
 
   string::replace(Str, StrBase, Identifier(StrBase).format(Case, Quals));
 
