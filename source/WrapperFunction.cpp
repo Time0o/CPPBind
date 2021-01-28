@@ -79,6 +79,7 @@ std::string WrapperParameter::DefaultArgument::str() const
 WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
 : Name_(determineName(Decl)),
   NameOverloaded_(Name_),
+  SelfType_("void"),
   ReturnType_(Decl->getReturnType()),
   Params_(determineParams(Decl))
 { assert(!Decl->isTemplateInstantiation()); } // XXX

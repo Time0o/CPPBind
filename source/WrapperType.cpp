@@ -16,6 +16,18 @@ WrapperType::WrapperType(clang::QualType const &Type)
 : Type_(Type.getDesugaredType(CompilerState()->getASTContext()))
 {}
 
+WrapperType::WrapperType(clang::Type const *Type)
+: WrapperType(clang::QualType(Type, 0u))
+{}
+
+WrapperType::WrapperType(std::string const &TypeName)
+: WrapperType(FundamentalTypes().get(TypeName))
+{}
+
+WrapperType::WrapperType(clang::TypeDecl const *Decl)
+: WrapperType(Decl->getTypeForDecl())
+{}
+
 bool
 WrapperType::isFundamental(char const *Which) const
 {

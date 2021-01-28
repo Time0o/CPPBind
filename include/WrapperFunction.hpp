@@ -127,12 +127,11 @@ class WrapperFunction
   friend WrapperFunctionBuilder;
 
 public:
-  // TODO: private...
-  WrapperFunction(Identifier const &Name,
-                  WrapperType const &SelfType = WrapperType())
+  WrapperFunction(Identifier const &Name)
   : Name_(Name),
     NameOverloaded_(Name),
-    SelfType_(SelfType)
+    SelfType_("void"),
+    ReturnType_("void")
   {}
 
   explicit WrapperFunction(clang::FunctionDecl const *Decl);
