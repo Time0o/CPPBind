@@ -36,7 +36,7 @@ WrapperType::WrapperType(clang::TypeDecl const *Decl,
 bool
 WrapperType::isFundamental(char const *Which) const
 {
-  if (!typePtr()->isFundamentalType())
+  if (!type()->isFundamentalType())
     return false;
 
   if (!Which)
@@ -46,9 +46,25 @@ WrapperType::isFundamental(char const *Which) const
 }
 
 bool
+WrapperType::isVoid() const
+{ return type()->isVoidType(); }
+
+bool
+WrapperType::isBoolean() const
+{ return isFundamental("bool"); }
+
+bool
+WrapperType::isEnum() const
+{ return type()->isEnumeralType(); }
+
+bool
+WrapperType::isScopedEnum() const
+{ return type()->isScopedEnumeralType(); }
+
+bool
 WrapperType::isIntegral() const
 {
-  if (!typePtr()->isIntegralType(CompilerState()->getASTContext()))
+  if (!type()->isIntegralType(CompilerState()->getASTContext()))
     return false;
 
   return !isBoolean() && !isScopedEnum();
@@ -71,15 +87,47 @@ WrapperType::isIntegralUnderlyingScopedEnum() const
 }
 
 bool
+WrapperType::isFloating() const
+{ return type()->isFloatingType(); }
+
+bool
+WrapperType::isReference() const
+{ return type()->isReferenceType(); }
+
+bool
+WrapperType::isLValueReference() const
+{ return type()->isLValueReferenceType(); }
+
+bool
+WrapperType::isRValueReference() const
+{ return type()->isRValueReferenceType(); }
+
+bool
+WrapperType::isPointer() const
+{ return type()->isPointerType(); }
+
+bool
 WrapperType::isRecord() const
 {
   if (isStruct() || isClass())
     return true;
 
-  assert(!typePtr()->isRecordType()); // XXX
+  assert(!type()->isRecordType()); // XXX
 
   return false;
 }
+
+bool
+WrapperType::isStruct() const
+{ return type()->isStructureType(); }
+
+bool
+WrapperType::isClass() const
+{ return type()->isClassType(); }
+
+bool
+WrapperType::isConst() const
+{ return type().isConstQualified(); }
 
 WrapperType
 WrapperType::lvalueReferenceTo() const
@@ -150,30 +198,34 @@ WrapperType::withEnum() const
     requalifyType(getTag<UnderliesEnumTag>()->EnumBaseType, qualifiers()),
     withoutTag<UnderliesEnumTag>());
 
-  return changeBase(EnumBaseType);
+  WrapperType NewType(*this);
+  NewType.setBase(EnumBaseType);
+  return NewType;
 }
 
 WrapperType
 WrapperType::withoutEnum() const
 {
-  if (!base().isEnum())
+  if (!getBase().isEnum())
     return *this;
 
-  auto const *EnumType = baseTypePtr()->getAs<clang::EnumType>();
+  auto const *EnumType = baseType()->getAs<clang::EnumType>();
 
   WrapperType UnderlyingBaseType(
     EnumType->getDecl()->getIntegerType(),
     withTag<UnderliesEnumTag>(baseType()));
 
-  return changeBase(UnderlyingBaseType);
+  WrapperType NewType(*this);
+  NewType.setBase(UnderlyingBaseType);
+  return NewType;
 }
 
 WrapperType
-WrapperType::base() const
+WrapperType::getBase() const
 { return referenced().pointee(true); }
 
-WrapperType
-WrapperType::changeBase(WrapperType const &NewBase) const
+void
+WrapperType::setBase(WrapperType const &NewBase)
 {
   enum Indirection
   {
@@ -217,7 +269,7 @@ WrapperType::changeBase(WrapperType const &NewBase) const
     Indirections.pop();
   }
 
-  return NewType;
+  *this = NewType;
 }
 
 std::string
@@ -239,5 +291,29 @@ WrapperType::format(bool Compact,
 
   return Str;
 }
+
+clang::QualType const &
+WrapperType::type() const
+{ return Type_; }
+
+clang::Type const *
+WrapperType::typePtr() const
+{ return type().getTypePtr(); }
+
+clang::QualType
+WrapperType::baseType() const
+{ return getBase().type(); }
+
+clang::Type const *
+WrapperType::baseTypePtr() const
+{ return baseType().getTypePtr(); }
+
+unsigned
+WrapperType::qualifiers() const
+{ return type().getQualifiers().getAsOpaqueValue(); }
+
+clang::QualType
+WrapperType::requalifyType(clang::QualType const &Type, unsigned Qualifiers)
+{ return clang::QualType(Type.getTypePtr(), Qualifiers); }
 
 } // namespace cppbind

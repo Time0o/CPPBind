@@ -107,6 +107,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
          "compact"_a = false,
          "case"_a = Identifier::ORIG_CASE,
          "quals"_a = Identifier::KEEP_QUALS)
+    .def_property("base", &WrapperType::getBase, &WrapperType::setBase)
     .def("is_const", &WrapperType::isConst)
     .def("is_fundamental", &WrapperType::isFundamental, "which"_a = nullptr)
     .def("is_void", &WrapperType::isVoid)
@@ -134,8 +135,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("with_const", &WrapperType::withConst)
     .def("without_const", &WrapperType::withoutConst)
     .def("with_enum", &WrapperType::withEnum)
-    .def("without_enum", &WrapperType::withoutEnum)
-    .def_property("base", &WrapperType::base, &WrapperType::changeBase);
+    .def("without_enum", &WrapperType::withoutEnum);
 
   py::class_<WrapperVariable>(m, "Variable")
     .def(py::init<Identifier, WrapperType>(), "name"_a, "type"_a)

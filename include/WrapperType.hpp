@@ -71,48 +71,22 @@ public:
   { return !(*this == Wt); }
 
   bool isFundamental(char const *Which = nullptr) const;
-
-  bool isVoid() const
-  { return typePtr()->isVoidType(); }
-
-  bool isBoolean() const
-  { return isFundamental("bool"); }
-
-  bool isEnum() const
-  { return typePtr()->isEnumeralType(); }
-
-  bool isScopedEnum() const
-  { return typePtr()->isScopedEnumeralType(); }
-
+  bool isVoid() const;
+  bool isBoolean() const;
+  bool isEnum() const;
+  bool isScopedEnum() const;
   bool isIntegral() const;
   bool isIntegralUnderlyingEnum() const;
   bool isIntegralUnderlyingScopedEnum() const;
-
-  bool isFloating() const
-  { return typePtr()->isFloatingType(); }
-
-  bool isReference() const
-  { return typePtr()->isReferenceType(); }
-
-  bool isLValueReference() const
-  { return typePtr()->isLValueReferenceType(); }
-
-  bool isRValueReference() const
-  { return typePtr()->isRValueReferenceType(); }
-
-  bool isPointer() const
-  { return typePtr()->isPointerType(); }
-
-  bool isClass() const
-  { return typePtr()->isClassType(); }
-
+  bool isFloating() const;
+  bool isReference() const;
+  bool isLValueReference() const;
+  bool isRValueReference() const;
+  bool isPointer() const;
   bool isRecord() const;
-
-  bool isStruct() const
-  { return typePtr()->isStructureType(); }
-
-  bool isConst() const
-  { return type().isConstQualified(); }
+  bool isStruct() const;
+  bool isClass() const;
+  bool isConst() const;
 
   WrapperType lvalueReferenceTo() const;
   WrapperType rvalueReferenceTo() const;
@@ -130,8 +104,8 @@ public:
   WrapperType withEnum() const;
   WrapperType withoutEnum() const;
 
-  WrapperType base() const;
-  WrapperType changeBase(WrapperType const &NewBase) const;
+  WrapperType getBase() const;
+  void setBase(WrapperType const &NewBase);
 
   std::string str() const;
 
@@ -145,24 +119,13 @@ private:
   WrapperType(std::string const &TypeName, TagSet const &Tags);
   WrapperType(clang::TypeDecl const *Decl, TagSet const &Tags);
 
-  clang::QualType const &type() const
-  { return Type_; }
+  clang::QualType const &type() const;
+  clang::Type const *typePtr() const;
+  clang::QualType baseType() const;
+  clang::Type const *baseTypePtr() const;
 
-  clang::Type const *typePtr() const
-  { return type().getTypePtr(); }
-
-  clang::QualType baseType() const
-  { return base().type(); }
-
-  clang::Type const *baseTypePtr() const
-  { return baseType().getTypePtr(); }
-
-  unsigned qualifiers() const
-  { return type().getQualifiers().getAsOpaqueValue(); }
-
-  clang::QualType requalifyType(clang::QualType const &Type,
-                                unsigned Qualifiers) const
-  { return clang::QualType(Type.getTypePtr(), Qualifiers); }
+  unsigned qualifiers() const;
+  static clang::QualType requalifyType(clang::QualType const &Type, unsigned Qualifiers);
 
   template<typename TAG>
   bool hasTag() const
