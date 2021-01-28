@@ -12,19 +12,24 @@
 namespace cppbind
 {
 
-WrapperType::WrapperType(clang::QualType const &Type)
-: Type_(Type.getDesugaredType(CompilerState()->getASTContext()))
+WrapperType::WrapperType(clang::QualType const &Type,
+                         WrapperType::TagSet const &Tags)
+: Type_(Type.getDesugaredType(CompilerState()->getASTContext())),
+  Tags_(Tags)
 {}
 
-WrapperType::WrapperType(clang::Type const *Type)
+WrapperType::WrapperType(clang::Type const *Type,
+                         WrapperType::TagSet const &Tags)
 : WrapperType(clang::QualType(Type, 0u))
 {}
 
-WrapperType::WrapperType(std::string const &TypeName)
+WrapperType::WrapperType(std::string const &TypeName,
+                         WrapperType::TagSet const &Tags)
 : WrapperType(FundamentalTypes().get(TypeName))
 {}
 
-WrapperType::WrapperType(clang::TypeDecl const *Decl)
+WrapperType::WrapperType(clang::TypeDecl const *Decl,
+                         WrapperType::TagSet const &Tags)
 : WrapperType(Decl->getTypeForDecl())
 {}
 
@@ -50,6 +55,22 @@ WrapperType::isIntegral() const
 }
 
 bool
+WrapperType::isIntegralUnderlyingEnum() const
+{
+  return isIntegral() &&
+         hasTag<UnderliesEnumTag>() &&
+         getTag<UnderliesEnumTag>()->EnumBaseType->isEnumeralType();
+}
+
+bool
+WrapperType::isIntegralUnderlyingScopedEnum() const
+{
+  return isIntegral() &&
+         hasTag<UnderliesEnumTag>() &&
+         getTag<UnderliesEnumTag>()->EnumBaseType->isScopedEnumeralType();
+}
+
+bool
 WrapperType::isRecord() const
 {
   if (isStruct() || isClass())
@@ -62,44 +83,53 @@ WrapperType::isRecord() const
 
 WrapperType
 WrapperType::lvalueReferenceTo() const
-{ return modified(CompilerState()->getASTContext().getLValueReferenceType(type())); }
+{
+  return WrapperType(
+    CompilerState()->getASTContext().getLValueReferenceType(type()), Tags_);
+}
 
 WrapperType
 WrapperType::rvalueReferenceTo() const
-{ return modified(CompilerState()->getASTContext().getRValueReferenceType(type())); }
+{
+  return WrapperType(
+    CompilerState()->getASTContext().getRValueReferenceType(type()), Tags_);
+}
 
 WrapperType
 WrapperType::referenced() const
-{ return modified(type().getNonReferenceType()); }
+{ return WrapperType(type().getNonReferenceType(), Tags_); }
 
 WrapperType
 WrapperType::pointerTo() const
-{ return modified(CompilerState()->getASTContext().getPointerType(type())); }
+{
+  return WrapperType(
+    CompilerState()->getASTContext().getPointerType(type()), Tags_);
+}
 
 WrapperType
 WrapperType::pointee(bool Recursive) const
 {
   if (!Recursive)
-    return modified(type()->getPointeeType());
+    return WrapperType(type()->getPointeeType(), Tags_);
 
   WrapperType Pointee(*this);
   while (Pointee.isPointer())
     Pointee = Pointee.pointee();
 
-  return modified(Pointee);
+  return Pointee;
 }
 
 WrapperType
 WrapperType::qualified(unsigned Qualifiers) const
-{ return modified(requalifyType(type(), Qualifiers)); }
+{ return WrapperType(requalifyType(type(), Qualifiers), Tags_); }
 
 WrapperType
 WrapperType::unqualified() const
-{ return modified(typePtr()); }
+{ return WrapperType(typePtr(), Tags_); }
 
 WrapperType
 WrapperType::withConst() const
-{ return modified(type().withConst()); }
+{ return WrapperType(type().withConst(), Tags_); }
 
 WrapperType
 WrapperType::withoutConst() const
@@ -107,30 +137,35 @@ WrapperType::withoutConst() const
   auto TypeCopy(type());
   TypeCopy.removeLocalConst();
 
-  return modified(TypeCopy);
+  return WrapperType(TypeCopy, Tags_);
 }
 
 WrapperType
 WrapperType::withEnum() const
 {
-  assert(base().isEnum());
+  if (!hasTag<UnderliesEnumTag>())
+    return *this;
 
-  return modified(changeBase(base()));
+  WrapperType EnumBaseType(
+    requalifyType(getTag<UnderliesEnumTag>()->EnumBaseType, qualifiers()),
+    withoutTag<UnderliesEnumTag>());
+
+  return changeBase(EnumBaseType);
 }
 
 WrapperType
 WrapperType::withoutEnum() const
 {
-  assert(base().isEnum());
+  if (!base().isEnum())
+    return *this;
 
   auto const *EnumType = baseTypePtr()->getAs<clang::EnumType>();
 
-  WrapperType UnderlyingType(EnumType->getDecl()->getIntegerType());
+  WrapperType UnderlyingBaseType(
+    EnumType->getDecl()->getIntegerType(),
+    withTag<UnderliesEnumTag>(baseType()));
 
-  WrapperType NewType(changeBase(UnderlyingType));
-  NewType.BaseType_ = baseType();
-
-  return NewType;
+  return changeBase(UnderlyingBaseType);
 }
 
 WrapperType

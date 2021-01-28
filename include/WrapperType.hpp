@@ -1,8 +1,12 @@
 #ifndef GUARD_WRAPPER_TYPE_H
 #define GUARD_WRAPPER_TYPE_H
 
+#include <cassert>
+#include <memory>
 #include <optional>
 #include <string>
+#include <type_traits>
+#include <unordered_map>
 #include <utility>
 
 #include "clang/AST/ASTContext.h"
@@ -17,11 +21,48 @@ namespace cppbind
 
 class WrapperType
 {
+  struct Tag
+  { };
+
+  enum TagType
+  {
+    UNDERLIES_ENUM_TAG
+  };
+
+  struct UnderliesEnumTag : public Tag
+  {
+    static constexpr TagType type = UNDERLIES_ENUM_TAG;
+
+    clang::QualType EnumBaseType;
+  };
+
+  template<typename T>
+  struct ConstructibleTag : public T
+  {
+    template<typename ...Args>
+    ConstructibleTag(Args &&...args)
+    : T{ {}, std::forward<Args>(args)... }
+    {}
+  };
+
+  using TagSet = std::unordered_map<TagType, std::shared_ptr<Tag>>;
+
 public:
-  explicit WrapperType(clang::QualType const &Type);
-  explicit WrapperType(clang::Type const *Type);
-  explicit WrapperType(std::string const &TypeName);
-  explicit WrapperType(clang::TypeDecl const *Decl);
+  explicit WrapperType(clang::QualType const &Type)
+  : WrapperType(Type, {})
+  {}
+
+  explicit WrapperType(clang::Type const *Type)
+  : WrapperType(Type, {})
+  {}
+
+  explicit WrapperType(std::string const &TypeName)
+  : WrapperType(TypeName, {})
+  {}
+
+  explicit WrapperType(clang::TypeDecl const *Decl)
+  : WrapperType(Decl, {})
+  {}
 
   bool operator==(WrapperType const &Wt) const
   { return type() == Wt.type(); }
@@ -44,9 +85,8 @@ public:
   { return typePtr()->isScopedEnumeralType(); }
 
   bool isIntegral() const;
-
-  bool isIntegralUnderlyingEnum() const
-  { return isIntegral() && base().isEnum(); }
+  bool isIntegralUnderlyingEnum() const;
+  bool isIntegralUnderlyingScopedEnum() const;
 
   bool isFloating() const
   { return typePtr()->isFloatingType(); }
@@ -100,22 +140,19 @@ public:
                      Identifier::Quals Quals = Identifier::KEEP_QUALS) const;
 
 private:
+  WrapperType(clang::QualType const &Type, TagSet const &Tags);
+  WrapperType(clang::Type const *Type, TagSet const &Tags);
+  WrapperType(std::string const &TypeName, TagSet const &Tags);
+  WrapperType(clang::TypeDecl const *Decl, TagSet const &Tags);
+
   clang::QualType const &type() const
   { return Type_; }
 
   clang::Type const *typePtr() const
   { return type().getTypePtr(); }
 
-  bool hasSpecialBaseType() const
-  { return !BaseType_.isNull(); }
-
   clang::QualType baseType() const
-  {
-    if (!hasSpecialBaseType())
-      return base().type();
-
-    return BaseType_;
-  }
+  { return base().type(); }
 
   clang::Type const *baseTypePtr() const
   { return baseType().getTypePtr(); }
@@ -127,18 +164,42 @@ private:
                                 unsigned Qualifiers) const
   { return clang::QualType(Type.getTypePtr(), Qualifiers); }
 
-  template<typename ...ARGS>
-  WrapperType modified(ARGS &&...args) const
+  template<typename TAG>
+  bool hasTag() const
+  { return Tags_.find(TAG::type) != Tags_.end(); }
+
+  template<typename TAG>
+  std::shared_ptr<TAG> getTag() const
   {
-    WrapperType Modified(std::forward<ARGS>(args)...);
+    auto It(Tags_.find(TAG::type));
+    assert(It != Tags_.end());
 
-    if (hasSpecialBaseType())
-      Modified.BaseType_ = requalifyType(baseType(), Modified.qualifiers());
+    auto Tag(std::static_pointer_cast<TAG>(It->second));
+    assert(Tag);
 
-    return Modified;
+    return Tag;
   }
 
-  clang::QualType Type_, BaseType_;
+  template<typename TAG, typename ...ARGS>
+  TagSet withTag(ARGS &&...args) const
+  {
+    auto TagsNew(Tags_);
+    TagsNew[TAG::type] =
+      std::make_shared<ConstructibleTag<TAG>>(std::forward<ARGS>(args)...);
+    return TagsNew;
+  }
+
+  template<typename TAG>
+  TagSet withoutTag() const
+  {
+    auto TagsNew(Tags_);
+    TagsNew.erase(TAG::type);
+    return TagsNew;
+  }
+
+  clang::QualType Type_;
+
+  TagSet Tags_;
 };
 
 } // namespace cppbind
