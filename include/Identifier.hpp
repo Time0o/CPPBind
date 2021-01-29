@@ -15,7 +15,7 @@ namespace cppbind
 class Identifier
 {
 public:
-  static constexpr char const *SELF = "self";
+  static constexpr char const *SELF = "__self";
   static constexpr char const *NEW = "new";
   static constexpr char const *DELETE = "delete";
 
