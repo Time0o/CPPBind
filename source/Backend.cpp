@@ -98,7 +98,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("records", &Wrapper::records)
     .def("functions", &Wrapper::functions);
 
-  py::class_<WrapperType>(m, "Type")
+  py::class_<WrapperType>(m, "Type", py::dynamic_attr())
     .def(py::init<std::string>(), "which"_a = "void")
     .def(py::self == py::self)
     .def(py::self != py::self)
@@ -137,17 +137,20 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("with_enum", &WrapperType::withEnum)
     .def("without_enum", &WrapperType::withoutEnum);
 
-  py::class_<WrapperVariable>(m, "Variable")
+  py::class_<WrapperVariable>(m, "Variable", py::dynamic_attr())
     .def(py::init<Identifier, WrapperType>(), "name"_a, "type"_a)
     .def_property_readonly("name", &WrapperVariable::name)
     .def_property_readonly("type", &WrapperVariable::type);
 
-  py::class_<WrapperRecord>(m, "Record")
+  py::class_<WrapperRecord>(m, "Record", py::dynamic_attr())
     .def(py::init<WrapperType>(), "type"_a)
     .def_property_readonly("name", &WrapperRecord::name)
     .def_property_readonly("type", &WrapperRecord::type);
 
-  auto PyWrapperParameter = py::class_<WrapperParameter>(m, "Parameter")
+  py::class_<WrapperParameter> PyWrapperParameter(
+    m, "Parameter", py::dynamic_attr());
+
+  PyWrapperParameter
     .def(py::init<Identifier, WrapperType>(), "name"_a, "type"_a)
     .def_property_readonly("name", &WrapperParameter::name)
     .def_property_readonly("type", &WrapperParameter::type)
@@ -161,13 +164,19 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
             return Self.defaultArgument();
          });
 
-  py::class_<WrapperParameter::DefaultArgument>(PyWrapperParameter, "DefaultArgument")
+  py::class_<WrapperParameter::DefaultArgument> PyDefaultArgument(
+    PyWrapperParameter, "DefaultArgument", py::dynamic_attr());
+
+  PyDefaultArgument
     .def("__str__", &WrapperParameter::DefaultArgument::str)
     .def("is_int", &WrapperParameter::DefaultArgument::isInt)
     .def("is_float", &WrapperParameter::DefaultArgument::isFloat)
     .def("is_true", &WrapperParameter::DefaultArgument::isTrue);
 
-  py::class_<WrapperFunction>(m, "Function")
+  py::class_<WrapperFunction> PyWrapperFunction(
+    m, "Function", py::dynamic_attr());
+
+  PyWrapperFunction
     .def_property_readonly("name", &WrapperFunction::name)
     .def_property_readonly("name_overloaded", &WrapperFunction::nameOverloaded)
     .def_property_readonly("parent_type", &WrapperFunction::parentType)
