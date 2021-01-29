@@ -179,16 +179,6 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_overloaded", &WrapperFunction::isOverloaded)
     .def("parameters", &WrapperFunction::parameters, "required_only"_a = false);
 
-  py::class_<WrapperFunctionBuilder>(m, "FunctionBuilder")
-    .def(py::init<Identifier>(), "name"_a)
-    .def("set_self_type", &WrapperFunctionBuilder::setSelfType, "type"_a)
-    .def("set_return_type", &WrapperFunctionBuilder::setReturnType, "type"_a)
-    .def("add_parameter", &WrapperFunctionBuilder::addParameter, "param"_a)
-    .def("set_is_constructor", &WrapperFunctionBuilder::setIsConstructor)
-    .def("set_is_destructor", &WrapperFunctionBuilder::setIsDestructor)
-    .def("set_is_static", &WrapperFunctionBuilder::setIsStatic)
-    .def("build", &WrapperFunctionBuilder::build);
-
   #define GET_OPT(NAME) [](OptionsRegistry const &Self) \
                         { return Self.get<>(NAME); }
 
