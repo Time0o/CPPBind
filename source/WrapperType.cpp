@@ -281,15 +281,20 @@ WrapperType::format(bool Compact,
                     Identifier::Case Case,
                     Identifier::Quals Quals) const
 {
-  static PrintingPolicy PPCompact = PrintingPolicy::DEFAULT,
-                        PPNonCompact = PrintingPolicy::CURRENT;
+  if (getBase().isRecord()) {
+    PrintingPolicy PPCompact = PrintingPolicy::CURRENT;
+    PrintingPolicy PPNonCompact = PrintingPolicy::NONE;
 
-  auto Str(printQualType(type(), Compact ? PPCompact : PPNonCompact));
-  auto StrBase(printQualType(requalifyType(baseType(), 0u), PPCompact));
+    auto Str(printQualType(type(), Compact ? PPCompact : PPNonCompact));
+    auto StrBase(printQualType(requalifyType(baseType(), 0u), PPCompact));
 
-  string::replace(Str, StrBase, Identifier(StrBase).format(Case, Quals));
+    string::replace(Str, StrBase, Identifier(StrBase).format(Case, Quals));
 
-  return Str;
+    return Str;
+
+  } else {
+    return printQualType(type(), PrintingPolicy::CURRENT);
+  }
 }
 
 clang::QualType const &
