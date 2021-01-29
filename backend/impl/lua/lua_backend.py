@@ -168,8 +168,8 @@ class LuaBackend(Backend):
 
     @staticmethod
     def _function_check_num_parameters(f):
-        num_min = len(f.parameters(required_only=True))
-        num_max = len(f.parameters())
+        num_min = len([p for p in f.parameters if not p.default_argument])
+        num_max = len(f.parameters)
 
         if num_min == num_max:
             return text.code(
@@ -186,7 +186,7 @@ class LuaBackend(Backend):
 
     @staticmethod
     def _function_declare_parameters(f):
-        if len(f.parameters()) == 0:
+        if len(f.parameters) == 0:
             return
 
         declarations = []
@@ -202,25 +202,25 @@ class LuaBackend(Backend):
 
             declaration = f"{t} {p.name}"
 
-            if p.default_argument() is not None:
+            if p.default_argument is not None:
                 if t.is_scoped_enum():
-                    default = f"static_cast<{t}>({p.default_argument()})"
+                    default = f"static_cast<{t}>({p.default_argument})"
                 else:
-                    default = f"{p.default_argument()}"
+                    default = f"{p.default_argument}"
 
                 declaration = f"{declaration} = {default}"
 
             return f"{declaration};"
 
-        return '\n'.join(declare(p) for p in f.parameters())
+        return '\n'.join(declare(p) for p in f.parameters)
 
     @classmethod
     def _function_peek_parameters(cls, f):
-        if len(f.parameters()) == 0:
+        if len(f.parameters) == 0:
             return
 
         return '\n'.join(cls._function_peek_parameter(p, i)
-                         for i, p in enumerate(f.parameters(), start=1))
+                         for i, p in enumerate(f.parameters, start=1))
 
     @classmethod
     def _function_peek_parameter(cls, p, i):
@@ -244,7 +244,7 @@ class LuaBackend(Backend):
         if cast_type is not None:
             to_type = f"{cast_type}({to_type})"
 
-        if p.default_argument() is not None:
+        if p.default_argument is not None:
             # optional
             peek = text.code(
                 f"""
@@ -270,7 +270,7 @@ class LuaBackend(Backend):
             else:
                 return f"{p.name}"
 
-        forward_parameters = ', '.join(forward_parameter(p) for p in f.parameters())
+        forward_parameters = ', '.join(forward_parameter(p) for p in f.parameters)
 
         forward = f"{f.name}({forward_parameters})"
 
@@ -304,7 +304,7 @@ class LuaBackend(Backend):
     def _function_non_const_lvalue_reference_parameters(f):
         ref_parameters = []
 
-        for p in f.parameters():
+        for p in f.parameters:
             t = p.type
 
             if not t.is_lvalue_reference():

@@ -17,19 +17,19 @@ class Wrapper
 {
 public:
   explicit Wrapper(std::shared_ptr<IdentifierIndex> IdentifierIndex,
-                   std::string const &WrappedFile)
+                   std::string const &InputFile)
   : II_(IdentifierIndex),
-    WrappedFile_(WrappedFile)
+    InputFile_(InputFile)
   {}
 
   template<typename ...ARGS>
   void addWrapperVariable(ARGS&&... args)
   {
-    WrapperVariable Wc(std::forward<ARGS>(args)...);
+    WrapperVariable Wv(std::forward<ARGS>(args)...);
 
-    II_->add(Wc.name(), IdentifierIndex::CONST);
+    II_->add(Wv.getName(), IdentifierIndex::CONST);
 
-    Variables_.push_back(Wc);
+    Variables_.push_back(Wv);
   }
 
   template<typename ...ARGS>
@@ -43,8 +43,6 @@ public:
     if (Wr.needsImplicitDestructor())
       addWrapperFunction(Wr.implicitDestructor());
 
-    II_->add(Wr.name(), IdentifierIndex::TYPE);
-
     Records_.push_back(Wr);
   }
 
@@ -53,10 +51,10 @@ public:
   {
     WrapperFunction Wf(std::forward<ARGS>(args)...);
 
-    if (II_->has(Wf.name()))
-      II_->pushOverload(Wf.name());
+    if (II_->has(Wf.getName()))
+      II_->pushOverload(Wf.getName());
     else
-      II_->add(Wf.name(), IdentifierIndex::FUNC);
+      II_->add(Wf.getName(), IdentifierIndex::FUNC);
 
     Functions_.push_back(Wf);
   }
@@ -64,11 +62,11 @@ public:
   void overload()
   {
     for (auto &Wf : Functions_)
-      Wf.overload(II_);
+      Wf.Overload_ = II_->popOverload(Wf.getName());
   }
 
-  std::string wrappedFile() const
-  { return WrappedFile_; }
+  std::string inputFile() const
+  { return InputFile_; }
 
   std::vector<WrapperVariable> constants() const
   { return Variables_; }
@@ -82,7 +80,7 @@ public:
 private:
   std::shared_ptr<IdentifierIndex> II_;
 
-  std::string WrappedFile_;
+  std::string InputFile_;
 
   std::vector<WrapperVariable> Variables_;
   std::vector<WrapperRecord> Records_;

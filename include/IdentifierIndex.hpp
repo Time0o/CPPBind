@@ -17,7 +17,6 @@ public:
   {
     ANY,
     CONST,
-    TYPE,
     FUNC
   };
 
@@ -34,9 +33,6 @@ private:
 
   struct ConstProps : public Props
   { ConstProps() : Props(CONST) {} };
-
-  struct TypeProps : public Props
-  { TypeProps() : Props(TYPE) {} };
 
   struct FuncProps : public Props
   {
@@ -59,9 +55,6 @@ public:
         break;
       case CONST:
         P = std::make_shared<ConstProps>();
-        break;
-      case TYPE:
-        P = std::make_shared<TypeProps>();
         break;
       case FUNC:
         P = std::make_shared<FuncProps>();
@@ -118,8 +111,6 @@ private:
 #ifndef NDEBUG
     if constexpr (std::is_same_v<T, ConstProps>)
       assert(Props->Type = CONST);
-    else if constexpr (std::is_same_v<T, TypeProps>)
-      assert(Props->Type = TYPE);
     else if constexpr (std::is_same_v<T, FuncProps>)
       assert(Props->Type = FUNC);
 #endif

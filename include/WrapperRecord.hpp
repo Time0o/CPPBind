@@ -14,6 +14,8 @@ namespace cppbind
 
 class WrapperRecord
 {
+  friend class Wrapper;
+
 public:
   explicit WrapperRecord(WrapperType const &Type)
   : Decl_(nullptr),
@@ -25,6 +27,21 @@ public:
     Type_(Decl_->getTypeForDecl())
   {}
 
+  WrapperFunction implicitDestructor() const
+  {
+    return WrapperFunctionBuilder(qualifiedMemberName(Identifier::DELETE))
+           .setParentType(Type_)
+           .setIsDestructor()
+           .build();
+  }
+
+  WrapperType getType() const
+  { return Type_; }
+
+  void setType(WrapperType const &Type)
+  { Type_ = Type; }
+
+private:
   bool needsImplicitDefaultConstructor() const
   { return Decl_ && Decl_->needsImplicitDefaultConstructor(); }
 
@@ -39,21 +56,6 @@ public:
   bool needsImplicitDestructor() const
   { return Decl_ && Decl_->needsImplicitDestructor(); }
 
-  WrapperFunction implicitDestructor() const
-  {
-    return WrapperFunctionBuilder(qualifiedMemberName(Identifier::DELETE))
-           .setParentType(Type_)
-           .setIsDestructor()
-           .build();
-  }
-
-  Identifier name() const
-  { return Identifier(Type_.format(true)); }
-
-  WrapperType type() const
-  { return Type_; }
-
-private:
   Identifier qualifiedMemberName(std::string const &Name) const
   { return Identifier(Name).qualified(Identifier(Decl_)); }
 

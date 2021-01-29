@@ -3,6 +3,7 @@
 #include <cassert>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "clang/AST/APValue.h"
 #include "clang/AST/Decl.h"
@@ -78,10 +79,10 @@ std::string WrapperDefaultArgument::str() const
 
 WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
 : Name_(determineName(Decl)),
-  NameOverloaded_(Name_),
+  NameOverloaded_(determineNameOverloaded()),
   ParentType_("void"),
   ReturnType_(Decl->getReturnType()),
-  Params_(determineParams(Decl))
+  Parameters(determineParams(Decl))
 { assert(!Decl->isTemplateInstantiation()); } // XXX
 
 WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
@@ -89,35 +90,14 @@ WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
   IsDestructor_(llvm::isa<clang::CXXDestructorDecl>(Decl)),
   IsStatic_(Decl->isStatic()),
   Name_(determineName(Decl)),
-  NameOverloaded_(Name_),
+  NameOverloaded_(determineNameOverloaded()),
   ParentType_(WrapperType(Decl->getThisType()).pointee()),
   ReturnType_(Decl->getReturnType()),
-  Params_(determineParams(Decl))
+  Parameters(determineParams(Decl))
 { assert(!Decl->isTemplateInstantiation()); } // XXX
 
-void WrapperFunction::overload(std::shared_ptr<IdentifierIndex> II)
-{
-  if (Overload_ == 0u) {
-    if ((Overload_ = II->popOverload(name())) == 0u)
-      return;
-  }
+Identifier WrapperFunction::determineName(clang::FunctionDecl const *Decl) const
 
-  auto Postfix = OPT("wrapper-func-overload-postfix");
-
-  auto numReplaced = string::replaceAll(Postfix, "%o", std::to_string(Overload_));
-#ifdef NDEBUG
-  (void)numReplaced;
-#else
-  assert(numReplaced > 0u);
-#endif
-
-  NameOverloaded_ = Identifier(name().str() + Postfix);
-
-  II->add(NameOverloaded_, IdentifierIndex::FUNC);
-}
-
-Identifier WrapperFunction::determineName(
-  clang::FunctionDecl const *Decl) const
 {
   if (isConstructor()) {
     auto const *ConstructorDecl =
@@ -141,6 +121,23 @@ Identifier WrapperFunction::determineName(
   }
 
   return Identifier(Decl);
+}
+
+Identifier WrapperFunction::determineNameOverloaded() const
+{
+  if (Overload_ == 0u)
+    return Name_;
+
+  auto Postfix = OPT("wrapper-func-overload-postfix");
+
+  auto numReplaced = string::replaceAll(Postfix, "%o", std::to_string(Overload_));
+#ifdef NDEBUG
+  (void)numReplaced;
+#else
+  assert(numReplaced > 0u);
+#endif
+
+  return Identifier(Name_.str() + Postfix);
 }
 
 std::vector<WrapperParameter> WrapperFunction::determineParams(

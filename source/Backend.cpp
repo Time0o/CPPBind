@@ -8,6 +8,7 @@
 #include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
+#include "pybind11/stl_bind.h"
 
 #include "Backend.hpp"
 #include "Error.hpp"
@@ -58,12 +59,30 @@ void Backend::run(std::shared_ptr<Wrapper> Wrapper)
 
 } // namespace cppbind
 
+using namespace cppbind;
+
+using Type = WrapperType;
+using Variable = WrapperVariable;
+using Record = WrapperRecord;
+using Function = WrapperFunction;
+using Parameter = WrapperParameter;
+using DefaultArgument = WrapperDefaultArgument;
+
+PYBIND11_MAKE_OPAQUE(std::vector<WrapperVariable>);
+PYBIND11_MAKE_OPAQUE(std::vector<WrapperRecord>);
+PYBIND11_MAKE_OPAQUE(std::vector<WrapperFunction>);
+PYBIND11_MAKE_OPAQUE(std::vector<WrapperParameter>);
+
 PYBIND11_EMBEDDED_MODULE(cppbind, m)
 {
-  using namespace cppbind;
   using namespace py::literals;
 
-  py::class_<Identifier> PyIdentifier(m, "Identifier");
+  py::bind_vector<std::vector<WrapperVariable>>(m, "VectorVariables");
+  py::bind_vector<std::vector<WrapperRecord>>(m, "VectorRecords");
+  py::bind_vector<std::vector<WrapperFunction>>(m, "VectorFunctions");
+  py::bind_vector<std::vector<WrapperParameter>>(m, "VectorParameters");
+
+  auto PyIdentifier = py::class_<Identifier>(m, "Identifier");
 
   py::enum_<Identifier::Case>(PyIdentifier, "Case")
     .value("ORIG_CASE", Identifier::ORIG_CASE)
@@ -85,7 +104,14 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def_readonly_static("NEW", &Identifier::NEW)
     .def_readonly_static("DELETE", &Identifier::DELETE)
     .def(py::init<std::string>())
+    .def(py::self == py::self)
+    .def(py::self != py::self)
+    .def(py::self < py::self)
+    .def(py::self > py::self)
+    .def(py::self <= py::self)
+    .def(py::self >= py::self)
     .def("__str__", &Identifier::str)
+    .def("str", &Identifier::str)
     .def("format", &Identifier::format,
          "case"_a = Identifier::ORIG_CASE,
          "quals"_a = Identifier::KEEP_QUALS);
@@ -93,16 +119,17 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
   py::implicitly_convertible<std::string, Identifier>();
 
   py::class_<Wrapper, std::shared_ptr<Wrapper>>(m, "Wrapper")
-    .def("wrapped_file", &Wrapper::wrappedFile)
+    .def("input_file", &Wrapper::inputFile)
     .def("variables", &Wrapper::constants)
     .def("records", &Wrapper::records)
     .def("functions", &Wrapper::functions);
 
-  py::class_<WrapperType>(m, "Type", py::dynamic_attr())
+  py::class_<Type>(m, "Type", py::dynamic_attr())
     .def(py::init<std::string>(), "which"_a = "void")
     .def(py::self == py::self)
     .def(py::self != py::self)
     .def("__str__", &WrapperType::str)
+    .def("str", &WrapperType::str)
     .def("format", &WrapperType::format,
          "compact"_a = false,
          "case"_a = Identifier::ORIG_CASE,
@@ -137,56 +164,53 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("with_enum", &WrapperType::withEnum)
     .def("without_enum", &WrapperType::withoutEnum);
 
-  py::class_<WrapperVariable>(m, "Variable", py::dynamic_attr())
+  py::class_<Variable>(m, "Variable", py::dynamic_attr())
     .def(py::init<Identifier, WrapperType>(), "name"_a, "type"_a)
-    .def_property_readonly("name", &WrapperVariable::name)
-    .def_property_readonly("type", &WrapperVariable::type);
+    .def_property("name", &WrapperVariable::getName,
+                          &WrapperVariable::setName)
+    .def_property("type", &WrapperVariable::getType,
+                          &WrapperVariable::setType);
 
-  py::class_<WrapperRecord>(m, "Record", py::dynamic_attr())
+  py::class_<Record>(m, "Record", py::dynamic_attr())
     .def(py::init<WrapperType>(), "type"_a)
-    .def_property_readonly("name", &WrapperRecord::name)
-    .def_property_readonly("type", &WrapperRecord::type);
+    .def_property("type", &WrapperRecord::getType,
+                          &WrapperRecord::setType);
 
-  py::class_<WrapperParameter> PyWrapperParameter(
-    m, "Parameter", py::dynamic_attr());
+  py::class_<Function>(m, "Function", py::dynamic_attr())
+    // XXX constructor/builder
+    .def_property("name", &WrapperFunction::getName,
+                          &WrapperFunction::setName)
+    .def_property("name_overloaded", &WrapperFunction::getNameOverloaded,
+                                     &WrapperFunction::setNameOverloaded)
+    .def_property("parent_type", &WrapperFunction::getParentType,
+                                 &WrapperFunction::setParentType)
+    .def_property("return_type", &WrapperFunction::getReturnType,
+                                 &WrapperFunction::setReturnType)
+    .def_readwrite("parameters", &WrapperFunction::Parameters)
+    .def("is_member", &WrapperFunction::isMember)
+    .def("is_instance", &WrapperFunction::isInstance)
+    .def("is_static", &WrapperFunction::isStatic)
+    .def("is_constructor", &WrapperFunction::isConstructor)
+    .def("is_destructor", &WrapperFunction::isDestructor)
+    .def("is_overloaded", &WrapperFunction::isOverloaded);
 
-  PyWrapperParameter
+  py::class_<Parameter>(m, "Parameter")
+    // XXX pass default argument
     .def(py::init<Identifier, WrapperType>(), "name"_a, "type"_a)
-    .def_property_readonly("name", &WrapperParameter::name)
-    .def_property_readonly("type", &WrapperParameter::type)
-    .def("default_argument",
-         [](WrapperParameter const &Self)
-           -> std::optional<WrapperDefaultArgument>
-         {
-            if (!Self.hasDefaultArgument())
-              return std::nullopt;
+    .def_property("name", &WrapperParameter::getName,
+                          &WrapperParameter::setName)
+    .def_property("type", &WrapperParameter::getType,
+                          &WrapperParameter::setType)
+    .def_property("default_argument", &WrapperParameter::getDefaultArgument,
+                                      &WrapperParameter::setDefaultArgument);
 
-            return Self.defaultArgument();
-         });
-
-  py::class_<WrapperDefaultArgument> PyDefaultArgument(
-    m, "DefaultArgument", py::dynamic_attr());
-
-  PyDefaultArgument
+  py::class_<DefaultArgument>(m, "DefaultArgument")
+    // XXX constructor
     .def("__str__", &WrapperDefaultArgument::str)
+    .def("str", &WrapperDefaultArgument::str)
     .def("is_int", &WrapperDefaultArgument::isInt)
     .def("is_float", &WrapperDefaultArgument::isFloat)
     .def("is_true", &WrapperDefaultArgument::isTrue);
-
-  py::class_<WrapperFunction> PyWrapperFunction(
-    m, "Function", py::dynamic_attr());
-
-  PyWrapperFunction
-    .def_property_readonly("name", &WrapperFunction::name)
-    .def_property_readonly("name_overloaded", &WrapperFunction::nameOverloaded)
-    .def_property_readonly("parent_type", &WrapperFunction::parentType)
-    .def_property_readonly("return_type", &WrapperFunction::returnType)
-    .def("is_member", &WrapperFunction::isMember)
-    .def("is_constructor", &WrapperFunction::isConstructor)
-    .def("is_destructor", &WrapperFunction::isDestructor)
-    .def("is_static", &WrapperFunction::isStatic)
-    .def("is_overloaded", &WrapperFunction::isOverloaded)
-    .def("parameters", &WrapperFunction::parameters, "required_only"_a = false);
 
   #define GET_OPT(NAME) [](OptionsRegistry const &Self) \
                         { return Self.get<>(NAME); }

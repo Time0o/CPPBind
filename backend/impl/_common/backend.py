@@ -15,7 +15,7 @@ class BackendMeta(abc.ABCMeta):
 
 class Backend(metaclass=BackendMeta):
     def __init__(self, wrapper, options):
-        self._input_file = file.Path(wrapper.wrapped_file())
+        self._input_file = file.Path(wrapper.input_file())
         self._output_files = []
 
         self._variables = wrapper.variables()

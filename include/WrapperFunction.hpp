@@ -99,20 +99,23 @@ public:
                      Decl->getDefaultArg())
   {}
 
-  Identifier name() const
+  Identifier getName() const
   { return Name_; }
 
-  WrapperType type() const
+  void setName(Identifier const &Name)
+  { Name_ = Name; }
+
+  WrapperType getType() const
   { return Type_; }
 
-  bool hasDefaultArgument() const
-  { return static_cast<bool>(DefaultArgument_); }
+  void setType(WrapperType const &Type)
+  { Type_ = Type; }
 
-  WrapperDefaultArgument defaultArgument() const
-  {
-    assert(hasDefaultArgument());
-    return *DefaultArgument_;
-  }
+  std::optional<WrapperDefaultArgument> getDefaultArgument() const
+  { return DefaultArgument_; }
+
+  void setDefaultArgument(WrapperDefaultArgument const &DefaultArgument)
+  { DefaultArgument_ = DefaultArgument; }
 
 private:
   Identifier Name_;
@@ -124,7 +127,8 @@ class WrapperFunctionBuilder;
 
 class WrapperFunction
 {
-  friend WrapperFunctionBuilder;
+  friend class Wrapper;
+  friend class WrapperFunctionBuilder;
 
 public:
   WrapperFunction(Identifier const &Name)
@@ -138,10 +142,42 @@ public:
 
   explicit WrapperFunction(clang::CXXMethodDecl const *Decl);
 
-  void overload(std::shared_ptr<IdentifierIndex> II);
+  Identifier getName() const
+  { return Name_; }
+
+  void setName(Identifier const &Name)
+  {
+    Name_ = Name;
+
+    setNameOverloaded(determineNameOverloaded());
+  }
+
+  Identifier getNameOverloaded()
+  { return NameOverloaded_; }
+
+  void setNameOverloaded(Identifier const &NameOverloaded)
+  { NameOverloaded_ = NameOverloaded; }
+
+  WrapperType getParentType() const
+  { return ParentType_; }
+
+  void setParentType(WrapperType const &ParentType)
+  { ParentType_ = ParentType; }
+
+  WrapperType getReturnType() const
+  { return ReturnType_; }
+
+  void setReturnType(WrapperType const &ReturnType)
+  { ReturnType_ = ReturnType; }
 
   bool isMember() const
   { return !ParentType_.isVoid(); }
+
+  bool isInstance() const
+  { return isMember() && !isConstructor() && !isStatic(); }
+
+  bool isStatic() const
+  { return IsStatic_; }
 
   bool isConstructor() const
   { return IsConstructor_; }
@@ -149,45 +185,14 @@ public:
   bool isDestructor() const
   { return IsDestructor_; }
 
-  bool isStatic() const
-  { return IsStatic_; }
-
   bool isOverloaded() const
   { return Overload_ > 0u; }
-
-  WrapperType parentType() const
-  { return ParentType_; }
-
-  WrapperType returnType() const
-  { return ReturnType_; }
-
-  Identifier name() const
-  { return Name_; }
-
-  Identifier nameOverloaded() const
-  { return NameOverloaded_; }
-
-  std::vector<WrapperParameter> parameters(bool RequiredOnly = false) const
-  {
-    if (!RequiredOnly)
-      return Params_;
-
-    std::vector<WrapperParameter> RequiredParams;
-    RequiredParams.reserve(Params_.size());
-
-    for (auto const &Param : Params_) {
-      if (Param.hasDefaultArgument())
-        break;
-
-      RequiredParams.push_back(Param);
-    }
-
-    return RequiredParams;
-  }
 
 private:
   Identifier determineName(
     clang::FunctionDecl const *Decl) const;
+
+  Identifier determineNameOverloaded() const;
 
   std::vector<WrapperParameter> determineParams(
     clang::FunctionDecl const *Decl) const;
@@ -203,7 +208,9 @@ private:
 
   WrapperType ParentType_;
   WrapperType ReturnType_;
-  std::vector<WrapperParameter> Params_;
+
+public:
+  std::vector<WrapperParameter> Parameters;
 };
 
 class WrapperFunctionBuilder
@@ -227,15 +234,14 @@ public:
 
   WrapperFunctionBuilder &addParameter(WrapperParameter const &Param)
   {
-    if (!Param.hasDefaultArgument()) {
+    if (!Param.getDefaultArgument()) {
 #ifndef NDEBUG
-      if (!Wf_.Params_.empty())
-        assert(!Wf_.Params_.back().hasDefaultArgument());
+      if (!Wf_.Parameters.empty())
+        assert(!Wf_.Parameters.back().getDefaultArgument());
 #endif
     }
 
-    Wf_.Params_.emplace_back(Param);
-
+    Wf_.Parameters.emplace_back(Param);
     return *this;
   }
 
