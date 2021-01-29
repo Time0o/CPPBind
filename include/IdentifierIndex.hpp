@@ -5,6 +5,7 @@
 #include <map>
 #include <memory>
 
+#include "Error.hpp"
 #include "Identifier.hpp"
 
 namespace cppbind
@@ -43,9 +44,16 @@ private:
   };
 
 public:
-  void add(Identifier const &Id, Type Type)
+  Identifier add(Identifier Id, Type Type)
   {
-    assert(!has(Id));
+    if (has(Id)) {
+      if (Type != FUNC)
+        throw CPPBindError("duplicate identifier");
+
+      do {
+        Id = Identifier(Id.str() + "_");
+      } while (has(Id));
+    }
 
     std::shared_ptr<Props> P;
 
@@ -62,6 +70,8 @@ public:
     }
 
     Index_[Id] = P;
+
+    return Id;
   }
 
   bool has(Identifier const &Id) const
@@ -84,13 +94,19 @@ public:
     ++P->MaxOverload;
   }
 
-  unsigned popOverload(Identifier const &Id) const
+  bool hasOverload(Identifier const &Id) const
   {
     auto P(props<FuncProps>(Id));
     assert(P);
 
-    if (P->MaxOverload == 1u)
-      return 0u;
+    return P->MaxOverload > 1u;
+  }
+
+  unsigned popOverload(Identifier const &Id) const
+  {
+    auto P(props<FuncProps>(Id));
+    assert(P);
+    assert(P->MaxOverload > 1u);
 
     assert(P->CurrentOverload <= P->MaxOverload);
 

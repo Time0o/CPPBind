@@ -79,7 +79,6 @@ std::string WrapperDefaultArgument::str() const
 
 WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
 : Name_(determineName(Decl)),
-  NameOverloaded_(determineNameOverloaded()),
   ParentType_("void"),
   ReturnType_(Decl->getReturnType()),
   Parameters(determineParams(Decl))
@@ -90,7 +89,6 @@ WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
   IsDestructor_(llvm::isa<clang::CXXDestructorDecl>(Decl)),
   IsStatic_(Decl->isStatic()),
   Name_(determineName(Decl)),
-  NameOverloaded_(determineNameOverloaded()),
   ParentType_(WrapperType(Decl->getThisType()).pointee()),
   ReturnType_(Decl->getReturnType()),
   Parameters(determineParams(Decl))
@@ -125,12 +123,12 @@ Identifier WrapperFunction::determineName(clang::FunctionDecl const *Decl) const
 
 Identifier WrapperFunction::determineNameOverloaded() const
 {
-  if (Overload_ == 0u)
+  if (!Overload_)
     return Name_;
 
   auto Postfix = OPT("wrapper-func-overload-postfix");
 
-  auto numReplaced = string::replaceAll(Postfix, "%o", std::to_string(Overload_));
+  auto numReplaced = string::replaceAll(Postfix, "%o", std::to_string(*Overload_));
 #ifdef NDEBUG
   (void)numReplaced;
 #else

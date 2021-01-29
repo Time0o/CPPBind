@@ -127,13 +127,11 @@ class WrapperFunctionBuilder;
 
 class WrapperFunction
 {
-  friend class Wrapper;
   friend class WrapperFunctionBuilder;
 
 public:
   WrapperFunction(Identifier const &Name)
   : Name_(Name),
-    NameOverloaded_(Name),
     ParentType_("void"),
     ReturnType_("void")
   {}
@@ -142,18 +140,17 @@ public:
 
   explicit WrapperFunction(clang::CXXMethodDecl const *Decl);
 
+  void overload(unsigned Overload)
+  { Overload_ = Overload; }
+
   Identifier getName() const
   { return Name_; }
 
   void setName(Identifier const &Name)
-  {
-    Name_ = Name;
+  { Name_ = Name; }
 
-    setNameOverloaded(determineNameOverloaded());
-  }
-
-  Identifier getNameOverloaded()
-  { return NameOverloaded_; }
+  Identifier getNameOverloaded() const
+  { return NameOverloaded_ ? *NameOverloaded_ : determineNameOverloaded(); }
 
   void setNameOverloaded(Identifier const &NameOverloaded)
   { NameOverloaded_ = NameOverloaded; }
@@ -201,10 +198,10 @@ private:
   bool IsDestructor_ = false;
   bool IsStatic_ = false;
 
-  unsigned Overload_ = 0u;
-
   Identifier Name_;
-  Identifier NameOverloaded_;
+
+  std::optional<unsigned> Overload_;
+  std::optional<Identifier> NameOverloaded_;
 
   WrapperType ParentType_;
   WrapperType ReturnType_;

@@ -27,7 +27,7 @@ public:
   {
     WrapperVariable Wv(std::forward<ARGS>(args)...);
 
-    II_->add(Wv.getName(), IdentifierIndex::CONST);
+    Wv.setName(II_->add(Wv.getName(), IdentifierIndex::CONST));
 
     Variables_.push_back(Wv);
   }
@@ -54,15 +54,19 @@ public:
     if (II_->has(Wf.getName()))
       II_->pushOverload(Wf.getName());
     else
-      II_->add(Wf.getName(), IdentifierIndex::FUNC);
+      Wf.setName(II_->add(Wf.getName(), IdentifierIndex::FUNC));
 
     Functions_.push_back(Wf);
   }
 
   void overload()
   {
-    for (auto &Wf : Functions_)
-      Wf.Overload_ = II_->popOverload(Wf.getName());
+    for (auto &Wf : Functions_) {
+      if (II_->hasOverload(Wf.getName())) {
+        Wf.overload(II_->popOverload(Wf.getName()));
+        Wf.setNameOverloaded(II_->add(Wf.getNameOverloaded(), IdentifierIndex::FUNC));
+      }
+    }
   }
 
   std::string inputFile() const
