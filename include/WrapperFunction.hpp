@@ -130,7 +130,7 @@ public:
   WrapperFunction(Identifier const &Name)
   : Name_(Name),
     NameOverloaded_(Name),
-    SelfType_("void"),
+    ParentType_("void"),
     ReturnType_("void")
   {}
 
@@ -141,7 +141,7 @@ public:
   void overload(std::shared_ptr<IdentifierIndex> II);
 
   bool isMember() const
-  { return !SelfType_.isVoid(); }
+  { return !ParentType_.isVoid(); }
 
   bool isConstructor() const
   { return IsConstructor_; }
@@ -155,8 +155,8 @@ public:
   bool isOverloaded() const
   { return Overload_ > 0u; }
 
-  WrapperType selfType() const
-  { return SelfType_; }
+  WrapperType parentType() const
+  { return ParentType_; }
 
   WrapperType returnType() const
   { return ReturnType_; }
@@ -201,7 +201,7 @@ private:
   Identifier Name_;
   Identifier NameOverloaded_;
 
-  WrapperType SelfType_;
+  WrapperType ParentType_;
   WrapperType ReturnType_;
   std::vector<WrapperParameter> Params_;
 };
@@ -213,9 +213,9 @@ public:
   : Wf_(Name)
   {}
 
-  WrapperFunctionBuilder &setSelfType(WrapperType const &Type)
+  WrapperFunctionBuilder &setParentType(WrapperType const &Type)
   {
-    Wf_.SelfType_ = Type;
+    Wf_.ParentType_ = Type;
     return *this;
   }
 

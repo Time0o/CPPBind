@@ -79,7 +79,7 @@ std::string WrapperParameter::DefaultArgument::str() const
 WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
 : Name_(determineName(Decl)),
   NameOverloaded_(Name_),
-  SelfType_("void"),
+  ParentType_("void"),
   ReturnType_(Decl->getReturnType()),
   Params_(determineParams(Decl))
 { assert(!Decl->isTemplateInstantiation()); } // XXX
@@ -90,7 +90,7 @@ WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
   IsStatic_(Decl->isStatic()),
   Name_(determineName(Decl)),
   NameOverloaded_(Name_),
-  SelfType_(WrapperType(Decl->getThisType()).pointee()),
+  ParentType_(WrapperType(Decl->getThisType()).pointee()),
   ReturnType_(Decl->getReturnType()),
   Params_(determineParams(Decl))
 { assert(!Decl->isTemplateInstantiation()); } // XXX
