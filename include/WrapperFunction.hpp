@@ -36,53 +36,53 @@ namespace cppbind
 
 class IdentifierIndex;
 
+class WrapperDefaultArgument
+{
+public:
+  explicit WrapperDefaultArgument(clang::Expr const *Expr);
+
+  bool isNullptrT() const
+  { return is<std::nullptr_t>(); }
+
+  bool isInt() const
+  { return is<llvm::APSInt>(); }
+
+  bool isFloat() const
+  { return is<llvm::APFloat>(); }
+
+  bool isTrue() const
+  { return BoolValue_; }
+
+  std::string str() const;
+
+  std::string strBool() const
+  { return BoolValue_ ? "true" : "false"; }
+
+private:
+  template<typename T>
+  bool is() const
+  { return std::holds_alternative<T>(Value_); }
+
+  template<typename T>
+  T as() const
+  { return std::get<T>(Value_); }
+
+  template<typename T>
+  static std::string APToString(T const &Val)
+  {
+    llvm::SmallString<40> Str;
+    Val.toString(Str); // XXX format as C literal
+    return Str.str().str();
+  }
+
+private:
+  std::variant<std::nullptr_t, llvm::APSInt, llvm::APFloat> Value_;
+  bool BoolValue_;
+};
+
 class WrapperParameter
 {
 public:
-  class DefaultArgument
-  {
-  public:
-    explicit DefaultArgument(clang::Expr const *Expr);
-
-    bool isNullptrT() const
-    { return is<std::nullptr_t>(); }
-
-    bool isInt() const
-    { return is<llvm::APSInt>(); }
-
-    bool isFloat() const
-    { return is<llvm::APFloat>(); }
-
-    bool isTrue() const
-    { return BoolValue_; }
-
-    std::string str() const;
-
-    std::string strBool() const
-    { return BoolValue_ ? "true" : "false"; }
-
-  private:
-    template<typename T>
-    bool is() const
-    { return std::holds_alternative<T>(Value_); }
-
-    template<typename T>
-    T as() const
-    { return std::get<T>(Value_); }
-
-    template<typename T>
-    static std::string APToString(T const &Val)
-    {
-      llvm::SmallString<40> Str;
-      Val.toString(Str); // XXX format as C literal
-      return Str.str().str();
-    }
-
-  private:
-    std::variant<std::nullptr_t, llvm::APSInt, llvm::APFloat> Value_;
-    bool BoolValue_;
-  };
-
   WrapperParameter(Identifier const &Name,
                    WrapperType const &Type,
                    clang::Expr const *DefaultExpr = nullptr)
@@ -90,7 +90,7 @@ public:
     Type_(Type)
   {
     if (DefaultExpr)
-      Default_ = DefaultArgument(DefaultExpr);
+      DefaultArgument_ = WrapperDefaultArgument(DefaultExpr);
   }
 
   WrapperParameter(clang::ParmVarDecl const *Decl)
@@ -106,18 +106,18 @@ public:
   { return Type_; }
 
   bool hasDefaultArgument() const
-  { return static_cast<bool>(Default_); }
+  { return static_cast<bool>(DefaultArgument_); }
 
-  DefaultArgument defaultArgument() const
+  WrapperDefaultArgument defaultArgument() const
   {
     assert(hasDefaultArgument());
-    return *Default_;
+    return *DefaultArgument_;
   }
 
 private:
   Identifier Name_;
   WrapperType Type_;
-  std::optional<DefaultArgument> Default_;
+  std::optional<WrapperDefaultArgument> DefaultArgument_;
 };
 
 class WrapperFunctionBuilder;

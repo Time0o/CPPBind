@@ -25,7 +25,7 @@
 namespace cppbind
 {
 
-WrapperParameter::DefaultArgument::DefaultArgument(clang::Expr const *Expr)
+WrapperDefaultArgument::WrapperDefaultArgument(clang::Expr const *Expr)
 {
   auto &Ctx(CompilerState()->getASTContext());
 
@@ -64,7 +64,7 @@ WrapperParameter::DefaultArgument::DefaultArgument(clang::Expr const *Expr)
     BoolValue_ = ResultBool;
 }
 
-std::string WrapperParameter::DefaultArgument::str() const
+std::string WrapperDefaultArgument::str() const
 {
   if (isNullptrT())
     return "nullptr";
