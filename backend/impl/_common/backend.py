@@ -30,6 +30,9 @@ class Backend(metaclass=BackendMeta):
         for v in self._variables:
             self.wrap_variable(v)
 
+        for r in self._records:
+            self.wrap_record(r)
+
         for f in self._functions:
             self.wrap_function(f)
 
@@ -80,6 +83,10 @@ class Backend(metaclass=BackendMeta):
 
     @abc.abstractmethod
     def wrap_variable(self, c):
+        pass
+
+    @abc.abstractmethod
+    def wrap_record(self, r):
         pass
 
     @abc.abstractmethod
