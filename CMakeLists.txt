@@ -218,15 +218,28 @@ if(CMAKE_BUILD_TYPE STREQUAL Debug)
       continue()
     endif()
 
-    add_test(
-      NAME ${BACKEND_LANGUAGE}_backend_test
-      COMMAND ${BACKEND_TEST_RUNNER} $<TARGET_FILE:${CPPBIND}>
-                                     ${BACKEND_TEST_DIR}
-                                     --language ${BACKEND_LANGUAGE}
-                                     --clang ${CMAKE_C_COMPILER}
-                                     --clangpp ${CMAKE_CXX_COMPILER}
-                                     --lua ${LUA}
-                                     --lua-include-dir ${LUA_INCLUDE_DIR}
+    execute_process(
+      COMMAND ${BACKEND_TEST_RUNNER} list
+              ${BACKEND_TEST_DIR}
+              ${BACKEND_LANGUAGE}
+      OUTPUT_VARIABLE BACKEND_TESTS
     )
+
+    string(REPLACE "\n" ";" BACKEND_TESTS "${BACKEND_TESTS}")
+
+    foreach(BACKEND_TEST ${BACKEND_TESTS})
+        add_test(
+          NAME ${BACKEND_LANGUAGE}_${BACKEND_TEST}
+          COMMAND ${BACKEND_TEST_RUNNER} run
+                  --single-test ${BACKEND_TEST}
+                  --cppbind $<TARGET_FILE:${CPPBIND}>
+                  --clang ${CMAKE_C_COMPILER}
+                  --clangpp ${CMAKE_CXX_COMPILER}
+                  --lua ${LUA}
+                  --lua-include-dir ${LUA_INCLUDE_DIR}
+                  ${BACKEND_TEST_DIR}
+                  ${BACKEND_LANGUAGE}
+        )
+    endforeach()
   endforeach()
 endif()

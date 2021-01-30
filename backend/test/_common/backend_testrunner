@@ -38,16 +38,28 @@ class BackendTestGenerator:
     TEST_INPUT_PATTERN = 'test_(.*)\..*'
     TEST_PATTERN = 'test_(.*)\..*'
 
-    def __init__(self, test_root_dir, language):
-        self._lang = language
+    def __init__(self, **kwargs):
+        self._test_lang = kwargs['test_language']
 
-        self._test_root_dir = test_root_dir
-        self._test_input_dir = os.path.join(test_root_dir, self.INPUT_DIR)
-        self._test_output_root_dir = os.path.join(test_root_dir, self.OUTPUT_ROOT_DIR)
+        self._test_root_dir = kwargs['test_root_dir']
 
-        self._tests = self._parse_tests(self._parse_test_inputs())
+        self._test_input_dir = os.path.join(self._test_root_dir,
+                                            self.INPUT_DIR)
 
-    def wrap_tests(self, cppbind):
+        self._test_output_root_dir = os.path.join(self._test_root_dir,
+                                                  self.OUTPUT_ROOT_DIR)
+
+        single_test = kwargs.get('single_test')
+
+        if single_test is not None:
+            self._tests = [single_test]
+        else:
+            self._tests = self._parse_tests(self._parse_test_inputs())
+
+    def list_tests(self):
+        return self._tests
+
+    def wrap_tests(self, **kwargs):
         log.info("wrapping test inputs...")
 
         output_dir = self._test_output_dir()
@@ -61,10 +73,10 @@ class BackendTestGenerator:
             log.debug(f"wrapping {test_input}...")
 
             self._subprocess([
-                cppbind,
+                kwargs['cppbind'],
                 test_input,
                 '--namespace', 'test',
-                '--backend', f'{self._lang}',
+                '--backend', f'{self._test_lang}',
                 '--output-directory', f'{output_dir}',
                 '--'
             ])
@@ -72,9 +84,9 @@ class BackendTestGenerator:
     def compile_tests(self, **kwargs):
         log.info("compiling tests...")
 
-        if self._lang == 'c':
+        if self._test_lang == 'c':
             compile_cmd = self._compile_c_test
-        elif self._lang == 'lua':
+        elif self._test_lang == 'lua':
             compile_cmd = self._compile_lua_test
 
         for test in self._tests:
@@ -88,9 +100,9 @@ class BackendTestGenerator:
         class BackendTests(unittest.TestCase):
             __qualname__ = f'BackendTests'
 
-        if self._lang == 'c':
+        if self._test_lang == 'c':
             run_test = self._run_c_test
-        elif self._lang == 'lua':
+        elif self._test_lang == 'lua':
             run_test = self._run_lua_test
 
         for test in self._tests:
@@ -122,7 +134,7 @@ class BackendTestGenerator:
         for test in test_inputs:
             log.debug(f"* {test}")
 
-        return test_inputs
+        return sorted(test_inputs)
 
     def _parse_tests(self, test_inputs):
         tests = []
@@ -144,7 +156,7 @@ class BackendTestGenerator:
         for test in tests:
             log.debug(f"* {test}")
 
-        return tests
+        return sorted(tests)
 
     def _compile_c_test(self, test, **kwargs):
         cpp_src = self._test_wrapper(test, ext='.cpp')
@@ -204,16 +216,16 @@ class BackendTestGenerator:
                          quiet=True)
 
     def _test_source_dir(self):
-        return os.path.join(self._test_root_dir, self._lang)
+        return os.path.join(self._test_root_dir, self._test_lang)
 
     def _test_output_dir(self):
-        return os.path.join(self._test_output_root_dir, self._lang)
+        return os.path.join(self._test_output_root_dir, self._test_lang)
 
     def _test_source(self, test, ext):
         return os.path.join(self._test_source_dir(), f"test_{test}{ext}")
 
     def _test_wrapper(self, test, ext):
-        return os.path.join(self._test_output_dir(), f"test_{test}_{self._lang}{ext}")
+        return os.path.join(self._test_output_dir(), f"test_{test}_{self._test_lang}{ext}")
 
     def _test_input(self, test):
         return os.path.join(self._test_input_dir, f"test_{test}.hpp")
@@ -234,28 +246,51 @@ class BackendTestGenerator:
             run()
 
 
+def list_tests(**kwargs):
+    generator = BackendTestGenerator(**kwargs)
+
+    print('\n'.join(generator.list_tests()))
+
+
+def run_tests(**kwargs):
+    generator = BackendTestGenerator(**kwargs)
+
+    generator.wrap_tests(**kwargs)
+
+    generator.compile_tests(**kwargs)
+
+    result = generator.run_tests(**kwargs)
+
+    if not result.wasSuccessful():
+        raise RuntimeError("tests failed")
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    # general arguments
-    parser.add_argument('cppbind', metavar='CPPBIND',
-                        help="cppbind executable")
+    sub_parsers = parser.add_subparsers(dest='sub_parser')
+    list_parser = sub_parsers.add_parser('list', help="list available tests")
+    run_parser = sub_parsers.add_parser('run', help="run tests")
+
     parser.add_argument('test_root_dir', metavar='TEST_ROOT_DIR',
                         help="test root directory")
-    parser.add_argument('--clang', default='clang',
-                        help="clang executable (C)")
-    parser.add_argument('--clangpp', default='clang++',
-                        help="clang executable (C++)")
+    parser.add_argument('test_language', choices=['c', 'lua'],
+                        help="backend languages for which to run tests")
     parser.add_argument('-v', '--verbosity', type=int, default=0,
                         help="more verbose output")
 
-    # language specific arguments
-    parser.add_argument('-l', '--language', choices=['c', 'lua'], required=True,
-                        help="backend languages for which to run tests")
-    parser.add_argument('--lua', default='lua',
-                        help="lua executable")
-    parser.add_argument('--lua-include-dir', default='/usr/include',
-                        help="lua include directory")
+    run_parser.add_argument('--single-test',
+                            help="only run specific test")
+    run_parser.add_argument('--cppbind', default='cppbind',
+                            help="cppbind executable")
+    run_parser.add_argument('--clang', default='clang',
+                            help="clang executable (C)")
+    run_parser.add_argument('--clangpp', default='clang++',
+                            help="clang executable (C++)")
+    run_parser.add_argument('--lua', default='lua',
+                            help="lua executable")
+    run_parser.add_argument('--lua-include-dir', default='/usr/include',
+                             help="lua include directory")
 
     args = parser.parse_args()
 
@@ -263,13 +298,10 @@ if __name__ == '__main__':
     logger_set_verbosity(log, args.verbosity)
 
     # run tests
-    generator = BackendTestGenerator(args.test_root_dir, args.language)
+    kwargs = vars(args)
 
-    generator.wrap_tests(args.cppbind)
+    if args.sub_parser == 'list':
+        list_tests(**kwargs)
 
-    generator.compile_tests(**vars(args))
-
-    result = generator.run_tests(**vars(args))
-
-    if not result.wasSuccessful():
-        raise RuntimeError("tests failed")
+    elif args.sub_parser == 'run':
+        run_tests(**kwargs)
