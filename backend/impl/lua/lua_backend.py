@@ -125,7 +125,7 @@ class LuaBackend(Backend):
 
               luaL_argcheck(L, valid, arg,
                             "not convertible to lua_Number");
-              luaL_argcheck(L, f >= std::numeric_limits<T>::min(), arg,
+              luaL_argcheck(L, f >= std::numeric_limits<T>::lowest(), arg,
                             "conversion would underflow");
               luaL_argcheck(L, f <= std::numeric_limits<T>::max(), arg,
                             "conversion would overflow");
@@ -150,7 +150,7 @@ class LuaBackend(Backend):
             }
 
             #define _lua_pushfloating_constexpr(L, VAL) \\
-              static_assert(VAL >= std::numeric_limits<lua_Number>::min() && \\
+              static_assert(VAL >= std::numeric_limits<lua_Number>::lowest() && \\
                             VAL <= std::numeric_limits<lua_Number>::max(), \\
                             "parameter not representable by lua_Number"); \\
               lua_pushnumber(L, VAL);
@@ -158,7 +158,7 @@ class LuaBackend(Backend):
             template<typename T>
             void _lua_pushfloating(lua_State *L, T val)
             {
-              if (val < std::numeric_limits<lua_Number>::min() ||
+              if (val < std::numeric_limits<lua_Number>::lowest() ||
                   val > std::numeric_limits<lua_Number>::max())
                 luaL_error(L, "result not representable by lua_Number");
 
