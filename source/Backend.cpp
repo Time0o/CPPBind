@@ -63,24 +63,24 @@ using namespace cppbind;
 
 using Type = WrapperType;
 using Variable = WrapperVariable;
-using Record = WrapperRecord;
 using Function = WrapperFunction;
 using Parameter = WrapperParameter;
 using DefaultArgument = WrapperDefaultArgument;
+using Record = WrapperRecord;
 
 PYBIND11_MAKE_OPAQUE(std::vector<WrapperVariable>);
-PYBIND11_MAKE_OPAQUE(std::vector<WrapperRecord>);
 PYBIND11_MAKE_OPAQUE(std::vector<WrapperFunction>);
 PYBIND11_MAKE_OPAQUE(std::vector<WrapperParameter>);
+PYBIND11_MAKE_OPAQUE(std::vector<WrapperRecord>);
 
 PYBIND11_EMBEDDED_MODULE(cppbind, m)
 {
   using namespace py::literals;
 
   py::bind_vector<std::vector<WrapperVariable>>(m, "VectorVariables");
-  py::bind_vector<std::vector<WrapperRecord>>(m, "VectorRecords");
   py::bind_vector<std::vector<WrapperFunction>>(m, "VectorFunctions");
   py::bind_vector<std::vector<WrapperParameter>>(m, "VectorParameters");
+  py::bind_vector<std::vector<WrapperRecord>>(m, "VectorRecords");
 
   auto PyIdentifier = py::class_<Identifier>(m, "Identifier");
 
@@ -120,7 +120,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
 
   py::class_<Wrapper, std::shared_ptr<Wrapper>>(m, "Wrapper")
     .def("input_file", &Wrapper::inputFile)
-    .def("variables", &Wrapper::constants)
+    .def("variables", &Wrapper::variables)
     .def("records", &Wrapper::records)
     .def("functions", &Wrapper::functions);
 
@@ -171,11 +171,6 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def_property("type", &WrapperVariable::getType,
                           &WrapperVariable::setType);
 
-  py::class_<Record>(m, "Record", py::dynamic_attr())
-    .def(py::init<WrapperType>(), "type"_a)
-    .def_property("type", &WrapperRecord::getType,
-                          &WrapperRecord::setType);
-
   py::class_<Function>(m, "Function", py::dynamic_attr())
     // XXX constructor/builder
     .def_property("name", &WrapperFunction::getName,
@@ -193,6 +188,13 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_constructor", &WrapperFunction::isConstructor)
     .def("is_destructor", &WrapperFunction::isDestructor)
     .def("is_overloaded", &WrapperFunction::isOverloaded);
+
+  py::class_<Record>(m, "Record", py::dynamic_attr())
+    .def(py::init<WrapperType>(), "type"_a)
+    .def_property("type", &WrapperRecord::getType,
+                          &WrapperRecord::setType)
+    .def_readwrite("variables", &WrapperRecord::Variables)
+    .def_readwrite("functions", &WrapperRecord::Functions);
 
   py::class_<Parameter>(m, "Parameter")
     // XXX pass default argument

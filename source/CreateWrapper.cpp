@@ -88,11 +88,4 @@ void
 CreateWrapperConsumer::handleStructOrClassDecl(clang::CXXRecordDecl const *Decl)
 { Wr_->addWrapperRecord(Decl); }
 
-void
-CreateWrapperConsumer::handlePublicMemberFunctionDecl(clang::CXXMethodDecl const *Decl)
-{
-  if (!Decl->isDeleted())
-    Wr_->addWrapperFunction(Decl);
-}
-
 } // namespace cppbind

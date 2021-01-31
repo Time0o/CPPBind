@@ -1,39 +1,29 @@
 #ifndef GUARD_WRAPPER_RECORD_H
 #define GUARD_WRAPPER_RECORD_H
 
-#include <string>
+#include <vector>
 
 #include "clang/AST/DeclCXX.h"
 
-#include "Identifier.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperType.hpp"
+#include "WrapperVariable.hpp"
 
 namespace cppbind
 {
 
 class WrapperRecord
 {
-  friend class Wrapper;
-
 public:
   explicit WrapperRecord(WrapperType const &Type)
-  : Decl_(nullptr),
-    Type_(Type)
+  : Type_(Type)
   {}
 
   explicit WrapperRecord(clang::CXXRecordDecl const *Decl)
-  : Decl_(Decl),
-    Type_(Decl_->getTypeForDecl())
+  : Type_(Decl->getTypeForDecl()),
+    Variables(determinePublicMemberVariables(Decl)),
+    Functions(determinePublicMemberFunctions(Decl))
   {}
-
-  WrapperFunction implicitDestructor() const
-  {
-    return WrapperFunctionBuilder(qualifiedMemberName(Identifier::DELETE))
-           .setParentType(Type_)
-           .setIsDestructor()
-           .build();
-  }
 
   WrapperType getType() const
   { return Type_; }
@@ -42,25 +32,23 @@ public:
   { Type_ = Type; }
 
 private:
-  bool needsImplicitDefaultConstructor() const
-  { return Decl_ && Decl_->needsImplicitDefaultConstructor(); }
+  std::vector<WrapperVariable> determinePublicMemberVariables(
+    clang::CXXRecordDecl const *Decl) const;
 
-  WrapperFunction implicitDefaultConstructor() const
-  {
-    return WrapperFunctionBuilder(qualifiedMemberName(Identifier::NEW))
-           .setParentType(Type_)
-           .setIsConstructor()
-           .build();
-  }
+  std::vector<WrapperFunction> determinePublicMemberFunctions(
+    clang::CXXRecordDecl const *Decl) const;
 
-  bool needsImplicitDestructor() const
-  { return Decl_ && Decl_->needsImplicitDestructor(); }
+  WrapperFunction implicitDefaultConstructor(
+    clang::CXXRecordDecl const *Decl) const;
 
-  Identifier qualifiedMemberName(std::string const &Name) const
-  { return Identifier(Name).qualified(Identifier(Decl_)); }
+  WrapperFunction implicitDestructor(
+    clang::CXXRecordDecl const *Decl) const;
 
-  clang::CXXRecordDecl const *Decl_;
   WrapperType Type_;
+
+public:
+  std::vector<WrapperVariable> Variables;
+  std::vector<WrapperFunction> Functions;
 };
 
 } // namespace cppbind

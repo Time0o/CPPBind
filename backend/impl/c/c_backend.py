@@ -140,6 +140,9 @@ class CBackend(Backend):
     def wrap_record(self, r):
         self._wrapper_header.append(text.code(f"{r.type_c};"))
 
+        for f in r.functions:
+            self.wrap_function(f)
+
     def wrap_function(self, f):
         if f.is_constructor():
             f.return_type = f.parent_type.pointer_to()

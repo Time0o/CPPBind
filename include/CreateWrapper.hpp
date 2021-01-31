@@ -65,12 +65,6 @@ private:
                           anyOf(isClass(), isStruct()), isDefinition())),
       &CreateWrapperConsumer::handleStructOrClassDecl);
 
-    addHandler<clang::CXXMethodDecl>(
-      "publicMemberFunctionDecl",
-      cxxMethodDecl(allOf(isPublic(),
-                          hasParent(cxxRecordDecl(inNamespaceMatcher)))),
-      &CreateWrapperConsumer::handlePublicMemberFunctionDecl);
-
     addHandler<clang::FunctionDecl>(
       "functionDecl",
       functionDecl(inNamespaceMatcher),
@@ -82,7 +76,6 @@ private:
   void handleEnumDecl(clang::EnumDecl const *Decl);
   void handlefunctionDecl(clang::FunctionDecl const *Decl);
   void handleStructOrClassDecl(clang::CXXRecordDecl const *Decl);
-  void handlePublicMemberFunctionDecl(clang::CXXMethodDecl const *Decl);
 
   std::shared_ptr<Wrapper> Wr_;
 };
