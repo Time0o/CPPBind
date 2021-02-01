@@ -5,6 +5,7 @@
 
 #include "clang/AST/DeclCXX.h"
 
+#include "Identifier.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperType.hpp"
 #include "WrapperVariable.hpp"
@@ -15,15 +16,15 @@ namespace cppbind
 class WrapperRecord
 {
 public:
-  explicit WrapperRecord(WrapperType const &Type)
-  : Type_(Type)
-  {}
+  explicit WrapperRecord(WrapperType const &Type);
 
-  explicit WrapperRecord(clang::CXXRecordDecl const *Decl)
-  : Type_(Decl->getTypeForDecl()),
-    Variables(determinePublicMemberVariables(Decl)),
-    Functions(determinePublicMemberFunctions(Decl))
-  {}
+  explicit WrapperRecord(clang::CXXRecordDecl const *Decl);
+
+  Identifier getName() const
+  { return Name_; }
+
+  void setName(Identifier const &Name)
+  { Name_ = Name; }
 
   WrapperType getType() const
   { return Type_; }
@@ -45,6 +46,7 @@ private:
     clang::CXXRecordDecl const *Decl) const;
 
   WrapperType Type_;
+  Identifier Name_;
 
 public:
   std::vector<WrapperVariable> Variables;

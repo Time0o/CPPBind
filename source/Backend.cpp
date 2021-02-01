@@ -191,6 +191,8 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
 
   py::class_<Record>(m, "Record", py::dynamic_attr())
     .def(py::init<WrapperType>(), "type"_a)
+    .def_property("name", &WrapperRecord::getName,
+                          &WrapperRecord::setName)
     .def_property("type", &WrapperRecord::getType,
                           &WrapperRecord::setType)
     .def_readwrite("variables", &WrapperRecord::Variables)

@@ -5,10 +5,23 @@
 #include "Identifier.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperRecord.hpp"
+#include "WrapperType.hpp"
 #include "WrapperVariable.hpp"
 
 namespace cppbind
 {
+
+WrapperRecord::WrapperRecord(WrapperType const &Type)
+: Type_(Type),
+  Name_(Identifier(Type_.format(true)))
+{}
+
+WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl)
+: WrapperRecord(WrapperType(Decl->getTypeForDecl()))
+{
+  Variables = determinePublicMemberVariables(Decl);
+  Functions = determinePublicMemberFunctions(Decl);
+}
 
 std::vector<WrapperVariable>
 WrapperRecord::determinePublicMemberVariables(
