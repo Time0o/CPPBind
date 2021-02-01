@@ -94,6 +94,26 @@ WrapperFunction::WrapperFunction(WrapperRecord const *Parent,
   Parameters(determineParams(Decl))
 { assert(!Decl->isTemplateInstantiation()); } // XXX
 
+Identifier WrapperFunction::getNameOverloaded() const
+{
+  if (NameOverloaded_)
+    return *NameOverloaded_;
+
+  if (!Overload_)
+    return Name_;
+
+  auto Postfix = OPT("wrapper-func-overload-postfix");
+
+  auto numReplaced = string::replaceAll(Postfix, "%o", std::to_string(*Overload_));
+#ifdef NDEBUG
+  (void)numReplaced;
+#else
+  assert(numReplaced > 0u);
+#endif
+
+  return Identifier(Name_.str() + Postfix);
+}
+
 Identifier WrapperFunction::determineName(clang::FunctionDecl const *Decl) const
 
 {
@@ -119,23 +139,6 @@ Identifier WrapperFunction::determineName(clang::FunctionDecl const *Decl) const
   }
 
   return Identifier(Decl);
-}
-
-Identifier WrapperFunction::determineNameOverloaded() const
-{
-  if (!Overload_)
-    return Name_;
-
-  auto Postfix = OPT("wrapper-func-overload-postfix");
-
-  auto numReplaced = string::replaceAll(Postfix, "%o", std::to_string(*Overload_));
-#ifdef NDEBUG
-  (void)numReplaced;
-#else
-  assert(numReplaced > 0u);
-#endif
-
-  return Identifier(Name_.str() + Postfix);
 }
 
 std::vector<WrapperParameter> WrapperFunction::determineParams(

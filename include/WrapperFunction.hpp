@@ -150,8 +150,7 @@ public:
   void setName(Identifier const &Name)
   { Name_ = Name; }
 
-  Identifier getNameOverloaded() const
-  { return NameOverloaded_ ? *NameOverloaded_ : determineNameOverloaded(); }
+  Identifier getNameOverloaded() const;
 
   void setNameOverloaded(Identifier const &NameOverloaded)
   { NameOverloaded_ = NameOverloaded; }
@@ -189,8 +188,6 @@ public:
 private:
   Identifier determineName(
     clang::FunctionDecl const *Decl) const;
-
-  Identifier determineNameOverloaded() const;
 
   std::vector<WrapperParameter> determineParams(
     clang::FunctionDecl const *Decl) const;
