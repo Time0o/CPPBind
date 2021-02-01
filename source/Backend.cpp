@@ -196,7 +196,9 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def_property("type", &WrapperRecord::getType,
                           &WrapperRecord::setType)
     .def_readwrite("variables", &WrapperRecord::Variables)
-    .def_readwrite("functions", &WrapperRecord::Functions);
+    .def_readwrite("functions", &WrapperRecord::Functions)
+    .def_property_readonly("constructors", &WrapperRecord::getConstructors)
+    .def_property_readonly("destructor", &WrapperRecord::getDestructor);
 
   py::class_<Parameter>(m, "Parameter")
     // XXX pass default argument

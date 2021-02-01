@@ -32,6 +32,10 @@ public:
   void setType(WrapperType const &Type)
   { Type_ = Type; }
 
+  std::vector<WrapperFunction> getConstructors() const;
+
+  WrapperFunction getDestructor() const;
+
 private:
   std::vector<WrapperVariable> determinePublicMemberVariables(
     clang::CXXRecordDecl const *Decl) const;

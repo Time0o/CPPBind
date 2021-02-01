@@ -1,3 +1,4 @@
+#include <cassert>
 #include <vector>
 
 #include "clang/AST/DeclCXX.h"
@@ -21,6 +22,29 @@ WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl)
 {
   Variables = determinePublicMemberVariables(Decl);
   Functions = determinePublicMemberFunctions(Decl);
+}
+
+std::vector<WrapperFunction>
+WrapperRecord::getConstructors() const
+{
+  std::vector<WrapperFunction> Constructors;
+  for (auto const &Wf : Functions) {
+    if (Wf.isConstructor())
+      Constructors.push_back(Wf);
+  }
+
+  return Constructors;
+}
+
+WrapperFunction
+WrapperRecord::getDestructor() const
+{
+  for (auto const &Wf : Functions) {
+    if (Wf.isDestructor())
+      return Wf;
+  }
+
+  assert(false); // XXX
 }
 
 std::vector<WrapperVariable>
