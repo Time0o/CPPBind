@@ -1,9 +1,9 @@
 #ifndef GUARD_WRAPPER_H
 #define GUARD_WRAPPER_H
 
+#include <deque>
 #include <memory>
 #include <utility>
-#include <vector>
 
 #include "IdentifierIndex.hpp"
 #include "WrapperVariable.hpp"
@@ -25,35 +25,29 @@ public:
   template<typename ...ARGS>
   void addWrapperVariable(ARGS&&... args)
   {
-    WrapperVariable Wv(std::forward<ARGS>(args)...);
+    Variables_.emplace_back(std::forward<ARGS>(args)...);
 
-    addIdentifier(Wv);
-
-    Variables_.push_back(Wv);
+    addIdentifier(Variables_.back());
   }
 
   template<typename ...ARGS>
   void addWrapperFunction(ARGS&&... args)
   {
-    WrapperFunction Wf(std::forward<ARGS>(args)...);
+    Functions_.emplace_back(std::forward<ARGS>(args)...);
 
-    addIdentifier(Wf);
-
-    Functions_.push_back(Wf);
+    addIdentifier(Functions_.back());
   }
 
   template<typename ...ARGS>
   void addWrapperRecord(ARGS&&... args)
   {
-    WrapperRecord Wr(std::forward<ARGS>(args)...);
+    Records_.emplace_back(std::forward<ARGS>(args)...);
 
-    for (auto &Wv : Wr.Variables)
+    for (auto &Wv : Records_.back().Variables)
       addIdentifier(Wv);
 
-    for (auto &Wf : Wr.Functions)
+    for (auto &Wf : Records_.back().Functions)
       addIdentifier(Wf);
-
-    Records_.push_back(Wr);
   }
 
   void overload()
@@ -70,13 +64,13 @@ public:
   std::string inputFile() const
   { return InputFile_; }
 
-  std::vector<WrapperVariable> variables() const
+  std::deque<WrapperVariable> const &variables() const
   { return Variables_; }
 
-  std::vector<WrapperRecord> records() const
+  std::deque<WrapperRecord> const &records() const
   { return Records_; }
 
-  std::vector<WrapperFunction> functions() const
+  std::deque<WrapperFunction> const &functions() const
   { return Functions_; }
 
 private:
@@ -104,9 +98,9 @@ private:
 
   std::string InputFile_;
 
-  std::vector<WrapperVariable> Variables_;
-  std::vector<WrapperRecord> Records_;
-  std::vector<WrapperFunction> Functions_;
+  std::deque<WrapperVariable> Variables_;
+  std::deque<WrapperRecord> Records_;
+  std::deque<WrapperFunction> Functions_;
 };
 
 } // namespace cppbind

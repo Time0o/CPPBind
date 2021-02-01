@@ -177,11 +177,11 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
                           &WrapperFunction::setName)
     .def_property("name_overloaded", &WrapperFunction::getNameOverloaded,
                                      &WrapperFunction::setNameOverloaded)
-    .def_property("parent_type", &WrapperFunction::getParentType,
-                                 &WrapperFunction::setParentType)
     .def_property("return_type", &WrapperFunction::getReturnType,
                                  &WrapperFunction::setReturnType)
     .def_readwrite("parameters", &WrapperFunction::Parameters)
+    .def_property("parent", &WrapperFunction::getParent,
+                            &WrapperFunction::setParent)
     .def("is_member", &WrapperFunction::isMember)
     .def("is_instance", &WrapperFunction::isInstance)
     .def("is_static", &WrapperFunction::isStatic)

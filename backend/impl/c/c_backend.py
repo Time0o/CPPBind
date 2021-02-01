@@ -43,7 +43,6 @@ def _type_c(get=lambda self: self.type):
 
 Variable.type_c = _type_c()
 Record.type_c = _type_c()
-Function.parent_type_c = _type_c(get=lambda self: self.parent_type)
 Function.return_type_c = _type_c(get=lambda self: self.return_type)
 Parameter.type_c = _type_c()
 
@@ -145,9 +144,9 @@ class CBackend(Backend):
 
     def wrap_function(self, f):
         if f.is_constructor():
-            f.return_type = f.parent_type.pointer_to()
+            f.return_type = f.parent.type.pointer_to()
         elif f.is_instance():
-            f.self_type = f.parent_type.pointer_to()
+            f.self_type = f.parent.type.pointer_to()
             f.parameters.insert(0, Parameter(Id.SELF, f.self_type))
 
         self._wrapper_header.append(self._function_declaration(f))
@@ -199,7 +198,7 @@ class CBackend(Backend):
         parameters = ', '.join(self._function_parameter_forwardings(f))
 
         if f.is_constructor():
-            body = f"new {f.parent_type}({parameters})"
+            body = f"new {f.parent.type}({parameters})"
         elif f.is_destructor():
             body = f"delete {this}"
         elif f.is_instance():

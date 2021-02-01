@@ -35,6 +35,7 @@ namespace cppbind
 {
 
 class IdentifierIndex;
+class WrapperRecord;
 
 class WrapperDefaultArgument
 {
@@ -132,13 +133,13 @@ class WrapperFunction
 public:
   WrapperFunction(Identifier const &Name)
   : Name_(Name),
-    ParentType_("void"),
     ReturnType_("void")
   {}
 
   explicit WrapperFunction(clang::FunctionDecl const *Decl);
 
-  explicit WrapperFunction(clang::CXXMethodDecl const *Decl);
+  explicit WrapperFunction(WrapperRecord const *Parent,
+                           clang::CXXMethodDecl const *Decl);
 
   void overload(unsigned Overload)
   { Overload_ = Overload; }
@@ -155,11 +156,11 @@ public:
   void setNameOverloaded(Identifier const &NameOverloaded)
   { NameOverloaded_ = NameOverloaded; }
 
-  WrapperType getParentType() const
-  { return ParentType_; }
+  WrapperRecord const *getParent() const
+  { return Parent_; }
 
-  void setParentType(WrapperType const &ParentType)
-  { ParentType_ = ParentType; }
+  void setParent(WrapperRecord const *Parent)
+  { Parent_ = Parent; }
 
   WrapperType getReturnType() const
   { return ReturnType_; }
@@ -168,7 +169,7 @@ public:
   { ReturnType_ = ReturnType; }
 
   bool isMember() const
-  { return !ParentType_.isVoid(); }
+  { return Parent_; }
 
   bool isInstance() const
   { return isMember() && !isConstructor() && !isStatic(); }
@@ -194,6 +195,8 @@ private:
   std::vector<WrapperParameter> determineParams(
     clang::FunctionDecl const *Decl) const;
 
+  WrapperRecord const *Parent_ = nullptr;
+
   bool IsConstructor_ = false;
   bool IsDestructor_ = false;
   bool IsStatic_ = false;
@@ -203,7 +206,6 @@ private:
   std::optional<unsigned> Overload_;
   std::optional<Identifier> NameOverloaded_;
 
-  WrapperType ParentType_;
   WrapperType ReturnType_;
 
 public:
@@ -217,9 +219,9 @@ public:
   : Wf_(Name)
   {}
 
-  WrapperFunctionBuilder &setParentType(WrapperType const &Type)
+  WrapperFunctionBuilder &setParent(WrapperRecord const *Parent)
   {
-    Wf_.ParentType_ = Type;
+    Wf_.Parent_ = Parent;
     return *this;
   }
 

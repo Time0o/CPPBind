@@ -42,7 +42,7 @@ WrapperRecord::determinePublicMemberFunctions(
 
   for (auto const *MethodDecl : Decl->methods()) {
     if (MethodDecl->getAccess() == clang::AS_public && !MethodDecl->isDeleted())
-      PublicMemberFunctions.emplace_back(MethodDecl);
+      PublicMemberFunctions.emplace_back(this, MethodDecl);
   }
 
   return PublicMemberFunctions;
@@ -55,7 +55,7 @@ WrapperRecord::implicitDefaultConstructor(
   auto ConstructorName(Identifier(Identifier::NEW).qualified(Identifier(Decl)));
 
   return WrapperFunctionBuilder(ConstructorName)
-         .setParentType(Type_)
+         .setParent(this)
          .setIsConstructor()
          .build();
 }
@@ -67,7 +67,7 @@ WrapperRecord::implicitDestructor(
   auto DestructorName(Identifier(Identifier::DELETE).qualified(Identifier(Decl)));
 
   return WrapperFunctionBuilder(DestructorName)
-         .setParentType(Type_)
+         .setParent(this)
          .setIsDestructor()
          .build();
 }

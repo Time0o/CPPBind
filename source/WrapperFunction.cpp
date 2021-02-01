@@ -79,17 +79,17 @@ std::string WrapperDefaultArgument::str() const
 
 WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
 : Name_(determineName(Decl)),
-  ParentType_("void"),
   ReturnType_(Decl->getReturnType()),
   Parameters(determineParams(Decl))
 { assert(!Decl->isTemplateInstantiation()); } // XXX
 
-WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
-: IsConstructor_(llvm::isa<clang::CXXConstructorDecl>(Decl)),
+WrapperFunction::WrapperFunction(WrapperRecord const *Parent,
+                                 clang::CXXMethodDecl const *Decl)
+: Parent_(Parent),
+  IsConstructor_(llvm::isa<clang::CXXConstructorDecl>(Decl)),
   IsDestructor_(llvm::isa<clang::CXXDestructorDecl>(Decl)),
   IsStatic_(Decl->isStatic()),
   Name_(determineName(Decl)),
-  ParentType_(WrapperType(Decl->getThisType()).pointee()),
   ReturnType_(Decl->getReturnType()),
   Parameters(determineParams(Decl))
 { assert(!Decl->isTemplateInstantiation()); } // XXX
