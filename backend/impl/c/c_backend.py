@@ -131,8 +131,12 @@ class CBackend(Backend):
         if f.is_constructor():
             f.return_type = f.parent.type.pointer_to()
         elif f.is_instance():
-            f.self_type = f.parent.type.pointer_to()
-            f.parameters.insert(0, Parameter(Id.SELF, f.self_type))
+            if f.is_const():
+                f.self_type = f.parent.type.with_const().pointer_to()
+            else:
+                f.self_type = f.parent.type.pointer_to()
+
+            f.parameters.insert(0, Parameter.self(f.self_type))
 
         self._wrapper_header.append(self._function_declaration(f))
         self._wrapper_source.append(self._function_definition(f))
