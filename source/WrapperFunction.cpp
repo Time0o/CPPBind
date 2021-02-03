@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -112,6 +113,24 @@ Identifier WrapperFunction::getNameOverloaded() const
 #endif
 
   return Identifier(Name_.str() + Postfix);
+}
+
+std::optional<WrapperParameter>
+WrapperFunction::getSelfParameter() const
+{
+  if (Parameters.empty() || !Parameters.front().isSelf())
+    return std::nullopt;
+
+  return Parameters.front();
+}
+
+std::vector<WrapperParameter>
+WrapperFunction::getNonSelfParameters() const
+{
+  if (!getSelfParameter())
+    return Parameters;
+
+  return std::vector<WrapperParameter>(Parameters.begin() + 1, Parameters.end());
 }
 
 Identifier WrapperFunction::determineName(clang::FunctionDecl const *Decl) const

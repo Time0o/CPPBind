@@ -100,6 +100,9 @@ public:
                      Decl->getDefaultArg())
   {}
 
+  static WrapperParameter self(WrapperType const &Type)
+  { return WrapperParameter(Identifier(Identifier::SELF), Type); }
+
   Identifier getName() const
   { return Name_; }
 
@@ -117,6 +120,9 @@ public:
 
   void setDefaultArgument(WrapperDefaultArgument const &DefaultArgument)
   { DefaultArgument_ = DefaultArgument; }
+
+  bool isSelf() const
+  { return Name_ == Identifier(Identifier::SELF); }
 
 private:
   Identifier Name_;
@@ -166,6 +172,10 @@ public:
 
   void setReturnType(WrapperType const &ReturnType)
   { ReturnType_ = ReturnType; }
+
+  std::optional<WrapperParameter> getSelfParameter() const;
+
+  std::vector<WrapperParameter> getNonSelfParameters() const;
 
   bool isMember() const
   { return Parent_; }
