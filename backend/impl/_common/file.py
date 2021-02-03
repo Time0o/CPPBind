@@ -26,6 +26,10 @@ class Path:
     def ext(self):
         return self._ext
 
+    def include(self, system=False):
+        header = self.basename()
+        return "#include " + (f"<{header}>" if system else f'"{header}"')
+
     def modified(self, dirname=None, filename=None, ext=None):
         new_path = copy.deepcopy(self)
 
@@ -61,11 +65,14 @@ class File:
     def ext(self):
         return self._path.ext()
 
-    def append(self, txt, **kwargs):
-        self._content.append(txt, **kwargs)
+    def include(self, system=False):
+        return self._path.include(system)
 
-    def prepend(self, txt, **kwargs):
-        self._content.insert(0, txt, **kwargs)
+    def append(self, txt, end='\n'):
+        self._content.append(txt + end)
+
+    def prepend(self, txt, end='\n'):
+        self._content.insert(0, txt + end)
 
     def write(self):
         try:

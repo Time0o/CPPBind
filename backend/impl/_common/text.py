@@ -1,27 +1,23 @@
-import itertools
-import os
 import re
 import textwrap
+from functools import partial
+from itertools import groupby
 
 
-def code(txt, **kwargs):
-    txt = textwrap.dedent(txt).strip()
+def code(c, **kwargs):
+    c = textwrap.dedent(c).strip()
 
     if kwargs:
-        txt = _format(txt, kwargs)
+        c = _format(c, kwargs)
 
-    return txt + kwargs.get('end', os.linesep)
-
-
-def include(header, system=False):
-    return "#include " + (f"<{header}>" if system else f'"{header}"')
+    return c
 
 
 def compress(txt):
     txt_lines = [l.rstrip() for l in txt.strip().split('\n')]
 
     group_if = lambda xs, cond: ([k] if cond(k) else list(g)
-                                 for k, g in itertools.groupby(xs))
+                                 for k, g in groupby(xs))
 
     flatten = lambda xs: [x for xs_sub in xs for x in xs_sub]
 
@@ -40,8 +36,12 @@ def _format(txt, kwargs):
 
 def _format_process_kwargs(txt_lines, kwargs):
     for kw, arg in kwargs.items():
-        if isinstance(arg, str) and arg.count(os.linesep) > 0:
-            kwargs[kw] = _format_multiline_arg(txt_lines, kw, arg)
+        if isinstance(arg, str):
+            arg = arg.strip()
+
+            if arg.count('\n') > 0:
+                kwargs[kw] = _format_multiline_arg(txt_lines, kw, arg)
+
         elif arg is None:
             kwargs[kw] = _format_none_arg(txt_lines, kw, arg)
 
@@ -60,7 +60,7 @@ def _format_multiline_arg(txt_lines, kw, arg):
     if ind is None:
         return
 
-    arg_line_first, arg_lines_rest = arg.split(os.linesep, maxsplit=1)
+    arg_line_first, arg_lines_rest = arg.split('\n', maxsplit=1)
 
     return '\n'.join([arg_line_first, textwrap.indent(arg_lines_rest, ind)])
 

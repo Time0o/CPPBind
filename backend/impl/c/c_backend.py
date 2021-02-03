@@ -75,59 +75,44 @@ class CBackend(Backend):
         self._wrapper_source = self.output_file(
             input_file.modified(filename='{filename}_c', ext='.cpp'))
 
-        self._header_include_set = set()
-        self._source_include_set = set()
-
     def wrap_before(self):
-        pass
-
-    def wrap_after(self):
-        self._wrapper_header.prepend(text.code(
-            """
-            #ifndef {header_guard}
-            #define {header_guard}
+        self._wrapper_header.append(text.code(
+            f"""
+            #ifndef {self._header_guard()}
+            #define {self._header_guard()}
 
             #ifdef __cplusplus
             extern "C" {{
             #endif
 
-            {header_includes}
-            """,
-            header_guard=self._header_guard(),
-            header_includes=self._header_includes()
-        ))
+            #include <stdbool.h>
+            """))
 
+        self._wrapper_source.append(text.code(
+            f"""
+            #include <utility>
+
+            {self.input_file().include()}
+
+            extern "C" {{
+
+            {self._wrapper_header.include()}
+            """))
+
+    def wrap_after(self):
         self._wrapper_header.append(text.code(
-            """
+            f"""
             #ifdef __cplusplus
             }} // extern "C"
             #endif
 
-            #endif // {header_guard}
-            """,
-            header_guard=self._header_guard()
-        ))
-
-        self._wrapper_source.prepend(text.code(
-            """
-            {source_includes}
-
-            {input_include}
-
-            extern "C" {{
-
-            {wrapper_include}
-            """,
-            source_includes=self._source_includes(),
-            input_include=text.include(self.input_file().basename()),
-            wrapper_include=text.include(self._wrapper_header.basename()),
-        ))
+            #endif // {self._header_guard()}
+            """))
 
         self._wrapper_source.append(text.code(
             """
             } // extern "C"
-            """
-        ))
+            """))
 
     def wrap_variable(self, v):
         self._wrapper_header.append(text.code(
@@ -151,20 +136,6 @@ class CBackend(Backend):
 
         self._wrapper_header.append(self._function_declaration(f))
         self._wrapper_source.append(self._function_definition(f))
-
-    def _header_includes(self):
-        headers = [
-            '<stdbool.h>'
-        ]
-
-        return '\n'.join(f"#include {header}" for header in headers)
-
-    def _source_includes(self):
-        headers = [
-            '<utility>'
-        ]
-
-        return '\n'.join(f"#include {header}" for header in headers)
 
     def _header_guard(self):
         guard_id = self.input_file().filename().upper()
