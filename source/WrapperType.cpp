@@ -148,10 +148,12 @@ WrapperType::referenced() const
 { return WrapperType(type().getNonReferenceType(), Tags_); }
 
 WrapperType
-WrapperType::pointerTo() const
+WrapperType::pointerTo(unsigned Repeat) const
 {
-  return WrapperType(
+  WrapperType PointerTo(
     CompilerState()->getASTContext().getPointerType(type()), Tags_);
+
+  return Repeat == 0u ? PointerTo : PointerTo.pointerTo(Repeat - 1u);
 }
 
 WrapperType

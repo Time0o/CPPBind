@@ -92,7 +92,7 @@ public:
   WrapperType rvalueReferenceTo() const;
   WrapperType referenced() const;
 
-  WrapperType pointerTo() const;
+  WrapperType pointerTo(unsigned Repeat = 0u) const;
   WrapperType pointee(bool Recursive = false) const;
 
   WrapperType qualified(unsigned Qualifiers) const;
