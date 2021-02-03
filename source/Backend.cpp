@@ -111,6 +111,9 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def(py::self <= py::self)
     .def(py::self >= py::self)
     .def("__str__", &Identifier::str)
+    .def("qualified", &Identifier::qualified, "qualifiers"_a)
+    .def("unqualified", &Identifier::unqualified)
+    .def("unscoped", &Identifier::unscoped)
     .def("str", &Identifier::str)
     .def("format", &Identifier::format,
          "case"_a = Identifier::ORIG_CASE,
@@ -155,7 +158,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("lvalue_reference_to", &WrapperType::lvalueReferenceTo)
     .def("rvalue_reference_to", &WrapperType::rvalueReferenceTo)
     .def("referenced", &WrapperType::referenced)
-    .def("pointer_to", &WrapperType::pointerTo)
+    .def("pointer_to", &WrapperType::pointerTo, "repeat"_a = 0u)
     .def("pointee", &WrapperType::pointee, "recursive"_a = false)
     .def("qualified", &WrapperType::qualified, "qualifiers"_a = 0u)
     .def("unqualified", &WrapperType::unqualified)
@@ -177,11 +180,13 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
                           &WrapperFunction::setName)
     .def_property("name_overloaded", &WrapperFunction::getNameOverloaded,
                                      &WrapperFunction::setNameOverloaded)
+    .def_property("parent", &WrapperFunction::getParent,
+                            &WrapperFunction::setParent)
     .def_property("return_type", &WrapperFunction::getReturnType,
                                  &WrapperFunction::setReturnType)
     .def_readwrite("parameters", &WrapperFunction::Parameters)
-    .def_property("parent", &WrapperFunction::getParent,
-                            &WrapperFunction::setParent)
+    .def_property_readonly("self_parameter", &WrapperFunction::getSelfParameter)
+    .def_property_readonly("non_self_parameters", &WrapperFunction::getNonSelfParameters)
     .def("is_member", &WrapperFunction::isMember)
     .def("is_instance", &WrapperFunction::isInstance)
     .def("is_static", &WrapperFunction::isStatic)
@@ -203,12 +208,14 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
   py::class_<Parameter>(m, "Parameter")
     // XXX pass default argument
     .def(py::init<Identifier, WrapperType>(), "name"_a, "type"_a)
+    .def_static("self", &WrapperParameter::self, "type"_a)
     .def_property("name", &WrapperParameter::getName,
                           &WrapperParameter::setName)
     .def_property("type", &WrapperParameter::getType,
                           &WrapperParameter::setType)
     .def_property("default_argument", &WrapperParameter::getDefaultArgument,
-                                      &WrapperParameter::setDefaultArgument);
+                                      &WrapperParameter::setDefaultArgument)
+    .def("is_self", &WrapperParameter::isSelf);
 
   py::class_<DefaultArgument>(m, "DefaultArgument")
     // XXX constructor
