@@ -25,3 +25,8 @@ end
 
 test.TestAClass.set_static_state(1)
 assert(test.TestAClass.get_static_state() == 1)
+
+collectgarbage()
+collectgarbage()
+
+assert(test.TestAClass.get_num_destroyed() == 2)
