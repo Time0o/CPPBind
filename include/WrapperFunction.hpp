@@ -183,14 +183,20 @@ public:
   bool isInstance() const
   { return isMember() && !isConstructor() && !isStatic(); }
 
-  bool isStatic() const
-  { return IsStatic_; }
-
   bool isConstructor() const
   { return IsConstructor_; }
 
   bool isDestructor() const
   { return IsDestructor_; }
+
+  bool isStatic() const
+  { return IsStatic_; }
+
+  bool isConst() const
+  { return IsConst_; }
+
+  bool isNoexcept() const
+  { return IsNoexcept_; }
 
   bool isOverloaded() const
   { return Overload_ > 0u; }
@@ -207,6 +213,8 @@ private:
   bool IsConstructor_ = false;
   bool IsDestructor_ = false;
   bool IsStatic_ = false;
+  bool IsConst_ = false;
+  bool IsNoexcept_ = false;
 
   Identifier Name_;
 
@@ -226,51 +234,14 @@ public:
   : Wf_(Name)
   {}
 
-  WrapperFunctionBuilder &setParent(WrapperRecord const *Parent)
-  {
-    Wf_.Parent_ = Parent;
-    return *this;
-  }
-
-  WrapperFunctionBuilder &setReturnType(WrapperType const &Type)
-  {
-    Wf_.ReturnType_ = Type;
-    return *this;
-  }
-
-  WrapperFunctionBuilder &addParameter(WrapperParameter const &Param)
-  {
-    if (!Param.getDefaultArgument()) {
-#ifndef NDEBUG
-      if (!Wf_.Parameters.empty())
-        assert(!Wf_.Parameters.back().getDefaultArgument());
-#endif
-    }
-
-    Wf_.Parameters.emplace_back(Param);
-    return *this;
-  }
-
-  WrapperFunctionBuilder &setIsConstructor()
-  {
-    assert(Wf_.isMember());
-    Wf_.IsConstructor_ = true;
-    return *this;
-  }
-
-  WrapperFunctionBuilder &setIsDestructor()
-  {
-    assert(Wf_.isMember());
-    Wf_.IsDestructor_ = true;
-    return *this;
-  }
-
-  WrapperFunctionBuilder &setIsStatic()
-  {
-    assert(Wf_.isMember());
-    Wf_.IsStatic_ = true;
-    return *this;
-  }
+  WrapperFunctionBuilder &setParent(WrapperRecord const *Parent);
+  WrapperFunctionBuilder &setReturnType(WrapperType const &Type);
+  WrapperFunctionBuilder &addParameter(WrapperParameter const &Param);
+  WrapperFunctionBuilder &setIsConstructor();
+  WrapperFunctionBuilder &setIsDestructor();
+  WrapperFunctionBuilder &setIsStatic();
+  WrapperFunctionBuilder &setIsConst();
+  WrapperFunctionBuilder &setIsNoexcept();
 
   WrapperFunction build() const
   { return Wf_; }

@@ -90,6 +90,9 @@ WrapperFunction::WrapperFunction(WrapperRecord const *Parent,
   IsConstructor_(llvm::isa<clang::CXXConstructorDecl>(Decl)),
   IsDestructor_(llvm::isa<clang::CXXDestructorDecl>(Decl)),
   IsStatic_(Decl->isStatic()),
+  IsConst_(Decl->isConst()),
+  IsNoexcept_(Decl->getExceptionSpecType() == clang::EST_BasicNoexcept ||
+              Decl->getExceptionSpecType() == clang::EST_NoexceptTrue),
   Name_(determineName(Decl)),
   ReturnType_(Decl->getReturnType()),
   Parameters(determineParams(Decl))
@@ -133,8 +136,8 @@ WrapperFunction::getNonSelfParameters() const
   return std::vector<WrapperParameter>(Parameters.begin() + 1, Parameters.end());
 }
 
-Identifier WrapperFunction::determineName(clang::FunctionDecl const *Decl) const
-
+Identifier
+WrapperFunction::determineName(clang::FunctionDecl const *Decl) const
 {
   if (isConstructor()) {
     auto const *ConstructorDecl =
@@ -160,8 +163,8 @@ Identifier WrapperFunction::determineName(clang::FunctionDecl const *Decl) const
   return Identifier(Decl);
 }
 
-std::vector<WrapperParameter> WrapperFunction::determineParams(
-  clang::FunctionDecl const *Decl) const
+std::vector<WrapperParameter>
+WrapperFunction::determineParams(clang::FunctionDecl const *Decl) const
 {
   std::vector<WrapperParameter> ParamList;
 
@@ -200,6 +203,71 @@ std::vector<WrapperParameter> WrapperFunction::determineParams(
   }
 
   return ParamList;
+}
+
+WrapperFunctionBuilder &
+WrapperFunctionBuilder::setParent(WrapperRecord const *Parent)
+{
+  Wf_.Parent_ = Parent;
+  return *this;
+}
+
+WrapperFunctionBuilder &
+WrapperFunctionBuilder::setReturnType(WrapperType const &Type)
+{
+  Wf_.ReturnType_ = Type;
+  return *this;
+}
+
+WrapperFunctionBuilder &
+WrapperFunctionBuilder::addParameter(WrapperParameter const &Param)
+{
+#ifndef NDEBUG
+  if (!Param.getDefaultArgument() && !Wf_.Parameters.empty())
+      assert(!Wf_.Parameters.back().getDefaultArgument());
+#endif
+
+  Wf_.Parameters.emplace_back(Param);
+  return *this;
+}
+
+WrapperFunctionBuilder &
+WrapperFunctionBuilder::setIsConstructor()
+{
+  assert(Wf_.isMember());
+  Wf_.IsConstructor_ = true;
+  return *this;
+}
+
+WrapperFunctionBuilder &
+WrapperFunctionBuilder::setIsDestructor()
+{
+  assert(Wf_.isMember());
+  Wf_.IsDestructor_ = true;
+  return *this;
+}
+
+WrapperFunctionBuilder &
+WrapperFunctionBuilder::setIsStatic()
+{
+  assert(Wf_.isMember());
+  Wf_.IsStatic_ = true;
+  return *this;
+}
+
+WrapperFunctionBuilder &
+WrapperFunctionBuilder::setIsConst()
+{
+  assert(Wf_.isMember());
+  Wf_.IsConst_ = true;
+  return *this;
+}
+
+WrapperFunctionBuilder &
+WrapperFunctionBuilder::setIsNoexcept()
+{
+  Wf_.IsNoexcept_ = true;
+  return *this;
 }
 
 } // namespace cppbind

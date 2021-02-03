@@ -93,6 +93,7 @@ WrapperRecord::implicitDestructor(
   return WrapperFunctionBuilder(DestructorName)
          .setParent(this)
          .setIsDestructor()
+         .setIsNoexcept() // XXX unless base class destructor can throw
          .build();
 }
 

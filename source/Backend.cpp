@@ -189,9 +189,11 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def_property_readonly("non_self_parameters", &WrapperFunction::getNonSelfParameters)
     .def("is_member", &WrapperFunction::isMember)
     .def("is_instance", &WrapperFunction::isInstance)
-    .def("is_static", &WrapperFunction::isStatic)
     .def("is_constructor", &WrapperFunction::isConstructor)
     .def("is_destructor", &WrapperFunction::isDestructor)
+    .def("is_static", &WrapperFunction::isStatic)
+    .def("is_const", &WrapperFunction::isConst)
+    .def("is_noexcept", &WrapperFunction::isNoexcept)
     .def("is_overloaded", &WrapperFunction::isOverloaded);
 
   py::class_<Record>(m, "Record", py::dynamic_attr())
