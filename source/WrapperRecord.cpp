@@ -13,8 +13,7 @@ namespace cppbind
 {
 
 WrapperRecord::WrapperRecord(WrapperType const &Type)
-: Type_(Type),
-  Name_(Identifier(Type_.format(true)))
+: Type_(Type)
 {}
 
 WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl)

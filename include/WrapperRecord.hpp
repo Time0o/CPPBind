@@ -21,10 +21,7 @@ public:
   explicit WrapperRecord(clang::CXXRecordDecl const *Decl);
 
   Identifier getName() const
-  { return Name_; }
-
-  void setName(Identifier const &Name)
-  { Name_ = Name; }
+  { return Identifier(Type_.format(true)); }
 
   WrapperType getType() const
   { return Type_; }
@@ -50,7 +47,6 @@ private:
     clang::CXXRecordDecl const *Decl) const;
 
   WrapperType Type_;
-  Identifier Name_;
 
 public:
   std::vector<WrapperVariable> Variables;
