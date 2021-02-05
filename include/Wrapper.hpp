@@ -64,14 +64,14 @@ public:
   std::string inputFile() const
   { return InputFile_; }
 
-  std::deque<WrapperVariable> const &variables() const
-  { return Variables_; }
+  std::deque<WrapperVariable> const *variables() const
+  { return &Variables_; }
 
-  std::deque<WrapperRecord> const &records() const
-  { return Records_; }
+  std::deque<WrapperRecord> const *records() const
+  { return &Records_; }
 
-  std::deque<WrapperFunction> const &functions() const
-  { return Functions_; }
+  std::deque<WrapperFunction> const *functions() const
+  { return &Functions_; }
 
 private:
   void addIdentifier(WrapperVariable &Wv)

@@ -1,5 +1,11 @@
 #include <cassert>
+#include <iterator>
+#include <utility>
 #include <vector>
+
+#include "boost/graph/adjacency_list.hpp"
+#include "boost/graph/breadth_first_search.hpp"
+#include "boost/graph/topological_sort.hpp"
 
 #include "clang/AST/DeclCXX.h"
 
@@ -12,15 +18,92 @@
 namespace cppbind
 {
 
-WrapperRecord::WrapperRecord(WrapperType const &Type)
-: Type_(Type)
-{}
+void
+WrapperRecord::InheritanceGraph::add(WrapperRecord const *Wr)
+{
+  G_.graph()[boost::add_vertex(Wr, G_)] = Wr;
+
+  for (auto const &Pt : Wr->ParentTypes_) {
+    auto It(TypeLookup_.find(Pt));
+    assert(It != TypeLookup_.end());
+
+    auto VSource = G_.vertex(Wr);
+    auto VTarget = G_.vertex(It->second);
+
+    boost::add_edge(VSource, VTarget, G_.graph());
+  }
+}
+
+void
+WrapperRecord::InheritanceGraph::remove(WrapperRecord const *Wr)
+{ boost::remove_vertex(Wr, G_); }
+
+std::vector<WrapperRecord const *>
+WrapperRecord::InheritanceGraph::parents(WrapperRecord const *Wr,
+                                         bool Recursive) const
+{
+  std::vector<WrapperRecord const *> Bases;
+
+  auto V = G_.vertex(Wr);
+
+  if (Recursive) {
+    struct RecursiveBaseVisitor : public boost::default_bfs_visitor
+    {
+      RecursiveBaseVisitor(std::vector<WrapperRecord const *> &Bases)
+      : Bases_(Bases)
+      {}
+
+      void discover_vertex(Graph::vertex_descriptor const &V, Graph const &G) const
+      { Bases_.push_back(G[V]); }
+
+    private:
+      std::vector<WrapperRecord const *> &Bases_;
+    };
+
+    RecursiveBaseVisitor Visitor(Bases);
+    boost::breadth_first_search(G_.graph(), V, boost::visitor(Visitor));
+
+  } else {
+    typename boost::graph_traits<Graph>::out_edge_iterator It, End;
+    for (std::tie(It, End) = boost::out_edges(V, G_.graph()); It != End; ++It)
+      Bases.push_back(G_.graph()[boost::target(*It, G_.graph())]);
+  }
+
+  return Bases;
+}
+
+std::vector<WrapperRecord const *>
+WrapperRecord::InheritanceGraph::parentsFirstOrdering() const
+{
+  std::vector<boost::graph_traits<Graph>::vertex_descriptor> ParentsFirstVertices;
+  ParentsFirstVertices.reserve(boost::num_vertices(G_));
+
+  boost::topological_sort(G_.graph(), std::back_inserter(ParentsFirstVertices));
+
+  std::vector<WrapperRecord const *> ParentsFirstRecords;
+  ParentsFirstRecords.reserve(ParentsFirstVertices.size());
+
+  for (auto const &Vertex : ParentsFirstVertices)
+    ParentsFirstRecords.push_back(G_.graph()[Vertex]);
+
+  return ParentsFirstRecords;
+}
 
 WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl)
-: WrapperRecord(WrapperType(Decl->getTypeForDecl()))
+: Type_(Decl->getTypeForDecl()),
+  ParentTypes_(determineParentTypes(Decl))
 {
+  TypeLookup_.insert(std::make_pair(Type_, this));
+  InheritanceGraph_.add(this);
+
   Variables = determinePublicMemberVariables(Decl);
   Functions = determinePublicMemberFunctions(Decl);
+}
+
+WrapperRecord::~WrapperRecord()
+{
+  TypeLookup_.erase(Type_);
+  InheritanceGraph_.remove(this);
 }
 
 std::vector<WrapperFunction>
@@ -44,6 +127,18 @@ WrapperRecord::getDestructor() const
   }
 
   assert(false); // XXX
+}
+
+std::vector<WrapperType>
+WrapperRecord::determineParentTypes(
+  clang::CXXRecordDecl const *Decl) const
+{
+  std::vector<WrapperType> ParentTypes;
+
+  for (auto const &Base : Decl->bases())
+    ParentTypes.emplace_back(Base.getType());
+
+  return ParentTypes;
 }
 
 std::vector<WrapperVariable>
@@ -95,5 +190,8 @@ WrapperRecord::implicitDestructor(
          .setIsNoexcept() // XXX unless base class destructor can throw
          .build();
 }
+
+WrapperRecord::InheritanceGraph WrapperRecord::InheritanceGraph_;
+WrapperRecord::TypeLookup WrapperRecord::TypeLookup_;
 
 } // namespace cppbind

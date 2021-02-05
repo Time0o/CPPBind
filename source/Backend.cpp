@@ -123,9 +123,15 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
 
   py::class_<Wrapper, std::shared_ptr<Wrapper>>(m, "Wrapper")
     .def("input_file", &Wrapper::inputFile)
-    .def("variables", &Wrapper::variables)
-    .def("records", &Wrapper::records)
-    .def("functions", &Wrapper::functions);
+    .def("variables",
+         &Wrapper::variables,
+         py::return_value_policy::reference_internal)
+    .def("records",
+         &Wrapper::records,
+         py::return_value_policy::reference_internal)
+    .def("functions",
+         &Wrapper::functions,
+         py::return_value_policy::reference_internal);
 
   py::class_<Type>(m, "Type", py::dynamic_attr())
     .def(py::init<std::string>(), "which"_a = "void")
@@ -196,15 +202,23 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_noexcept", &WrapperFunction::isNoexcept)
     .def("is_overloaded", &WrapperFunction::isOverloaded);
 
-  py::class_<Record>(m, "Record", py::dynamic_attr())
-    .def(py::init<WrapperType>(), "type"_a)
+  auto PyRecord = py::class_<Record>(m, "Record", py::dynamic_attr())
     .def_property_readonly("name", &WrapperRecord::getName)
-    .def_property("type", &WrapperRecord::getType,
-                          &WrapperRecord::setType)
-    .def_readwrite("variables", &WrapperRecord::Variables)
-    .def_readwrite("functions", &WrapperRecord::Functions)
+    .def_property_readonly("type", &WrapperRecord::getType)
+    .def_property_readonly("parents",
+                           &WrapperRecord::getParents,
+                           py::return_value_policy::reference_internal)
+    .def_property_readonly("parents_recursive",
+                           &WrapperRecord::getParentsRecursive,
+                           py::return_value_policy::reference_internal)
     .def_property_readonly("constructors", &WrapperRecord::getConstructors)
-    .def_property_readonly("destructor", &WrapperRecord::getDestructor);
+    .def_property_readonly("destructor", &WrapperRecord::getDestructor)
+    .def_readwrite("variables", &WrapperRecord::Variables)
+    .def_readwrite("functions", &WrapperRecord::Functions);
+
+  py::enum_<Record::Ordering>(PyRecord, "Ordering")
+    .value("PARENTS_FIRST_ORDERING", Record::PARENTS_FIRST_ORDERING)
+    .export_values();
 
   py::class_<Parameter>(m, "Parameter")
     // XXX pass default argument

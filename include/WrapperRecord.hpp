@@ -1,7 +1,11 @@
 #ifndef GUARD_WRAPPER_RECORD_H
 #define GUARD_WRAPPER_RECORD_H
 
+#include <unordered_map>
 #include <vector>
+
+#include "boost/graph/adjacency_list.hpp"
+#include "boost/graph/labeled_graph.hpp"
 
 #include "clang/AST/DeclCXX.h"
 
@@ -15,10 +19,53 @@ namespace cppbind
 
 class WrapperRecord
 {
+  using TypeLookup = std::unordered_map<WrapperType, WrapperRecord const *>;
+
+  class InheritanceGraph
+  {
+  public:
+    void add(WrapperRecord const *Wr);
+    void remove(WrapperRecord const *Wr);
+
+    std::vector<WrapperRecord const *>
+    parents(WrapperRecord const *Wr, bool Recursive = false) const;
+
+    std::vector<WrapperRecord const *>
+    parentsFirstOrdering() const;
+
+  private:
+    using Graph = boost::adjacency_list<boost::vecS,
+                                        boost::vecS,
+                                        boost::directedS,
+                                        WrapperRecord const *>;
+
+    using LabeledGraph = boost::labeled_graph<Graph, WrapperRecord const *>;
+
+    LabeledGraph G_;
+  };
+
 public:
-  explicit WrapperRecord(WrapperType const &Type);
+  enum Ordering
+  {
+    PARENTS_FIRST_ORDERING
+  };
 
   explicit WrapperRecord(clang::CXXRecordDecl const *Decl);
+
+  ~WrapperRecord();
+
+  WrapperRecord(WrapperRecord const &)  = delete;
+  WrapperRecord(WrapperRecord &&)       = delete;
+  void operator=(WrapperRecord const &) = delete;
+  void operator=(WrapperRecord &&)      = delete;
+
+  static std::vector<WrapperRecord const *> ordering(Ordering Ord)
+  {
+    switch (Ord) {
+    case PARENTS_FIRST_ORDERING:
+        return InheritanceGraph_.parentsFirstOrdering();
+    }
+  }
 
   Identifier getName() const
   { return Identifier(Type_.format(true)); }
@@ -26,14 +73,20 @@ public:
   WrapperType getType() const
   { return Type_; }
 
-  void setType(WrapperType const &Type)
-  { Type_ = Type; }
+  std::vector<WrapperRecord const *> getParents() const
+  { return InheritanceGraph_.parents(this); }
+
+  std::vector<WrapperRecord const *> getParentsRecursive() const
+  { return InheritanceGraph_.parents(this, true); }
 
   std::vector<WrapperFunction> getConstructors() const;
 
   WrapperFunction getDestructor() const;
 
 private:
+  std::vector<WrapperType> determineParentTypes(
+    clang::CXXRecordDecl const *Decl) const;
+
   std::vector<WrapperVariable> determinePublicMemberVariables(
     clang::CXXRecordDecl const *Decl) const;
 
@@ -47,10 +100,15 @@ private:
     clang::CXXRecordDecl const *Decl) const;
 
   WrapperType Type_;
+  std::vector<WrapperType> ParentTypes_;
 
 public:
   std::vector<WrapperVariable> Variables;
   std::vector<WrapperFunction> Functions;
+
+private:
+  static TypeLookup TypeLookup_;
+  static InheritanceGraph InheritanceGraph_;
 };
 
 } // namespace cppbind
