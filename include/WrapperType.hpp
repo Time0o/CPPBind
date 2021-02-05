@@ -21,6 +21,8 @@ namespace cppbind
 
 class WrapperType
 {
+  friend std::hash<WrapperType>;
+
   struct Tag
   { };
 
@@ -166,5 +168,17 @@ private:
 };
 
 } // namespace cppbind
+
+namespace std
+{
+
+template<>
+struct hash<cppbind::WrapperType>
+{
+  std::size_t operator()(cppbind::WrapperType const &Wt) const
+  { return reinterpret_cast<std::size_t>(Wt.typePtr()); }
+};
+
+} // namespace std
 
 #endif // GUARD_WRAPPER_TYPE_H
