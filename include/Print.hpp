@@ -32,8 +32,7 @@ inline std::string printQualType(clang::QualType const &Type, PrintingPolicy PP)
     }
   case CURRENT:
     {
-      clang::PrintingPolicy const &CurrentPP(
-        CompilerState()->getASTContext().getPrintingPolicy());
+      clang::PrintingPolicy const &CurrentPP(ASTContext().getPrintingPolicy());
 
       return Type.getAsString(CurrentPP);
     }

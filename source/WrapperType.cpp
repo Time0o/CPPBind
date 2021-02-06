@@ -14,7 +14,7 @@ namespace cppbind
 
 WrapperType::WrapperType(clang::QualType const &Type,
                          WrapperType::TagSet const &Tags)
-: Type_(Type.getDesugaredType(CompilerState()->getASTContext())),
+: Type_(Type.getDesugaredType(ASTContext())),
   Tags_(Tags)
 {}
 
@@ -64,7 +64,7 @@ WrapperType::isScopedEnum() const
 bool
 WrapperType::isIntegral() const
 {
-  if (!type()->isIntegralType(CompilerState()->getASTContext()))
+  if (!type()->isIntegralType(ASTContext()))
     return false;
 
   return !isBoolean() && !isScopedEnum();
@@ -131,17 +131,11 @@ WrapperType::isConst() const
 
 WrapperType
 WrapperType::lvalueReferenceTo() const
-{
-  return WrapperType(
-    CompilerState()->getASTContext().getLValueReferenceType(type()), Tags_);
-}
+{ return WrapperType(ASTContext().getLValueReferenceType(type()), Tags_); }
 
 WrapperType
 WrapperType::rvalueReferenceTo() const
-{
-  return WrapperType(
-    CompilerState()->getASTContext().getRValueReferenceType(type()), Tags_);
-}
+{ return WrapperType(ASTContext().getRValueReferenceType(type()), Tags_); }
 
 WrapperType
 WrapperType::referenced() const
@@ -150,8 +144,7 @@ WrapperType::referenced() const
 WrapperType
 WrapperType::pointerTo(unsigned Repeat) const
 {
-  WrapperType PointerTo(
-    CompilerState()->getASTContext().getPointerType(type()), Tags_);
+  WrapperType PointerTo(ASTContext().getPointerType(type()), Tags_);
 
   return Repeat == 0u ? PointerTo : PointerTo.pointerTo(Repeat - 1u);
 }

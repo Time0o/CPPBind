@@ -29,7 +29,7 @@ namespace cppbind
 
 WrapperDefaultArgument::WrapperDefaultArgument(clang::Expr const *Expr)
 {
-  auto &Ctx(CompilerState()->getASTContext());
+  auto &Ctx(ASTContext());
 
   if (Expr->HasSideEffects(Ctx))
     throw CPPBindError("default value must not have side effects");

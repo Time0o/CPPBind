@@ -6,6 +6,7 @@
 #include <optional>
 #include <string>
 
+#include "clang/AST/ASTContext.h"
 #include "clang/Frontend/CompilerInstance.h"
 
 #include "Mixin.hpp"
@@ -64,6 +65,9 @@ private:
 
 inline CompilerStateRegistry &CompilerState()
 { return CompilerStateRegistry::instance(); }
+
+inline clang::ASTContext &ASTContext()
+{ return CompilerState()->getASTContext(); }
 
 } // namespace cppbind
 
