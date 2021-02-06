@@ -111,7 +111,8 @@ public:
 
   std::string str() const;
 
-  std::string format(bool Compact = false,
+  std::string format(bool Mangled = false,
+                     bool Compact = false,
                      Identifier::Case Case = Identifier::ORIG_CASE,
                      Identifier::Quals Quals = Identifier::KEEP_QUALS) const;
 

@@ -4,8 +4,11 @@
 #include <string>
 
 #include "clang/AST/ASTContext.h"
+#include "clang/AST/Mangle.h"
 #include "clang/AST/PrettyPrinter.h"
 #include "clang/AST/Type.h"
+
+#include "llvm/Support/raw_ostream.h"
 
 #include "CompilerState.hpp"
 
@@ -39,8 +42,27 @@ inline std::string printQualType(clang::QualType const &Type, PrintingPolicy PP)
   }
 }
 
+inline std::string printMangledQualType(clang::QualType const &Type)
+{
+  auto *MangleContext = clang::ItaniumMangleContext::create(
+                          ASTContext(),
+                          ASTContext().getDiagnostics());
+
+  std::string MangledName;
+  llvm::raw_string_ostream Os(MangledName);
+
+  MangleContext->mangleTypeName(Type, Os);
+
+  delete MangleContext;
+
+  return MangledName;
+}
+
 inline std::string printType(clang::Type const *Type, PrintingPolicy PP)
 { return printQualType(clang::QualType(Type, 0), PP); }
+
+inline std::string printMangledType(clang::Type const *Type)
+{ return printMangledQualType(clang::QualType(Type, 0)); }
 
 } // namespace cppbind
 

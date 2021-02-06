@@ -16,6 +16,7 @@
 #include "Logging.hpp"
 #include "Options.hpp"
 #include "Path.hpp"
+#include "Snippet.hpp"
 #include "Wrapper.hpp"
 #include "WrapperVariable.hpp"
 #include "WrapperFunction.hpp"
@@ -140,6 +141,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("__str__", &WrapperType::str)
     .def("str", &WrapperType::str)
     .def("format", &WrapperType::format,
+         "mangled"_a = false,
          "compact"_a = false,
          "case"_a = Identifier::ORIG_CASE,
          "quals"_a = Identifier::KEEP_QUALS)

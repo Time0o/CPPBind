@@ -106,6 +106,18 @@ WrapperRecord::~WrapperRecord()
   InheritanceGraph_.remove(this);
 }
 
+Identifier
+WrapperRecord::getName() const
+{ return Identifier(Type_.format(false, true)); }
+
+std::vector<WrapperRecord const *>
+WrapperRecord::getParents() const
+{ return InheritanceGraph_.parents(this); }
+
+std::vector<WrapperRecord const *>
+WrapperRecord::getParentsRecursive() const
+{ return InheritanceGraph_.parents(this, true); }
+
 std::vector<WrapperFunction>
 WrapperRecord::getConstructors() const
 {

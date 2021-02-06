@@ -272,10 +272,14 @@ WrapperType::str() const
 { return format(); }
 
 std::string
-WrapperType::format(bool Compact,
+WrapperType::format(bool Mangled,
+                    bool Compact,
                     Identifier::Case Case,
                     Identifier::Quals Quals) const
 {
+  if (Mangled)
+    return printMangledQualType(type());
+
   if (getBase().isRecord()) {
     PrintingPolicy PPCompact = PrintingPolicy::CURRENT;
     PrintingPolicy PPNonCompact = PrintingPolicy::NONE;

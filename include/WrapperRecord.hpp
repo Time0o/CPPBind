@@ -63,20 +63,15 @@ public:
     }
   }
 
-  Identifier getName() const
-  { return Identifier(Type_.format(true)); }
+  Identifier getName() const;
 
   WrapperType getType() const
   { return Type_; }
 
-  std::vector<WrapperRecord const *> getParents() const
-  { return InheritanceGraph_.parents(this); }
-
-  std::vector<WrapperRecord const *> getParentsRecursive() const
-  { return InheritanceGraph_.parents(this, true); }
+  std::vector<WrapperRecord const *> getParents() const;
+  std::vector<WrapperRecord const *> getParentsRecursive() const;
 
   std::vector<WrapperFunction> getConstructors() const;
-
   WrapperFunction getDestructor() const;
 
 private:
