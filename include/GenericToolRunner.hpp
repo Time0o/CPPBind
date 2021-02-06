@@ -12,7 +12,7 @@
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
 
-#include "FundamentalTypesHeader.hpp"
+#include "Snippet.hpp"
 
 namespace clang { class FrontendAction; }
 
@@ -28,8 +28,7 @@ public:
     clang::tooling::ClangTool Tool(Parser.getCompilations(),
                                    Parser.getSourcePathList());
 
-    FundamentalTypesHeader FTH;
-    adjustArguments(Tool, FTH.path());
+    adjustArguments(Tool);
 
     beforeRun();
 
@@ -80,6 +79,15 @@ protected:
   }
 
 private:
+  static std::vector<std::string> extraIncludes()
+  {
+    static FundamentalTypesSnippet Ft;
+
+    Ft.fileCreate();
+
+    return {Ft.filePath()};
+  }
+
   static std::vector<std::string> clangIncludes()
   {
     std::istringstream SS(CLANG_INCLUDE_PATHS);
@@ -93,8 +101,7 @@ private:
     return Includes;
   }
 
-  static void adjustArguments(clang::tooling::ClangTool &Tool,
-                              std::string const &FundamentalTypesHeaderPath)
+  static void adjustArguments(clang::tooling::ClangTool &Tool)
   {
     std::vector<clang::tooling::ArgumentsAdjuster> ArgumentsAdjusters;
 
@@ -102,11 +109,13 @@ private:
     auto END = clang::tooling::ArgumentInsertPosition::END;
 
     ArgumentsAdjusters.push_back(
-      clang::tooling::getInsertArgumentAdjuster(
-        {"-include", FundamentalTypesHeaderPath}, BEGIN));
-
-    ArgumentsAdjusters.push_back(
       clang::tooling::getInsertArgumentAdjuster("-xc++-header", BEGIN));
+
+    for (auto const &ExtraInclude : extraIncludes()) {
+      ArgumentsAdjusters.push_back(
+        clang::tooling::getInsertArgumentAdjuster(
+          {"-include", ExtraInclude}, END));
+    }
 
     ArgumentsAdjusters.push_back(
       clang::tooling::getInsertArgumentAdjuster(clangIncludes(), END));

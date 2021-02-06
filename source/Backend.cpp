@@ -17,6 +17,7 @@
 #include "Options.hpp"
 #include "Path.hpp"
 #include "Snippet.hpp"
+#include "Typeinfo.hpp"
 #include "Wrapper.hpp"
 #include "WrapperVariable.hpp"
 #include "WrapperFunction.hpp"
@@ -218,10 +219,6 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def_readwrite("variables", &WrapperRecord::Variables)
     .def_readwrite("functions", &WrapperRecord::Functions);
 
-  py::enum_<Record::Ordering>(PyRecord, "Ordering")
-    .value("PARENTS_FIRST_ORDERING", Record::PARENTS_FIRST_ORDERING)
-    .export_values();
-
   py::class_<Parameter>(m, "Parameter")
     // XXX pass default argument
     .def(py::init<Identifier, WrapperType>(), "name"_a, "type"_a)
@@ -241,6 +238,13 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_int", &WrapperDefaultArgument::isInt)
     .def("is_float", &WrapperDefaultArgument::isFloat)
     .def("is_true", &WrapperDefaultArgument::isTrue);
+
+  py::class_<Typeinfo>(m, "Typeinfo")
+    .def_property_readonly_static(
+      "snippet",
+      [](py::object const &){ return Snippet<TypeinfoSnippet>::str(); })
+    .def_static("make_typed_ptr", &Typeinfo::makeTypedPtr, "arg"_a)
+    .def_static("typed_ptr_cast", &Typeinfo::typedPtrCast, "type"_a, "arg"_a);
 
   #define GET_OPT(NAME) [](OptionsRegistry const &Self) \
                         { return Self.get<>(NAME); }

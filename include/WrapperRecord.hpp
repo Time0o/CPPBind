@@ -20,6 +20,8 @@ namespace cppbind
 
 class WrapperRecord : private mixin::NotCopyOrMoveable
 {
+  friend struct Typeinfo;
+
   using TypeLookup = std::unordered_map<WrapperType, WrapperRecord const *>;
 
   class InheritanceGraph
@@ -46,22 +48,9 @@ class WrapperRecord : private mixin::NotCopyOrMoveable
   };
 
 public:
-  enum Ordering
-  {
-    PARENTS_FIRST_ORDERING
-  };
-
   explicit WrapperRecord(clang::CXXRecordDecl const *Decl);
 
   ~WrapperRecord();
-
-  static std::vector<WrapperRecord const *> ordering(Ordering Ord)
-  {
-    switch (Ord) {
-    case PARENTS_FIRST_ORDERING:
-        return InheritanceGraph_.parentsFirstOrdering();
-    }
-  }
 
   Identifier getName() const;
 
@@ -98,6 +87,19 @@ public:
   std::vector<WrapperFunction> Functions;
 
 private:
+  enum Ordering
+  {
+    PARENTS_FIRST_ORDERING
+  };
+
+  static std::vector<WrapperRecord const *> ordering(Ordering Ord)
+  {
+    switch (Ord) {
+    case PARENTS_FIRST_ORDERING:
+        return InheritanceGraph_.parentsFirstOrdering();
+    }
+  }
+
   static TypeLookup TypeLookup_;
   static InheritanceGraph InheritanceGraph_;
 };
