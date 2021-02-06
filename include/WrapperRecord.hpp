@@ -10,6 +10,7 @@
 #include "clang/AST/DeclCXX.h"
 
 #include "Identifier.hpp"
+#include "Mixin.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperType.hpp"
 #include "WrapperVariable.hpp"
@@ -17,7 +18,7 @@
 namespace cppbind
 {
 
-class WrapperRecord
+class WrapperRecord : private mixin::NotCopyOrMoveable
 {
   using TypeLookup = std::unordered_map<WrapperType, WrapperRecord const *>;
 
@@ -53,11 +54,6 @@ public:
   explicit WrapperRecord(clang::CXXRecordDecl const *Decl);
 
   ~WrapperRecord();
-
-  WrapperRecord(WrapperRecord const &)  = delete;
-  WrapperRecord(WrapperRecord &&)       = delete;
-  void operator=(WrapperRecord const &) = delete;
-  void operator=(WrapperRecord &&)      = delete;
 
   static std::vector<WrapperRecord const *> ordering(Ordering Ord)
   {

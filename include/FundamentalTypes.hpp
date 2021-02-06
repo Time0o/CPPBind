@@ -7,21 +7,17 @@
 
 #include "clang/AST/Type.h"
 
+#include "Mixin.hpp"
 #include "Print.hpp"
 
 namespace cppbind
 {
 
-class FundamentalTypeRegistry
+class FundamentalTypeRegistry : private mixin::NotCopyOrMoveable
 {
   friend FundamentalTypeRegistry &FundamentalTypes();
 
 public:
-  FundamentalTypeRegistry(FundamentalTypeRegistry const &) = delete;
-  FundamentalTypeRegistry(FundamentalTypeRegistry &&)      = delete;
-  void operator=(FundamentalTypeRegistry const &)          = delete;
-  void operator=(FundamentalTypeRegistry &&)               = delete;
-
   void clear()
   { FundamentalTypes_.clear(); }
 

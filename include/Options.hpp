@@ -19,6 +19,7 @@
 #include "llvm/Support/CommandLine.h"
 
 #include "Error.hpp"
+#include "Mixin.hpp"
 #include "String.hpp"
 
 namespace cppbind
@@ -28,7 +29,7 @@ template<typename T>
 using OptionChoices =
   std::initializer_list<std::tuple<llvm::StringRef, T, llvm::StringRef>>;
 
-class OptionsRegistry
+class OptionsRegistry : private mixin::NotCopyOrMoveable
 {
   friend void initOptions();
   friend OptionsRegistry &Options();
@@ -84,11 +85,6 @@ class OptionsRegistry
   };
 
 public:
-  OptionsRegistry(OptionsRegistry const &)  = delete;
-  OptionsRegistry(OptionsRegistry &&)       = delete;
-  void operator=(OptionsRegistry const &) = delete;
-  void operator=(OptionsRegistry &&)      = delete;
-
   template<typename T = std::string>
   T get(llvm::StringRef Name) const
   {

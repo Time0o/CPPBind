@@ -8,19 +8,16 @@
 
 #include "clang/Frontend/CompilerInstance.h"
 
+#include "Mixin.hpp"
+
 namespace cppbind
 {
 
-class CompilerStateRegistry
+class CompilerStateRegistry : private mixin::NotCopyOrMoveable
 {
   friend CompilerStateRegistry &CompilerState();
 
 public:
-  CompilerStateRegistry(CompilerStateRegistry const &) = delete;
-  CompilerStateRegistry(CompilerStateRegistry &&)      = delete;
-  void operator=(CompilerStateRegistry const &)        = delete;
-  void operator=(CompilerStateRegistry &&)             = delete;
-
   void updateFile(std::string const &File)
   { File_ = File; }
 
