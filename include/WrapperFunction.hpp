@@ -202,8 +202,9 @@ public:
   { return Overload_ > 0u; }
 
 private:
-  Identifier determineName(
-    clang::FunctionDecl const *Decl) const;
+  static bool determineIfNoexcept(clang::FunctionDecl const *Decl);
+
+  Identifier determineName(clang::FunctionDecl const *Decl) const;
 
   std::vector<WrapperParameter> determineParams(
     clang::FunctionDecl const *Decl) const;

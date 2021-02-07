@@ -79,7 +79,8 @@ std::string WrapperDefaultArgument::str() const
 }
 
 WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
-: Name_(determineName(Decl)),
+: IsNoexcept_(determineIfNoexcept(Decl)),
+  Name_(determineName(Decl)),
   ReturnType_(Decl->getReturnType()),
   Parameters(determineParams(Decl))
 { assert(!Decl->isTemplateInstantiation()); } // XXX
@@ -91,8 +92,7 @@ WrapperFunction::WrapperFunction(WrapperRecord const *Parent,
   IsDestructor_(llvm::isa<clang::CXXDestructorDecl>(Decl)),
   IsStatic_(Decl->isStatic()),
   IsConst_(Decl->isConst()),
-  IsNoexcept_(Decl->getExceptionSpecType() == clang::EST_BasicNoexcept ||
-              Decl->getExceptionSpecType() == clang::EST_NoexceptTrue),
+  IsNoexcept_(determineIfNoexcept(Decl)),
   Name_(determineName(Decl)),
   ReturnType_(Decl->getReturnType()),
   Parameters(determineParams(Decl))
@@ -134,6 +134,13 @@ WrapperFunction::getNonSelfParameters() const
     return Parameters;
 
   return std::vector<WrapperParameter>(Parameters.begin() + 1, Parameters.end());
+}
+
+bool
+WrapperFunction::determineIfNoexcept(clang::FunctionDecl const *Decl)
+{
+  return Decl->getExceptionSpecType() == clang::EST_BasicNoexcept ||
+         Decl->getExceptionSpecType() == clang::EST_NoexceptTrue;
 }
 
 Identifier
