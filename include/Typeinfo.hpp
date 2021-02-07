@@ -24,7 +24,7 @@ struct Typeinfo
     { return Wr->getType().format(true); };
 
     for (auto const *Wr :
-         WrapperRecord::ordering(WrapperRecord::PARENTS_FIRST_ORDERING)) {
+         WrapperRecord::getOrdering(WrapperRecord::PARENTS_FIRST_ORDERING)) {
 
       SS << "type_instance<" << unmangledTypename(Wr);
 

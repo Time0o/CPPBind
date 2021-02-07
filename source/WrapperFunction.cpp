@@ -23,6 +23,7 @@
 #include "Logging.hpp"
 #include "Options.hpp"
 #include "String.hpp"
+#include "WrapperRecord.hpp"
 
 namespace cppbind
 {
@@ -85,10 +86,9 @@ WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
   IsNoexcept_(determineIfNoexcept(Decl))
 { assert(!Decl->isTemplateInstantiation()); } // XXX
 
-WrapperFunction::WrapperFunction(WrapperRecord const *Parent,
-                                 clang::CXXMethodDecl const *Decl)
+WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
 : Name_(determineName(Decl)),
-  Parent_(Parent),
+  Parent_(WrapperRecord::getFromType(Decl->getParent()->getTypeForDecl())),
   ReturnType_(Decl->getReturnType()),
   Parameters(determineParams(Decl)),
   IsConstructor_(llvm::isa<clang::CXXConstructorDecl>(Decl)),

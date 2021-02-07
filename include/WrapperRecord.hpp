@@ -2,6 +2,7 @@
 #define GUARD_WRAPPER_RECORD_H
 
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "boost/graph/adjacency_list.hpp"
@@ -20,8 +21,6 @@ namespace cppbind
 
 class WrapperRecord : private mixin::NotCopyOrMoveable
 {
-  friend struct Typeinfo;
-
   using TypeLookup = std::unordered_map<WrapperType, WrapperRecord const *>;
 
   class InheritanceGraph
@@ -48,6 +47,20 @@ class WrapperRecord : private mixin::NotCopyOrMoveable
   };
 
 public:
+  template<typename ...ARGS>
+  static WrapperRecord const *getFromType(ARGS &&...args)
+  {
+    auto It(TypeLookup_.find(WrapperType(std::forward<ARGS>(args)...)));
+    assert(It != TypeLookup_.end());
+
+    return It->second;
+  }
+
+  enum Ordering
+  { PARENTS_FIRST_ORDERING };
+
+  static std::vector<WrapperRecord const *> getOrdering(Ordering Ord);
+
   explicit WrapperRecord(clang::CXXRecordDecl const *Decl);
 
   ~WrapperRecord();
@@ -87,19 +100,6 @@ public:
   std::vector<WrapperFunction> Functions;
 
 private:
-  enum Ordering
-  {
-    PARENTS_FIRST_ORDERING
-  };
-
-  static std::vector<WrapperRecord const *> ordering(Ordering Ord)
-  {
-    switch (Ord) {
-    case PARENTS_FIRST_ORDERING:
-        return InheritanceGraph_.parentsFirstOrdering();
-    }
-  }
-
   static TypeLookup TypeLookup_;
   static InheritanceGraph InheritanceGraph_;
 };

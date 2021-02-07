@@ -142,8 +142,7 @@ public:
 
   explicit WrapperFunction(clang::FunctionDecl const *Decl);
 
-  explicit WrapperFunction(WrapperRecord const *Parent,
-                           clang::CXXMethodDecl const *Decl);
+  explicit WrapperFunction(clang::CXXMethodDecl const *Decl);
 
   void overload(unsigned Overload)
   { Overload_ = Overload; }

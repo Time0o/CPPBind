@@ -24,11 +24,8 @@ WrapperRecord::InheritanceGraph::add(WrapperRecord const *Wr)
   G_.graph()[boost::add_vertex(Wr, G_)] = Wr;
 
   for (auto const &Pt : Wr->ParentTypes_) {
-    auto It(TypeLookup_.find(Pt));
-    assert(It != TypeLookup_.end());
-
     auto VSource = G_.vertex(Wr);
-    auto VTarget = G_.vertex(It->second);
+    auto VTarget = G_.vertex(getFromType(Pt));
 
     boost::add_edge(VSource, VTarget, G_.graph());
   }
@@ -87,6 +84,15 @@ WrapperRecord::InheritanceGraph::parentsFirstOrdering() const
     ParentsFirstRecords.push_back(G_.graph()[Vertex]);
 
   return ParentsFirstRecords;
+}
+
+std::vector<WrapperRecord const *>
+WrapperRecord::getOrdering(Ordering Ord)
+{
+  switch (Ord) {
+  case PARENTS_FIRST_ORDERING:
+      return InheritanceGraph_.parentsFirstOrdering();
+  }
 }
 
 WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl)
@@ -172,7 +178,7 @@ WrapperRecord::determinePublicMemberFunctions(
 
   for (auto const *MethodDecl : Decl->methods()) {
     if (MethodDecl->getAccess() == clang::AS_public && !MethodDecl->isDeleted())
-      PublicMemberFunctions.emplace_back(this, MethodDecl);
+      PublicMemberFunctions.emplace_back(MethodDecl);
   }
 
   return PublicMemberFunctions;
