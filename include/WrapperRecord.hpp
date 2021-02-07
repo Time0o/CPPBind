@@ -76,6 +76,9 @@ public:
   std::vector<WrapperFunction> getConstructors() const;
   WrapperFunction getDestructor() const;
 
+  bool isAbstract() const
+  { return IsAbstract_; }
+
 private:
   std::vector<WrapperType> determineBaseTypes(
     clang::CXXRecordDecl const *Decl) const;
@@ -100,6 +103,8 @@ public:
   std::vector<WrapperFunction> Functions;
 
 private:
+  bool IsAbstract_;
+
   static TypeLookup TypeLookup_;
   static InheritanceGraph InheritanceGraph_;
 };

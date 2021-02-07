@@ -150,9 +150,6 @@ WrapperFunction::determineName(clang::FunctionDecl const *Decl)
   if (decl::isConstructor(Decl)) {
     auto const *ConstructorDecl = decl::asConstructor(Decl);
 
-    assert(!ConstructorDecl->isCopyConstructor()); // XXX
-    assert(!ConstructorDecl->isMoveConstructor()); // XXX
-
     Identifier Parent(Identifier(ConstructorDecl->getParent()));
 
     return Identifier(Identifier::NEW).qualified(Parent);
@@ -171,14 +168,6 @@ std::vector<WrapperParameter>
 WrapperFunction::determineParams(clang::FunctionDecl const *Decl)
 {
   std::vector<WrapperParameter> ParamList;
-
-#ifndef NDEBUG
-  auto const *MethodDecl = dynamic_cast<clang::CXXMethodDecl const *>(Decl);
-  if (MethodDecl) {
-    assert(!MethodDecl->isOverloadedOperator()); // XXX
-    assert(!MethodDecl->isVirtual()); // XXX
-  }
-#endif
 
   auto Params(Decl->parameters());
 
@@ -213,6 +202,7 @@ WrapperFunction::determineParams(clang::FunctionDecl const *Decl)
 WrapperFunctionBuilder &
 WrapperFunctionBuilder::setParent(WrapperRecord const *Parent)
 {
+  Wf_.setName(Wf_.getName().unqualified().qualified(Parent->getName()));
   Wf_.Parent_ = Parent;
   return *this;
 }

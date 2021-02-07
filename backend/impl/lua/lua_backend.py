@@ -107,6 +107,9 @@ class LuaBackend(Backend):
         pass
 
     def wrap_record(self, r):
+        if r.is_abstract():
+            return
+
         for f in r.functions:
             if f.is_constructor() or f.is_instance():
                 f.parameters.insert(0, Parameter.self(f.parent.type.pointer_to(1)))
@@ -467,6 +470,8 @@ class LuaBackend(Backend):
 
     @staticmethod
     def _register_records(records):
+        records = [r for r in records if not r.is_abstract()]
+
         if not records:
             return "// no records"
 

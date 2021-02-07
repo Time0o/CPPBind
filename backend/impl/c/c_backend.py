@@ -1,7 +1,7 @@
 from enum import Enum
 
 from backend import *
-from cppbind import Identifier as Id, Type, Variable, Record, Function, Parameter
+from cppbind import Identifier as Id, Type, Variable, Record, Function, Parameter, Typeinfo
 
 Type.__str__ = lambda self: self.str()
 
@@ -77,37 +77,44 @@ class CBackend(Backend):
 
     def wrap_before(self):
         self._wrapper_header.append(text.code(
-            f"""
-            #ifndef {self._header_guard()}
-            #define {self._header_guard()}
+            """
+            #ifndef {header_guard}
+            #define {header_guard}
 
             #ifdef __cplusplus
             extern "C" {{
             #endif
 
             #include <stdbool.h>
-            """))
+            """,
+            header_guard=self._header_guard()))
 
         self._wrapper_source.append(text.code(
-            f"""
+            """
             #include <utility>
 
-            {self.input_file().include()}
+            {include_input_header}
+
+            {typeinfo_snippet}
 
             extern "C" {{
 
-            {self._wrapper_header.include()}
-            """))
+            {include_wrapper_header}
+            """,
+            include_input_header=self.input_file().include(),
+            include_wrapper_header=self._wrapper_header.include(),
+            typeinfo_snippet=Typeinfo.snippet))
 
     def wrap_after(self):
         self._wrapper_header.append(text.code(
-            f"""
+            """
             #ifdef __cplusplus
             }} // extern "C"
             #endif
 
-            #endif // {self._header_guard()}
-            """))
+            #endif // {header_guard}
+            """,
+            header_guard=self._header_guard()))
 
         self._wrapper_source.append(text.code(
             """
@@ -168,16 +175,19 @@ class CBackend(Backend):
 
     def _function_body(self, f):
         if f.is_instance():
-            this = f.self_type.cast(Id.SELF)
+            this = Id.SELF
 
         parameters = ', '.join(self._function_parameter_forwardings(f))
 
+        mtp = Typeinfo.make_typed_ptr
+        tpc = Typeinfo.typed_ptr_cast
+
         if f.is_constructor():
-            body = f"new {f.parent.type}({parameters})"
+            body = mtp(f"new {f.parent.type}({parameters})")
         elif f.is_destructor():
-            body = f"delete {this}"
+            body = f"delete {tpc(f.parent.type, this)}"
         elif f.is_instance():
-            body = f"{this}->{f.name.format(quals=Id.REMOVE_QUALS)}({parameters})"
+            body = f"{tpc(f.parent.type, this)}->{f.name.format(quals=Id.REMOVE_QUALS)}({parameters})"
         else:
             body = f"{f.name}({parameters})"
 

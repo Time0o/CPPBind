@@ -1,5 +1,7 @@
 #include <cassert>
+#include <deque>
 #include <iterator>
+#include <queue>
 #include <utility>
 #include <vector>
 
@@ -39,14 +41,14 @@ WrapperRecord::InheritanceGraph::remove(WrapperRecord const *Wr)
 std::vector<WrapperRecord const *>
 WrapperRecord::InheritanceGraph::bases(WrapperRecord const *Wr, bool Recursive) const
 {
-  std::vector<WrapperRecord const *> Bases;
+  std::deque<WrapperRecord const *> Bases;
 
   auto V = G_.vertex(Wr);
 
   if (Recursive) {
     struct RecursiveBaseVisitor : public boost::default_bfs_visitor
     {
-      RecursiveBaseVisitor(std::vector<WrapperRecord const *> &Bases)
+      RecursiveBaseVisitor(std::deque<WrapperRecord const *> &Bases)
       : Bases_(Bases)
       {}
 
@@ -54,11 +56,13 @@ WrapperRecord::InheritanceGraph::bases(WrapperRecord const *Wr, bool Recursive) 
       { Bases_.push_back(G[V]); }
 
     private:
-      std::vector<WrapperRecord const *> &Bases_;
+      std::deque<WrapperRecord const *> &Bases_;
     };
 
     RecursiveBaseVisitor Visitor(Bases);
     boost::breadth_first_search(G_.graph(), V, boost::visitor(Visitor));
+
+    Bases.pop_front();
 
   } else {
     typename boost::graph_traits<Graph>::out_edge_iterator It, End;
@@ -66,7 +70,7 @@ WrapperRecord::InheritanceGraph::bases(WrapperRecord const *Wr, bool Recursive) 
       Bases.push_back(G_.graph()[boost::target(*It, G_.graph())]);
   }
 
-  return Bases;
+  return std::vector<WrapperRecord const *>(Bases.begin(), Bases.end());
 }
 
 std::vector<WrapperRecord const *>
@@ -97,7 +101,8 @@ WrapperRecord::getOrdering(Ordering Ord)
 
 WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl)
 : Type_(Decl->getTypeForDecl()),
-  BaseTypes_(determineBaseTypes(Decl))
+  BaseTypes_(determineBaseTypes(Decl)),
+  IsAbstract_(Decl->isAbstract())
 {
   TypeLookup_.insert(std::make_pair(Type_, this));
   InheritanceGraph_.add(this);
@@ -168,20 +173,80 @@ std::vector<WrapperFunction>
 WrapperRecord::determinePublicMemberFunctions(
   clang::CXXRecordDecl const *Decl) const
 {
-  std::vector<WrapperFunction> PublicMemberFunctions;
-
-  if (Decl->needsImplicitDefaultConstructor())
-    PublicMemberFunctions.push_back(implicitDefaultConstructor(Decl));
-
-  if (Decl->needsImplicitDestructor())
-    PublicMemberFunctions.push_back(implicitDestructor(Decl));
+  // determine public and publicy inherited member functions
+  std::deque<clang::CXXMethodDecl const *> PublicMethodDecls;
 
   for (auto const *MethodDecl : Decl->methods()) {
-    if (MethodDecl->getAccess() == clang::AS_public && !MethodDecl->isDeleted())
-      PublicMemberFunctions.emplace_back(MethodDecl);
+    if (MethodDecl->getAccess() != clang::AS_public)
+      continue;
+
+    PublicMethodDecls.push_back(MethodDecl);
   }
 
-  return PublicMemberFunctions;
+  std::queue<clang::CXXBaseSpecifier> BaseQueue;
+
+  for (auto const &Base : Decl->bases())
+    BaseQueue.push(Base);
+
+  while (!BaseQueue.empty()) {
+    auto Base(BaseQueue.front());
+    BaseQueue.pop();
+
+    if (Base.getAccessSpecifier() != clang::AS_public)
+      continue;
+
+    for (auto const *MethodDecl : decl::baseDecl(Base)->methods()) {
+      if (decl::isConstructor(MethodDecl) || decl::isDestructor(MethodDecl))
+        continue;
+
+      if (MethodDecl->getAccess() != clang::AS_public)
+        continue;
+
+      PublicMethodDecls.push_back(MethodDecl);
+    }
+
+    for (auto const &BaseOfBase : decl::baseDecl(Base)->bases())
+      BaseQueue.push(BaseOfBase);
+  }
+
+  // prune uninteresting member functions
+  std::vector<WrapperFunction> PublicMethods;
+  PublicMethods.reserve(PublicMethodDecls.size());
+
+  for (auto const *MethodDecl : PublicMethodDecls) {
+    if (MethodDecl->isDeleted())
+      continue;
+
+    if (decl::isConstructor(MethodDecl)) {
+      if (Decl->isAbstract())
+        continue;
+
+      if (decl::asConstructor(MethodDecl)->isCopyConstructor() ||
+          decl::asConstructor(MethodDecl)->isMoveConstructor()) {
+        continue; // XXX
+      }
+    }
+
+    if (!decl::isDestructor(MethodDecl) && MethodDecl->size_overridden_methods() != 0)
+      continue;
+
+    if (MethodDecl->isOverloadedOperator())
+      continue; // XXX
+
+    PublicMethods.emplace_back(WrapperFunctionBuilder(MethodDecl)
+                              .setParent(this)
+                              .build());
+  }
+
+  // add implicit constructor
+  if (Decl->needsImplicitDefaultConstructor() && !Decl->isAbstract())
+    PublicMethods.push_back(implicitDefaultConstructor(Decl));
+
+  // add implicit constructor
+  if (Decl->needsImplicitDestructor())
+    PublicMethods.push_back(implicitDestructor(Decl));
+
+  return PublicMethods;
 }
 
 WrapperFunction
