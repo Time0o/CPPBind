@@ -9,6 +9,7 @@
 
 #include "clang/AST/DeclCXX.h"
 
+#include "ClangUtils.hpp"
 #include "Identifier.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperRecord.hpp"

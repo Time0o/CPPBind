@@ -16,6 +16,7 @@
 #include "llvm/ADT/APSInt.h"
 #include "llvm/Support/Casting.h"
 
+#include "ClangUtils.hpp"
 #include "CompilerState.hpp"
 #include "Error.hpp"
 #include "Identifier.hpp"
@@ -91,8 +92,8 @@ WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
   Parent_(WrapperRecord::getFromType(Decl->getParent()->getTypeForDecl())),
   ReturnType_(Decl->getReturnType()),
   Parameters(determineParams(Decl)),
-  IsConstructor_(llvm::isa<clang::CXXConstructorDecl>(Decl)),
-  IsDestructor_(llvm::isa<clang::CXXDestructorDecl>(Decl)),
+  IsConstructor_(decl::isConstructor(Decl)),
+  IsDestructor_(decl::isDestructor(Decl)),
   IsStatic_(Decl->isStatic()),
   IsConst_(Decl->isConst()),
   IsNoexcept_(determineIfNoexcept(Decl))
@@ -146,9 +147,8 @@ WrapperFunction::determineIfNoexcept(clang::FunctionDecl const *Decl)
 Identifier
 WrapperFunction::determineName(clang::FunctionDecl const *Decl)
 {
-  if (llvm::isa<clang::CXXConstructorDecl>(Decl)) {
-    auto const *ConstructorDecl =
-      llvm::dyn_cast<clang::CXXConstructorDecl>(Decl);
+  if (decl::isConstructor(Decl)) {
+    auto const *ConstructorDecl = decl::asConstructor(Decl);
 
     assert(!ConstructorDecl->isCopyConstructor()); // XXX
     assert(!ConstructorDecl->isMoveConstructor()); // XXX
@@ -158,11 +158,8 @@ WrapperFunction::determineName(clang::FunctionDecl const *Decl)
     return Identifier(Identifier::NEW).qualified(Parent);
   }
 
-  if (llvm::isa<clang::CXXDestructorDecl>(Decl)) {
-    auto const *DestructorDecl =
-      llvm::dyn_cast<clang::CXXDestructorDecl>(Decl);
-
-    Identifier Parent(Identifier(DestructorDecl->getParent()));
+  if (decl::isDestructor(Decl)) {
+    Identifier Parent(Identifier(decl::asDestructor(Decl)->getParent()));
 
     return Identifier(Identifier::DELETE).qualified(Parent);
   }
