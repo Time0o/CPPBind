@@ -169,6 +169,7 @@ class BackendTestGenerator:
 
         self._subprocess([
             kwargs['clangpp'],
+            *kwargs['clang_args'],
             '-c', cpp_src,
             '-o', cpp_obj,
             '-I', self._test_input_dir,
@@ -177,6 +178,7 @@ class BackendTestGenerator:
 
         self._subprocess([
             kwargs['clang'],
+            *kwargs['clang_args'],
             '-c', c_src,
             '-o', c_obj,
             '-I', self._test_output_dir()
@@ -184,6 +186,7 @@ class BackendTestGenerator:
 
         self._subprocess([
             kwargs['clangpp'],
+            *kwargs['clang_args'],
             cpp_obj,
             c_obj,
             '-o', test_bin
@@ -195,6 +198,7 @@ class BackendTestGenerator:
 
         self._subprocess([
             kwargs['clangpp'],
+            *kwargs['clang_args'],
             '-shared', '-fPIC', mod_src,
             '-o', mod,
             '-I', kwargs['lua_include_dir'],
@@ -287,6 +291,8 @@ if __name__ == '__main__':
                             help="clang executable (C)")
     run_parser.add_argument('--clangpp', default='clang++',
                             help="clang executable (C++)")
+    run_parser.add_argument('--clang-args', type=lambda arg: f'-{arg}', nargs="+",
+                            help="extra clang arguments")
     run_parser.add_argument('--lua', default='lua',
                             help="lua executable")
     run_parser.add_argument('--lua-include-dir', default='/usr/include',

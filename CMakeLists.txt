@@ -235,6 +235,7 @@ if(CMAKE_BUILD_TYPE STREQUAL Debug)
                   --cppbind $<TARGET_FILE:${CPPBIND}>
                   --clang ${CMAKE_C_COMPILER}
                   --clangpp ${CMAKE_CXX_COMPILER}
+                  --clang-args Wall Werror
                   --lua ${LUA}
                   --lua-include-dir ${LUA_INCLUDE_DIR}
                   ${BACKEND_TEST_DIR}
