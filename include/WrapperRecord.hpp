@@ -30,10 +30,10 @@ class WrapperRecord : private mixin::NotCopyOrMoveable
     void remove(WrapperRecord const *Wr);
 
     std::vector<WrapperRecord const *>
-    parents(WrapperRecord const *Wr, bool Recursive = false) const;
+    bases(WrapperRecord const *Wr, bool Recursive = false) const;
 
     std::vector<WrapperRecord const *>
-    parentsFirstOrdering() const;
+    basesFirstOrdering() const;
 
   private:
     using Graph = boost::adjacency_list<boost::vecS,
@@ -57,7 +57,7 @@ public:
   }
 
   enum Ordering
-  { PARENTS_FIRST_ORDERING };
+  { BASES_FIRST_ORDERING };
 
   static std::vector<WrapperRecord const *> getOrdering(Ordering Ord);
 
@@ -70,14 +70,14 @@ public:
   WrapperType getType() const
   { return Type_; }
 
-  std::vector<WrapperRecord const *> getParents() const;
-  std::vector<WrapperRecord const *> getParentsRecursive() const;
+  std::vector<WrapperRecord const *> getBases() const;
+  std::vector<WrapperRecord const *> getBasesRecursive() const;
 
   std::vector<WrapperFunction> getConstructors() const;
   WrapperFunction getDestructor() const;
 
 private:
-  std::vector<WrapperType> determineParentTypes(
+  std::vector<WrapperType> determineBaseTypes(
     clang::CXXRecordDecl const *Decl) const;
 
   std::vector<WrapperVariable> determinePublicMemberVariables(
@@ -93,7 +93,7 @@ private:
     clang::CXXRecordDecl const *Decl) const;
 
   WrapperType Type_;
-  std::vector<WrapperType> ParentTypes_;
+  std::vector<WrapperType> BaseTypes_;
 
 public:
   std::vector<WrapperVariable> Variables;

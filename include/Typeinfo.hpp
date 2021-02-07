@@ -24,12 +24,12 @@ struct Typeinfo
     { return Wr->getType().format(true); };
 
     for (auto const *Wr :
-         WrapperRecord::getOrdering(WrapperRecord::PARENTS_FIRST_ORDERING)) {
+         WrapperRecord::getOrdering(WrapperRecord::BASES_FIRST_ORDERING)) {
 
       SS << "type_instance<" << unmangledTypename(Wr);
 
-      if (!Wr->getParents().empty()) {
-        for (auto const *Pr : Wr->getParents())
+      if (!Wr->getBasesRecursive().empty()) {
+        for (auto const *Pr : Wr->getBasesRecursive())
           SS << ", " << unmangledTypename(Pr);
       }
 

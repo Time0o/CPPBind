@@ -208,11 +208,11 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
   auto PyRecord = py::class_<Record>(m, "Record", py::dynamic_attr())
     .def_property_readonly("name", &WrapperRecord::getName)
     .def_property_readonly("type", &WrapperRecord::getType)
-    .def_property_readonly("parents",
-                           &WrapperRecord::getParents,
+    .def_property_readonly("bases",
+                           &WrapperRecord::getBases,
                            py::return_value_policy::reference_internal)
-    .def_property_readonly("parents_recursive",
-                           &WrapperRecord::getParentsRecursive,
+    .def_property_readonly("bases_recursive",
+                           &WrapperRecord::getBasesRecursive,
                            py::return_value_policy::reference_internal)
     .def_property_readonly("constructors", &WrapperRecord::getConstructors)
     .def_property_readonly("destructor", &WrapperRecord::getDestructor)

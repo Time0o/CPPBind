@@ -24,7 +24,7 @@ WrapperRecord::InheritanceGraph::add(WrapperRecord const *Wr)
 {
   G_.graph()[boost::add_vertex(Wr, G_)] = Wr;
 
-  for (auto const &Pt : Wr->ParentTypes_) {
+  for (auto const &Pt : Wr->BaseTypes_) {
     auto VSource = G_.vertex(Wr);
     auto VTarget = G_.vertex(getFromType(Pt));
 
@@ -37,8 +37,7 @@ WrapperRecord::InheritanceGraph::remove(WrapperRecord const *Wr)
 { boost::remove_vertex(Wr, G_); }
 
 std::vector<WrapperRecord const *>
-WrapperRecord::InheritanceGraph::parents(WrapperRecord const *Wr,
-                                         bool Recursive) const
+WrapperRecord::InheritanceGraph::bases(WrapperRecord const *Wr, bool Recursive) const
 {
   std::vector<WrapperRecord const *> Bases;
 
@@ -71,34 +70,34 @@ WrapperRecord::InheritanceGraph::parents(WrapperRecord const *Wr,
 }
 
 std::vector<WrapperRecord const *>
-WrapperRecord::InheritanceGraph::parentsFirstOrdering() const
+WrapperRecord::InheritanceGraph::basesFirstOrdering() const
 {
-  std::vector<boost::graph_traits<Graph>::vertex_descriptor> ParentsFirstVertices;
-  ParentsFirstVertices.reserve(boost::num_vertices(G_));
+  std::vector<boost::graph_traits<Graph>::vertex_descriptor> BasesFirstVertices;
+  BasesFirstVertices.reserve(boost::num_vertices(G_));
 
-  boost::topological_sort(G_.graph(), std::back_inserter(ParentsFirstVertices));
+  boost::topological_sort(G_.graph(), std::back_inserter(BasesFirstVertices));
 
-  std::vector<WrapperRecord const *> ParentsFirstRecords;
-  ParentsFirstRecords.reserve(ParentsFirstVertices.size());
+  std::vector<WrapperRecord const *> BasesFirstRecords;
+  BasesFirstRecords.reserve(BasesFirstVertices.size());
 
-  for (auto const &Vertex : ParentsFirstVertices)
-    ParentsFirstRecords.push_back(G_.graph()[Vertex]);
+  for (auto const &Vertex : BasesFirstVertices)
+    BasesFirstRecords.push_back(G_.graph()[Vertex]);
 
-  return ParentsFirstRecords;
+  return BasesFirstRecords;
 }
 
 std::vector<WrapperRecord const *>
 WrapperRecord::getOrdering(Ordering Ord)
 {
   switch (Ord) {
-  case PARENTS_FIRST_ORDERING:
-      return InheritanceGraph_.parentsFirstOrdering();
+  case BASES_FIRST_ORDERING:
+      return InheritanceGraph_.basesFirstOrdering();
   }
 }
 
 WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl)
 : Type_(Decl->getTypeForDecl()),
-  ParentTypes_(determineParentTypes(Decl))
+  BaseTypes_(determineBaseTypes(Decl))
 {
   TypeLookup_.insert(std::make_pair(Type_, this));
   InheritanceGraph_.add(this);
@@ -118,12 +117,12 @@ WrapperRecord::getName() const
 { return Identifier(Type_.format(false, true)); }
 
 std::vector<WrapperRecord const *>
-WrapperRecord::getParents() const
-{ return InheritanceGraph_.parents(this); }
+WrapperRecord::getBases() const
+{ return InheritanceGraph_.bases(this, false); }
 
 std::vector<WrapperRecord const *>
-WrapperRecord::getParentsRecursive() const
-{ return InheritanceGraph_.parents(this, true); }
+WrapperRecord::getBasesRecursive() const
+{ return InheritanceGraph_.bases(this, true); }
 
 std::vector<WrapperFunction>
 WrapperRecord::getConstructors() const
@@ -149,15 +148,15 @@ WrapperRecord::getDestructor() const
 }
 
 std::vector<WrapperType>
-WrapperRecord::determineParentTypes(
+WrapperRecord::determineBaseTypes(
   clang::CXXRecordDecl const *Decl) const
 {
-  std::vector<WrapperType> ParentTypes;
+  std::vector<WrapperType> BaseTypes;
 
   for (auto const &Base : Decl->bases())
-    ParentTypes.emplace_back(Base.getType());
+    BaseTypes.emplace_back(Base.getType());
 
-  return ParentTypes;
+  return BaseTypes;
 }
 
 std::vector<WrapperVariable>
