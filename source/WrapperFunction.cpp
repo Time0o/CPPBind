@@ -79,23 +79,23 @@ std::string WrapperDefaultArgument::str() const
 }
 
 WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
-: IsNoexcept_(determineIfNoexcept(Decl)),
-  Name_(determineName(Decl)),
+: Name_(determineName(Decl)),
   ReturnType_(Decl->getReturnType()),
-  Parameters(determineParams(Decl))
+  Parameters(determineParams(Decl)),
+  IsNoexcept_(determineIfNoexcept(Decl))
 { assert(!Decl->isTemplateInstantiation()); } // XXX
 
 WrapperFunction::WrapperFunction(WrapperRecord const *Parent,
                                  clang::CXXMethodDecl const *Decl)
-: Parent_(Parent),
+: Name_(determineName(Decl)),
+  Parent_(Parent),
+  ReturnType_(Decl->getReturnType()),
+  Parameters(determineParams(Decl)),
   IsConstructor_(llvm::isa<clang::CXXConstructorDecl>(Decl)),
   IsDestructor_(llvm::isa<clang::CXXDestructorDecl>(Decl)),
   IsStatic_(Decl->isStatic()),
   IsConst_(Decl->isConst()),
-  IsNoexcept_(determineIfNoexcept(Decl)),
-  Name_(determineName(Decl)),
-  ReturnType_(Decl->getReturnType()),
-  Parameters(determineParams(Decl))
+  IsNoexcept_(determineIfNoexcept(Decl))
 { assert(!Decl->isTemplateInstantiation()); } // XXX
 
 Identifier WrapperFunction::getNameOverloaded() const
@@ -144,9 +144,9 @@ WrapperFunction::determineIfNoexcept(clang::FunctionDecl const *Decl)
 }
 
 Identifier
-WrapperFunction::determineName(clang::FunctionDecl const *Decl) const
+WrapperFunction::determineName(clang::FunctionDecl const *Decl)
 {
-  if (isConstructor()) {
+  if (llvm::isa<clang::CXXConstructorDecl>(Decl)) {
     auto const *ConstructorDecl =
       llvm::dyn_cast<clang::CXXConstructorDecl>(Decl);
 
@@ -158,7 +158,7 @@ WrapperFunction::determineName(clang::FunctionDecl const *Decl) const
     return Identifier(Identifier::NEW).qualified(Parent);
   }
 
-  if (isDestructor()) {
+  if (llvm::isa<clang::CXXDestructorDecl>(Decl)) {
     auto const *DestructorDecl =
       llvm::dyn_cast<clang::CXXDestructorDecl>(Decl);
 
@@ -171,16 +171,17 @@ WrapperFunction::determineName(clang::FunctionDecl const *Decl) const
 }
 
 std::vector<WrapperParameter>
-WrapperFunction::determineParams(clang::FunctionDecl const *Decl) const
+WrapperFunction::determineParams(clang::FunctionDecl const *Decl)
 {
   std::vector<WrapperParameter> ParamList;
 
-  if (isMember()) {
-    auto const *MethodDecl = dynamic_cast<clang::CXXMethodDecl const *>(Decl);
-
+#ifndef NDEBUG
+  auto const *MethodDecl = dynamic_cast<clang::CXXMethodDecl const *>(Decl);
+  if (MethodDecl) {
     assert(!MethodDecl->isOverloadedOperator()); // XXX
     assert(!MethodDecl->isVirtual()); // XXX
   }
+#endif
 
   auto Params(Decl->parameters());
 
@@ -220,6 +221,13 @@ WrapperFunctionBuilder::setParent(WrapperRecord const *Parent)
 }
 
 WrapperFunctionBuilder &
+WrapperFunctionBuilder::setName(Identifier const &Name)
+{
+  Wf_.Name_ = Name;
+  return *this;
+}
+
+WrapperFunctionBuilder &
 WrapperFunctionBuilder::setReturnType(WrapperType const &Type)
 {
   Wf_.ReturnType_ = Type;
@@ -239,41 +247,41 @@ WrapperFunctionBuilder::addParameter(WrapperParameter const &Param)
 }
 
 WrapperFunctionBuilder &
-WrapperFunctionBuilder::setIsConstructor()
+WrapperFunctionBuilder::setIsConstructor(bool Val)
 {
   assert(Wf_.isMember());
-  Wf_.IsConstructor_ = true;
+  Wf_.IsConstructor_ = Val;
   return *this;
 }
 
 WrapperFunctionBuilder &
-WrapperFunctionBuilder::setIsDestructor()
+WrapperFunctionBuilder::setIsDestructor(bool Val)
 {
   assert(Wf_.isMember());
-  Wf_.IsDestructor_ = true;
+  Wf_.IsDestructor_ = Val;
   return *this;
 }
 
 WrapperFunctionBuilder &
-WrapperFunctionBuilder::setIsStatic()
+WrapperFunctionBuilder::setIsStatic(bool Val)
 {
   assert(Wf_.isMember());
-  Wf_.IsStatic_ = true;
+  Wf_.IsStatic_ = Val;
   return *this;
 }
 
 WrapperFunctionBuilder &
-WrapperFunctionBuilder::setIsConst()
+WrapperFunctionBuilder::setIsConst(bool Val)
 {
   assert(Wf_.isMember());
-  Wf_.IsConst_ = true;
+  Wf_.IsConst_ = Val;
   return *this;
 }
 
 WrapperFunctionBuilder &
-WrapperFunctionBuilder::setIsNoexcept()
+WrapperFunctionBuilder::setIsNoexcept(bool Val)
 {
-  Wf_.IsNoexcept_ = true;
+  Wf_.IsNoexcept_ = Val;
   return *this;
 }
 

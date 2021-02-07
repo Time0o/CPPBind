@@ -130,8 +130,6 @@ private:
   std::optional<WrapperDefaultArgument> DefaultArgument_;
 };
 
-class WrapperFunctionBuilder;
-
 class WrapperFunction
 {
   friend class WrapperFunctionBuilder;
@@ -202,47 +200,50 @@ public:
   { return Overload_ > 0u; }
 
 private:
+  static Identifier determineName(clang::FunctionDecl const *Decl);
+
+  static std::vector<WrapperParameter> determineParams(
+    clang::FunctionDecl const *Decl);
+
   static bool determineIfNoexcept(clang::FunctionDecl const *Decl);
-
-  Identifier determineName(clang::FunctionDecl const *Decl) const;
-
-  std::vector<WrapperParameter> determineParams(
-    clang::FunctionDecl const *Decl) const;
-
-  WrapperRecord const *Parent_ = nullptr;
-
-  bool IsConstructor_ = false;
-  bool IsDestructor_ = false;
-  bool IsStatic_ = false;
-  bool IsConst_ = false;
-  bool IsNoexcept_ = false;
 
   Identifier Name_;
 
   std::optional<unsigned> Overload_;
   std::optional<Identifier> NameOverloaded_;
 
+  WrapperRecord const *Parent_ = nullptr;
+
   WrapperType ReturnType_;
 
 public:
   std::vector<WrapperParameter> Parameters;
+
+private:
+  bool IsConstructor_ = false;
+  bool IsDestructor_ = false;
+  bool IsStatic_ = false;
+  bool IsConst_ = false;
+  bool IsNoexcept_ = false;
 };
 
 class WrapperFunctionBuilder
 {
 public:
-  WrapperFunctionBuilder(Identifier const &Name)
-  : Wf_(Name)
+  template<typename ...ARGS>
+  WrapperFunctionBuilder(ARGS &&...args)
+  : Wf_(std::forward<ARGS>(args)...)
   {}
 
+  WrapperFunctionBuilder &setName(Identifier const &Name);
   WrapperFunctionBuilder &setParent(WrapperRecord const *Parent);
   WrapperFunctionBuilder &setReturnType(WrapperType const &Type);
   WrapperFunctionBuilder &addParameter(WrapperParameter const &Param);
-  WrapperFunctionBuilder &setIsConstructor();
-  WrapperFunctionBuilder &setIsDestructor();
-  WrapperFunctionBuilder &setIsStatic();
-  WrapperFunctionBuilder &setIsConst();
-  WrapperFunctionBuilder &setIsNoexcept();
+  WrapperFunctionBuilder &setIsConstructor(bool Val = true);
+  WrapperFunctionBuilder &setIsDestructor(bool Val = true);
+  WrapperFunctionBuilder &setIsStatic(bool Val = true);
+  WrapperFunctionBuilder &setIsConst(bool Val = true);
+  WrapperFunctionBuilder &setIsNoexcept(bool Val = true);
 
   WrapperFunction build() const
   { return Wf_; }
