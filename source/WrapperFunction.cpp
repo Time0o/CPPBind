@@ -10,6 +10,7 @@
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/Expr.h"
+#include "clang/AST/Type.h"
 #include "clang/Frontend/CompilerInstance.h"
 
 #include "llvm/ADT/APFloat.h"
@@ -140,8 +141,14 @@ WrapperFunction::getNonSelfParameters() const
 bool
 WrapperFunction::determineIfNoexcept(clang::FunctionDecl const *Decl)
 {
-  return Decl->getExceptionSpecType() == clang::EST_BasicNoexcept ||
-         Decl->getExceptionSpecType() == clang::EST_NoexceptTrue;
+# if __clang_major__ >= 9
+  auto EST = Decl->getExceptionSpecType();
+#else
+  auto const *ProtoType = Decl->getType()->getAs<clang::FunctionProtoType>();
+  auto EST = ProtoType->getExceptionSpecType();
+#endif
+
+  return EST == clang::EST_BasicNoexcept || EST == clang::EST_NoexceptTrue;
 }
 
 Identifier
