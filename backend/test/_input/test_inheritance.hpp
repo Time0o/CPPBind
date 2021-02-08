@@ -1,39 +1,51 @@
 namespace test
 {
 
-// XXX larger class hierarchie (including non-abstract base classes)
-// XXX private and protected inheritance
-
 struct Base1
 {
   virtual ~Base1() = default;
 
   virtual int func1() const
   { return 1; }
-
-  virtual int func1_pure_virtual() const = 0;
 };
 
-struct Base2
+struct Base2 : public Base1
 {
   virtual ~Base2() = default;
 
   virtual int func2() const
   { return 2; }
-
-  virtual int func2_pure_virtual() const = 0;
 };
 
-struct Derived : public Base1, Base2
+struct BaseAbstract
 {
-  int func1_pure_virtual() const override
-  { return 1; }
+  virtual ~BaseAbstract() = default;
 
+  virtual bool func_abstract() const = 0;
+};
+
+struct BaseProtected
+{
+  bool func_protected() const
+  { return true; }
+};
+
+struct BasePrivate
+{
+  bool func_private() const
+  { return true; }
+};
+
+struct Derived : public Base2,
+                 public BaseAbstract,
+                 protected BaseProtected,
+                 private BasePrivate
+{
   int func2() const override
   { return 3; }
 
-  int func2_pure_virtual() const override
-  { return 2; }
+  bool func_abstract() const override
+  { return true; }
 };
 
 } // namespace test
