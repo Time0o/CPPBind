@@ -3,8 +3,14 @@
 
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
+#include "clang/ASTMatchers/ASTMatchFinder.h"
+#include "clang/ASTMatchers/Dynamic/Parser.h"
 
+#include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Casting.h"
+
+#include "CompilerState.hpp"
+#include "Error.hpp"
 
 namespace cppbind
 {
@@ -29,6 +35,35 @@ inline auto const *baseDecl(clang::CXXBaseSpecifier const &Base)
   auto const *BaseType(Base.getType()->getAs<clang::RecordType>());
 
   return llvm::dyn_cast<clang::CXXRecordDecl>(BaseType->getDecl());
+}
+
+template<typename T>
+bool matchDecl(T const *Decl, llvm::StringRef MatcherSource)
+{
+  using namespace clang::ast_matchers;
+  using namespace clang::ast_matchers::dynamic;
+
+  Diagnostics Diag;
+  auto Matcher = Parser::parseMatcherExpression(MatcherSource, &Diag);
+
+  if (!Matcher)
+    throw CPPBindError(Diag.toString());
+
+  struct DeclMatchesCallback : MatchFinder::MatchCallback
+  {
+    void run(const MatchFinder::MatchResult &) override
+    { Result = true; }
+
+    bool Result = false;
+
+  } Callback;
+
+  MatchFinder Finder;
+  Finder.addDynamicMatcher(*Matcher, &Callback);
+
+  Finder.match(*Decl, ASTContext());
+
+  return Callback.Result;
 }
 
 } // namespace decl
