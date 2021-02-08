@@ -3,6 +3,9 @@
 #include <string>
 #include <vector>
 
+#include "llvm/ADT/StringRef.h"
+
+#include "ClangUtils.hpp"
 #include "CompilerState.hpp"
 #include "FundamentalTypes.hpp"
 #include "Identifier.hpp"
@@ -33,6 +36,10 @@ WrapperType::WrapperType(clang::TypeDecl const *Decl,
                          WrapperType::TagSet const &Tags)
 : WrapperType(Decl->getTypeForDecl())
 {}
+
+bool
+WrapperType::isMatchedBy(char const *Matcher) const
+{ return decl::matchDecl(typePtr(), llvm::StringRef(Matcher)); }
 
 bool
 WrapperType::isFundamental(char const *Which) const
