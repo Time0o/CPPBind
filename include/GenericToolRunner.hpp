@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "clang/Frontend/ASTUnit.h"
 #include "clang/Tooling/ArgumentsAdjusters.h"
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
@@ -19,26 +20,36 @@ namespace clang { class FrontendAction; }
 namespace cppbind
 {
 
+// TODO: pass parser in constructor...
 template<typename T>
 class GenericToolRunner
 {
 public:
-  int run(clang::tooling::CommonOptionsParser &Parser)
-  {
-    clang::tooling::ClangTool Tool(Parser.getCompilations(),
-                                   Parser.getSourcePathList());
+  GenericToolRunner(clang::tooling::CommonOptionsParser &Parser)
+  : Tool_(Parser.getCompilations(), Parser.getSourcePathList())
+  {}
 
-    adjustArguments(Tool);
+  int run()
+  {
+    adjustArguments();
 
     beforeRun();
 
     auto Factory(makeFactory());
 
-    int Ret = Tool.run(Factory.get());
+    int Ret = Tool_.run(Factory.get());
 
     afterRun();
 
     return Ret;
+  }
+
+  std::vector<std::unique_ptr<clang::ASTUnit>> buildASTs()
+  {
+    std::vector<std::unique_ptr<clang::ASTUnit>> ASTs;
+    Tool_.buildASTs(ASTs); // XXX handle failure
+
+    return ASTs;
   }
 
   virtual std::unique_ptr<clang::tooling::FrontendActionFactory> makeFactory() = 0;
@@ -79,6 +90,35 @@ protected:
   }
 
 private:
+  static clang::tooling::ClangTool makeTool(clang::tooling::CommonOptionsParser &Parser)
+  {
+    return clang::tooling::ClangTool(Parser.getCompilations(),
+                                     Parser.getSourcePathList());
+  }
+
+  void adjustArguments()
+  {
+    std::vector<clang::tooling::ArgumentsAdjuster> ArgumentsAdjusters;
+
+    auto BEGIN = clang::tooling::ArgumentInsertPosition::BEGIN;
+    auto END = clang::tooling::ArgumentInsertPosition::END;
+
+    ArgumentsAdjusters.push_back(
+      clang::tooling::getInsertArgumentAdjuster("-xc++-header", BEGIN));
+
+    for (auto const &ExtraInclude : extraIncludes()) {
+      ArgumentsAdjusters.push_back(
+        clang::tooling::getInsertArgumentAdjuster(
+          {"-include", ExtraInclude}, END));
+    }
+
+    ArgumentsAdjusters.push_back(
+      clang::tooling::getInsertArgumentAdjuster(clangIncludes(), END));
+
+    for (auto const &ArgumentsAdjuster : ArgumentsAdjusters)
+      Tool_.appendArgumentsAdjuster(ArgumentsAdjuster);
+  }
+
   static std::vector<std::string> extraIncludes()
   {
     static FundamentalTypesSnippet Ft;
@@ -101,31 +141,10 @@ private:
     return Includes;
   }
 
-  static void adjustArguments(clang::tooling::ClangTool &Tool)
-  {
-    std::vector<clang::tooling::ArgumentsAdjuster> ArgumentsAdjusters;
-
-    auto BEGIN = clang::tooling::ArgumentInsertPosition::BEGIN;
-    auto END = clang::tooling::ArgumentInsertPosition::END;
-
-    ArgumentsAdjusters.push_back(
-      clang::tooling::getInsertArgumentAdjuster("-xc++-header", BEGIN));
-
-    for (auto const &ExtraInclude : extraIncludes()) {
-      ArgumentsAdjusters.push_back(
-        clang::tooling::getInsertArgumentAdjuster(
-          {"-include", ExtraInclude}, END));
-    }
-
-    ArgumentsAdjusters.push_back(
-      clang::tooling::getInsertArgumentAdjuster(clangIncludes(), END));
-
-    for (auto const &ArgumentsAdjuster : ArgumentsAdjusters)
-      Tool.appendArgumentsAdjuster(ArgumentsAdjuster);
-  }
-
   virtual void beforeRun() {}
   virtual void afterRun() {}
+
+  clang::tooling::ClangTool Tool_;
 };
 
 } // namespace cppbind

@@ -6,6 +6,7 @@
 
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
+#include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
 
 #include "Backend.hpp"
@@ -115,6 +116,8 @@ class CreateWrapperToolRunner
 : public GenericToolRunner<CreateWrapperFrontendAction>
 {
 public:
+  using GenericToolRunner<CreateWrapperFrontendAction>::GenericToolRunner;
+
   std::unique_ptr<clang::tooling::FrontendActionFactory> makeFactory() override
   { return makeFactoryWithArgs(II_); }
 

@@ -14,10 +14,10 @@ int main(int argc, char const **argv)
 
   auto Parser(Options().parser(argc, argv));
 
-  CreateWrapperToolRunner Runner;
+  CreateWrapperToolRunner Runner(Parser);
 
   try {
-    Runner.run(Parser);
+    Runner.run();
   } catch (CPPBindError const &Err) {
     log::error() << Err.what();
     return EXIT_FAILURE;
