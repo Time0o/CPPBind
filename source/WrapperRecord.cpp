@@ -229,8 +229,12 @@ WrapperRecord::determinePublicMemberFunctions(
       }
     }
 
-    if (!decl::isDestructor(MethodDecl) && MethodDecl->size_overridden_methods() != 0)
+    if (decl::isDestructor(MethodDecl)) {
+      if (Decl->isAbstract())
+        continue;
+    } else if (MethodDecl->size_overridden_methods() != 0) {
       continue;
+    }
 
     if (MethodDecl->isOverloadedOperator())
       continue; // XXX
