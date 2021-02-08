@@ -1,6 +1,7 @@
 #include <cassert>
 #include <stack>
 #include <string>
+#include <vector>
 
 #include "CompilerState.hpp"
 #include "FundamentalTypes.hpp"
@@ -266,6 +267,19 @@ WrapperType::setBase(WrapperType const &NewBase)
 
   *this = NewType;
 }
+
+std::vector<std::string>
+WrapperType::getAnnotations() const
+{
+  if (!hasTag<AnnotatedTag>())
+    return {};
+
+  return getTag<AnnotatedTag>()->Annotations;
+}
+
+void
+WrapperType::setAnnotations(std::vector<std::string> const &Annotations)
+{ addTag<AnnotatedTag>(Annotations); }
 
 std::string
 WrapperType::str() const

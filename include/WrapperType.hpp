@@ -8,6 +8,7 @@
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
@@ -28,7 +29,15 @@ class WrapperType
 
   enum TagType
   {
+    ANNOTATED_TAG,
     UNDERLIES_ENUM_TAG
+  };
+
+  struct AnnotatedTag : public Tag
+  {
+    static constexpr TagType type = ANNOTATED_TAG;
+
+    std::vector<std::string> Annotations;
   };
 
   struct UnderliesEnumTag : public Tag
@@ -109,6 +118,9 @@ public:
   WrapperType getBase() const;
   void setBase(WrapperType const &NewBase);
 
+  std::vector<std::string> getAnnotations() const;
+  void setAnnotations(std::vector<std::string> const &Annotations);
+
   std::string str() const;
 
   std::string format(bool Mangled = false,
@@ -145,6 +157,17 @@ private:
 
     return Tag;
   }
+
+  template<typename TAG, typename ...ARGS>
+  void addTag(ARGS &&...args)
+  {
+    Tags_[TAG::type] =
+      std::make_shared<ConstructibleTag<TAG>>(std::forward<ARGS>(args)...);
+  }
+
+  template<typename TAG>
+  void removeTag()
+  { Tags_.erase(TAG::type); }
 
   template<typename TAG, typename ...ARGS>
   TagSet withTag(ARGS &&...args) const

@@ -147,6 +147,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
          "case"_a = Identifier::ORIG_CASE,
          "quals"_a = Identifier::KEEP_QUALS)
     .def_property("base", &WrapperType::getBase, &WrapperType::setBase)
+    .def_property("annotations", &WrapperType::getAnnotations, &WrapperType::setAnnotations)
     .def("is_const", &WrapperType::isConst)
     .def("is_fundamental", &WrapperType::isFundamental, "which"_a = nullptr)
     .def("is_void", &WrapperType::isVoid)
