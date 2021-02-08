@@ -80,7 +80,7 @@ public:
   { return IsAbstract_; }
 
 private:
-  std::vector<WrapperType> determineBaseTypes(
+  std::vector<WrapperType> determinePublicBaseTypes(
     clang::CXXRecordDecl const *Decl) const;
 
   std::vector<WrapperVariable> determinePublicMemberVariables(

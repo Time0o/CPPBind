@@ -101,7 +101,7 @@ WrapperRecord::getOrdering(Ordering Ord)
 
 WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl)
 : Type_(Decl->getTypeForDecl()),
-  BaseTypes_(determineBaseTypes(Decl)),
+  BaseTypes_(determinePublicBaseTypes(Decl)),
   IsAbstract_(Decl->isAbstract())
 {
   TypeLookup_.insert(std::make_pair(Type_, this));
@@ -153,13 +153,15 @@ WrapperRecord::getDestructor() const
 }
 
 std::vector<WrapperType>
-WrapperRecord::determineBaseTypes(
+WrapperRecord::determinePublicBaseTypes(
   clang::CXXRecordDecl const *Decl) const
 {
   std::vector<WrapperType> BaseTypes;
 
-  for (auto const &Base : Decl->bases())
-    BaseTypes.emplace_back(Base.getType());
+  for (auto const &Base : Decl->bases()) {
+    if (Base.getAccessSpecifier() == clang::AS_public)
+      BaseTypes.emplace_back(Base.getType());
+  }
 
   return BaseTypes;
 }
