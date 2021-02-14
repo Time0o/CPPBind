@@ -242,13 +242,6 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_float", &WrapperDefaultArgument::isFloat)
     .def("is_true", &WrapperDefaultArgument::isTrue);
 
-  py::class_<Typeinfo>(m, "Typeinfo")
-    .def_property_readonly_static(
-      "snippet",
-      [](py::object const &){ return Snippet<TypeinfoSnippet>::str(); })
-    .def_static("make_typed_ptr", &Typeinfo::makeTypedPtr, "arg"_a)
-    .def_static("typed_ptr_cast", &Typeinfo::typedPtrCast, "type"_a, "arg"_a);
-
   #define GET_OPT(NAME) [](OptionsRegistry const &Self) \
                         { return Self.get<>(NAME); }
 
