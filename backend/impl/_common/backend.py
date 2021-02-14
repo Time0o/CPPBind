@@ -1,8 +1,7 @@
 import abc
 
 import file
-
-import cppbind
+from type_info import TypeInfo
 
 
 class BackendMeta(abc.ABCMeta):
@@ -13,7 +12,7 @@ class BackendMeta(abc.ABCMeta):
         super().__init__(name, bases, clsdict)
 
 
-class Backend(metaclass=BackendMeta):
+class BackendBase(metaclass=BackendMeta):
     def __init__(self, wrapper, options):
         self._input_file = file.Path(wrapper.input_file())
         self._output_files = []
@@ -21,6 +20,8 @@ class Backend(metaclass=BackendMeta):
         self._variables = wrapper.variables()
         self._records = wrapper.records()
         self._functions = wrapper.functions()
+
+        self._type_info = TypeInfo(wrapper)
 
         self._options = options
 
@@ -65,6 +66,9 @@ class Backend(metaclass=BackendMeta):
     def functions(self):
         return self._functions
 
+    def type_info(self):
+        return self._type_info
+
     def option(self, name):
         try:
             getter = getattr(self._options, name)
@@ -94,5 +98,5 @@ class Backend(metaclass=BackendMeta):
         pass
 
 
-def run(*args):
-    return BackendMeta.BackendImpl(*args).run()
+def Backend(*args, **kwargs):
+    return BackendMeta.BackendImpl(*args, **kwargs)
