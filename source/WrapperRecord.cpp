@@ -262,8 +262,8 @@ WrapperRecord::implicitDefaultConstructor(
   auto ConstructorName(Identifier(Identifier::NEW).qualified(Identifier(Decl)));
 
   return WrapperFunctionBuilder(ConstructorName)
-         .setParent(this)
          .setIsConstructor()
+         .setParent(this) // XXX
          .build();
 }
 
@@ -274,9 +274,9 @@ WrapperRecord::implicitDestructor(
   auto DestructorName(Identifier(Identifier::DELETE).qualified(Identifier(Decl)));
 
   return WrapperFunctionBuilder(DestructorName)
-         .setParent(this)
          .setIsDestructor()
          .setIsNoexcept() // XXX unless base class destructor can throw
+         .setParent(this) // XXX
          .build();
 }
 

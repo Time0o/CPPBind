@@ -83,22 +83,25 @@ std::string WrapperDefaultArgument::str() const
 
 WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
 : Name_(determineName(Decl)),
-  ReturnType_(Decl->getReturnType()),
+  ReturnType_(determineReturnValue(Decl)),
   Parameters(determineParams(Decl)),
   IsNoexcept_(determineIfNoexcept(Decl))
 { assert(!Decl->isTemplateInstantiation()); } // XXX
 
 WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
 : Name_(determineName(Decl)),
-  Parent_(WrapperRecord::getFromType(Decl->getParent()->getTypeForDecl())),
-  ReturnType_(Decl->getReturnType()),
+  ReturnType_(determineReturnValue(Decl)),
   Parameters(determineParams(Decl)),
   IsConstructor_(decl::isConstructor(Decl)),
   IsDestructor_(decl::isDestructor(Decl)),
   IsStatic_(Decl->isStatic()),
   IsConst_(Decl->isConst()),
   IsNoexcept_(determineIfNoexcept(Decl))
-{ assert(!Decl->isTemplateInstantiation()); } // XXX
+{
+  assert(!Decl->isTemplateInstantiation()); // XXX
+
+  setParent(determineParent(Decl)); // XXX refactor
+}
 
 Identifier WrapperFunction::getNameOverloaded() const
 {
@@ -120,6 +123,30 @@ Identifier WrapperFunction::getNameOverloaded() const
   return Identifier(Name_.str() + Postfix);
 }
 
+void
+WrapperFunction::setParent(WrapperRecord const *Parent)
+{
+  Parent_ = Parent;
+
+  Name_ = getName().unqualified().qualified(getParent()->getName());
+
+  if (isInstance()) {
+    auto ParentType(getParent()->getType());
+
+    WrapperParameter Self(Identifier(Identifier::SELF), ParentType.pointerTo());
+
+    if (getSelfParameter())
+      Parameters.front() = Self;
+    else
+      Parameters.insert(Parameters.begin(), Self);
+
+  } else if (isConstructor()) {
+    auto ParentType(getParent()->getType());
+
+    setReturnType(ParentType.pointerTo());
+  }
+}
+
 std::optional<WrapperParameter>
 WrapperFunction::getSelfParameter() const
 {
@@ -138,18 +165,9 @@ WrapperFunction::getNonSelfParameters() const
   return std::vector<WrapperParameter>(Parameters.begin() + 1, Parameters.end());
 }
 
-bool
-WrapperFunction::determineIfNoexcept(clang::FunctionDecl const *Decl)
-{
-# if __clang_major__ >= 9
-  auto EST = Decl->getExceptionSpecType();
-#else
-  auto const *ProtoType = Decl->getType()->getAs<clang::FunctionProtoType>();
-  auto EST = ProtoType->getExceptionSpecType();
-#endif
-
-  return EST == clang::EST_BasicNoexcept || EST == clang::EST_NoexceptTrue;
-}
+WrapperType
+WrapperFunction::determineReturnValue(clang::FunctionDecl const *Decl)
+{ return WrapperType(Decl->getReturnType()); }
 
 Identifier
 WrapperFunction::determineName(clang::FunctionDecl const *Decl)
@@ -170,6 +188,10 @@ WrapperFunction::determineName(clang::FunctionDecl const *Decl)
 
   return Identifier(Decl);
 }
+
+WrapperRecord const *
+WrapperFunction::determineParent(clang::CXXMethodDecl const *Decl)
+{ return WrapperRecord::getFromType(Decl->getParent()->getTypeForDecl()); }
 
 std::vector<WrapperParameter>
 WrapperFunction::determineParams(clang::FunctionDecl const *Decl)
@@ -206,25 +228,37 @@ WrapperFunction::determineParams(clang::FunctionDecl const *Decl)
   return ParamList;
 }
 
+bool
+WrapperFunction::determineIfNoexcept(clang::FunctionDecl const *Decl)
+{
+# if __clang_major__ >= 9
+  auto EST = Decl->getExceptionSpecType();
+#else
+  auto const *ProtoType = Decl->getType()->getAs<clang::FunctionProtoType>();
+  auto EST = ProtoType->getExceptionSpecType();
+#endif
+
+  return EST == clang::EST_BasicNoexcept || EST == clang::EST_NoexceptTrue;
+}
+
 WrapperFunctionBuilder &
 WrapperFunctionBuilder::setParent(WrapperRecord const *Parent)
 {
-  Wf_.setName(Wf_.getName().unqualified().qualified(Parent->getName()));
-  Wf_.Parent_ = Parent;
+  Wf_.setParent(Parent);
   return *this;
 }
 
 WrapperFunctionBuilder &
 WrapperFunctionBuilder::setName(Identifier const &Name)
 {
-  Wf_.Name_ = Name;
+  Wf_.setName(Name);
   return *this;
 }
 
 WrapperFunctionBuilder &
-WrapperFunctionBuilder::setReturnType(WrapperType const &Type)
+WrapperFunctionBuilder::setReturnType(WrapperType const &ReturnType)
 {
-  Wf_.ReturnType_ = Type;
+  Wf_.setReturnType(ReturnType);
   return *this;
 }
 
@@ -243,7 +277,7 @@ WrapperFunctionBuilder::addParameter(WrapperParameter const &Param)
 WrapperFunctionBuilder &
 WrapperFunctionBuilder::setIsConstructor(bool Val)
 {
-  assert(Wf_.isMember());
+  //assert(Wf_.isMember()); // XXX
   Wf_.IsConstructor_ = Val;
   return *this;
 }
@@ -251,7 +285,7 @@ WrapperFunctionBuilder::setIsConstructor(bool Val)
 WrapperFunctionBuilder &
 WrapperFunctionBuilder::setIsDestructor(bool Val)
 {
-  assert(Wf_.isMember());
+  //assert(Wf_.isMember()); // XXX
   Wf_.IsDestructor_ = Val;
   return *this;
 }

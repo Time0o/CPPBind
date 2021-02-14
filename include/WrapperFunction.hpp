@@ -161,8 +161,7 @@ public:
   WrapperRecord const *getParent() const
   { return Parent_; }
 
-  void setParent(WrapperRecord const *Parent)
-  { Parent_ = Parent; }
+  void setParent(WrapperRecord const *Parent);
 
   WrapperType getReturnType() const
   { return ReturnType_; }
@@ -200,10 +199,9 @@ public:
 
 private:
   static Identifier determineName(clang::FunctionDecl const *Decl);
-
-  static std::vector<WrapperParameter> determineParams(
-    clang::FunctionDecl const *Decl);
-
+  static WrapperType determineReturnValue(clang::FunctionDecl const *Decl);
+  static WrapperRecord const *determineParent(clang::CXXMethodDecl const *Decl);
+  static std::vector<WrapperParameter> determineParams(clang::FunctionDecl const *Decl);
   static bool determineIfNoexcept(clang::FunctionDecl const *Decl);
 
   Identifier Name_;
@@ -236,7 +234,7 @@ public:
 
   WrapperFunctionBuilder &setName(Identifier const &Name);
   WrapperFunctionBuilder &setParent(WrapperRecord const *Parent);
-  WrapperFunctionBuilder &setReturnType(WrapperType const &Type);
+  WrapperFunctionBuilder &setReturnType(WrapperType const &ReturnType);
   WrapperFunctionBuilder &addParameter(WrapperParameter const &Param);
   WrapperFunctionBuilder &setIsConstructor(bool Val = true);
   WrapperFunctionBuilder &setIsDestructor(bool Val = true);
