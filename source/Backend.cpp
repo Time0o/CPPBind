@@ -17,7 +17,6 @@
 #include "Options.hpp"
 #include "Path.hpp"
 #include "Snippet.hpp"
-#include "Typeinfo.hpp"
 #include "Wrapper.hpp"
 #include "WrapperVariable.hpp"
 #include "WrapperFunction.hpp"
@@ -49,10 +48,11 @@ void Backend::run(std::shared_ptr<Wrapper> Wrapper)
     addModuleSearchPath(BACKEND_IMPL_COMMON_DIR);
     addModuleSearchPath(path::concat(BACKEND_IMPL_DIR, BE));
 
-    auto Module(importModule(BE + BACKEND_IMPL_MODULE_POSTFIX));
-    auto ModuleEntry(Module.attr(BACKEND_IMPL_ENTRY));
+    auto TypetransModule(importModule(BE + BACKEND_IMPL_TYPETRANS_MOD_POSTFIX));
+    auto BackendModule(importModule(BE + BACKEND_IMPL_BACKEND_MOD_POSTFIX));
 
-    ModuleEntry(Wrapper, &Options());
+    auto RunModule(importModule(BACKEND_IMPL_RUN_MOD));
+    RunModule.attr("run")(Wrapper, &Options());
 
   } catch (std::runtime_error const &e) {
     throw CPPBindError(ErrorMsg() << "in backend:" << ErrorMsg::endl << e.what());
@@ -103,6 +103,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
 
   PyIdentifier
     .def_readonly_static("SELF", &Identifier::SELF)
+    .def_readonly_static("RET", &Identifier::RET)
     .def_readonly_static("NEW", &Identifier::NEW)
     .def_readonly_static("DELETE", &Identifier::DELETE)
     .def(py::init<std::string>())
@@ -139,6 +140,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def(py::init<std::string>(), "which"_a = "void")
     .def(py::self == py::self)
     .def(py::self != py::self)
+    .def(hash(py::self))
     .def("__str__", &WrapperType::str)
     .def("str", &WrapperType::str)
     .def("format", &WrapperType::format,
@@ -208,6 +210,11 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_overloaded", &WrapperFunction::isOverloaded);
 
   auto PyRecord = py::class_<Record>(m, "Record", py::dynamic_attr())
+    // XXX refactor
+    .def_static("ordering",
+                []()
+                { return Record::getOrdering(Record::BASES_FIRST_ORDERING); },
+                py::return_value_policy::reference)
     .def_property_readonly("name", &WrapperRecord::getName)
     .def_property_readonly("type", &WrapperRecord::getType)
     .def_property_readonly("bases",
