@@ -84,13 +84,6 @@ class LuaBackend(BackendBase):
         if r.is_abstract():
             return
 
-        function_definitions = '\n\n'.join(map(self._function_definition, r.functions))
-
-        # XXX style
-        register = self._register(
-            variables=r.variables,
-            functions=[f for f in r.functions if not f.is_destructor()])
-
         self._wrapper_module.append(code(
             f"""
             namespace __{r.name_lua}
@@ -102,8 +95,10 @@ class LuaBackend(BackendBase):
 
             }}}} // namespace __{r.name_lua}
             """,
-            function_definitions=function_definitions,
-            register=register))
+            function_definitions=self._function_definitions(r.functions),
+            register=self._register(
+                variables=r.variables,
+                functions=[f for f in r.functions if not f.is_instance()])))
 
     def wrap_function(self, f):
         self._wrapper_module.append(self._function_definition(f))
