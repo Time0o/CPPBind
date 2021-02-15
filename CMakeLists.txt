@@ -231,6 +231,20 @@ if(CMAKE_BUILD_TYPE STREQUAL Debug)
 
     string(REPLACE "\n" ";" BACKEND_TESTS "${BACKEND_TESTS}")
 
+    if(CTEST_USE_VALGRIND)
+      find_program(VALGRIND valgrind)
+
+      if(NOT VALGRIND)
+        message(FATAL_ERROR "Failed to find valgrind")
+      endif()
+
+      set(RUN_VALGRIND "yes")
+    else()
+      set(VALGRIND "_")
+
+      set(RUN_VALGRIND "no")
+    endif()
+
     foreach(BACKEND_TEST ${BACKEND_TESTS})
         add_test(
           NAME ${BACKEND_LANGUAGE}_${BACKEND_TEST}
@@ -240,6 +254,8 @@ if(CMAKE_BUILD_TYPE STREQUAL Debug)
                   --clang ${CMAKE_C_COMPILER}
                   --clangpp ${CMAKE_CXX_COMPILER}
                   --clang-args Wall Werror
+                  --run-valgrind ${RUN_VALGRIND}
+                  --valgrind ${VALGRIND}
                   --lua ${LUA}
                   --lua-include-dir ${LUA_INCLUDE_DIR}
                   ${BACKEND_TEST_DIR}

@@ -208,16 +208,27 @@ class BackendTestGenerator:
     def _run_c_test(self, test, **kwargs):
         test_bin = self._test_output(test, ext='_bin')
 
-        self._subprocess(test_bin, quiet=True)
+        if kwargs.get('run_valgrind') == 'yes':
+            run = self._valgrind_subprocess
+        else:
+            run = self._subprocess
+
+        run([test_bin], quiet=True)
 
     def _run_lua_test(self, test, **kwargs):
         test_lua = self._test_source(test, ext='.lua')
 
         lua_cpath = self._test_output(test, ext='.so')
 
-        self._subprocess([kwargs['lua'], test_lua],
-                         env={'LUA_CPATH': lua_cpath},
-                         quiet=True)
+        if kwargs.get('run_valgrind') == 'yes':
+            run = self._valgrind_subprocess
+        else:
+            run = self._subprocess
+
+        run([kwargs['lua'],
+            test_lua],
+            env=os.environ | {'LUA_CPATH': lua_cpath},
+            quiet=True)
 
     def _test_source_dir(self):
         return os.path.join(self._test_root_dir, self._test_lang)
@@ -237,8 +248,10 @@ class BackendTestGenerator:
     def _test_output(self, test, ext):
         return os.path.join(self._test_output_dir(), f"test_{test}{ext}")
 
-    @staticmethod
-    def _subprocess(args, quiet=False, **kwargs):
+    @classmethod
+    def _subprocess(cls, args, **kwargs):
+        quiet = kwargs.pop('quiet', False)
+
         if not quiet:
             log.debug("running subprocess: " + ' '.join(args))
 
@@ -248,6 +261,18 @@ class BackendTestGenerator:
             run(stdin=subprocess.PIPE, stderr=subprocess.PIPE)
         else:
             run()
+
+    @classmethod
+    def _valgrind_subprocess(cls, args, **kwargs):
+        valgrind_args = [
+            'valgrind',
+            '--tool=memcheck',
+            '--leak-check=full',
+            '--show-leak-kinds=all',
+            '--error-exitcode=1'
+        ]
+
+        cls._subprocess(valgrind_args + args, **kwargs)
 
 
 def list_tests(**kwargs):
@@ -293,6 +318,10 @@ if __name__ == '__main__':
                             help="clang executable (C++)")
     run_parser.add_argument('--clang-args', type=lambda arg: f'-{arg}', nargs="+",
                             help="extra clang arguments")
+    run_parser.add_argument('--run-valgrind', choices=['yes', 'no'],
+                            help="run tests under valgrind and fail on leaks")
+    run_parser.add_argument('--valgrind', default='valgrind',
+                            help="valgrind executable")
     run_parser.add_argument('--lua', default='lua',
                             help="lua executable")
     run_parser.add_argument('--lua-include-dir', default='/usr/include',
