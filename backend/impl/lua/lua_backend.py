@@ -227,11 +227,11 @@ class LuaBackend(BackendBase):
         def register_variable(v):
             # XXX generalize
             if v.type.is_enum():
-                push = f"{LuaUtil.PUSHINTEGRAL_CONSTEXPR}(L, static_cast<{v.type.without_enum()}>({v.name}))"
+                push = f"{LuaUtil.pushintegral(f'static_cast<{v.type.without_enum()}>({v.name})', constexpr=True)}"
             elif v.type.is_integral():
-                push = f"{LuaUtil.PUSHINTEGRAL_CONSTEXPR}(L, {v.name})"
+                push = f"{LuaUtil.pushintegral(v.name, constexpr=True)}"
             elif v.type.is_floating():
-                push = f"{LuaUtil.PUSHFLOATING_CONSTEXPR}(L, {v.name})"
+                push = f"{LuaUtil.pushfloating(v.name, constexpr=True)}"
 
             return code(
                 f"""

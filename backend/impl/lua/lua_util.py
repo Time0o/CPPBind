@@ -3,18 +3,35 @@ from type_info import TypeInfo as TI
 
 
 class LuaUtil:
-    TOINTEGRAL = "__lua_util::tointegral"
-    TOFLOATING = "__lua_util::tofloating"
-    PUSHINTEGRAL = "__lua_util::pushintegral"
-    PUSHFLOATING = "__lua_util::pushfloating"
-    PUSHINTEGRAL_CONSTEXPR = "__lua_util_pushintegral_constexpr"
-    PUSHFLOATING_CONSTEXPR = "__lua_util_pushfloating_constexpr"
+    NS = "__lua_util"
 
     def __init__(self, wrapper):
         self._records = wrapper.records()
 
-    @staticmethod
-    def pushpointer(t, arg, owning=False):
+    @classmethod
+    def tointegral(cls, t, i):
+        return f"{cls.NS}::tointegral<{t}>(L, {i})"
+
+    @classmethod
+    def tofloating(cls, t, i):
+        return f"{cls.NS}::tofloating<{t}>(L, {i})"
+
+    @classmethod
+    def pushintegral(cls, arg, constexpr=False):
+        if constexpr:
+            return f"{cls.NS}_pushintegral_constexpr(L, {arg});"
+        else:
+            return f"{cls.NS}::pushintegral(L, {arg});"
+
+    @classmethod
+    def pushfloating(cls, arg, constexpr=False):
+        if constexpr:
+            return f"{cls.NS}_pushfloating_constexpr(L, {arg});"
+        else:
+            return f"{cls.NS}::pushfloating(L, {arg});"
+
+    @classmethod
+    def pushpointer(cls, t, arg, owning=False):
         push = f"new (lua_newuserdata(L, sizeof({TI.TYPED_PTR}))) {TI.TYPED_PTR}({arg});"
 
         if owning:
@@ -22,7 +39,7 @@ class LuaUtil:
                 f"""
                 {{push}}
 
-                __lua_util::get_record_metatable(L, "{t.format(mangled=True)}");
+                {cls.NS}::get_record_metatable(L, "{t.format(mangled=True)}");
                 lua_setmetatable(L, -2);
                 """,
                 push=push)
@@ -36,7 +53,7 @@ class LuaUtil:
             #include <limits>
             #include <utility>
 
-            namespace __lua_util
+            namespace {ns}
             {{
 
             {create_record_metatables}
@@ -108,21 +125,22 @@ class LuaUtil:
               lua_pushnumber(L, val);
             }}
 
-            }} // namespace __lua_util
+            }} // namespace {ns}
 
-            #define __lua_util_pushintegral_constexpr(L, VAL) \\
+            #define {ns}_pushintegral_constexpr(L, VAL) \\
               static_assert(VAL >= std::numeric_limits<lua_Integer>::min() && \\
                             VAL <= std::numeric_limits<lua_Integer>::max(), \\
                             "parameter not representable by lua_Integer"); \\
               lua_pushinteger(L, VAL);
 
 
-            #define __lua_util_pushfloating_constexpr(L, VAL) \\
+            #define {ns}_pushfloating_constexpr(L, VAL) \\
               static_assert(VAL >= std::numeric_limits<lua_Number>::lowest() && \\
                             VAL <= std::numeric_limits<lua_Number>::max(), \\
                             "parameter not representable by lua_Number"); \\
               lua_pushnumber(L, VAL);
             """,
+            ns=self.NS,
             create_record_metatables=self._create_record_metatables())
 
     def _create_record_metatables(self):

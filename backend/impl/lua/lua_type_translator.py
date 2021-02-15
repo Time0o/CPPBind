@@ -55,15 +55,15 @@ class LuaTypeTranslator(TypeTranslatorBase):
 
     @input_rule(lambda t: t.is_scoped_enum())
     def input(cls, t, args):
-        return f"{{interm}} = static_cast<{t}>({LuaUtil.TOINTEGRAL}<{t.without_enum()}>(L, {args.i+1}));"
+        return f"{{interm}} = static_cast<{t}>({LuaUtil.tointegral(t.without_enum(), args.i + 1)});"
 
     @input_rule(lambda t: t.is_integral())
     def input(cls, t, args):
-        return f"{{interm}} = {LuaUtil.TOINTEGRAL}<{t}>(L, {args.i+1});"
+        return f"{{interm}} = {LuaUtil.tointegral(t, args.i + 1)};"
 
     @input_rule(lambda t: t.is_floating())
     def input(cls, t, args):
-        return f"{{interm}} = {LuaUtil.TOFLOATING}<{t}>(L, {args.i+1});"
+        return f"{{interm}} = {LuaUtil.tofloating(t, args.i + 1)};"
 
     @input_rule(lambda t: t.is_pointer())
     def input(cls, t, args):
@@ -93,15 +93,15 @@ class LuaTypeTranslator(TypeTranslatorBase):
 
     @output_rule(lambda t: t.is_scoped_enum())
     def output(cls, t, args):
-        return f"{LuaUtil.PUSHINTEGRAL}(L, static_cast<{t.without_enum()}>({{outp}}));"
+        return f"{LuaUtil.pushintegral(f'static_cast<{t.without_enum()}>({{outp}})')};"
 
     @output_rule(lambda t: t.is_integral())
     def output(cls, t, args):
-        return f"{LuaUtil.PUSHINTEGRAL}(L, {{outp}});"
+        return f"{LuaUtil.pushintegral('{outp}')};"
 
     @output_rule(lambda t: t.is_floating())
     def output(cls, t, args):
-        return f"{LuaUtil.PUSHFLOATING}(L, {{outp}});"
+        return f"{LuaUtil.pushfloating('{outp}')};"
 
     @output_rule(lambda t: t.is_pointer())
     def output(cls, t, args):
