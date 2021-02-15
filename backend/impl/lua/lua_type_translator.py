@@ -29,7 +29,7 @@ class LuaTypeTranslator(TypeTranslatorBase):
         elif t.is_boolean():
             return 'LUA_TBOOLEAN'
         elif t.is_pointer():
-            return 'LUA_TLIGHTUSERDATA'
+            return 'LUA_TUSERDATA'
         else:
             raise ValueError(f"no lua type encoding specified for type '{t}'")
 
@@ -37,13 +37,6 @@ class LuaTypeTranslator(TypeTranslatorBase):
     def _lua_input_skip_defaulted(cls, t, args):
         if args.p.default_argument is not None:
             return f"if (lua_gettop(L) < {args.i+1}) break;"
-
-    @rule(lambda t: t.is_pointer())
-    def _lua_input_check_type(cls, t, args):
-        if args.f.is_constructor() or args.f.is_instance():
-            return f"luaL_checktype(L, {args.i+1}, LUA_TTABLE);"
-        else:
-            return f"luaL_checktype(L, {args.i+1}, {cls._lua_type_encoding(t)});"
 
     @rule(lambda _: True)
     def _lua_input_check_type(cls, t, args):
@@ -74,19 +67,7 @@ class LuaTypeTranslator(TypeTranslatorBase):
 
     @input_rule(lambda t: t.is_pointer())
     def input(cls, t, args):
-        if args.f.is_constructor():
-            return
-        else:
-            if args.p.is_self():
-                return code(
-                    f"""
-                    lua_getfield(L, 1, "__self");
-                    {{interm}} = *static_cast<{t.pointer_to()}>(lua_touserdata(L, -1));
-                    lua_pop(L, 1);
-                    """)
-            else:
-                # XXX merge with above
-                return f"{{interm}} = {TI.TYPED_POINTER_CAST}<{t.pointee()}>(lua_touserdata(L, {args.i+1}));"
+        return f"{{interm}} = {TI.TYPED_POINTER_CAST}<{t.pointee()}>(lua_touserdata(L, {args.i+1}));"
 
     @input_rule(lambda t: t.is_lvalue_reference(), before=None)
     def input(cls, t, args):
@@ -124,25 +105,7 @@ class LuaTypeTranslator(TypeTranslatorBase):
 
     @output_rule(lambda t: t.is_pointer())
     def output(cls, t, args):
-        if args.f.is_constructor():
-            return code(
-                f"""
-                lua_newtable(L);
-                lua_pushvalue(L, 1);
-                lua_setfield(L, 1, "__index");
-                lua_pushcfunction(L, {args.f.parent.destructor.name_lua});
-                lua_setfield(L, 1, "__gc");
-                lua_pushvalue(L, 1);
-                lua_setmetatable(L, -2);
-
-                _{Id.SELF} = static_cast<{t.pointer_to()}>(lua_newuserdata(L, sizeof({t})));
-                *_{Id.SELF} = {{outp}};
-
-                lua_setfield(L, -2, "{Id.SELF}");
-                """)
-        else:
-            # XXX memory leak
-            return f"lua_pushlightuserdata(L, {TI.MAKE_TYPED}({{outp}}));"
+        return LuaUtil.pushpointer(t.pointee(), "{outp}", owning=args.f.is_constructor())
 
     @output_rule(lambda t: t.is_lvalue_reference())
     def output(cls, t, args):

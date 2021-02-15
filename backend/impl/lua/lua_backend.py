@@ -28,6 +28,8 @@ class LuaBackend(BackendBase):
         self._wrapper_module = self.output_file(
             self.input_file().modified(filename='{filename}_lua', ext='.cpp'))
 
+        self._lua_util = LuaUtil(self.wrapper())
+
     def wrap_before(self):
         self._wrapper_module.append(code(
             """
@@ -43,11 +45,14 @@ class LuaBackend(BackendBase):
 
             {type_info}
 
+            {forward_declarations}
+
             {lua_util}
             """,
             input_include=self.input_file().include(),
             type_info=self.type_info().code(),
-            lua_util=LuaUtil.code()))
+            forward_declarations=self._function_forward_declarations(),
+            lua_util=self._lua_util.code()))
 
     def wrap_after(self):
         ## XXX support different Lua versions
@@ -79,13 +84,6 @@ class LuaBackend(BackendBase):
         if r.is_abstract():
             return
 
-        # XXX style
-        for f in r.functions:
-            if f.is_constructor():
-                f.parameters.insert(0, Parameter(Id.SELF, r.type.pointer_to(repeat=1)))
-
-        function_declarations = self._function_declaration(r.destructor)
-
         function_definitions = '\n\n'.join(map(self._function_definition, r.functions))
 
         # XXX style
@@ -98,24 +96,45 @@ class LuaBackend(BackendBase):
             namespace __{r.name_lua}
             {{{{
 
-            {{function_declarations}}
-
             {{function_definitions}}
 
             {{register}}
 
             }}}} // namespace __{r.name_lua}
             """,
-            function_declarations=function_declarations,
             function_definitions=function_definitions,
             register=register))
 
     def wrap_function(self, f):
         self._wrapper_module.append(self._function_definition(f))
 
+    def _function_forward_declarations(self):
+        forward_declarations = []
+
+        for r in self.records():
+            forward_declarations.append(code(
+                f"""
+                namespace __{r.name_lua}
+                {{{{
+
+                {{function_declarations}}
+
+                }}}} // namespace __{r.name_lua}
+                """,
+                function_declarations=self._function_declarations(r.functions)))
+
+        for f in self.functions():
+            forward_declarations.append(self._function_declaration(f))
+
+        return '\n\n'.join(forward_declarations)
+
     @classmethod
     def _function_declaration(cls, f):
         return f"int {f.name_lua}(lua_State *L);"
+
+    @classmethod
+    def _function_declarations(cls, functions):
+        return '\n'.join(map(cls._function_declaration, functions))
 
     @classmethod
     def _function_definition(cls, f):
@@ -128,6 +147,10 @@ class LuaBackend(BackendBase):
             """,
             header=cls._function_header(f),
             body=cls._function_body(f))
+
+    @classmethod
+    def _function_definitions(cls, functions):
+        return '\n\n'.join(map(cls._function_definition, functions))
 
     @classmethod
     def _function_header(cls, f):

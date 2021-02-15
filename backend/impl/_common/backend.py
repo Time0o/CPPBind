@@ -17,6 +17,7 @@ class BackendBase(metaclass=BackendMeta):
         self._input_file = file.Path(wrapper.input_file())
         self._output_files = []
 
+        self._wrapper = wrapper
         self._variables = wrapper.variables()
         self._records = wrapper.records()
         self._functions = wrapper.functions()
@@ -56,6 +57,9 @@ class BackendBase(metaclass=BackendMeta):
         self._output_files.append(output_file)
 
         return output_file
+
+    def wrapper(self):
+        return self._wrapper
 
     def variables(self):
         return self._variables

@@ -6,29 +6,24 @@ from text import code
 
 
 class TypeInfo:
+    TYPED_PTR = "__type_info::typed_ptr"
     MAKE_TYPED = "__type_info::make_typed"
     TYPED_POINTER_CAST = "__type_info::typed_pointer_cast"
 
     def __init__(self, wrapper):
         self._types = OrderedDict()
 
-        def add_type_instance(t, t_bases=None):
-            if t.is_record():
-                self._types[(t, t_bases)] = True
-            elif t.is_pointer():
-                self._types[(t.pointee(), t_bases)] = True
-
         for r in Record.ordering(): # XXX refactor
-            add_type_instance(r.type, tuple(b.type for b in r.bases_recursive))
+            self._types[(r.type, tuple(b.type for b in r.bases_recursive))] = True
 
         for v in wrapper.variables():
-            add_type_instance(v.type)
+            if v.type.is_pointer() and not v.pointee().is_record():
+                self._types[(v.type.pointee(), None)] = True
 
         for f in wrapper.functions():
-            add_type_instance(f.return_type)
-
-            for p in f.parameters:
-                add_type_instance(p.type)
+            for t in [f.return_type] + [p.type for p in f.parameters]:
+                if t.is_pointer() and not t.pointee().is_record():
+                    self._types[(t.pointee(), None)] = True
 
     def code(self):
         if not self._types:
@@ -124,9 +119,10 @@ class TypeInfo:
             class typed_ptr
             {
             public:
-              typed_ptr(type const *type, void const *obj)
-              : _type(type),
-                _obj(obj)
+              template<typename T>
+              typed_ptr(T const *obj)
+              : _type(type::get<T>()),
+                _obj(static_cast<void const *>(obj))
               {}
 
               void const *cast(type const *to) const
@@ -143,7 +139,8 @@ class TypeInfo:
             template<typename T>
             void const *make_typed(T const *obj)
             {
-              auto const *ptr = new typed_ptr(type::get<T>(), static_cast<void const *>(obj));
+              auto const *ptr = new typed_ptr(obj);
+
 
               return static_cast<void const *>(ptr);
             }

@@ -1,4 +1,5 @@
 from text import code
+from type_info import TypeInfo as TI
 
 
 class LuaUtil:
@@ -9,19 +10,53 @@ class LuaUtil:
     PUSHINTEGRAL_CONSTEXPR = "__lua_util_pushintegral_constexpr"
     PUSHFLOATING_CONSTEXPR = "__lua_util_pushfloating_constexpr"
 
+    def __init__(self, wrapper):
+        self._records = wrapper.records()
+
     @staticmethod
-    def code():
+    def pushpointer(t, arg, owning=False):
+        push = f"new (lua_newuserdata(L, sizeof({TI.TYPED_PTR}))) {TI.TYPED_PTR}({arg});"
+
+        if owning:
+            push = code(
+                f"""
+                {{push}}
+
+                __lua_util::get_record_metatable(L, "{t.format(mangled=True)}");
+                lua_setmetatable(L, -2);
+                """,
+                push=push)
+
+        return push
+
+    def code(self):
         return code(
             """
+            #include <cassert>
             #include <limits>
             #include <utility>
 
             namespace __lua_util
-            {
+            {{
+
+            {create_record_metatables}
+
+            void get_record_metatable(lua_State *L, char const *__registry_key)
+            {{
+              static bool created = false;
+
+              if (!created)
+                create_record_metatables(L);
+
+              lua_pushstring(L, __registry_key);
+              lua_gettable(L, LUA_REGISTRYINDEX);
+
+              assert(lua_istable(L, -1));
+            }}
 
             template<typename T>
             T tointegral(lua_State *L, int arg)
-            {
+            {{
               int valid = 0;
               auto i = lua_tointegerx(L, arg, &valid);
 
@@ -35,11 +70,11 @@ class LuaUtil:
                             "conversion would overflow");
 
               return static_cast<T>(i);
-            }
+            }}
 
             template<typename T>
             T tofloating(lua_State *L, int arg)
-            {
+            {{
               int valid = 0;
               auto f = lua_tonumberx(L, arg, &valid);
 
@@ -51,29 +86,29 @@ class LuaUtil:
                             "conversion would overflow");
 
               return static_cast<T>(f);
-            }
+            }}
 
             template<typename T>
             void pushintegral(lua_State *L, T val)
-            {
+            {{
               if (val < std::numeric_limits<lua_Integer>::min() ||
                   val > std::numeric_limits<lua_Integer>::max())
                 luaL_error(L, "result not representable by lua_Integer");
 
               lua_pushinteger(L, val);
-            }
+            }}
 
             template<typename T>
             void pushfloating(lua_State *L, T val)
-            {
+            {{
               if (val < std::numeric_limits<lua_Number>::lowest() ||
                   val > std::numeric_limits<lua_Number>::max())
                 luaL_error(L, "result not representable by lua_Number");
 
               lua_pushnumber(L, val);
-            }
+            }}
 
-            } // namespace __lua_util
+            }} // namespace __lua_util
 
             #define __lua_util_pushintegral_constexpr(L, VAL) \\
               static_assert(VAL >= std::numeric_limits<lua_Integer>::min() && \\
@@ -87,4 +122,63 @@ class LuaUtil:
                             VAL <= std::numeric_limits<lua_Number>::max(), \\
                             "parameter not representable by lua_Number"); \\
               lua_pushnumber(L, VAL);
-            """)
+            """,
+            create_record_metatables=self._create_record_metatables())
+
+    def _create_record_metatables(self):
+        define = []
+        call = []
+
+        for r in self._records:
+            if r.is_abstract():
+                continue
+
+            define.append(self._create_record_metatable(r))
+            call.append(f"create_{r.name_lua}_metatable(L);")
+
+        return code(
+            """
+            {define}
+
+            void create_record_metatables(lua_State *L)
+            {{
+              {call}
+            }}
+            """,
+            define='\n\n'.join(define),
+            call='\n'.join(call))
+
+    @staticmethod
+    def _create_record_metatable(r):
+        set_methods = []
+
+        for f in r.functions:
+            if f.is_constructor() or f.is_destructor():
+                continue
+
+            set_methods.append(code(
+                f"""
+                lua_pushcfunction(L, __{r.name_lua}::{f.name_lua});
+                lua_setfield(L, -2, "{f.name_unqualified_lua}");
+                """))
+
+        return code(
+            f"""
+            void create_{r.name_lua}_metatable(lua_State *L)
+            {{{{
+              lua_pushstring(L, "{r.type.format(mangled=True)}");
+
+              lua_newtable(L);
+
+              {{set_methods}}
+
+              lua_pushcfunction(L, __{r.name_lua}::{r.destructor.name_lua});
+              lua_setfield(L, -2, "__gc");
+
+              lua_pushvalue(L, -1);
+              lua_setfield(L, -2, "__index");
+
+              lua_settable(L, LUA_REGISTRYINDEX);
+            }}}}
+            """,
+            set_methods='\n\n'.join(set_methods))
