@@ -40,6 +40,10 @@ inline auto const *baseDecl(clang::CXXBaseSpecifier const &Base)
 template<typename T>
 bool matchDecl(T const *Decl, llvm::StringRef MatcherSource)
 {
+  return false;
+
+// XXX fix for clang 8
+#if 0
   using namespace clang::ast_matchers;
   using namespace clang::ast_matchers::dynamic;
 
@@ -64,6 +68,7 @@ bool matchDecl(T const *Decl, llvm::StringRef MatcherSource)
   Finder.match(*Decl, ASTContext());
 
   return Callback.Result;
+#endif
 }
 
 } // namespace decl
