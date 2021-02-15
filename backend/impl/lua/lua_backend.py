@@ -58,7 +58,12 @@ class LuaBackend(BackendBase):
         ## XXX support different Lua versions
         self._wrapper_module.append(code(
             """
+            namespace
+            {{
+
             {register_module}
+
+            }} // namespace
 
             extern "C"
             {{
@@ -101,7 +106,16 @@ class LuaBackend(BackendBase):
                 functions=[f for f in r.functions if not f.is_instance()])))
 
     def wrap_function(self, f):
-        self._wrapper_module.append(self._function_definition(f))
+        self._wrapper_module.append(code(
+            """
+            namespace
+            {{
+
+            {function_definition}
+
+            }} // namespace
+            """,
+            function_definition=self._function_definition(f)))
 
     def _function_forward_declarations(self):
         forward_declarations = []
@@ -117,9 +131,6 @@ class LuaBackend(BackendBase):
                 }}}} // namespace __{r.name_lua}
                 """,
                 function_declarations=self._function_declarations(r.functions)))
-
-        for f in self.functions():
-            forward_declarations.append(self._function_declaration(f))
 
         return '\n\n'.join(forward_declarations)
 
