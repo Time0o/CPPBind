@@ -1,5 +1,6 @@
 from cppbind import Type
 from functools import partial
+from text import code
 from type_info import TypeInfo as TI
 from type_translator import TypeTranslatorBase
 
@@ -68,7 +69,9 @@ class CTypeTranslator(TypeTranslatorBase):
 
     @rule(lambda t: t.is_pointer() and t.pointee().is_record())
     def output(cls, t, args):
-        return f"return {TI.MAKE_TYPED}({{outp}});"
+        owned = 'true' if args.f.is_constructor() else 'false'
+
+        return f"return {TI.MAKE_TYPED}({{outp}}, {owned});"
 
     @rule(lambda _: True)
     def output(cls, t, args):

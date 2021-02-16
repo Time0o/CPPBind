@@ -8,6 +8,7 @@ from text import code
 class TypeInfo:
     TYPED_PTR = "__type_info::typed_ptr"
     MAKE_TYPED = "__type_info::make_typed"
+    GET_TYPED = "__type_info::get_typed"
     TYPED_POINTER_CAST = "__type_info::typed_pointer_cast"
 
     def __init__(self, wrapper):
@@ -26,15 +27,13 @@ class TypeInfo:
                     self._types[(t.pointee(), None)] = True
 
     def code(self):
-        if not self._types:
-            return
-
         return code(
             """
             #include <cassert>
             #include <typeindex>
             #include <typeinfo>
             #include <unordered_map>
+            #include <utility>
 
             namespace __type_info
             {{
@@ -62,6 +61,8 @@ class TypeInfo:
                 return it->second;
               }
 
+              virtual void destroy(void const *obj) const = 0;
+
               virtual void const *cast(type const *to, void const *obj) const = 0;
               virtual void *cast(type const *to, void *obj) const = 0;
 
@@ -81,6 +82,9 @@ class TypeInfo:
                 add_cast<T>();
                 add_base_casts();
               }
+
+              void destroy(void const *obj) const override
+              { delete static_cast<T const *>(obj); }
 
               void const *cast(type const *to, void const *obj) const override
               {
@@ -120,10 +124,17 @@ class TypeInfo:
             {
             public:
               template<typename T>
-              typed_ptr(T const *obj)
+              typed_ptr(T const *obj, bool owning = false)
               : _type(type::get<T>()),
-                _obj(static_cast<void const *>(obj))
+                _obj(static_cast<void const *>(obj)),
+                _owning(owning)
               {}
+
+              ~typed_ptr()
+              {
+                if (_owning)
+                  _type->destroy(_obj);
+              }
 
               void const *cast(type const *to) const
               { return _type->cast(to, _obj); }
@@ -134,20 +145,29 @@ class TypeInfo:
             private:
               type const *_type;
               void const *_obj;
+              bool _owning;
             };
 
-            template<typename T>
-            void const *make_typed(T const *obj)
+            template<typename T, typename ...ARGS>
+            void const *make_typed(T const *obj, ARGS &&...args)
             {
-              auto const *ptr = new typed_ptr(obj);
+              auto const *ptr = new typed_ptr(obj, std::forward<ARGS>(args)...);
 
 
               return static_cast<void const *>(ptr);
             }
 
+            template<typename T, typename ...ARGS>
+            void *make_typed(T *obj, ARGS &&...args)
+            { return const_cast<void *>(make_typed(const_cast<T const *>(obj), std::forward<ARGS>(args)...)); }
+
             template<typename T>
-            void *make_typed(T *obj)
-            { return const_cast<void *>(make_typed(const_cast<T const *>(obj))); }
+            typed_ptr const *get_typed(T const *obj)
+            { return static_cast<typed_ptr const *>(obj); }
+
+            template<typename T>
+            typed_ptr *get_typed(T *obj)
+            { return const_cast<typed_ptr *>(get_typed(const_cast<T const *>(obj))); }
 
             template<typename T>
             T const *typed_pointer_cast(void const *ptr)

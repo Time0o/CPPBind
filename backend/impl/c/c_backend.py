@@ -1,6 +1,7 @@
 from enum import Enum
 
 from backend import BackendBase
+from c_util import CUtil
 from cppbind import Identifier as Id, Type, Variable, Record, Function, Parameter
 from type_translator import TypeTranslator; TT = TypeTranslator()
 from text import code
@@ -46,8 +47,12 @@ class CBackend(BackendBase):
             #endif
 
             #include <stdbool.h>
+
+            {c_util}
+
             """,
-            header_guard=self._header_guard()))
+            header_guard=self._header_guard(),
+            c_util=CUtil.code_declare()))
 
         self._wrapper_source.append(code(
             """
@@ -60,10 +65,13 @@ class CBackend(BackendBase):
             extern "C" {{
 
             {wrapper_header_include}
+
+            {c_util}
             """,
             input_header_include=self.input_file().include(),
             type_info=self.type_info().code(),
-            wrapper_header_include=self._wrapper_header.include()))
+            wrapper_header_include=self._wrapper_header.include(),
+            c_util=CUtil.code_define()))
 
     def wrap_after(self):
         self._wrapper_header.append(code(
@@ -95,7 +103,8 @@ class CBackend(BackendBase):
 
     def wrap_record(self, r):
         for f in r.functions:
-            self.wrap_function(f)
+            if not f.is_destructor():
+                self.wrap_function(f)
 
     def wrap_function(self, f):
         if f.is_constructor():
