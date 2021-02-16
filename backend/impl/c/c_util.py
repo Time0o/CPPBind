@@ -12,5 +12,5 @@ class CUtil:
         return code(
             f"""
             void c_delete(void *ptr)
-            {{ delete {TI.GET_TYPED}(ptr); }}
+            {{ delete {TI.get_typed('ptr')}; }}
             """)

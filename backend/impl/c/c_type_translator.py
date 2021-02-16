@@ -53,7 +53,7 @@ class CTypeTranslator(TypeTranslatorBase):
 
     @rule(lambda t: t.is_pointer() and t.pointee().is_record())
     def input(cls, t, args):
-        return f"{{interm}} = {TI.TYPED_POINTER_CAST}<{t.pointee()}>({{inp}});"
+        return f"{{interm}} = {TI.typed_pointer_cast(t.pointee(), '{inp}')};"
 
     @rule(lambda _: True)
     def input(cls, t, args):
@@ -69,9 +69,7 @@ class CTypeTranslator(TypeTranslatorBase):
 
     @rule(lambda t: t.is_pointer() and t.pointee().is_record())
     def output(cls, t, args):
-        owned = 'true' if args.f.is_constructor() else 'false'
-
-        return f"return {TI.MAKE_TYPED}({{outp}}, {owned});"
+        return f"return {TI.make_typed('{outp}', owned=args.f.is_constructor())};"
 
     @rule(lambda _: True)
     def output(cls, t, args):

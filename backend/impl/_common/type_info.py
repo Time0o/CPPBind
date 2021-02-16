@@ -6,10 +6,8 @@ from text import code
 
 
 class TypeInfo:
-    TYPED_PTR = "__type_info::typed_ptr"
-    MAKE_TYPED = "__type_info::make_typed"
-    GET_TYPED = "__type_info::get_typed"
-    TYPED_POINTER_CAST = "__type_info::typed_pointer_cast"
+    NS = "__type_info"
+    TYPED_PTR = f"{NS}::typed_ptr"
 
     def __init__(self, wrapper):
         self._types = OrderedDict()
@@ -26,6 +24,20 @@ class TypeInfo:
                 if t.is_pointer() and not t.pointee().is_record():
                     self._types[(t.pointee(), None)] = True
 
+    @classmethod
+    def make_typed(cls, arg, owned=False):
+        owned = 'true' if owned else 'false'
+
+        return f"{cls.NS}::make_typed({arg}, {owned})"
+
+    @classmethod
+    def get_typed(cls, arg):
+        return f"{cls.NS}::get_typed({arg})"
+
+    @classmethod
+    def typed_pointer_cast(cls, t, arg):
+        return f"{cls.NS}::typed_pointer_cast<{t}>({arg})"
+
     def code(self):
         return code(
             """
@@ -35,13 +47,16 @@ class TypeInfo:
             #include <unordered_map>
             #include <utility>
 
-            namespace __type_info
+            namespace {ns}
             {{
-              {type_utils}
 
-              {type_instances}
+            {type_utils}
+
+            {type_instances}
+
             }}
             """,
+            ns=self.NS,
             type_utils=self._type_utils(),
             type_instances=self._type_instances())
 
@@ -99,16 +114,17 @@ class TypeInfo:
               { return const_cast<void *>(cast(to, const_cast<void const *>(obj))); }
 
             private:
-              template<typename B>
-              static void const *cast(void const *obj)
-              {
-                auto const *base = static_cast<B const*>(static_cast<T const *>(obj));
-
-                return static_cast<void const *>(base);
-              }
-
               void add_type() const
               { _types.insert(std::make_pair(std::type_index(typeid(T)), this)); }
+
+              template<typename U>
+              static void const *cast(void const *obj)
+              {
+                auto const *from = static_cast<T const *>(obj);
+                auto const *to = static_cast<U const *>(from);
+
+                return static_cast<void const *>(to);
+              }
 
               template<typename B>
               void add_cast()
@@ -151,35 +167,45 @@ class TypeInfo:
             template<typename T, typename ...ARGS>
             void const *make_typed(T const *obj, ARGS &&...args)
             {
-              auto const *ptr = new typed_ptr(obj, std::forward<ARGS>(args)...);
-
-
+              auto ptr = new typed_ptr(obj, std::forward<ARGS>(args)...);
               return static_cast<void const *>(ptr);
             }
 
             template<typename T, typename ...ARGS>
             void *make_typed(T *obj, ARGS &&...args)
-            { return const_cast<void *>(make_typed(const_cast<T const *>(obj), std::forward<ARGS>(args)...)); }
+            {
+              auto ptr = make_typed(const_cast<T const *>(obj),
+                                    std::forward<ARGS>(args)...);
+              return const_cast<void *>(ptr);
+            }
 
             template<typename T>
-            typed_ptr const *get_typed(T const *obj)
-            { return static_cast<typed_ptr const *>(obj); }
+            typed_ptr *get_typed(T const *obj)
+            {
+              auto ptr = static_cast<typed_ptr const *>(obj);
+              return const_cast<typed_ptr *>(ptr);
+            }
 
             template<typename T>
             typed_ptr *get_typed(T *obj)
-            { return const_cast<typed_ptr *>(get_typed(const_cast<T const *>(obj))); }
+            {
+              auto ptr = get_typed(const_cast<T const *>(obj));
+              return const_cast<typed_ptr *>(ptr);
+            }
 
             template<typename T>
             T const *typed_pointer_cast(void const *ptr)
             {
-              void const *obj = static_cast<typed_ptr const *>(ptr)->cast(type::get<T>());
-
+              auto obj = static_cast<typed_ptr const *>(ptr)->cast(type::get<T>());
               return static_cast<T const *>(obj);
             }
 
             template<typename T>
             T *typed_pointer_cast(void *ptr)
-            { return const_cast<T *>(typed_pointer_cast<T>(const_cast<void const *>(ptr))); }
+            {
+              auto obj = typed_pointer_cast<T>(const_cast<void const *>(ptr));
+              return const_cast<T *>(obj);
+            }
             """)
 
     def _type_instances(self):
