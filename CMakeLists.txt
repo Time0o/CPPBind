@@ -248,7 +248,7 @@ if(CMAKE_BUILD_TYPE STREQUAL Debug)
     foreach(BACKEND_TEST ${BACKEND_TESTS})
         add_test(
           NAME ${BACKEND_LANGUAGE}_${BACKEND_TEST}
-          COMMAND ${BACKEND_TEST_RUNNER} -v 2 run
+          COMMAND ${BACKEND_TEST_RUNNER} run
                   --single-test ${BACKEND_TEST}
                   --cppbind $<TARGET_FILE:${CPPBIND}>
                   --clang ${CMAKE_C_COMPILER}
