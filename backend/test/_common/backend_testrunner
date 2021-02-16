@@ -226,10 +226,10 @@ class BackendTestGenerator:
         else:
             run = self._subprocess
 
-        run([kwargs['lua'],
-            test_lua],
-            env=os.environ | {'LUA_CPATH': lua_cpath},
-            quiet=True)
+        env = os.environ
+        env['LUA_CPATH'] = lua_cpath
+
+        run([kwargs['lua'], test_lua], env=env, quiet=True)
 
     def _test_source_dir(self):
         return os.path.join(self._test_root_dir, self._test_lang)
