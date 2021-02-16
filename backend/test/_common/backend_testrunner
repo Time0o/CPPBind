@@ -9,6 +9,7 @@ import sys
 import unittest
 
 from functools import partial
+from timeit import default_timer
 
 
 def logger_create(name):
@@ -275,6 +276,23 @@ class BackendTestGenerator:
         cls._subprocess(valgrind_args + args, **kwargs)
 
 
+class BackendTestTimer:
+    def __init__(self, name):
+        self._name = name
+
+    def __enter__(self):
+        self._start = self._time()
+
+    def __exit__(self, type, value, traceback):
+        time = self._time() - self._start
+
+        log.debug(f"timer '{self._name}' ran in: {time:e} seconds")
+
+    @staticmethod
+    def _time():
+        return default_timer()
+
+
 def list_tests(**kwargs):
     generator = BackendTestGenerator(**kwargs)
 
@@ -284,11 +302,14 @@ def list_tests(**kwargs):
 def run_tests(**kwargs):
     generator = BackendTestGenerator(**kwargs)
 
-    generator.wrap_tests(**kwargs)
+    with BackendTestTimer('wrap') as t:
+        generator.wrap_tests(**kwargs)
 
-    generator.compile_tests(**kwargs)
+    with BackendTestTimer('compile') as t:
+        generator.compile_tests(**kwargs)
 
-    result = generator.run_tests(**kwargs)
+    with BackendTestTimer('run') as t:
+        result = generator.run_tests(**kwargs)
 
     if not result.wasSuccessful():
         raise RuntimeError("tests failed")
