@@ -24,25 +24,25 @@ int main()
     assert(test_derived_func_abstract(derived) == true);
     assert(test_base_abstract_func_abstract(base_abstract) == true);
 
-    c_delete(derived);
+    _delete(derived);
   }
 
   {
     struct test_base_1 *base_1 = test_base_1_new();
     assert(test_base_1_func_1(base_1) == 1);
-    c_delete(base_1);
+    _delete(base_1);
 
     struct test_base_2 *base_2 = test_base_2_new();
     assert(test_base_2_func_2(base_2) == 2);
-    c_delete(base_2);
+    _delete(base_2);
 
     struct test_base_protected *base_protected = test_base_protected_new();
     assert(test_base_protected_func_protected(base_protected) == true);
-    c_delete(base_protected);
+    _delete(base_protected);
 
     struct test_base_private *base_private = test_base_private_new();
     assert(test_base_private_func_private(base_private) == true);
-    c_delete(base_private);
+    _delete(base_private);
   }
 
   return 0;

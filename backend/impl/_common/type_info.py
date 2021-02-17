@@ -7,7 +7,12 @@ from text import code
 
 class TypeInfo:
     NS = "__type_info"
+
     TYPED_PTR = f"{NS}::typed_ptr"
+
+    OWN = f"{NS}::_own"
+    DISOWN = f"{NS}::_disown"
+    DELETE = f"{NS}::_delete"
 
     def __init__(self, wrapper):
         self._types = OrderedDict()
@@ -25,10 +30,10 @@ class TypeInfo:
                     self._types[(t.pointee(), None)] = True
 
     @classmethod
-    def make_typed(cls, arg, owned=False):
-        owned = 'true' if owned else 'false'
+    def make_typed(cls, arg, owning=False):
+        owning = 'true' if owning else 'false'
 
-        return f"{cls.NS}::make_typed({arg}, {owned})"
+        return f"{cls.NS}::make_typed({arg}, {owning})"
 
     @classmethod
     def get_typed(cls, arg):
@@ -37,6 +42,18 @@ class TypeInfo:
     @classmethod
     def typed_pointer_cast(cls, t, arg):
         return f"{cls.NS}::typed_pointer_cast<{t}>({arg})"
+
+    @classmethod
+    def own(cls, arg):
+        return f"{cls.NS}::_own({arg})"
+
+    @classmethod
+    def disown(cls, arg):
+        return f"{cls.NS}::_disown({arg})"
+
+    @classmethod
+    def delete(cls, arg):
+        return f"{cls.NS}::_delete({arg})"
 
     def code(self):
         return code(
@@ -152,6 +169,12 @@ class TypeInfo:
                   _type->destroy(_obj);
               }
 
+              void own()
+              { _owning = true; }
+
+              void disown()
+              { _owning = false; }
+
               void const *cast(type const *to) const
               { return _type->cast(to, _obj); }
 
@@ -206,6 +229,16 @@ class TypeInfo:
               auto obj = typed_pointer_cast<T>(const_cast<void const *>(ptr));
               return const_cast<T *>(obj);
             }
+
+            void _own(void const *obj)
+            { get_typed(obj)->own(); }
+
+            void _disown(void const *obj)
+            { get_typed(obj)->disown(); }
+
+            void _delete(void const *obj)
+            { delete get_typed(obj); }
+
             """)
 
     def _type_instances(self):

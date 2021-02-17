@@ -32,7 +32,7 @@ enum class Boolean
 namespace util
 {
 
-int *alloc_int_ptr(int i)
+int *int_new(int i)
 {
   int *iptr = new int;
   *iptr = i;
@@ -40,25 +40,19 @@ int *alloc_int_ptr(int i)
   return iptr;
 }
 
-void free_int_ptr(int *iptr)
-{ delete iptr; }
+int int_deref(int *i)
+{ return *i; }
 
-int deref_int_ptr(int *iptr)
-{ return *iptr; }
+Boolean *bool_enum_new(Boolean val)
+{
+  Boolean *bptr = new Boolean;
+  *bptr = val;
 
-//Boolean *alloc_bool_enum_ptr(Boolean val)
-//{
-//  Boolean *bptr = new Boolean;
-//  *bptr = val;
-//
-//  return bptr;
-//}
-//
-//void free_bool_enum_ptr(Boolean *bptr)
-//{ delete bptr; }
-//
-//Boolean deref_bool_enum_ptr(Boolean *bptr)
-//{ return *bptr; }
+  return bptr;
+}
+
+Boolean bool_enum_deref(Boolean *val)
+{ return *val; }
 
 } // namespace util
 
@@ -91,11 +85,11 @@ inline int *add_pointer(int *a, int const *b)
   return a;
 }
 
-//inline Boolean *not_bool_enum_pointer(Boolean *a)
-//{
-//  *a = not_bool_enum(*a);
-//  return a;
-//}
+inline Boolean *not_bool_enum_pointer(Boolean *a)
+{
+  *a = not_bool_enum(*a);
+  return a;
+}
 
 // lvalue reference parameters
 inline int &add_lvalue_ref(int &a, int const &b)
@@ -104,18 +98,18 @@ inline int &add_lvalue_ref(int &a, int const &b)
   return a;
 }
 
-//inline Boolean &not_bool_enum_lvalue_ref(Boolean &a)
-//{
-//  a = not_bool_enum(a);
-//  return a;
-//}
+inline Boolean &not_bool_enum_lvalue_ref(Boolean &a)
+{
+  a = not_bool_enum(a);
+  return a;
+}
 
 // rvalue reference parameters
 inline int add_rvalue_ref(int &&a, int const &&b)
 { return a + b; }
 
-//inline Boolean not_bool_enum_rvalue_ref(Boolean &&a)
-//{ return not_bool_enum(a); }
+inline Boolean not_bool_enum_rvalue_ref(Boolean &&a)
+{ return not_bool_enum(a); }
 
 // unused parameters
 inline int add_unused_parameters(int a, int, int b, int)

@@ -12,24 +12,21 @@ class CTypeTranslator(TypeTranslatorBase):
     def c(cls, t, args):
         return str(t.without_enum())
 
-    @rule(lambda t: t.is_lvalue_reference())
+    @rule(lambda t: t.is_reference() and t.referenced().is_fundamental())
     def c(cls, t, args):
         return str(t.referenced().pointer_to())
 
-    @rule(lambda t: t.is_rvalue_reference())
+    @rule(lambda t: t.is_reference())
     def c(cls, t, args):
-        return str(t.referenced())
+        return str(Type('void').pointer_to())
 
-    # XXX handle nested pointers etc.
-    @rule(lambda t: t.base.is_record())
+    @rule(lambda t: t.is_pointer() and t.pointee().is_fundamental())
     def c(cls, t, args):
-        # XXX refactor
-        base = t.base
-        t.base = Type('void')
-        ret = str(t)
-        t.base = base
+        return str(t)
 
-        return ret
+    @rule(lambda t: t.is_pointer())
+    def c(cls, t, args):
+        return str(Type('void').pointer_to())
 
     @rule(lambda _: True)
     def c(cls, t, args):
@@ -51,7 +48,8 @@ class CTypeTranslator(TypeTranslatorBase):
     def input(cls, t, args):
         return f"{{interm}} = static_cast<{t}>({{inp}});"
 
-    @rule(lambda t: t.is_pointer() and t.pointee().is_record())
+    @rule(lambda t: t.is_pointer() and not t.pointee().is_fundamental() or \
+                    t.is_reference() and not t.referenced().is_fundamental())
     def input(cls, t, args):
         return f"{{interm}} = {TI.typed_pointer_cast(t.pointee(), '{inp}')};"
 
@@ -67,9 +65,10 @@ class CTypeTranslator(TypeTranslatorBase):
     def output(cls, t, args):
         return f"return static_cast<{t.without_enum()}>({{outp}});"
 
-    @rule(lambda t: t.is_pointer() and t.pointee().is_record())
+    @rule(lambda t: t.is_pointer() and not t.pointee().is_fundamental() or \
+                    t.is_lvalue_reference() and not t.referenced().is_fundamental())
     def output(cls, t, args):
-        return f"return {TI.make_typed('{outp}', owned=args.f.is_constructor())};"
+        return f"return {TI.make_typed('{outp}', owning=args.f.is_constructor())};"
 
     @rule(lambda _: True)
     def output(cls, t, args):

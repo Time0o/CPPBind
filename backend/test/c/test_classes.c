@@ -13,7 +13,7 @@ int main()
 {
   {
     struct test_trivial *trivial = test_trivial_new();
-    c_delete(trivial);
+    _delete(trivial);
   }
 
   {
@@ -21,7 +21,7 @@ int main()
 
     assert(test_a_class_get_state(a_class) == 0);
 
-    c_delete(a_class);
+    _delete(a_class);
     assert(test_a_class_get_num_destroyed() == 1);
   }
 
@@ -33,7 +33,7 @@ int main()
     test_a_class_set_state(a_class, 2);
     assert(test_a_class_get_state(a_class) == 2);
 
-    c_delete(a_class);
+    _delete(a_class);
     assert(test_a_class_get_num_destroyed() == 2);
   }
 

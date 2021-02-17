@@ -12,10 +12,8 @@ def _function_declare_parameters(self):
     def declare_parameter(p):
         p_type = p.type
 
-        if p_type.is_lvalue_reference():
+        if p_type.is_reference():
             p_type = p_type.referenced().pointer_to()
-        elif p_type.is_rvalue_reference():
-            p_type = p_type.referenced()
 
         if p_type.is_const():
             p_type = p_type.without_const()
@@ -77,7 +75,7 @@ def _function_forward_call(self):
         if p.type.is_lvalue_reference():
             fwd = f"*{fwd}"
         elif p.type.is_rvalue_reference():
-            fwd = f"std::move({fwd})"
+            fwd = f"std::move(*{fwd})"
 
         return fwd
 

@@ -67,17 +67,17 @@ class LuaTypeTranslator(TypeTranslatorBase):
 
     @input_rule(lambda t: t.is_pointer())
     def input(cls, t, args):
-        return f"{{interm}} = {TI.typed_pointer_cast(t.pointee(), f'lua_touserdata(L, {args.i+1})')};"
+        return f"{{interm}} = {LuaUtil.topointer(t.pointee(), args.i + 1)};"
 
-    @input_rule(lambda t: t.is_lvalue_reference(), before=None)
+    @rule(lambda t: t.is_reference())
     def input(cls, t, args):
         _input = cls.input(t.referenced(), args).format(interm="auto _{interm}")
 
-        return '\n'.join((_input, f"{{interm}} = &_{{interm}};"))
-
-    @input_rule(lambda t: t.is_rvalue_reference(), before=None)
-    def input(cls, t, args):
-        return cls.input(t.referenced(), args)
+        return code(
+            f"""
+            {_input}
+            {{interm}} = &_{{interm}};
+            """)
 
     @input_rule(lambda _: True)
     def input(cls, t, args):

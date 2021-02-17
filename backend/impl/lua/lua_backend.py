@@ -100,7 +100,8 @@ class LuaBackend(BackendBase):
 
             }}}} // namespace __{r.name_lua}
             """,
-            function_definitions=self._function_definitions(r.functions),
+            function_definitions=self._function_definitions(
+                [f for f in r.functions if not f.is_destructor()]),
             register=self._register(
                 variables=r.variables,
                 functions=[f for f in r.functions if not f.is_instance()])))
