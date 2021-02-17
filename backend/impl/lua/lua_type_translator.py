@@ -73,11 +73,7 @@ class LuaTypeTranslator(TypeTranslatorBase):
     def input(cls, t, args):
         _input = cls.input(t.referenced(), args).format(interm="auto _{interm}")
 
-        return code(
-            f"""
-            {_input}
-            {{interm}} = &_{{interm}};
-            """)
+        return f"{_input} {{interm}} = &_{{interm}};"
 
     @input_rule(lambda _: True)
     def input(cls, t, args):
@@ -105,11 +101,13 @@ class LuaTypeTranslator(TypeTranslatorBase):
 
     @output_rule(lambda t: t.is_pointer())
     def output(cls, t, args):
-        return LuaUtil.pushpointer(t.pointee(), "{outp}", owning=args.f.is_constructor())
+        return f"{LuaUtil.pushpointer(t.pointee(), '{outp}', owning=args.f.is_constructor())};"
 
-    @output_rule(lambda t: t.is_lvalue_reference())
+    @rule(lambda t: t.is_lvalue_reference())
     def output(cls, t, args):
-        return cls.output(t.referenced(), args).format(outp="*{outp}")
+        _output = cls.output(t.referenced(), args).format(outp="*{outp}")
+
+        return f"{_output}"
 
     @output_rule(lambda _: True)
     def output(cls, t, args):

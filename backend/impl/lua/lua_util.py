@@ -23,25 +23,26 @@ class LuaUtil:
     @classmethod
     def pushintegral(cls, arg, constexpr=False):
         if constexpr:
-            return f"{cls.NS}_pushintegral_constexpr(L, {arg});"
+            return f"{cls.NS}_pushintegral_constexpr(L, {arg})"
         else:
-            return f"{cls.NS}::pushintegral(L, {arg});"
+            return f"{cls.NS}::pushintegral(L, {arg})"
 
     @classmethod
     def pushfloating(cls, arg, constexpr=False):
         if constexpr:
-            return f"{cls.NS}_pushfloating_constexpr(L, {arg});"
+            return f"{cls.NS}_pushfloating_constexpr(L, {arg})"
         else:
-            return f"{cls.NS}::pushfloating(L, {arg});"
+            return f"{cls.NS}::pushfloating(L, {arg})"
 
     @classmethod
     def pushpointer(cls, t, arg, owning=False):
         return code(
             f"""
-            *static_cast<void **>(lua_newuserdata(L, sizeof(void *))) =
-              {TI.make_typed(arg, owning)};
+            do {{{{
+              *static_cast<void **>(lua_newuserdata(L, sizeof(void *))) = {TI.make_typed(arg, owning)};
 
-            {cls.NS}::setmetatable(L, "{t.format(mangled=True)}");
+              {cls.NS}::setmetatable(L, "{t.format(mangled=True)}");
+            }}}} while (false)
             """)
 
     def code(self):

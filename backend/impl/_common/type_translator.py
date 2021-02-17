@@ -36,7 +36,7 @@ class TypeTranslatorBase(metaclass=TypeTranslatorMeta):
             output += self._execute(self._action, *args, **kwargs)
             output += self._execute(self._action_after, *args, **kwargs)
 
-            return '\n'.join(output)
+            return '\n\n'.join(output)
 
         @staticmethod
         def _execute(actions, *args, **kwargs):
