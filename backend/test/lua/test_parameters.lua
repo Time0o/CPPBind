@@ -41,6 +41,24 @@ do
 end
 
 do
+  local iptr1 = test.test_util_int_new(1)
+  local iptr2 = test.test_util_int_new(2)
+
+  local iptr_ptr1 = test.test_util_int_ptr_new(iptr1)
+  local iptr_ptr2 = test.test_util_int_ptr_new(iptr2)
+
+  local iptr_ptr_res = test.test_add_pointer_to_pointer(iptr_ptr1, iptr_ptr2)
+  local iptr_res = test.test_util_int_ptr_deref(iptr_ptr_res)
+  assert(test.test_util_int_deref(iptr1) == 3)
+  assert(test.test_util_int_deref(iptr_res) == 3)
+
+  iptr1:_own()
+  iptr2:_own()
+  iptr_ptr1:_own()
+  iptr_ptr2:_own()
+end
+
+do
   local bptr_true = test.test_util_bool_enum_new(test.TEST_BOOLEAN_TRUE)
   local bptr_false = test.test_util_bool_enum_new(test.TEST_BOOLEAN_FALSE)
 
@@ -54,6 +72,29 @@ do
 
   bptr_true:_own()
   bptr_false:_own()
+end
+
+do
+  local bptr_true = test.test_util_bool_enum_new(test.TEST_BOOLEAN_TRUE)
+  local bptr_false = test.test_util_bool_enum_new(test.TEST_BOOLEAN_FALSE)
+
+  local bptr_ptr_true = test.test_util_bool_enum_ptr_new(bptr_true)
+  local bptr_ptr_false = test.test_util_bool_enum_ptr_new(bptr_false)
+
+  local bptr_ptr_not_true = test.test_not_bool_enum_pointer_to_pointer(bptr_ptr_true)
+  local bptr_not_true = test.test_util_bool_enum_ptr_deref(bptr_ptr_not_true)
+  assert(test.test_util_bool_enum_deref(bptr_true) == test.TEST_BOOLEAN_FALSE)
+  assert(test.test_util_bool_enum_deref(bptr_not_true) == test.TEST_BOOLEAN_FALSE)
+
+  local bptr_ptr_not_false = test.test_not_bool_enum_pointer_to_pointer(bptr_ptr_false)
+  local bptr_not_false = test.test_util_bool_enum_ptr_deref(bptr_ptr_not_false)
+  assert(test.test_util_bool_enum_deref(bptr_false) == test.TEST_BOOLEAN_TRUE)
+  assert(test.test_util_bool_enum_deref(bptr_not_false) == test.TEST_BOOLEAN_TRUE)
+
+  bptr_true:_own()
+  bptr_false:_own()
+  bptr_ptr_true:_own()
+  bptr_ptr_false:_own()
 end
 
 -- lvalue reference parameters

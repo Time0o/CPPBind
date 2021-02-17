@@ -40,19 +40,41 @@ int *int_new(int i)
   return iptr;
 }
 
-int int_deref(int *i)
-{ return *i; }
+int **int_ptr_new(int *iptr)
+{
+  int **iptr_ptr = new int *;
+  *iptr_ptr = iptr;
 
-Boolean *bool_enum_new(Boolean val)
+  return iptr_ptr;
+}
+
+int int_deref(int *iptr)
+{ return *iptr; }
+
+int *int_ptr_deref(int **iptr_ptr)
+{ return *iptr_ptr; }
+
+Boolean *bool_enum_new(Boolean b)
 {
   Boolean *bptr = new Boolean;
-  *bptr = val;
+  *bptr = b;
 
   return bptr;
 }
 
-Boolean bool_enum_deref(Boolean *val)
-{ return *val; }
+Boolean **bool_enum_ptr_new(Boolean *bptr)
+{
+  Boolean **bptr_ptr = new Boolean *;
+  *bptr_ptr = bptr;
+
+  return bptr_ptr;
+}
+
+Boolean bool_enum_deref(Boolean *bptr)
+{ return *bptr; }
+
+Boolean *bool_enum_ptr_deref(Boolean **bptr_ptr)
+{ return *bptr_ptr; }
 
 } // namespace util
 
@@ -85,9 +107,21 @@ inline int *add_pointer(int *a, int const *b)
   return a;
 }
 
+inline int **add_pointer_to_pointer(int **a, int * const *b)
+{
+  **a += **b;
+  return a;
+}
+
 inline Boolean *not_bool_enum_pointer(Boolean *a)
 {
   *a = not_bool_enum(*a);
+  return a;
+}
+
+inline Boolean **not_bool_enum_pointer_to_pointer(Boolean **a)
+{
+  **a = not_bool_enum(**a);
   return a;
 }
 

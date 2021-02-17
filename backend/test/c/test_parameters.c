@@ -42,23 +42,63 @@ int main()
   }
 
   {
-    void *b_true = test_util_bool_enum_new(TEST_BOOLEAN_TRUE);
-    void *b_false = test_util_bool_enum_new(TEST_BOOLEAN_FALSE);
+    int i1 = 1;
+    int *iptr1 = &i1;
+    int i2 = 2;
+    int * const iptr2 = &i2;
 
-    void *b_not_true = test_not_bool_enum_pointer(b_true);
-    assert(test_util_bool_enum_deref(b_true) == TEST_BOOLEAN_FALSE);
-    assert(test_util_bool_enum_deref(b_not_true) == TEST_BOOLEAN_FALSE);
+    assert(test_add_pointer_to_pointer(&iptr1, &iptr2) == &iptr1 && i1 == 3);
+  }
 
-    void *b_not_false = test_not_bool_enum_pointer(b_false);
-    assert(test_util_bool_enum_deref(b_false) == TEST_BOOLEAN_TRUE);
-    assert(test_util_bool_enum_deref(b_not_false) == TEST_BOOLEAN_TRUE);
+  {
+    void *bptr_true = test_util_bool_enum_new(TEST_BOOLEAN_TRUE);
+    void *bptr_false = test_util_bool_enum_new(TEST_BOOLEAN_FALSE);
 
-    _own(b_true);
-    _own(b_false);
-    _delete(b_true);
-    _delete(b_false);
-    _delete(b_not_true);
-    _delete(b_not_false);
+    void *bptr_not_true = test_not_bool_enum_pointer(bptr_true);
+    assert(test_util_bool_enum_deref(bptr_true) == TEST_BOOLEAN_FALSE);
+    assert(test_util_bool_enum_deref(bptr_not_true) == TEST_BOOLEAN_FALSE);
+
+    void *bptr_not_false = test_not_bool_enum_pointer(bptr_false);
+    assert(test_util_bool_enum_deref(bptr_false) == TEST_BOOLEAN_TRUE);
+    assert(test_util_bool_enum_deref(bptr_not_false) == TEST_BOOLEAN_TRUE);
+
+    _own(bptr_true);
+    _own(bptr_false);
+    _delete(bptr_true);
+    _delete(bptr_false);
+    _delete(bptr_not_true);
+    _delete(bptr_not_false);
+  }
+
+  {
+    void *bptr_true = test_util_bool_enum_new(TEST_BOOLEAN_TRUE);
+    void *bptr_false = test_util_bool_enum_new(TEST_BOOLEAN_FALSE);
+
+    void *bptr_ptr_true = test_util_bool_enum_ptr_new(bptr_true);
+    void *bptr_ptr_false = test_util_bool_enum_ptr_new(bptr_false);
+
+    void *bptr_ptr_not_true = test_not_bool_enum_pointer_to_pointer(bptr_ptr_true);
+    void *bptr_not_true = test_util_bool_enum_ptr_deref(bptr_ptr_not_true);
+    assert(test_util_bool_enum_deref(bptr_true) == TEST_BOOLEAN_FALSE);
+    assert(test_util_bool_enum_deref(bptr_not_true) == TEST_BOOLEAN_FALSE);
+
+    void *bptr_ptr_not_false = test_not_bool_enum_pointer_to_pointer(bptr_ptr_false);
+    void *bptr_not_false = test_util_bool_enum_ptr_deref(bptr_ptr_not_false);
+    assert(test_util_bool_enum_deref(bptr_false) == TEST_BOOLEAN_TRUE);
+    assert(test_util_bool_enum_deref(bptr_not_false) == TEST_BOOLEAN_TRUE);
+
+    _own(bptr_true);
+    _own(bptr_false);
+    _own(bptr_ptr_true);
+    _own(bptr_ptr_false);
+    _delete(bptr_true);
+    _delete(bptr_false);
+    _delete(bptr_ptr_true);
+    _delete(bptr_ptr_false);
+    _delete(bptr_ptr_not_true);
+    _delete(bptr_not_true);
+    _delete(bptr_ptr_not_false);
+    _delete(bptr_not_false);
   }
 
   /* lvalue reference parameters */
