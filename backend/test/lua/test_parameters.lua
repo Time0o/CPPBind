@@ -60,41 +60,25 @@ end
 
 do
   local bptr_true = test.test_util_bool_enum_new(test.TEST_BOOLEAN_TRUE)
-  local bptr_false = test.test_util_bool_enum_new(test.TEST_BOOLEAN_FALSE)
 
   local bptr_not_true = test.test_not_bool_enum_pointer(bptr_true)
   assert(test.test_util_bool_enum_deref(bptr_true) == test.TEST_BOOLEAN_FALSE)
   assert(test.test_util_bool_enum_deref(bptr_not_true) == test.TEST_BOOLEAN_FALSE)
 
-  local bptr_not_false = test.test_not_bool_enum_pointer(bptr_false)
-  assert(test.test_util_bool_enum_deref(bptr_false) == test.TEST_BOOLEAN_TRUE)
-  assert(test.test_util_bool_enum_deref(bptr_not_false) == test.TEST_BOOLEAN_TRUE)
-
   bptr_true:_own()
-  bptr_false:_own()
 end
 
 do
   local bptr_true = test.test_util_bool_enum_new(test.TEST_BOOLEAN_TRUE)
-  local bptr_false = test.test_util_bool_enum_new(test.TEST_BOOLEAN_FALSE)
-
   local bptr_ptr_true = test.test_util_bool_enum_ptr_new(bptr_true)
-  local bptr_ptr_false = test.test_util_bool_enum_ptr_new(bptr_false)
 
   local bptr_ptr_not_true = test.test_not_bool_enum_pointer_to_pointer(bptr_ptr_true)
   local bptr_not_true = test.test_util_bool_enum_ptr_deref(bptr_ptr_not_true)
   assert(test.test_util_bool_enum_deref(bptr_true) == test.TEST_BOOLEAN_FALSE)
   assert(test.test_util_bool_enum_deref(bptr_not_true) == test.TEST_BOOLEAN_FALSE)
 
-  local bptr_ptr_not_false = test.test_not_bool_enum_pointer_to_pointer(bptr_ptr_false)
-  local bptr_not_false = test.test_util_bool_enum_ptr_deref(bptr_ptr_not_false)
-  assert(test.test_util_bool_enum_deref(bptr_false) == test.TEST_BOOLEAN_TRUE)
-  assert(test.test_util_bool_enum_deref(bptr_not_false) == test.TEST_BOOLEAN_TRUE)
-
   bptr_true:_own()
-  bptr_false:_own()
   bptr_ptr_true:_own()
-  bptr_ptr_false:_own()
 end
 
 -- lvalue reference parameters
@@ -107,10 +91,8 @@ end
 
 do
   local b_true = test.TEST_BOOLEAN_TRUE
-  local b_false = test.TEST_BOOLEAN_FALSE
 
   assert(test.test_not_bool_enum_lvalue_ref(b_true) == test.TEST_BOOLEAN_FALSE)
-  assert(test.test_not_bool_enum_lvalue_ref(b_false) == test.TEST_BOOLEAN_TRUE)
 end
 
 -- rvalue reference parameters
