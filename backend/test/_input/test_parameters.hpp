@@ -56,16 +56,14 @@ int *int_ptr_deref(int **iptr_ptr)
 
 Boolean *bool_enum_new(Boolean b)
 {
-  Boolean *bptr = new Boolean;
-  *bptr = b;
+  Boolean *bptr = new Boolean(b);
 
   return bptr;
 }
 
 Boolean **bool_enum_ptr_new(Boolean *bptr)
 {
-  Boolean **bptr_ptr = new Boolean *;
-  *bptr_ptr = bptr;
+  Boolean **bptr_ptr = new Boolean *(bptr);
 
   return bptr_ptr;
 }
@@ -146,6 +144,14 @@ inline Boolean &not_bool_enum_lvalue_ref(Boolean &a)
 
 inline Boolean not_bool_enum_lvalue_ref_to_const(Boolean const &a)
 { return not_bool_enum(a); }
+
+inline Boolean *not_bool_enum_lvalue_ref_to_pointer(Boolean * &a)
+{
+  Boolean b = *a;
+  delete a;
+  a = new Boolean(not_bool_enum(b));
+  return a;
+}
 
 // rvalue reference parameters
 inline int add_rvalue_ref(int &&a, int const &&b)

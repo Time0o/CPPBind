@@ -113,6 +113,8 @@ do
   assert(test.test_not_bool_enum_lvalue_ref_to_const(b_true) == test.TEST_BOOLEAN_FALSE)
 end
 
+-- XXX reference to pointer
+
 -- rvalue reference parameters
 assert(test.test_add_rvalue_ref(1, 2) == 3)
 
