@@ -16,15 +16,11 @@ class CTypeTranslator(TypeTranslatorBase):
     def c(cls, t, args):
         return str(t)
 
-    @rule(lambda t: t.is_pointer())
-    def c(cls, t, args):
-        return str(Type('void').pointer_to())
-
     @rule(lambda t: t.is_reference() and t.referenced().is_fundamental())
     def c(cls, t, args):
         return str(t.referenced().pointer_to())
 
-    @rule(lambda t: t.is_reference())
+    @rule(lambda t: t.is_pointer() or t.is_reference())
     def c(cls, t, args):
         return str(Type('void').pointer_to())
 

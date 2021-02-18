@@ -70,6 +70,18 @@ end
 
 do
   local bptr_true = test.test_util_bool_enum_new(test.TEST_BOOLEAN_TRUE)
+  local bptr_res = test.test_util_bool_enum_new(test.TEST_BOOLEAN_TRUE)
+
+  local bptr_ret = test.test_not_bool_enum_pointer_to_const(bptr_true, bptr_res)
+  assert(test.test_util_bool_enum_deref(bptr_res) == test.TEST_BOOLEAN_FALSE)
+  assert(test.test_util_bool_enum_deref(bptr_ret) == test.TEST_BOOLEAN_TRUE)
+
+  bptr_true:_own()
+  bptr_res:_own()
+end
+
+do
+  local bptr_true = test.test_util_bool_enum_new(test.TEST_BOOLEAN_TRUE)
   local bptr_ptr_true = test.test_util_bool_enum_ptr_new(bptr_true)
 
   local bptr_ptr_not_true = test.test_not_bool_enum_pointer_to_pointer(bptr_ptr_true)
@@ -93,6 +105,12 @@ do
   local b_true = test.TEST_BOOLEAN_TRUE
 
   assert(test.test_not_bool_enum_lvalue_ref(b_true) == test.TEST_BOOLEAN_FALSE)
+end
+
+do
+  local b_true = test.TEST_BOOLEAN_TRUE
+
+  assert(test.test_not_bool_enum_lvalue_ref_to_const(b_true) == test.TEST_BOOLEAN_FALSE)
 end
 
 -- rvalue reference parameters

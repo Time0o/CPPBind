@@ -107,6 +107,7 @@ public:
   WrapperType pointerTo(unsigned Repeat = 0u) const;
   WrapperType pointee(bool Recursive = false) const;
 
+  unsigned qualifiers() const;
   WrapperType qualified(unsigned Qualifiers) const;
   WrapperType unqualified() const;
 
@@ -140,8 +141,8 @@ private:
   clang::QualType baseType() const;
   clang::Type const *baseTypePtr() const;
 
-  unsigned qualifiers() const;
-  static clang::QualType requalifyType(clang::QualType const &Type, unsigned Qualifiers);
+  static clang::QualType requalifyType(clang::QualType const &Type,
+                                       unsigned Qualifiers);
 
   template<typename TAG>
   bool hasTag() const

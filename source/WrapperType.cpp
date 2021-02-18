@@ -170,6 +170,10 @@ WrapperType::pointee(bool Recursive) const
   return Pointee;
 }
 
+unsigned
+WrapperType::qualifiers() const
+{ return type().getQualifiers().getAsOpaqueValue(); }
+
 WrapperType
 WrapperType::qualified(unsigned Qualifiers) const
 { return WrapperType(requalifyType(type(), Qualifiers), Tags_); }
@@ -332,10 +336,6 @@ WrapperType::baseType() const
 clang::Type const *
 WrapperType::baseTypePtr() const
 { return baseType().getTypePtr(); }
-
-unsigned
-WrapperType::qualifiers() const
-{ return type().getQualifiers().getAsOpaqueValue(); }
 
 clang::QualType
 WrapperType::requalifyType(clang::QualType const &Type, unsigned Qualifiers)

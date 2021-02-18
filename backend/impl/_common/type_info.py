@@ -17,17 +17,23 @@ class TypeInfo:
     def __init__(self, wrapper):
         self._types = OrderedDict()
 
+        def add_type(t, t_bases=None):
+            if t_bases is not None:
+                t_bases = tuple(t_bases)
+
+            self._types[(t.without_const(), t_bases)] = True
+
         for r in Record.ordering(): # XXX refactor
-            self._types[(r.type, tuple(b.type for b in r.bases_recursive))] = True
+            add_type(r.type, (b.type for b in r.bases_recursive))
 
         for v in wrapper.variables():
             if v.type.is_pointer() and not v.pointee().is_record():
-                self._types[(v.type.pointee(), None)] = True
+                add_type(v.type.pointee())
 
         for f in wrapper.functions():
             for t in [f.return_type] + [p.type for p in f.parameters]:
                 if t.is_pointer() and not t.pointee().is_record():
-                    self._types[(t.pointee(), None)] = True
+                    add_type(t.pointee())
 
     @classmethod
     def make_typed(cls, arg, owning=False):
@@ -87,7 +93,7 @@ class TypeInfo:
               template<typename T>
               static type const *get()
               {
-                auto it(_types.find(typeid(T)));
+                auto it(_types.find(typeid(typename std::remove_const<T>::type)));
                 assert(it != _types.end());
 
                 return it->second;
@@ -157,9 +163,10 @@ class TypeInfo:
             {
             public:
               template<typename T>
-              typed_ptr(T const *obj, bool owning = false)
-              : _type(type::get<T>()),
-                _obj(static_cast<void const *>(obj)),
+              typed_ptr(T *obj, bool owning = false)
+              : _obj(static_cast<void const *>(obj)),
+                _type(type::get<T>()),
+                _const(std::is_const<T>::value),
                 _owning(owning)
               {}
 
@@ -175,68 +182,54 @@ class TypeInfo:
               void disown()
               { _owning = false; }
 
-              void const *cast(type const *to) const
-              { return _type->cast(to, _obj); }
+              template<typename T>
+              typename std::enable_if<std::is_const<T>::value, T *>::type
+              cast() const
+              {
+                if (_const)
+                  return static_cast<T *>(_type->cast(type::get<T>(), _obj));
 
-              void *cast(type const *to)
-              { return const_cast<void *>(const_cast<typed_ptr const *>(this)->cast(to)); }
+                return static_cast<T *>(_type->cast(type::get<T>(), const_cast<void *>(_obj)));
+              }
+
+              template<typename T>
+              typename std::enable_if<!std::is_const<T>::value, T *>::type
+              cast() const
+              {
+                if (_const)
+                  throw std::bad_cast();
+
+                return static_cast<T *>(_type->cast(type::get<T>(), const_cast<void *>(_obj)));
+              }
 
             private:
-              type const *_type;
               void const *_obj;
+              type const *_type;
+              bool _const;
               bool _owning;
             };
 
             template<typename T, typename ...ARGS>
-            void const *make_typed(T const *obj, ARGS &&...args)
-            {
-              auto ptr = new typed_ptr(obj, std::forward<ARGS>(args)...);
-              return static_cast<void const *>(ptr);
-            }
-
-            template<typename T, typename ...ARGS>
             void *make_typed(T *obj, ARGS &&...args)
             {
-              auto ptr = make_typed(const_cast<T const *>(obj),
-                                    std::forward<ARGS>(args)...);
-              return const_cast<void *>(ptr);
+              auto ptr = new typed_ptr(obj, std::forward<ARGS>(args)...);
+              return static_cast<void *>(ptr);
             }
 
-            template<typename T>
-            typed_ptr *get_typed(T const *obj)
-            {
-              auto ptr = static_cast<typed_ptr const *>(obj);
-              return const_cast<typed_ptr *>(ptr);
-            }
-
-            template<typename T>
-            typed_ptr *get_typed(T *obj)
-            {
-              auto ptr = get_typed(const_cast<T const *>(obj));
-              return const_cast<typed_ptr *>(ptr);
-            }
-
-            template<typename T>
-            T const *typed_pointer_cast(void const *ptr)
-            {
-              auto obj = static_cast<typed_ptr const *>(ptr)->cast(type::get<T>());
-              return static_cast<T const *>(obj);
-            }
+            typed_ptr *get_typed(void *ptr)
+            { return static_cast<typed_ptr *>(ptr); }
 
             template<typename T>
             T *typed_pointer_cast(void *ptr)
-            {
-              auto obj = typed_pointer_cast<T>(const_cast<void const *>(ptr));
-              return const_cast<T *>(obj);
-            }
+            { return get_typed(ptr)->cast<T>(); }
 
-            void _own(void const *obj)
+            void _own(void *obj)
             { get_typed(obj)->own(); }
 
-            void _disown(void const *obj)
+            void _disown(void *obj)
             { get_typed(obj)->disown(); }
 
-            void _delete(void const *obj)
+            void _delete(void *obj)
             { delete get_typed(obj); }
 
             """)

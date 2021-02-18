@@ -64,6 +64,21 @@ int main()
 
   {
     void *bptr_true = test_util_bool_enum_new(TEST_BOOLEAN_TRUE);
+    void *bptr_res = test_util_bool_enum_new(TEST_BOOLEAN_TRUE);
+
+    void *bptr_ret = test_not_bool_enum_pointer_to_const(bptr_true, bptr_res);
+    assert(test_util_bool_enum_deref(bptr_res) == TEST_BOOLEAN_FALSE);
+    assert(test_util_bool_enum_deref(bptr_ret) == TEST_BOOLEAN_TRUE);
+
+    _own(bptr_true);
+    _own(bptr_res);
+    _delete(bptr_true);
+    _delete(bptr_res);
+    _delete(bptr_ret);
+  }
+
+  {
+    void *bptr_true = test_util_bool_enum_new(TEST_BOOLEAN_TRUE);
     void *bptr_ptr_true = test_util_bool_enum_ptr_new(bptr_true);
 
     void *bptr_ptr_not_true = test_not_bool_enum_pointer_to_pointer(bptr_ptr_true);
@@ -97,6 +112,15 @@ int main()
     _own(b_true);
     _delete(b_true);
     _delete(b_not_true);
+  }
+
+  {
+    void *b_true = test_util_bool_enum_new(TEST_BOOLEAN_TRUE);
+
+    assert(test_not_bool_enum_lvalue_ref_to_const(b_true) == TEST_BOOLEAN_FALSE);
+
+    _own(b_true);
+    _delete(b_true);
   }
 
   /* rvalue reference parameters */
