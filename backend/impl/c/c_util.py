@@ -7,8 +7,8 @@ class CUtil:
     def code_declare():
         return code(
             """
-            void _own(void *ptr);
-            void _disown(void *ptr);
+            void *_own(void *ptr);
+            void *_disown(void *ptr);
             void _delete(void *ptr);
             """)
 
@@ -16,11 +16,11 @@ class CUtil:
     def code_define():
         return code(
             f"""
-            void _own(void *ptr)
-            {{ {TI.own('ptr')}; }}
+            void *_own(void *ptr)
+            {{ return {TI.own('ptr')}; }}
 
-            void _disown(void *ptr)
-            {{ {TI.disown('ptr')}; }}
+            void *_disown(void *ptr)
+            {{ return {TI.disown('ptr')}; }}
 
             void _delete(void *ptr)
             {{ {TI.delete('ptr')}; }}

@@ -223,15 +223,20 @@ class TypeInfo:
             T *typed_pointer_cast(void *ptr)
             { return get_typed(ptr)->cast<T>(); }
 
-            void _own(void *obj)
-            { get_typed(obj)->own(); }
+            void *_own(void *obj)
+            {
+              get_typed(obj)->own();
+              return obj;
+            }
 
-            void _disown(void *obj)
-            { get_typed(obj)->disown(); }
+            void *_disown(void *obj)
+            {
+              get_typed(obj)->disown();
+              return obj;
+            }
 
             void _delete(void *obj)
             { delete get_typed(obj); }
-
             """)
 
     def _type_instances(self):

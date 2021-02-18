@@ -78,7 +78,7 @@ class LuaUtil:
     def _ownership(cls):
         return code(
             f"""
-            {TI.TYPED_PTR} *_self(lua_State *L)
+            {TI.TYPED_PTR} *_self(lua_State *L, bool return_self = false)
             {{
               if (lua_gettop(L) != 1) {{
                 luaL_error(L, "missing self parameter, did you forget to use ':'?");
@@ -87,19 +87,22 @@ class LuaUtil:
 
               auto userdata = lua_touserdata(L, 1);
 
+              if (return_self)
+                lua_pushvalue(L, 1);
+
               return {TI.get_typed('*static_cast<void **>(userdata)')};
             }}
 
             int _own(lua_State *L)
             {{
-              _self(L)->own();
-              return 0;
+              _self(L, true)->own();
+              return 1;
             }}
 
             int _disown(lua_State *L)
             {{
-              _self(L)->disown();
-              return 0;
+              _self(L, true)->disown();
+              return 1;
             }}
 
             int _delete(lua_State *L)
