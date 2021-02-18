@@ -9,6 +9,8 @@ class CUtil:
             """
             void *_own(void *ptr);
             void *_disown(void *ptr);
+            void *_copy(void *ptr);
+            void *_move(void *ptr);
             void _delete(void *ptr);
             """)
 
@@ -21,6 +23,12 @@ class CUtil:
 
             void *_disown(void *ptr)
             {{ return {TI.disown('ptr')}; }}
+
+            void *_copy(void *ptr)
+            {{ return {TI.copy('ptr')}; }}
+
+            void *_move(void *ptr)
+            {{ return {TI.move('ptr')}; }}
 
             void _delete(void *ptr)
             {{ {TI.delete('ptr')}; }}

@@ -102,7 +102,9 @@ WrapperRecord::getOrdering(Ordering Ord)
 WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl)
 : Type_(Decl->getTypeForDecl()),
   BaseTypes_(determinePublicBaseTypes(Decl)),
-  IsAbstract_(Decl->isAbstract())
+  IsAbstract_(determineIfAbstract(Decl)),
+  IsCopyable_(determineIfCopyable(Decl)),
+  IsMoveable_(determineIfMoveable(Decl))
 {
   TypeLookup_.insert(std::make_pair(Type_, this));
   InheritanceGraph_.add(this);
@@ -225,7 +227,7 @@ WrapperRecord::determinePublicMemberFunctions(
 
       if (decl::asConstructor(MethodDecl)->isCopyConstructor() ||
           decl::asConstructor(MethodDecl)->isMoveConstructor()) {
-        continue; // XXX
+        continue;
       }
     }
 
@@ -253,6 +255,38 @@ WrapperRecord::determinePublicMemberFunctions(
     PublicMethods.push_back(implicitDestructor(Decl));
 
   return PublicMethods;
+}
+
+bool
+WrapperRecord::determineIfAbstract(clang::CXXRecordDecl const *Decl)
+{ return Decl->isAbstract(); }
+
+bool
+WrapperRecord::determineIfCopyable(clang::CXXRecordDecl const *Decl)
+{
+  // XXX likely not always correct
+  // XXX can there be more than one 'copy constructor'?
+
+  for (auto ctor : Decl->ctors()) {
+    if (ctor->isCopyConstructor() && ctor->isDeleted())
+      return false;
+  }
+
+  return true;
+}
+
+bool
+WrapperRecord::determineIfMoveable(clang::CXXRecordDecl const *Decl)
+{
+  // XXX likely not always correct
+  // XXX can there be more than one 'move constructor'?
+
+  for (auto ctor : Decl->ctors()) {
+    if (ctor->isMoveConstructor() && ctor->isDeleted())
+      return false;
+  }
+
+  return true;
 }
 
 WrapperFunction

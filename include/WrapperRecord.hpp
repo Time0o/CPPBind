@@ -79,6 +79,12 @@ public:
   bool isAbstract() const
   { return IsAbstract_; }
 
+  bool isCopyable() const
+  { return IsCopyable_; }
+
+  bool isMoveable() const
+  { return IsMoveable_; }
+
 private:
   std::vector<WrapperType> determinePublicBaseTypes(
     clang::CXXRecordDecl const *Decl) const;
@@ -88,6 +94,10 @@ private:
 
   std::vector<WrapperFunction> determinePublicMemberFunctions(
     clang::CXXRecordDecl const *Decl) const;
+
+  static bool determineIfAbstract(clang::CXXRecordDecl const *Decl);
+  static bool determineIfCopyable(clang::CXXRecordDecl const *Decl);
+  static bool determineIfMoveable(clang::CXXRecordDecl const *Decl);
 
   WrapperFunction implicitDefaultConstructor(
     clang::CXXRecordDecl const *Decl) const;
@@ -104,6 +114,8 @@ public:
 
 private:
   bool IsAbstract_;
+  bool IsCopyable_;
+  bool IsMoveable_;
 
   static TypeLookup TypeLookup_;
   static InheritanceGraph InheritanceGraph_;

@@ -35,15 +35,12 @@ class LuaUtil:
             return f"{cls.NS}::pushfloating(L, {arg})"
 
     @classmethod
-    def pushpointer(cls, t, arg, owning=False):
-        return code(
-            f"""
-            do {{{{
-              *static_cast<void **>(lua_newuserdata(L, sizeof(void *))) = {TI.make_typed(arg, owning)};
+    def pushpointer(cls, arg, owning=False):
+        return f"*static_cast<void **>(lua_newuserdata(L, sizeof(void *))) = {TI.make_typed(arg, owning)}"
 
-              {cls.NS}::setmetatable(L, "{t.format(mangled=True)}");
-            }}}} while (false)
-            """)
+    @classmethod
+    def setmeta(cls, t):
+        return f'{cls.NS}::setmetatable(L, "{t.format(mangled=True)}");'
 
     def code(self):
         return code(
@@ -102,6 +99,26 @@ class LuaUtil:
             int _disown(lua_State *L)
             {{
               _self(L, true)->disown();
+              return 1;
+            }}
+
+            int _copy(lua_State *L)
+            {{
+              *static_cast<void **>(lua_newuserdata(L, sizeof(void *))) = _self(L)->copy();
+
+              lua_getmetatable(L, 1);
+              lua_setmetatable(L, -2);
+
+              return 1;
+            }}
+
+            int _move(lua_State *L)
+            {{
+              *static_cast<void **>(lua_newuserdata(L, sizeof(void *))) = _self(L)->move();
+
+              lua_getmetatable(L, 1);
+              lua_setmetatable(L, -2);
+
               return 1;
             }}
 
@@ -181,6 +198,20 @@ class LuaUtil:
                 lua_pushcfunction(L, __{r.name_lua}::{f.name_lua});
                 lua_setfield(L, -2, "{f.name_unqualified_lua}");
                 """))
+
+        if r.is_copyable():
+            set_methods.append(code(
+              """
+              lua_pushcfunction(L, _copy);
+              lua_setfield(L, -2, "_copy");
+              """))
+
+        if r.is_moveable():
+            set_methods.append(code(
+              """
+              lua_pushcfunction(L, _move);
+              lua_setfield(L, -2, "_move");
+              """))
 
         return code(
             f"""

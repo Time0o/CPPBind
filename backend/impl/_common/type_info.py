@@ -12,6 +12,8 @@ class TypeInfo:
 
     OWN = f"{NS}::_own"
     DISOWN = f"{NS}::_disown"
+    COPY = f"{NS}::_copy"
+    MOVE = f"{NS}::_move"
     DELETE = f"{NS}::_delete"
 
     def __init__(self, wrapper):
@@ -51,11 +53,19 @@ class TypeInfo:
 
     @classmethod
     def own(cls, arg):
-        return f"{cls.NS}::_own({arg})"
+        return f"{cls.OWN}({arg})"
 
     @classmethod
     def disown(cls, arg):
-        return f"{cls.NS}::_disown({arg})"
+        return f"{cls.DISOWN}({arg})"
+
+    @classmethod
+    def copy(cls, arg):
+        return f"{cls.COPY}({arg})"
+
+    @classmethod
+    def move(cls, arg):
+        return f"{cls.MOVE}({arg})"
 
     @classmethod
     def delete(cls, arg):
@@ -65,6 +75,8 @@ class TypeInfo:
         return code(
             """
             #include <cassert>
+            #include <stdexcept>
+            #include <type_traits>
             #include <typeindex>
             #include <typeinfo>
             #include <unordered_map>
@@ -99,6 +111,8 @@ class TypeInfo:
                 return it->second;
               }
 
+              virtual void *copy(void const *obj) const = 0;
+              virtual void *move(void *obj) const = 0;
               virtual void destroy(void const *obj) const = 0;
 
               virtual void const *cast(type const *to, void const *obj) const = 0;
@@ -121,6 +135,12 @@ class TypeInfo:
                 add_base_casts();
               }
 
+              void *copy(void const *obj) const override
+              { return _copy(obj); }
+
+              void *move(void *obj) const override
+              { return _move(obj); }
+
               void destroy(void const *obj) const override
               { delete static_cast<T const *>(obj); }
 
@@ -137,6 +157,32 @@ class TypeInfo:
               { return const_cast<void *>(cast(to, const_cast<void const *>(obj))); }
 
             private:
+              template<typename U = T>
+              typename std::enable_if<std::is_copy_constructible<U>::value, void *>::type
+              _copy(void const *obj) const
+              {
+                auto obj_copy = new T(*static_cast<T const *>(obj));
+                return static_cast<void *>(obj_copy);
+              }
+
+              template<typename U = T>
+              typename std::enable_if<!std::is_copy_constructible<U>::value, void *>::type
+              _copy(void const *obj) const
+              { throw std::runtime_error("not copy constructible"); }
+
+              template<typename U = T>
+              typename std::enable_if<std::is_move_constructible<U>::value, void *>::type
+              _move(void *obj) const
+              {
+                auto obj_moved = new T(std::move(*static_cast<T *>(obj)));
+                return static_cast<void *>(obj_moved);
+              }
+
+              template<typename U = T>
+              typename std::enable_if<!std::is_move_constructible<U>::value, void *>::type
+              _move(void *obj) const
+              { throw std::runtime_error("not move constructible"); }
+
               void add_type() const
               { _types.insert(std::make_pair(std::type_index(typeid(T)), this)); }
 
@@ -162,18 +208,43 @@ class TypeInfo:
             class typed_ptr
             {
             public:
+              typed_ptr(type const *type_,
+                        bool const_,
+                        void const *obj,
+                        bool owning = false)
+              : _type(type_),
+                _const(const_),
+                _obj(obj),
+                _owning(owning)
+              {}
+
               template<typename T>
               typed_ptr(T *obj, bool owning = false)
-              : _obj(static_cast<void const *>(obj)),
-                _type(type::get<T>()),
-                _const(std::is_const<T>::value),
-                _owning(owning)
+              : typed_ptr(type::get<T>(),
+                          std::is_const<T>::value,
+                          static_cast<void const *>(obj),
+                          owning)
               {}
 
               ~typed_ptr()
               {
                 if (_owning)
                   _type->destroy(_obj);
+              }
+
+              void *copy() const
+              {
+                auto obj_copied = _type->copy(_obj);
+                return static_cast<void *>(new typed_ptr(_type, false, obj_copied, true));
+              }
+
+              void *move() const
+              {
+                if (_const)
+                  return copy();
+
+                auto obj_moved = _type->move(const_cast<void *>(_obj));
+                return static_cast<void *>(new typed_ptr(_type, false, obj_moved, true));
               }
 
               void own()
@@ -203,9 +274,9 @@ class TypeInfo:
               }
 
             private:
-              void const *_obj;
               type const *_type;
               bool _const;
+              void const *_obj;
               bool _owning;
             };
 
@@ -234,6 +305,16 @@ class TypeInfo:
               get_typed(obj)->disown();
               return obj;
             }
+
+            void *_copy(void *obj)
+            { return get_typed(obj)->copy(); }
+
+            // XXX copy assignment
+
+            void *_move(void *obj)
+            { return get_typed(obj)->move(); }
+
+            // XXX move assignment
 
             void _delete(void *obj)
             { delete get_typed(obj); }

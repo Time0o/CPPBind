@@ -101,7 +101,11 @@ class LuaTypeTranslator(TypeTranslatorBase):
 
     @output_rule(lambda t: t.is_pointer())
     def output(cls, t, args):
-        return f"{LuaUtil.pushpointer(t.pointee(), '{outp}', owning=args.f.is_constructor())};"
+        return code(
+            f"""
+            {LuaUtil.pushpointer('{outp}', owning=args.f.is_constructor())};
+            {LuaUtil.setmeta(t.pointee())};
+            """)
 
     @rule(lambda t: t.is_lvalue_reference())
     def output(cls, t, args):

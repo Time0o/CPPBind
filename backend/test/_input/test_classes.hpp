@@ -55,4 +55,75 @@ private:
   inline static int _num_destroyed = 0;
 };
 
+class CopyableClass
+{
+public:
+  CopyableClass(int state)
+  : _state(state)
+  {}
+
+  CopyableClass(CopyableClass const &other)
+  : _state(other._state)
+  { ++_num_copied; }
+
+  CopyableClass &operator=(CopyableClass const &other)
+  {
+    _state = other._state;
+    ++_num_copied;
+    return *this;
+  }
+
+  CopyableClass(CopyableClass &&other) = delete;
+  void operator=(CopyableClass &&other) = delete;
+
+  static int get_num_copied()
+  { return _num_copied; }
+
+  void set_state(int state)
+  { _state = state; }
+
+  int get_state() const
+  { return _state; }
+
+private:
+  int _state;
+
+  inline static int _num_copied = 0;
+};
+
+class MoveableClass
+{
+public:
+  MoveableClass(int state)
+  : _state(state)
+  {}
+
+  MoveableClass(MoveableClass const &other) = delete;
+  MoveableClass &operator=(MoveableClass const &other) = delete;
+
+  MoveableClass(MoveableClass &&other)
+  : _state(other._state)
+  { ++_num_moved; }
+
+  void operator=(MoveableClass &&other)
+  {
+    _state = other._state;
+    ++_num_moved;
+  }
+
+  static int get_num_moved()
+  { return _num_moved; }
+
+  void set_state(int state)
+  { _state = state; }
+
+  int get_state() const
+  { return _state; }
+
+private:
+  int _state;
+
+  inline static int _num_moved = 0;
+};
+
 } // namespace test
