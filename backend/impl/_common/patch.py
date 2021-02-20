@@ -12,7 +12,9 @@ def _function_declare_parameters(self):
     def declare_parameter(p):
         p_type = p.type
 
-        if p_type.is_reference():
+        if p_type.is_record():
+            p_type = p_type.pointer_to()
+        elif p_type.is_reference():
             p_type = p_type.referenced().pointer_to()
 
         if p_type.is_const():
@@ -72,7 +74,7 @@ def _function_forward_call(self):
     def forward_parameter(p):
         fwd = f"{p.name_interm}"
 
-        if p.type.is_lvalue_reference():
+        if p.type.is_record() or p.type.is_lvalue_reference():
             fwd = f"*{fwd}"
         elif p.type.is_rvalue_reference():
             fwd = f"std::move(*{fwd})"

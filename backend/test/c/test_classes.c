@@ -3,7 +3,7 @@
 
 #include "test_classes_c.h"
 
-struct test_non_constructible *test_non_constructible_new()
+void *test_non_constructible_new()
 { return NULL; }
 
 void test_a_class_set_state_private(int state)
@@ -13,13 +13,13 @@ int main()
 {
   /* construction and deletion */
   {
-    struct test_trivial *trivial = test_trivial_new();
+    void *trivial = test_trivial_new();
     _delete(trivial);
   }
 
   /* member access */
   {
-    struct test_a_class *a_class = test_a_class_new_1();
+    void *a_class = test_a_class_new_1();
 
     assert(test_a_class_get_state(a_class) == 0);
 
@@ -28,7 +28,7 @@ int main()
   }
 
   {
-    struct test_a_class *a_class = test_a_class_new_2(1);
+    void *a_class = test_a_class_new_2(1);
 
     assert(test_a_class_get_state(a_class) == 1);
 
@@ -76,6 +76,68 @@ int main()
     _delete(moveable_class_moved);
 
     assert(test_moveable_class_get_num_moved() == 1);
+  }
+
+  /* class parameters */
+
+  /* value parameters */
+  {
+    void *a = test_class_parameter_new(1);
+    void *b = test_class_parameter_new(2);
+
+    test_class_parameter_set_copyable(true);
+
+    void *c = test_add_class(a, b);
+    assert(test_class_parameter_get_state(a) == 1);
+    assert(test_class_parameter_get_state(c) == 3);
+
+    test_class_parameter_set_copyable(false);
+
+    _delete(a);
+    _delete(b);
+    _delete(c);
+  }
+
+  /* pointer parameters */
+  {
+    void *a = test_class_parameter_new(1);
+    void *b = test_class_parameter_new(2);
+
+    void *c = test_add_class_pointer(a, b);
+    assert(test_class_parameter_get_state(a) == 3);
+    assert(test_class_parameter_get_state(c) == 3);
+
+    _delete(a);
+    _delete(b);
+    _delete(c);
+  }
+
+  /* lvalue reference parameters */
+  {
+    void *a = test_class_parameter_new(1);
+    void *b = test_class_parameter_new(2);
+
+    void *c = test_add_class_lvalue_ref(a, b);
+    assert(test_class_parameter_get_state(a) == 3);
+    assert(test_class_parameter_get_state(c) == 3);
+
+    _delete(a);
+    _delete(b);
+    _delete(c);
+  }
+
+  /* rvalue reference parameters */
+  {
+    void *a = test_class_parameter_new(1);
+
+    test_class_parameter_set_moveable(true);
+
+    test_noop_class_rvalue_ref(a);
+    assert(test_class_parameter_was_moved(a));
+
+    test_class_parameter_set_moveable(false);
+
+    _delete(a);
   }
 
   return 0;

@@ -17,7 +17,7 @@ class LuaTypeTranslator(TypeTranslatorBase):
             return 'number'
         elif t.is_boolean():
             return 'boolean'
-        elif t.is_pointer():
+        elif t.is_record() or t.is_referenced() or t.is_pointer():
             return 'userdata'
         else:
             raise ValueError(f"no lua type specified for type '{t}'")
@@ -28,7 +28,7 @@ class LuaTypeTranslator(TypeTranslatorBase):
             return 'LUA_TNUMBER'
         elif t.is_boolean():
             return 'LUA_TBOOLEAN'
-        elif t.is_pointer():
+        elif t.is_record() or t.is_reference() or t.is_pointer():
             return 'LUA_TUSERDATA'
         else:
             raise ValueError(f"no lua type encoding specified for type '{t}'")
@@ -65,7 +65,12 @@ class LuaTypeTranslator(TypeTranslatorBase):
     def input(cls, t, args):
         return f"{{interm}} = {LuaUtil.tofloating(t, args.i + 1)};"
 
-    @input_rule(lambda t: t.is_pointer())
+    @input_rule(lambda t: t.is_record())
+    def input(cls, t, args):
+        return f"{{interm}} = {LuaUtil.topointer(t, args.i + 1)};"
+
+    @input_rule(lambda t: t.is_pointer() or \
+                          t.is_reference() and t.referenced().is_record())
     def input(cls, t, args):
         return f"{{interm}} = {LuaUtil.topointer(t.pointee(), args.i + 1)};"
 
@@ -99,7 +104,16 @@ class LuaTypeTranslator(TypeTranslatorBase):
     def output(cls, t, args):
         return f"{LuaUtil.pushfloating('{outp}')};"
 
-    @output_rule(lambda t: t.is_pointer())
+    @output_rule(lambda t: t.is_record())
+    def output(cls, t, args):
+        return code(
+            f"""
+            {LuaUtil.pushpointer(f'new {t}({{outp}})', owning=True)};
+            {LuaUtil.setmeta(t)};
+            """)
+
+    @output_rule(lambda t: t.is_pointer() or \
+                        t.is_reference() and t.referenced().is_record())
     def output(cls, t, args):
         return code(
             f"""

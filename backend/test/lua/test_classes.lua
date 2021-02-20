@@ -1,5 +1,6 @@
 local test = require 'test_classes'
 
+-- construction
 do
   local trivial = test.TestTrivial.new()
   assert(test.TestTrivial.delete == nil)
@@ -10,6 +11,7 @@ do
   assert(test.TestNonConstructible.delete == nil)
 end
 
+-- member access
 do
   local a_class = test.TestAClass.new_1()
   assert(a_class:get_state() == 0)
@@ -26,6 +28,13 @@ end
 test.TestAClass.set_static_state(1)
 assert(test.TestAClass.get_static_state() == 1)
 
+-- destruction
+collectgarbage()
+collectgarbage()
+
+assert(test.TestAClass.get_num_destroyed() == 2)
+
+-- copying and moving
 do
   assert(test.TestCopyableClass._move == nil)
 
@@ -58,7 +67,58 @@ do
   assert(test.TestMoveableClass.get_num_moved() == 1)
 end
 
-collectgarbage()
-collectgarbage()
+-- class parameters
 
-assert(test.TestAClass.get_num_destroyed() == 2)
+-- value parameters
+do
+  local a = test.TestClassParameter.new(1);
+  local b = test.TestClassParameter.new(2);
+
+  test.TestClassParameter.set_copyable(true);
+
+  local c = test.test_add_class(a, b);
+  assert(a:get_state() == 1);
+  assert(c:get_state() == 3);
+
+  test.TestClassParameter.set_copyable(false);
+end
+
+-- pointer parameters
+do
+  local a = test.TestClassParameter.new(1)
+  local b = test.TestClassParameter.new(2)
+
+  test.TestClassParameter.set_copyable(true)
+
+  local c = test.test_add_class_pointer(a, b)
+  assert(a:get_state() == 3)
+  assert(c:get_state() == 3)
+
+  test.TestClassParameter.set_copyable(false)
+end
+
+-- lvalue reference parameters
+do
+  local a = test.TestClassParameter.new(1)
+  local b = test.TestClassParameter.new(2)
+
+  test.TestClassParameter.set_copyable(true)
+
+  local c = test.test_add_class_lvalue_ref(a, b)
+  assert(a:get_state() == 3)
+  assert(c:get_state() == 3)
+
+  test.TestClassParameter.set_copyable(false)
+end
+
+-- rvalue reference parameters
+do
+  local a = test.TestClassParameter.new(1)
+
+  test.TestClassParameter.set_moveable(true)
+
+  test.test_noop_class_rvalue_ref(a)
+  assert(a:was_moved())
+
+  test.TestClassParameter.set_moveable(false)
+end

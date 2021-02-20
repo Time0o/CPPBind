@@ -1,5 +1,8 @@
 #pragma clang diagnostic ignored "-Wc++17-extensions"
 
+#include <cassert>
+#include <utility>
+
 namespace test
 {
 
@@ -125,5 +128,91 @@ private:
 
   inline static int _num_moved = 0;
 };
+
+class ClassParameter
+{
+public:
+  ClassParameter(int state)
+  : _state(state)
+  {}
+
+  ClassParameter(ClassParameter const &other)
+  { *this = other; }
+
+  ClassParameter &operator=(ClassParameter const &other)
+  {
+    assert(_copyable);
+    _state = other._state;
+    return *this;
+  }
+
+  ClassParameter(ClassParameter &&other)
+  { *this = std::move(other); }
+
+  void operator=(ClassParameter &&other)
+  {
+    if (_moveable) {
+      _state = other._state;
+      other._moved = true;
+    } else {
+      assert(_copyable);
+      _state = other._state;
+    }
+  }
+
+  static void set_copyable(bool val)
+  { _copyable = val; }
+
+  static void set_moveable(bool val)
+  { _moveable = val; }
+
+  bool was_moved() const
+  { return _moved; }
+
+  void set_state(int state)
+  { _state = state; }
+
+  int get_state() const
+  { return _state; }
+
+private:
+  int _state;
+  bool _moved = false;
+
+  inline static bool _copyable = false;
+  inline static bool _moveable = false;
+};
+
+// value parameters
+inline ClassParameter add_class(ClassParameter a,
+                                ClassParameter const b)
+{
+  a.set_state(a.get_state() + b.get_state());
+  return a;
+}
+
+// pointer parameters
+inline ClassParameter *add_class_pointer(ClassParameter *a,
+                                         ClassParameter const *b)
+{
+  a->set_state(a->get_state() + b->get_state());
+  return a;
+}
+
+// XXX pointer to pointer
+
+// lvalue reference parameters
+inline ClassParameter &add_class_lvalue_ref(ClassParameter &a,
+                                            ClassParameter const &b)
+{
+  a.set_state(a.get_state() + b.get_state());
+  return a;
+}
+
+// XXX lvalue reference to pointer
+
+// rvalue reference parameters
+inline void noop_class_rvalue_ref(ClassParameter &&a)
+{ ClassParameter b(std::move(a)); }
 
 } // namespace test

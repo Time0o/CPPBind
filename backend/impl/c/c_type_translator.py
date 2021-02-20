@@ -20,7 +20,7 @@ class CTypeTranslator(TypeTranslatorBase):
     def c(cls, t, args):
         return str(t.referenced().pointer_to())
 
-    @rule(lambda t: t.is_pointer() or t.is_reference())
+    @rule(lambda t: t.is_record() or t.is_pointer() or t.is_reference())
     def c(cls, t, args):
         return str(Type('void').pointer_to())
 
@@ -44,6 +44,10 @@ class CTypeTranslator(TypeTranslatorBase):
     def input(cls, t, args):
         return f"{{interm}} = static_cast<{t}>({{inp}});"
 
+    @rule(lambda t: t.is_record())
+    def input(cls, t, args):
+        return f"{{interm}} = {TI.typed_pointer_cast(t, '{inp}')};"
+
     @rule(lambda t: t.is_pointer() and not t.pointee(recursive=True).is_fundamental() or \
                     t.is_reference() and not t.referenced().is_fundamental())
     def input(cls, t, args):
@@ -60,6 +64,10 @@ class CTypeTranslator(TypeTranslatorBase):
     @rule(lambda t: t.is_scoped_enum())
     def output(cls, t, args):
         return f"return static_cast<{t.without_enum()}>({{outp}});"
+
+    @rule(lambda t: t.is_record())
+    def output(cls, t, args):
+        return f"return {TI.make_typed(f'new {t}({{outp}})', owning=True)};"
 
     @rule(lambda t: t.is_pointer() and not t.pointee(recursive=True).is_fundamental() or \
                     t.is_lvalue_reference() and not t.referenced().is_fundamental())
