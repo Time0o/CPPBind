@@ -36,10 +36,6 @@ class CTypeTranslator(TypeTranslatorBase):
     def variable(cls, t, args):
         return f"{{varout}} = static_cast<{t}>({{varin}});"
 
-    @rule(lambda _: True)
-    def constant(cls, t, args):
-        return f"{{varout}} = {{varin}};"
-
     @rule(lambda t: t.is_scoped_enum())
     def input(cls, t, args):
         return f"{{interm}} = static_cast<{t}>({{inp}});"
