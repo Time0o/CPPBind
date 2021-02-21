@@ -1,7 +1,7 @@
-from enum import Enum
+import c_util
+import type_info
 
 from backend import Backend
-from c_util import CUtil
 from cppbind import Identifier as Id, Type, Variable, Record, Function, Parameter
 from type_translator import TypeTranslator as TT
 from text import code
@@ -48,11 +48,11 @@ class CBackend(Backend):
 
             #include <stdbool.h>
 
-            {c_util}
+            {c_util_declare}
 
             """,
             header_guard=self._header_guard(),
-            c_util=CUtil.code_declare()))
+            c_util_declare=c_util.declare()))
 
         self._wrapper_source.append(code(
             """
@@ -60,18 +60,18 @@ class CBackend(Backend):
 
             {input_header_include}
 
-            {type_info}
+            {type_info_define}
 
             extern "C" {{
 
             {wrapper_header_include}
 
-            {c_util}
+            {c_util_define}
             """,
             input_header_include=self.input_file().include(),
-            type_info=self.type_info().code(),
+            type_info_define=type_info.define(),
             wrapper_header_include=self._wrapper_header.include(),
-            c_util=CUtil.code_define()))
+            c_util_define=c_util.define()))
 
     def wrap_after(self):
         self._wrapper_header.append(code(

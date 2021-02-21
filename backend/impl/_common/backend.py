@@ -1,6 +1,5 @@
 from abc import abstractmethod
 from file import File, Path
-from type_info import TypeInfo
 from util import Generic
 
 
@@ -13,8 +12,6 @@ class Backend(metaclass=Generic):
         self._variables = wrapper.variables()
         self._records = wrapper.records()
         self._functions = wrapper.functions()
-
-        self._type_info = TypeInfo(wrapper)
 
         self._options = options
 
@@ -61,9 +58,6 @@ class Backend(metaclass=Generic):
 
     def functions(self):
         return self._functions
-
-    def type_info(self):
-        return self._type_info
 
     def option(self, name):
         try:

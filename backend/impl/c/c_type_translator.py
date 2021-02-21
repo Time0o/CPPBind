@@ -1,7 +1,8 @@
+import type_info as ti
+
 from cppbind import Type
 from functools import partial
 from text import code
-from type_info import TypeInfo as TI
 from type_translator import TypeTranslator
 
 
@@ -42,12 +43,12 @@ class CTypeTranslator(TypeTranslator):
 
     @rule(lambda t: t.is_record())
     def input(cls, t, args):
-        return f"{{interm}} = {TI.typed_pointer_cast(t, '{inp}')};"
+        return f"{{interm}} = {ti.typed_pointer_cast(t, '{inp}')};"
 
     @rule(lambda t: t.is_pointer() and not t.pointee(recursive=True).is_fundamental() or \
                     t.is_reference() and not t.referenced().is_fundamental())
     def input(cls, t, args):
-        return f"{{interm}} = {TI.typed_pointer_cast(t.pointee(), '{inp}')};"
+        return f"{{interm}} = {ti.typed_pointer_cast(t.pointee(), '{inp}')};"
 
     @rule(lambda _: True)
     def input(cls, t, args):
@@ -63,12 +64,12 @@ class CTypeTranslator(TypeTranslator):
 
     @rule(lambda t: t.is_record())
     def output(cls, t, args):
-        return f"return {TI.make_typed(f'new {t}({{outp}})', owning=True)};"
+        return f"return {ti.make_typed(f'new {t}({{outp}})', owning=True)};"
 
     @rule(lambda t: t.is_pointer() and not t.pointee(recursive=True).is_fundamental() or \
                     t.is_lvalue_reference() and not t.referenced().is_fundamental())
     def output(cls, t, args):
-        return f"return {TI.make_typed('{outp}', owning=args.f.is_constructor())};"
+        return f"return {ti.make_typed('{outp}', owning=args.f.is_constructor())};"
 
     @rule(lambda _: True)
     def output(cls, t, args):

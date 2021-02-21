@@ -1,9 +1,9 @@
+import type_info
+import lua_util as util
+
 from backend import Backend
 from cppbind import Identifier as Id, Type, Variable, Record, Function, Parameter
-
 from text import code
-
-from lua_util import LuaUtil
 
 
 def _name_lua(get=lambda self: self.name, case=Id.SNAKE_CASE, quals=Id.REPLACE_QUALS):
@@ -28,8 +28,6 @@ class LuaBackend(Backend):
         self._wrapper_module = self.output_file(
             self.input_file().modified(filename='{filename}_lua', ext='.cpp'))
 
-        self._lua_util = LuaUtil(self.wrapper())
-
     def wrap_before(self):
         self._wrapper_module.append(code(
             """
@@ -43,16 +41,16 @@ class LuaBackend(Backend):
 
             {input_include}
 
-            {type_info}
+            {type_info_define}
 
             {forward_declarations}
 
-            {lua_util}
+            {util_define}
             """,
             input_include=self.input_file().include(),
-            type_info=self.type_info().code(),
+            type_info_define=type_info.define(),
             forward_declarations=self._function_forward_declarations(),
-            lua_util=self._lua_util.code()))
+            util_define=util.define()))
 
     def wrap_after(self):
         ## XXX support different Lua versions
@@ -228,11 +226,11 @@ class LuaBackend(Backend):
         def register_variable(v):
             # XXX generalize
             if v.type.is_enum():
-                push = f"{LuaUtil.pushintegral(f'static_cast<{v.type.without_enum()}>({v.name})', constexpr=True)}"
+                push = f"{util.pushintegral(f'static_cast<{v.type.without_enum()}>({v.name})', constexpr=True)}"
             elif v.type.is_integral():
-                push = f"{LuaUtil.pushintegral(v.name, constexpr=True)}"
+                push = f"{util.pushintegral(v.name, constexpr=True)}"
             elif v.type.is_floating():
-                push = f"{LuaUtil.pushfloating(v.name, constexpr=True)}"
+                push = f"{util.pushfloating(v.name, constexpr=True)}"
 
             return code(
                 f"""
