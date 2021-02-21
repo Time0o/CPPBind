@@ -33,7 +33,7 @@ class TypeInfo:
                 add_type(v.type.pointee())
 
         for f in wrapper.functions():
-            for t in [f.return_type] + [p.type for p in f.parameters]:
+            for t in [f.return_type()] + [p.type for p in f.parameters()]:
                 if t.is_pointer() and not t.pointee().is_record():
                     add_type(t.pointee())
 

@@ -144,34 +144,25 @@ public:
 
   explicit WrapperFunction(clang::CXXMethodDecl const *Decl);
 
-  void overload(unsigned Overload)
-  { Overload_ = Overload; }
+  void overload(unsigned Overload);
 
-  Identifier getName() const
-  { return Name_; }
+  Identifier getName(bool Overloaded = false) const;
 
-  void setName(Identifier const &Name)
+  void setName(Identifier const &Name) // TODO: remove?
   { Name_ = Name; }
-
-  Identifier getNameOverloaded() const;
-
-  void setNameOverloaded(Identifier const &NameOverloaded)
-  { NameOverloaded_ = NameOverloaded; }
 
   WrapperRecord const *getParent() const
   { return Parent_; }
 
-  void setParent(WrapperRecord const *Parent);
+  void setParent(WrapperRecord const *Parent); // TODO: remove?
+
+  std::vector<WrapperParameter> getParameters(bool SkipSelf = false) const;
 
   WrapperType getReturnType() const
   { return ReturnType_; }
 
-  void setReturnType(WrapperType const &ReturnType)
+  void setReturnType(WrapperType const &ReturnType) // TODO: remove?
   { ReturnType_ = ReturnType; }
-
-  std::optional<WrapperParameter> getSelfParameter() const;
-
-  std::vector<WrapperParameter> getNonSelfParameters() const;
 
   bool isMember() const
   { return Parent_; }
@@ -194,29 +185,21 @@ public:
   bool isNoexcept() const
   { return IsNoexcept_; }
 
-  bool isOverloaded() const
-  { return Overload_ > 0u; }
-
 private:
   static Identifier determineName(clang::FunctionDecl const *Decl);
-  static WrapperType determineReturnValue(clang::FunctionDecl const *Decl);
   static WrapperRecord const *determineParent(clang::CXXMethodDecl const *Decl);
-  static std::vector<WrapperParameter> determineParams(clang::FunctionDecl const *Decl);
+  static WrapperType determineReturnType(clang::FunctionDecl const *Decl);
+  static std::vector<WrapperParameter> determineParameters(clang::FunctionDecl const *Decl);
   static bool determineIfNoexcept(clang::FunctionDecl const *Decl);
 
   Identifier Name_;
-
-  std::optional<unsigned> Overload_;
   std::optional<Identifier> NameOverloaded_;
 
   WrapperRecord const *Parent_ = nullptr;
 
   WrapperType ReturnType_;
+  std::vector<WrapperParameter> Parameters_;
 
-public:
-  std::vector<WrapperParameter> Parameters;
-
-private:
   bool IsConstructor_ = false;
   bool IsDestructor_ = false;
   bool IsStatic_ = false;

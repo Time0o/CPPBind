@@ -83,15 +83,15 @@ std::string WrapperDefaultArgument::str() const
 
 WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
 : Name_(determineName(Decl)),
-  ReturnType_(determineReturnValue(Decl)),
-  Parameters(determineParams(Decl)),
+  ReturnType_(determineReturnType(Decl)),
+  Parameters_(determineParameters(Decl)),
   IsNoexcept_(determineIfNoexcept(Decl))
 { assert(!Decl->isTemplateInstantiation()); } // XXX
 
 WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
 : Name_(determineName(Decl)),
-  ReturnType_(determineReturnValue(Decl)),
-  Parameters(determineParams(Decl)),
+  ReturnType_(determineReturnType(Decl)),
+  Parameters_(determineParameters(Decl)),
   IsConstructor_(decl::isConstructor(Decl)),
   IsDestructor_(decl::isDestructor(Decl)),
   IsStatic_(Decl->isStatic()),
@@ -103,24 +103,28 @@ WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
   setParent(determineParent(Decl)); // XXX refactor
 }
 
-Identifier WrapperFunction::getNameOverloaded() const
+void
+WrapperFunction::overload(unsigned Overload)
 {
-  if (NameOverloaded_)
-    return *NameOverloaded_;
-
-  if (!Overload_)
-    return Name_;
-
   auto Postfix = OPT("wrapper-func-overload-postfix");
 
-  auto numReplaced = string::replaceAll(Postfix, "%o", std::to_string(*Overload_));
+  auto numReplaced = string::replaceAll(Postfix, "%o", std::to_string(Overload));
 #ifdef NDEBUG
   (void)numReplaced;
 #else
   assert(numReplaced > 0u);
 #endif
 
-  return Identifier(Name_.str() + Postfix);
+  NameOverloaded_ = Identifier(Name_.str() + Postfix);
+}
+
+Identifier
+WrapperFunction::getName(bool Overloaded) const
+{
+  if (Overloaded && NameOverloaded_)
+    return *NameOverloaded_;
+
+  return Name_;
 }
 
 void
@@ -135,10 +139,10 @@ WrapperFunction::setParent(WrapperRecord const *Parent)
 
     WrapperParameter Self(Identifier(Identifier::SELF), ParentType.pointerTo());
 
-    if (getSelfParameter())
-      Parameters.front() = Self;
+    if (!Parameters_.empty() && Parameters_.front().isSelf())
+      Parameters_.front() = Self;
     else
-      Parameters.insert(Parameters.begin(), Self);
+      Parameters_.insert(Parameters_.begin(), Self);
 
   } else if (isConstructor()) {
     auto ParentType(getParent()->getType());
@@ -147,27 +151,17 @@ WrapperFunction::setParent(WrapperRecord const *Parent)
   }
 }
 
-std::optional<WrapperParameter>
-WrapperFunction::getSelfParameter() const
-{
-  if (Parameters.empty() || !Parameters.front().isSelf())
-    return std::nullopt;
-
-  return Parameters.front();
-}
-
 std::vector<WrapperParameter>
-WrapperFunction::getNonSelfParameters() const
+WrapperFunction::getParameters(bool SkipSelf) const
 {
-  if (!getSelfParameter())
-    return Parameters;
+  if (Parameters_.empty())
+    return Parameters_;
 
-  return std::vector<WrapperParameter>(Parameters.begin() + 1, Parameters.end());
+  if (SkipSelf && Parameters_.front().isSelf())
+    return std::vector<WrapperParameter>(Parameters_.begin() + 1, Parameters_.end());
+
+  return Parameters_;
 }
-
-WrapperType
-WrapperFunction::determineReturnValue(clang::FunctionDecl const *Decl)
-{ return WrapperType(Decl->getReturnType()); }
 
 Identifier
 WrapperFunction::determineName(clang::FunctionDecl const *Decl)
@@ -193,8 +187,12 @@ WrapperRecord const *
 WrapperFunction::determineParent(clang::CXXMethodDecl const *Decl)
 { return WrapperRecord::getFromType(Decl->getParent()->getTypeForDecl()); }
 
+WrapperType
+WrapperFunction::determineReturnType(clang::FunctionDecl const *Decl)
+{ return WrapperType(Decl->getReturnType()); }
+
 std::vector<WrapperParameter>
-WrapperFunction::determineParams(clang::FunctionDecl const *Decl)
+WrapperFunction::determineParameters(clang::FunctionDecl const *Decl)
 {
   std::vector<WrapperParameter> ParamList;
 
@@ -266,11 +264,11 @@ WrapperFunctionBuilder &
 WrapperFunctionBuilder::addParameter(WrapperParameter const &Param)
 {
 #ifndef NDEBUG
-  if (!Param.getDefaultArgument() && !Wf_.Parameters.empty())
-      assert(!Wf_.Parameters.back().getDefaultArgument());
+  if (!Param.getDefaultArgument() && !Wf_.Parameters_.empty())
+      assert(!Wf_.Parameters_.back().getDefaultArgument());
 #endif
 
-  Wf_.Parameters.emplace_back(Param);
+  Wf_.Parameters_.emplace_back(Param);
   return *this;
 }
 

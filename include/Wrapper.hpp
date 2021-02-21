@@ -91,7 +91,7 @@ private:
       return;
 
     Wf.overload(II_->popOverload(Wf.getName()));
-    II_->add(Wf.getNameOverloaded(), IdentifierIndex::FUNC); // XXX
+    II_->add(Wf.getName(true), IdentifierIndex::FUNC); // XXX
   }
 
   std::shared_ptr<IdentifierIndex> II_;

@@ -20,7 +20,7 @@ def _name_c(get=lambda self: self.name, case=Id.SNAKE_CASE):
     return _name_c_closure
 
 Variable.name_c = _name_c(case=Id.SNAKE_CASE_CAP_ALL)
-Function.name_c = _name_c(get=lambda self: self.name_overloaded)
+Function.name_c = _name_c(get=lambda self: self.name(overloaded=True))
 Parameter.name_c = _name_c()
 
 
@@ -107,9 +107,6 @@ class CBackend(BackendBase):
                 self.wrap_function(f)
 
     def wrap_function(self, f):
-        if f.is_constructor():
-            f.return_type = f.parent.type.pointer_to()
-
         self._wrapper_header.append(self._function_declaration(f))
         self._wrapper_source.append(self._function_definition(f))
 
@@ -136,9 +133,9 @@ class CBackend(BackendBase):
 
     def _function_header(self, f):
         #XXX generalize
-        parameters = ', '.join(f"{TT.c(p.type)} {p.name_c}" for p in f.parameters)
+        parameters = ', '.join(f"{TT.c(p.type)} {p.name_c}" for p in f.parameters())
 
-        return f"{TT.c(f.return_type)} {f.name_c}({parameters})"
+        return f"{TT.c(f.return_type())} {f.name_c}({parameters})"
 
     def _function_body(self, f):
         return code(

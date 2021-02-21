@@ -32,7 +32,7 @@ def _function_declare_parameters(self):
 
         return f"{decl};"
 
-    declarations = [declare_parameter(p) for p in self.parameters]
+    declarations = [declare_parameter(p) for p in self.parameters()]
 
     return '\n'.join(declarations)
 
@@ -50,7 +50,7 @@ def _function_forward_parameters(self):
     translate_parameters = []
     has_default_parameters = False
 
-    for i, p in enumerate(self.parameters):
+    for i, p in enumerate(self.parameters()):
         translate_parameters.append(translate(p, i))
 
         if p.default_argument is not None:
@@ -81,24 +81,24 @@ def _function_forward_call(self):
 
         return fwd
 
-    parameters = ', '.join(map(forward_parameter, self.non_self_parameters))
+    parameters = ', '.join(map(forward_parameter, self.parameters(skip_self=True)))
 
     if self.is_instance():
-        this = self.self_parameter.name_interm
+        this = self.parameters()[0].name_interm
 
     if self.is_constructor():
-        call = f"new {self.parent.type}({parameters})"
+        call = f"new {self.parent().type}({parameters})"
     elif self.is_destructor():
         call = f"delete {this}"
     elif self.is_instance():
-        call = f"{this}->{self.name.format(quals=Id.REMOVE_QUALS)}({parameters})"
+        call = f"{this}->{self.name().format(quals=Id.REMOVE_QUALS)}({parameters})"
     else:
-        call = f"{self.name}({parameters})"
+        call = f"{self.name()}({parameters})"
 
-    if self.return_type.is_lvalue_reference():
+    if self.return_type().is_lvalue_reference():
         call = f"&{call}"
 
-    if  self.return_type.is_void():
+    if  self.return_type().is_void():
         call = f"{call};";
         outp = None
     else:
@@ -109,7 +109,7 @@ def _function_forward_call(self):
         'f': self
     })
 
-    return_value = TT.output(self.return_type, args).format(outp=outp)
+    return_value = TT.output(self.return_type(), args).format(outp=outp)
 
     return '\n\n'.join((call, return_value))
 

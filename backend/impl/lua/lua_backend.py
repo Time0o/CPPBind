@@ -14,8 +14,8 @@ def _name_lua(get=lambda self: self.name, case=Id.SNAKE_CASE, quals=Id.REPLACE_Q
     return _name_lua_closure
 
 Variable.name_lua = _name_lua(case=Id.SNAKE_CASE_CAP_ALL)
-Function.name_lua = _name_lua(get=lambda self: self.name_overloaded)
-Function.name_unqualified_lua = _name_lua(get=lambda self: self.name_overloaded,
+Function.name_lua = _name_lua(get=lambda self: self.name(overloaded=True))
+Function.name_unqualified_lua = _name_lua(get=lambda self: self.name(overloaded=True),
                                           quals=Id.REMOVE_QUALS)
 Parameter.name_lua = _name_lua()
 Record.name_lua = _name_lua(case=Id.PASCAL_CASE)
@@ -182,8 +182,8 @@ class LuaBackend(BackendBase):
 
     @staticmethod
     def _function_check_num_parameters(f):
-        num_min = sum(1 for p in f.parameters if not p.default_argument)
-        num_max = len(f.parameters)
+        num_min = sum(1 for p in f.parameters() if not p.default_argument)
+        num_max = len(f.parameters())
 
         if num_min == num_max:
             return code(

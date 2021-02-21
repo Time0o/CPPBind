@@ -189,26 +189,17 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
                           &WrapperVariable::setType);
 
   py::class_<Function>(m, "Function", py::dynamic_attr())
-    // XXX constructor/builder
-    .def_property("name", &WrapperFunction::getName,
-                          &WrapperFunction::setName)
-    .def_property("name_overloaded", &WrapperFunction::getNameOverloaded,
-                                     &WrapperFunction::setNameOverloaded)
-    .def_property("parent", &WrapperFunction::getParent,
-                            &WrapperFunction::setParent)
-    .def_property("return_type", &WrapperFunction::getReturnType,
-                                 &WrapperFunction::setReturnType)
-    .def_readwrite("parameters", &WrapperFunction::Parameters)
-    .def_property_readonly("self_parameter", &WrapperFunction::getSelfParameter)
-    .def_property_readonly("non_self_parameters", &WrapperFunction::getNonSelfParameters)
+    .def("name", &WrapperFunction::getName, "overloaded"_a = false)
+    .def("parent", &WrapperFunction::getParent)
+    .def("return_type", &WrapperFunction::getReturnType)
+    .def("parameters", &WrapperFunction::getParameters, "skip_self"_a = false)
     .def("is_member", &WrapperFunction::isMember)
     .def("is_instance", &WrapperFunction::isInstance)
     .def("is_constructor", &WrapperFunction::isConstructor)
     .def("is_destructor", &WrapperFunction::isDestructor)
     .def("is_static", &WrapperFunction::isStatic)
     .def("is_const", &WrapperFunction::isConst)
-    .def("is_noexcept", &WrapperFunction::isNoexcept)
-    .def("is_overloaded", &WrapperFunction::isOverloaded);
+    .def("is_noexcept", &WrapperFunction::isNoexcept);
 
   auto PyRecord = py::class_<Record>(m, "Record", py::dynamic_attr())
     // XXX refactor
