@@ -2,11 +2,11 @@ from cppbind import Type
 from functools import partial
 from text import code
 from type_info import TypeInfo as TI
-from type_translator import TypeTranslatorBase
+from type_translator import TypeTranslator
 
 
-class CTypeTranslator(TypeTranslatorBase):
-    rule = TypeTranslatorBase.rule
+class CTypeTranslator(TypeTranslator):
+    rule = TypeTranslator.rule
 
     @rule(lambda t: t.is_enum())
     def c(cls, t, args):

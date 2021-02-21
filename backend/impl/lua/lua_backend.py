@@ -1,4 +1,4 @@
-from backend import BackendBase
+from backend import Backend
 from cppbind import Identifier as Id, Type, Variable, Record, Function, Parameter
 
 from text import code
@@ -21,7 +21,7 @@ Parameter.name_lua = _name_lua()
 Record.name_lua = _name_lua(case=Id.PASCAL_CASE)
 
 
-class LuaBackend(BackendBase):
+class LuaBackend(Backend):
     def __init__(self, *args):
         super().__init__(*args)
 

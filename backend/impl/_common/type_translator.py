@@ -1,17 +1,8 @@
-from abc import ABCMeta
 from functools import wraps
-from util import is_iterable
+from util import Generic, is_iterable
 
 
-class TypeTranslatorMeta(ABCMeta):
-    def __init__(cls, name, bases, clsdict):
-        if len(cls.mro()) == 3:
-            TypeTranslatorMeta.TypeTranslatorImpl = cls
-
-        super().__init__(name, bases, clsdict)
-
-
-class TypeTranslatorBase(metaclass=TypeTranslatorMeta):
+class TypeTranslator(metaclass=Generic):
     class Rule:
         def __init__(self,
                      type_matcher,
@@ -59,7 +50,7 @@ class TypeTranslatorBase(metaclass=TypeTranslatorMeta):
             self._lookup = {}
 
         def add_rule(self, type_matcher, action, **kwargs):
-            rule = TypeTranslatorBase.Rule(type_matcher=type_matcher,
+            rule = TypeTranslator.Rule(type_matcher=type_matcher,
                                            action=action,
                                            **kwargs)
 
@@ -99,7 +90,3 @@ class TypeTranslatorBase(metaclass=TypeTranslatorMeta):
             return rule_wrapper
 
         return rule_decorator
-
-
-def TypeTranslator():
-    return TypeTranslatorMeta.TypeTranslatorImpl

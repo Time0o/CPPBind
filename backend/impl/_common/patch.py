@@ -1,6 +1,6 @@
 from cppbind import Function, Parameter, Identifier as Id
 
-from type_translator import TypeTranslator; TT = TypeTranslator()
+from type_translator import TypeTranslator as TT
 from util import dotdict
 from text import code
 
@@ -45,7 +45,7 @@ def _function_forward_parameters(self):
             'i': i
         })
 
-        return TT.input(p.type, args).format(inp=p.name, interm=p.name_interm)
+        return TT().input(p.type, args).format(inp=p.name, interm=p.name_interm)
 
     translate_parameters = []
     has_default_parameters = False
@@ -109,7 +109,7 @@ def _function_forward_call(self):
         'f': self
     })
 
-    return_value = TT.output(self.return_type(), args).format(outp=outp)
+    return_value = TT().output(self.return_type(), args).format(outp=outp)
 
     return '\n\n'.join((call, return_value))
 

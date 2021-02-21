@@ -1,9 +1,9 @@
 from enum import Enum
 
-from backend import BackendBase
+from backend import Backend
 from c_util import CUtil
 from cppbind import Identifier as Id, Type, Variable, Record, Function, Parameter
-from type_translator import TypeTranslator; TT = TypeTranslator()
+from type_translator import TypeTranslator as TT
 from text import code
 from util import dotdict
 
@@ -24,7 +24,7 @@ Function.name_c = _name_c(get=lambda self: self.name(overloaded=True))
 Parameter.name_c = _name_c()
 
 
-class CBackend(BackendBase):
+class CBackend(Backend):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -91,15 +91,15 @@ class CBackend(BackendBase):
 
     def wrap_variable(self, v):
         #XXX generalize
-        self._wrapper_header.append(f"extern {TT.c(v.type)} {v.name_c};")
+        self._wrapper_header.append(f"extern {TT().c(v.type)} {v.name_c};")
 
         args = dotdict({
             'v': v
         })
 
         self._wrapper_source.append(
-            TT.variable(v.type, args).format(varin=v.name,
-                                             varout=f"{TT.c(v.type)} {v.name_c}"))
+            TT().variable(v.type, args).format(
+                varin=v.name, varout=f"{TT().c(v.type)} {v.name_c}"))
 
     def wrap_record(self, r):
         for f in r.functions:
@@ -133,9 +133,9 @@ class CBackend(BackendBase):
 
     def _function_header(self, f):
         #XXX generalize
-        parameters = ', '.join(f"{TT.c(p.type)} {p.name_c}" for p in f.parameters())
+        parameters = ', '.join(f"{TT().c(p.type)} {p.name_c}" for p in f.parameters())
 
-        return f"{TT.c(f.return_type())} {f.name_c}({parameters})"
+        return f"{TT().c(f.return_type())} {f.name_c}({parameters})"
 
     def _function_body(self, f):
         return code(

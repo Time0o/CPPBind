@@ -1,20 +1,12 @@
-import abc
-
-import file
+from abc import abstractmethod
+from file import File, Path
 from type_info import TypeInfo
+from util import Generic
 
 
-class BackendMeta(abc.ABCMeta):
-    def __init__(cls, name, bases, clsdict):
-        if len(cls.mro()) == 3:
-            BackendMeta.BackendImpl = cls
-
-        super().__init__(name, bases, clsdict)
-
-
-class BackendBase(metaclass=BackendMeta):
+class Backend(metaclass=Generic):
     def __init__(self, wrapper, options):
-        self._input_file = file.Path(wrapper.input_file())
+        self._input_file = Path(wrapper.input_file())
         self._output_files = []
 
         self._wrapper = wrapper
@@ -52,7 +44,7 @@ class BackendBase(metaclass=BackendMeta):
         if output_dir:
             output_path = output_path.modified(dirname=output_dir)
 
-        output_file = file.File(output_path)
+        output_file = File(output_path)
 
         self._output_files.append(output_file)
 
@@ -81,26 +73,22 @@ class BackendBase(metaclass=BackendMeta):
 
         return getter()
 
-    @abc.abstractmethod
+    @abstractmethod
     def wrap_before(self):
         pass
 
-    @abc.abstractmethod
+    @abstractmethod
     def wrap_after(self):
         pass
 
-    @abc.abstractmethod
+    @abstractmethod
     def wrap_variable(self, c):
         pass
 
-    @abc.abstractmethod
+    @abstractmethod
     def wrap_record(self, r):
         pass
 
-    @abc.abstractmethod
+    @abstractmethod
     def wrap_function(self, f):
         pass
-
-
-def Backend(*args, **kwargs):
-    return BackendMeta.BackendImpl(*args, **kwargs)

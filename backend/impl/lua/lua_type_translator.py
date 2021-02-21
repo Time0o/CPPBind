@@ -3,11 +3,11 @@ from functools import partial
 from lua_util import LuaUtil
 from text import code
 from type_info import TypeInfo as TI
-from type_translator import TypeTranslatorBase
+from type_translator import TypeTranslator
 
 
-class LuaTypeTranslator(TypeTranslatorBase):
-    rule = TypeTranslatorBase.rule
+class LuaTypeTranslator(TypeTranslator):
+    rule = TypeTranslator.rule
 
     @classmethod
     def _lua_type(cls, t):
