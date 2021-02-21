@@ -187,15 +187,14 @@ public:
 
 private:
   static Identifier determineName(clang::FunctionDecl const *Decl);
-  static WrapperRecord const *determineParent(clang::CXXMethodDecl const *Decl);
   static WrapperType determineReturnType(clang::FunctionDecl const *Decl);
   static std::vector<WrapperParameter> determineParameters(clang::FunctionDecl const *Decl);
   static bool determineIfNoexcept(clang::FunctionDecl const *Decl);
 
+  WrapperRecord const *Parent_ = nullptr;
+
   Identifier Name_;
   std::optional<Identifier> NameOverloaded_;
-
-  WrapperRecord const *Parent_ = nullptr;
 
   WrapperType ReturnType_;
   std::vector<WrapperParameter> Parameters_;

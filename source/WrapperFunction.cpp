@@ -99,8 +99,6 @@ WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
   IsNoexcept_(determineIfNoexcept(Decl))
 {
   assert(!Decl->isTemplateInstantiation()); // XXX
-
-  setParent(determineParent(Decl)); // XXX refactor
 }
 
 void
@@ -166,26 +164,14 @@ WrapperFunction::getParameters(bool SkipSelf) const
 Identifier
 WrapperFunction::determineName(clang::FunctionDecl const *Decl)
 {
-  if (decl::isConstructor(Decl)) {
-    auto const *ConstructorDecl = decl::asConstructor(Decl);
+  if (decl::isConstructor(Decl))
+    return Identifier(Identifier::NEW);
 
-    Identifier Parent(Identifier(ConstructorDecl->getParent()));
-
-    return Identifier(Identifier::NEW).qualified(Parent);
-  }
-
-  if (decl::isDestructor(Decl)) {
-    Identifier Parent(Identifier(decl::asDestructor(Decl)->getParent()));
-
-    return Identifier(Identifier::DELETE).qualified(Parent);
-  }
+  if (decl::isDestructor(Decl))
+    return Identifier(Identifier::DELETE);
 
   return Identifier(Decl);
 }
-
-WrapperRecord const *
-WrapperFunction::determineParent(clang::CXXMethodDecl const *Decl)
-{ return WrapperRecord::getFromType(Decl->getParent()->getTypeForDecl()); }
 
 WrapperType
 WrapperFunction::determineReturnType(clang::FunctionDecl const *Decl)
