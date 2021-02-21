@@ -75,14 +75,14 @@ public:
 
 private:
   void addIdentifier(WrapperVariable &Wv)
-  { Wv.setName(II_->add(Wv.getName(), IdentifierIndex::CONST)); }
+  { II_->add(Wv.getName(), IdentifierIndex::CONST); } // XXX
 
   void addIdentifier(WrapperFunction &Wf)
   {
     if (II_->has(Wf.getName()))
       II_->pushOverload(Wf.getName());
     else
-      Wf.setName(II_->add(Wf.getName(), IdentifierIndex::FUNC));
+      II_->add(Wf.getName(), IdentifierIndex::FUNC); // XXX
   }
 
   void overloadIdentifier(WrapperFunction &Wf)
@@ -91,7 +91,7 @@ private:
       return;
 
     Wf.overload(II_->popOverload(Wf.getName()));
-    Wf.setNameOverloaded(II_->add(Wf.getNameOverloaded(), IdentifierIndex::FUNC));
+    II_->add(Wf.getNameOverloaded(), IdentifierIndex::FUNC); // XXX
   }
 
   std::shared_ptr<IdentifierIndex> II_;
