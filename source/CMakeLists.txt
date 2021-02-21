@@ -7,6 +7,7 @@ add_executable(${CPPBIND}
                "Identifier.cpp"
                "Snippet.cpp"
                "String.cpp"
+               "Wrapper.cpp"
                "WrapperFunction.cpp"
                "WrapperRecord.cpp"
                "WrapperType.cpp")

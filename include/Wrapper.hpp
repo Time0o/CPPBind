@@ -3,18 +3,52 @@
 
 #include <deque>
 #include <memory>
+#include <unordered_map>
 #include <utility>
+
+#include "boost/graph/adjacency_list.hpp"
+#include "boost/graph/labeled_graph.hpp"
 
 #include "IdentifierIndex.hpp"
 #include "WrapperVariable.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperRecord.hpp"
+#include "WrapperType.hpp"
 
 namespace cppbind
 {
 
 class Wrapper
 {
+  class RecordInheritanceGraph
+  {
+  public:
+    void add(WrapperType const &Type, std::vector<WrapperType> const &BaseTypes);
+
+    std::deque<WrapperType>
+    bases(WrapperType const &Type, bool Recursive = false) const;
+
+    std::deque<WrapperType>
+    basesFirstOrdering() const;
+
+  private:
+    using Graph = boost::adjacency_list<boost::vecS,
+                                        boost::vecS,
+                                        boost::directedS,
+                                        WrapperType>;
+
+    using LabeledGraph = boost::labeled_graph<Graph,
+                                              WrapperType,
+                                              boost::hash_mapS>;
+
+    LabeledGraph G_;
+  };
+
+  using RecordTypeLookup = std::unordered_map<WrapperType, WrapperRecord const *> ;
+
+  using RecordWithBases = std::pair<WrapperRecord const *,
+                                    std::deque<WrapperRecord const *>>;
+
 public:
   explicit Wrapper(std::shared_ptr<IdentifierIndex> IdentifierIndex,
                    std::string const &InputFile)
@@ -48,18 +82,14 @@ public:
 
     for (auto &Wf : Records_.back().Functions)
       addIdentifier(Wf);
+
+    auto const &Record(Records_.back());
+
+    RecordInheritances_.add(Record.getType(), Record.getBaseTypes());
+    RecordTypes_.insert(std::make_pair(Record.getType(), &Record));
   }
 
-  void overload()
-  {
-    for (auto &Wr : Records_) {
-      for (auto &Wf : Wr.Functions)
-        overloadIdentifier(Wf);
-    }
-
-    for (auto &Wf : Functions_)
-      overloadIdentifier(Wf);
-  }
+  void overload();
 
   std::string inputFile() const
   { return InputFile_; }
@@ -67,40 +97,27 @@ public:
   std::deque<WrapperVariable> const *variables() const
   { return &Variables_; }
 
-  std::deque<WrapperRecord> const *records() const
-  { return &Records_; }
-
   std::deque<WrapperFunction> const *functions() const
   { return &Functions_; }
 
+  std::deque<RecordWithBases> records() const;
+
 private:
-  void addIdentifier(WrapperVariable &Wv)
-  { II_->add(Wv.getName(), IdentifierIndex::CONST); } // XXX
-
-  void addIdentifier(WrapperFunction &Wf)
-  {
-    if (II_->has(Wf.getName()))
-      II_->pushOverload(Wf.getName());
-    else
-      II_->add(Wf.getName(), IdentifierIndex::FUNC); // XXX
-  }
-
-  void overloadIdentifier(WrapperFunction &Wf)
-  {
-    if (!II_->hasOverload(Wf.getName()))
-      return;
-
-    Wf.overload(II_->popOverload(Wf.getName()));
-    II_->add(Wf.getName(true), IdentifierIndex::FUNC); // XXX
-  }
+  void addIdentifier(WrapperVariable &Wv);
+  void addIdentifier(WrapperFunction &Wf);
+  void overloadIdentifier(WrapperFunction &Wf);
 
   std::shared_ptr<IdentifierIndex> II_;
 
   std::string InputFile_;
 
   std::deque<WrapperVariable> Variables_;
-  std::deque<WrapperRecord> Records_;
+
   std::deque<WrapperFunction> Functions_;
+
+  std::deque<WrapperRecord> Records_;
+  RecordInheritanceGraph RecordInheritances_;
+  RecordTypeLookup RecordTypes_;
 };
 
 } // namespace cppbind

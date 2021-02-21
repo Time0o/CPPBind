@@ -1,6 +1,5 @@
 from backend import Backend
 from collections import OrderedDict
-from cppbind import Record # XXX refactor
 from text import code
 
 
@@ -306,8 +305,8 @@ def _type_instances():
 
         types[(t.without_const(), t_bases)] = True
 
-    for r in Record.ordering(): # XXX refactor
-        add_type(r.type, (b.type for b in r.bases_recursive))
+    for r, bases in Backend().records(with_bases=True):
+        add_type(r.type, (b.type for b in bases))
 
     for v in Backend().variables():
         if v.type.is_pointer() and not v.pointee().is_record():

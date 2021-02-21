@@ -21,7 +21,7 @@ class Backend(metaclass=Generic):
         for v in self._variables:
             self.wrap_variable(v)
 
-        for r in self._records:
+        for r, _ in self._records:
             self.wrap_record(r)
 
         for f in self._functions:
@@ -53,8 +53,11 @@ class Backend(metaclass=Generic):
     def variables(self):
         return self._variables
 
-    def records(self):
-        return self._records
+    def records(self, with_bases=False):
+        if with_bases:
+            return self._records
+
+        return [r for r, _ in self._records]
 
     def functions(self):
         return self._functions

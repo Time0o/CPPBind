@@ -129,11 +129,11 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("variables",
          &Wrapper::variables,
          py::return_value_policy::reference_internal)
-    .def("records",
-         &Wrapper::records,
-         py::return_value_policy::reference_internal)
     .def("functions",
          &Wrapper::functions,
+         py::return_value_policy::reference_internal)
+    .def("records",
+         &Wrapper::records,
          py::return_value_policy::reference_internal);
 
   py::class_<Type>(m, "Type", py::dynamic_attr())
@@ -202,19 +202,8 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_noexcept", &WrapperFunction::isNoexcept);
 
   auto PyRecord = py::class_<Record>(m, "Record", py::dynamic_attr())
-    // XXX refactor
-    .def_static("ordering",
-                []()
-                { return Record::getOrdering(Record::BASES_FIRST_ORDERING); },
-                py::return_value_policy::reference)
     .def_property_readonly("name", &WrapperRecord::getName)
     .def_property_readonly("type", &WrapperRecord::getType)
-    .def_property_readonly("bases",
-                           &WrapperRecord::getBases,
-                           py::return_value_policy::reference_internal)
-    .def_property_readonly("bases_recursive",
-                           &WrapperRecord::getBasesRecursive,
-                           py::return_value_policy::reference_internal)
     .def_property_readonly("constructors", &WrapperRecord::getConstructors)
     .def_property_readonly("destructor", &WrapperRecord::getDestructor)
     .def_readwrite("variables", &WrapperRecord::Variables)

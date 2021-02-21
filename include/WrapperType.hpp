@@ -22,7 +22,7 @@ namespace cppbind
 
 class WrapperType
 {
-  friend std::hash<WrapperType>;
+  friend std::size_t hash_value(WrapperType const &);
 
   struct Tag
   { };
@@ -59,6 +59,10 @@ class WrapperType
   using TagSet = std::unordered_map<TagType, std::shared_ptr<Tag>>;
 
 public:
+  WrapperType()
+  : WrapperType("void", {})
+  {}
+
   explicit WrapperType(clang::QualType const &Type)
   : WrapperType(Type, {})
   {}
@@ -193,6 +197,9 @@ private:
   TagSet Tags_;
 };
 
+inline std::size_t hash_value(WrapperType const &Wt)
+{ return reinterpret_cast<std::size_t>(Wt.typePtr()); }
+
 } // namespace cppbind
 
 namespace std
@@ -202,7 +209,7 @@ template<>
 struct hash<cppbind::WrapperType>
 {
   std::size_t operator()(cppbind::WrapperType const &Wt) const
-  { return reinterpret_cast<std::size_t>(Wt.typePtr()); }
+  { return cppbind::hash_value(Wt); }
 };
 
 } // namespace std
