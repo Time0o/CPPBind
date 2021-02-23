@@ -17,6 +17,7 @@
 
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/CommandLine.h"
+#include "llvm/Support/ErrorHandling.h"
 
 #include "Error.hpp"
 #include "Mixin.hpp"
@@ -187,10 +188,8 @@ private:
     try {
       return std::any_cast<std::shared_ptr<llvm::cl::opt<T>>>(Opt);
     } catch (std::bad_any_cast const &) {
-      assert(false && "valid option type");
+      llvm_unreachable("invalid option type");
     }
-
-    __builtin_unreachable();
   }
 
   template<typename T>

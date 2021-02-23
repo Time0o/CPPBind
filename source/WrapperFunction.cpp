@@ -17,6 +17,7 @@
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/APSInt.h"
 #include "llvm/Support/Casting.h"
+#include "llvm/Support/ErrorHandling.h"
 
 #include "ClangUtils.hpp"
 #include "CompilerState.hpp"
@@ -79,7 +80,7 @@ std::string WrapperDefaultArgument::str() const
   else if (isFloat())
     return APToString(as<llvm::APFloat>());
 
-  __builtin_unreachable();
+  llvm_unreachable("invalid default argument type");
 }
 
 WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
@@ -256,11 +257,11 @@ WrapperFunction::determineOverloadedOperator(clang::FunctionDecl const *Decl)
 
   switch (Decl->getOverloadedOperator()) {
 #define OVERLOADED_OPERATOR(Name,Spelling,Token,Unary,Binary,MemberOnly) \
-    case OO_##Name: return OverloadedOperator(#Name, Spelling);
+  case OO_##Name: return OverloadedOperator(#Name, Spelling);
 #include "clang/Basic/OperatorKinds.def"
+  default:
+    llvm_unreachable("invalid overloaded operator kind");
   }
-
-  __builtin_unreachable();
 }
 
 WrapperFunctionBuilder &
