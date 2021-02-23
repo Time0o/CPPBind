@@ -8,6 +8,7 @@
 
 #include "clang/AST/APValue.h"
 #include "clang/AST/Decl.h"
+#include "clang/AST/DeclarationName.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/Type.h"
@@ -85,7 +86,8 @@ WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
 : Name_(determineName(Decl)),
   ReturnType_(determineReturnType(Decl)),
   Parameters_(determineParameters(Decl)),
-  IsNoexcept_(determineIfNoexcept(Decl))
+  IsNoexcept_(determineIfNoexcept(Decl)),
+  OverloadedOperator_(determineOverloadedOperator(Decl))
 { assert(!Decl->isTemplateInstantiation()); } // XXX
 
 WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
@@ -96,7 +98,8 @@ WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
   IsDestructor_(decl::isDestructor(Decl)),
   IsStatic_(Decl->isStatic()),
   IsConst_(Decl->isConst()),
-  IsNoexcept_(determineIfNoexcept(Decl))
+  IsNoexcept_(determineIfNoexcept(Decl)),
+  OverloadedOperator_(determineOverloadedOperator(Decl))
 {
   assert(!Decl->isTemplateInstantiation()); // XXX
 }
@@ -119,12 +122,24 @@ WrapperFunction::overload(std::shared_ptr<IdentifierIndex> II)
 }
 
 Identifier
-WrapperFunction::getName(bool Overloaded) const
+WrapperFunction::getName(bool Overloaded, bool ReplaceOperatorName) const
 {
-  if (Overloaded && NameOverloaded_)
-    return *NameOverloaded_;
+  Identifier Name(Name_);
 
-  return Name_;
+  if (Overloaded && NameOverloaded_)
+    Name = *NameOverloaded_;
+
+  if (ReplaceOperatorName && isOverloadedOperator()) {
+    auto NameStr(Name.str());
+
+    string::replace(NameStr,
+                    OverloadedOperator_->Spelling,
+                    OverloadedOperator_->Name);
+
+    Name = Identifier(NameStr);
+  }
+
+  return Name;
 }
 
 void
@@ -161,6 +176,15 @@ WrapperFunction::getParameters(bool SkipSelf) const
     return std::vector<WrapperParameter>(Parameters_.begin() + 1, Parameters_.end());
 
   return Parameters_;
+}
+
+std::optional<std::string>
+WrapperFunction::getOverloadedOperator() const
+{
+  if (!OverloadedOperator_)
+    return std::nullopt;
+
+  return OverloadedOperator_->Name;
 }
 
 Identifier
@@ -220,6 +244,23 @@ WrapperFunction::determineIfNoexcept(clang::FunctionDecl const *Decl)
 #endif
 
   return EST == clang::EST_BasicNoexcept || EST == clang::EST_NoexceptTrue;
+}
+
+std::optional<WrapperFunction::OverloadedOperator>
+WrapperFunction::determineOverloadedOperator(clang::FunctionDecl const *Decl)
+{
+  using namespace clang;
+
+  if (!Decl->isOverloadedOperator())
+    return std::nullopt;
+
+  switch (Decl->getOverloadedOperator()) {
+#define OVERLOADED_OPERATOR(Name,Spelling,Token,Unary,Binary,MemberOnly) \
+    case OO_##Name: return OverloadedOperator(#Name, Spelling);
+#include "clang/Basic/OperatorKinds.def"
+  }
+
+  __builtin_unreachable();
 }
 
 WrapperFunctionBuilder &

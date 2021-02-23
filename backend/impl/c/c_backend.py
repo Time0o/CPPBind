@@ -20,7 +20,8 @@ def _name_c(get=lambda self: self.name(), case=Id.SNAKE_CASE):
     return _name_c_closure
 
 Variable.name_c = _name_c(case=Id.SNAKE_CASE_CAP_ALL)
-Function.name_c = _name_c(get=lambda self: self.name(overloaded=True))
+Function.name_c = _name_c(get=lambda self: self.name(overloaded=True,
+                                                     replace_operator_name=True))
 Parameter.name_c = _name_c()
 
 

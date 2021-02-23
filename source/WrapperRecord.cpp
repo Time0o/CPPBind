@@ -132,7 +132,10 @@ WrapperRecord::determinePublicMemberFunctions(
       continue;
 
     for (auto const *MethodDecl : decl::baseDecl(Base)->methods()) {
-      if (decl::isConstructor(MethodDecl) || decl::isDestructor(MethodDecl))
+      if (decl::isConstructor(MethodDecl) ||
+          decl::isDestructor(MethodDecl) ||
+          MethodDecl->isCopyAssignmentOperator() ||
+          MethodDecl->isMoveAssignmentOperator())
         continue;
 
       if (MethodDecl->getAccess() != clang::AS_public)
@@ -168,9 +171,6 @@ WrapperRecord::determinePublicMemberFunctions(
     } else if (MethodDecl->size_overridden_methods() != 0) {
       continue;
     }
-
-    if (MethodDecl->isOverloadedOperator())
-      continue; // XXX
 
     PublicMethods.emplace_back(WrapperFunctionBuilder(MethodDecl)
                               .setParent(this)

@@ -135,6 +135,17 @@ class WrapperFunction
 {
   friend class WrapperFunctionBuilder;
 
+  struct OverloadedOperator
+  {
+    OverloadedOperator(std::string const &Name, std::string const &Spelling)
+    : Name(Name),
+      Spelling(Spelling)
+    {}
+
+    std::string Name;
+    std::string Spelling;
+  };
+
 public:
   WrapperFunction(Identifier const &Name)
   : Name_(Name),
@@ -147,7 +158,8 @@ public:
 
   void overload(std::shared_ptr<IdentifierIndex> II);
 
-  Identifier getName(bool Overloaded = false) const;
+  Identifier getName(bool Overloaded = false,
+                     bool ReplaceOperatorName = false) const;
 
   void setName(Identifier const &Name) // TODO: remove?
   { Name_ = Name; }
@@ -164,6 +176,8 @@ public:
 
   void setReturnType(WrapperType const &ReturnType) // TODO: remove?
   { ReturnType_ = ReturnType; }
+
+  std::optional<std::string> getOverloadedOperator() const;
 
   bool isMember() const
   { return Parent_; }
@@ -186,11 +200,15 @@ public:
   bool isNoexcept() const
   { return IsNoexcept_; }
 
+  bool isOverloadedOperator() const
+  { return static_cast<bool>(OverloadedOperator_); }
+
 private:
   static Identifier determineName(clang::FunctionDecl const *Decl);
   static WrapperType determineReturnType(clang::FunctionDecl const *Decl);
   static std::vector<WrapperParameter> determineParameters(clang::FunctionDecl const *Decl);
   static bool determineIfNoexcept(clang::FunctionDecl const *Decl);
+  static std::optional<OverloadedOperator> determineOverloadedOperator(clang::FunctionDecl const *Decl);
 
   WrapperRecord const *Parent_ = nullptr;
 
@@ -205,6 +223,8 @@ private:
   bool IsStatic_ = false;
   bool IsConst_ = false;
   bool IsNoexcept_ = false;
+
+  std::optional<OverloadedOperator> OverloadedOperator_;
 };
 
 class WrapperFunctionBuilder

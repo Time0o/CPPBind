@@ -14,8 +14,10 @@ def _name_lua(get=lambda self: self.name(), case=Id.SNAKE_CASE, quals=Id.REPLACE
     return _name_lua_closure
 
 Variable.name_lua = _name_lua(case=Id.SNAKE_CASE_CAP_ALL)
-Function.name_lua = _name_lua(get=lambda self: self.name(overloaded=True))
-Function.name_unqualified_lua = _name_lua(get=lambda self: self.name(overloaded=True),
+Function.name_lua = _name_lua(get=lambda self: self.name(overloaded=True,
+                                                         replace_operator_name=True))
+Function.name_unqualified_lua = _name_lua(get=lambda self: self.name(overloaded=True,
+                                                                     replace_operator_name=True),
                                           quals=Id.REMOVE_QUALS)
 Parameter.name_lua = _name_lua()
 Record.name_lua = _name_lua(case=Id.PASCAL_CASE)
