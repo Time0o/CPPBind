@@ -6,23 +6,6 @@ from cppbind import Identifier as Id, Type, Variable, Record, Function, Paramete
 from text import code
 
 
-def _name_lua(get=lambda self: self.name(), case=Id.SNAKE_CASE, quals=Id.REPLACE_QUALS):
-    @property
-    def _name_lua_closure(self):
-        return get(self).format(case=case, quals=quals)
-
-    return _name_lua_closure
-
-Variable.name_lua = _name_lua(case=Id.SNAKE_CASE_CAP_ALL)
-Function.name_lua = _name_lua(get=lambda self: self.name(overloaded=True,
-                                                         replace_operator_name=True))
-Function.name_unqualified_lua = _name_lua(get=lambda self: self.name(overloaded=True,
-                                                                     replace_operator_name=True),
-                                          quals=Id.REMOVE_QUALS)
-Parameter.name_lua = _name_lua()
-Record.name_lua = _name_lua(case=Id.PASCAL_CASE)
-
-
 class LuaBackend(Backend):
     def __init__(self, *args):
         super().__init__(*args)
@@ -91,14 +74,14 @@ class LuaBackend(Backend):
 
         self._wrapper_module.append(code(
             f"""
-            namespace __{r.name_lua}
+            namespace __{r.name_target()}
             {{{{
 
             {{function_definitions}}
 
             {{register}}
 
-            }}}} // namespace __{r.name_lua}
+            }}}} // namespace __{r.name_target()}
             """,
             function_definitions=self._function_definitions(
                 [f for f in r.functions() if not f.is_destructor()]),
@@ -124,12 +107,12 @@ class LuaBackend(Backend):
         for r in self.records():
             forward_declarations.append(code(
                 f"""
-                namespace __{r.name_lua}
+                namespace __{r.name_target()}
                 {{{{
 
                 {{function_declarations}}
 
-                }}}} // namespace __{r.name_lua}
+                }}}} // namespace __{r.name_target()}
                 """,
                 function_declarations=self._function_declarations(r.functions())))
 
@@ -137,7 +120,7 @@ class LuaBackend(Backend):
 
     @classmethod
     def _function_declaration(cls, f):
-        return f"int {f.name_lua}(lua_State *L);"
+        return f"int {f.name_target()}(lua_State *L);"
 
     @classmethod
     def _function_declarations(cls, functions):
@@ -161,7 +144,7 @@ class LuaBackend(Backend):
 
     @classmethod
     def _function_header(cls, f):
-        return f"int {f.name_lua}(lua_State *L)"
+        return f"int {f.name_target()}(lua_State *L)"
 
     @classmethod
     def _function_body(cls, f):
@@ -236,7 +219,7 @@ class LuaBackend(Backend):
 
             return code(
                 f"""
-                lua_pushstring(L, "{v.name_lua}");
+                lua_pushstring(L, "{v.name_target()}");
                 {{push}};
                 lua_settable(L, -3);
                 """,
@@ -251,9 +234,9 @@ class LuaBackend(Backend):
 
         def function_entry(f):
             if f.is_member():
-                return f'{{"{f.name_unqualified_lua}", {f.name_lua}}}'
+                return f'{{"{f.name_target(qualified=False)}", {f.name_target()}}}'
             else:
-                return f'{{"{f.name_lua}", {f.name_lua}}}'
+                return f'{{"{f.name_target()}", {f.name_target()}}}'
 
         return code(
             """
@@ -276,8 +259,8 @@ class LuaBackend(Backend):
         def register_record(r):
             return code(
                 f"""
-                __{r.name_lua}::__register(L);
-                lua_setfield(L, -2, "{r.name_lua}");
+                __{r.name_target()}::__register(L);
+                lua_setfield(L, -2, "{r.name_target()}");
                 """)
 
         return '\n\n'.join(map(register_record, records))

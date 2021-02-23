@@ -7,23 +7,6 @@ from type_translator import TypeTranslator as TT
 from text import code
 from util import dotdict
 
-Type.__str__ = lambda self: self.str()
-
-import text
-
-
-def _name_c(get=lambda self: self.name(), case=Id.SNAKE_CASE):
-    @property
-    def _name_c_closure(self):
-        return get(self).format(case=case, quals=Id.REPLACE_QUALS)
-
-    return _name_c_closure
-
-Variable.name_c = _name_c(case=Id.SNAKE_CASE_CAP_ALL)
-Function.name_c = _name_c(get=lambda self: self.name(overloaded=True,
-                                                     replace_operator_name=True))
-Parameter.name_c = _name_c()
-
 
 class CBackend(Backend):
     def __init__(self, *args, **kwargs):
@@ -92,7 +75,7 @@ class CBackend(Backend):
 
     def wrap_variable(self, v):
         #XXX generalize
-        self._wrapper_header.append(f"extern {TT().c(v.type())} {v.name_c};")
+        self._wrapper_header.append(f"extern {TT().c(v.type())} {v.name_target()};")
 
         args = dotdict({
             'v': v
@@ -100,7 +83,7 @@ class CBackend(Backend):
 
         self._wrapper_source.append(
             TT().variable(v.type(), args).format(
-                varin=v.name(), varout=f"{TT().c(v.type())} {v.name_c}"))
+                varin=v.name(), varout=f"{TT().c(v.type())} {v.name_target()}"))
 
     def wrap_record(self, r):
         for f in r.functions():
@@ -134,9 +117,10 @@ class CBackend(Backend):
 
     def _function_header(self, f):
         #XXX generalize
-        parameters = ', '.join(f"{TT().c(p.type())} {p.name_c}" for p in f.parameters())
+        parameters = ', '.join(f"{TT().c(p.type())} {p.name_target()}"
+                               for p in f.parameters())
 
-        return f"{TT().c(f.return_type())} {f.name_c}({parameters})"
+        return f"{TT().c(f.return_type())} {f.name_target()}({parameters})"
 
     def _function_body(self, f):
         return code(

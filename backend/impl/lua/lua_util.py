@@ -141,7 +141,7 @@ def _createmetatables(records):
             continue
 
         define.append(_createmetatable(r))
-        call.append(f"createmetatable_{r.name_lua}(L);")
+        call.append(f"createmetatable_{r.name_target()}(L);")
 
     return code(
         """
@@ -193,8 +193,8 @@ def _createmetatable(r):
 
         set_methods.append(code(
             f"""
-            lua_pushcfunction(L, __{r.name_lua}::{f.name_lua});
-            lua_setfield(L, -2, "{f.name_unqualified_lua}");
+            lua_pushcfunction(L, __{r.name_target()}::{f.name_target()});
+            lua_setfield(L, -2, "{f.name_target(qualified=False)}");
             """))
 
     if r.is_copyable():
@@ -213,7 +213,7 @@ def _createmetatable(r):
 
     return code(
         f"""
-        void createmetatable_{r.name_lua}(lua_State *L)
+        void createmetatable_{r.name_target()}(lua_State *L)
         {{{{
           lua_pushstring(L, "{r.type().format(mangled=True)}");
 
