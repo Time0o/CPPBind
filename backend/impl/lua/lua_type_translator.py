@@ -56,7 +56,7 @@ class LuaTypeTranslator(TypeTranslator):
 
     @input_rule(lambda t: t.is_scoped_enum())
     def input(cls, t, args):
-        return f"{{interm}} = static_cast<{t}>({util.tointegral(t.without_enum(), args.i + 1)});"
+        return f"{{interm}} = static_cast<{t}>({util.tointegral(t.underlying_integer_type(), args.i + 1)});"
 
     @input_rule(lambda t: t.is_integral())
     def input(cls, t, args):
@@ -95,7 +95,7 @@ class LuaTypeTranslator(TypeTranslator):
 
     @output_rule(lambda t: t.is_scoped_enum())
     def output(cls, t, args):
-        return f"{util.pushintegral(f'static_cast<{t.without_enum()}>({{outp}})')};"
+        return f"{util.pushintegral(f'static_cast<{t.underlying_integer_type()}>({{outp}})')};"
 
     @output_rule(lambda t: t.is_integral())
     def output(cls, t, args):

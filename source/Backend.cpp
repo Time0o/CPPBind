@@ -166,13 +166,12 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("referenced", &WrapperType::referenced)
     .def("pointer_to", &WrapperType::pointerTo, "repeat"_a = 0u)
     .def("pointee", &WrapperType::pointee, "recursive"_a = false)
+    .def("underlying_integer_type", &WrapperType::underlyingIntegerType)
     .def("qualifiers", &WrapperType::qualifiers)
     .def("qualified", &WrapperType::qualified, "qualifiers"_a = 0u)
     .def("unqualified", &WrapperType::unqualified)
     .def("with_const", &WrapperType::withConst)
-    .def("without_const", &WrapperType::withoutConst)
-    .def("with_enum", &WrapperType::withEnum)
-    .def("without_enum", &WrapperType::withoutEnum);
+    .def("without_const", &WrapperType::withoutConst);
 
   py::class_<Variable>(m, "Variable", py::dynamic_attr())
     .def(py::init<Identifier, WrapperType>(), "name"_a, "type"_a)

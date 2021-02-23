@@ -211,7 +211,8 @@ class LuaBackend(Backend):
         def register_variable(v):
             # XXX generalize
             if v.type().is_enum():
-                push = f"{util.pushintegral(f'static_cast<{v.type().without_enum()}>({v.name()})', constexpr=True)}"
+                arg = f"static_cast<{v.type().underlying_integer_type()}>({v.name()})"
+                push = f"{util.pushintegral(arg, constexpr=True)}"
             elif v.type().is_integral():
                 push = f"{util.pushintegral(v.name(), constexpr=True)}"
             elif v.type().is_floating():

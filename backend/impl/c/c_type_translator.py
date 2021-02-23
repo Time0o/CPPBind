@@ -11,7 +11,7 @@ class CTypeTranslator(TypeTranslator):
 
     @rule(lambda t: t.is_enum())
     def c(cls, t, args):
-        return str(t.without_enum())
+        return str(t.underlying_integer_type())
 
     @rule(lambda t: t.is_pointer() and t.pointee(recursive=True).is_fundamental())
     def c(cls, t, args):
@@ -31,7 +31,7 @@ class CTypeTranslator(TypeTranslator):
 
     @rule(lambda t: t.is_enum())
     def variable(cls, t, args):
-        return f"{{varout}} = static_cast<{t.without_enum()}>({{varin}});"
+        return f"{{varout}} = static_cast<{t.underlying_integer_type()}>({{varin}});"
 
     @rule(lambda _: True)
     def variable(cls, t, args):
@@ -60,7 +60,7 @@ class CTypeTranslator(TypeTranslator):
 
     @rule(lambda t: t.is_scoped_enum())
     def output(cls, t, args):
-        return f"return static_cast<{t.without_enum()}>({{outp}});"
+        return f"return static_cast<{t.underlying_integer_type()}>({{outp}});"
 
     @rule(lambda t: t.is_record())
     def output(cls, t, args):

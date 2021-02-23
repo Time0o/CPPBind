@@ -24,60 +24,12 @@ class WrapperType
 {
   friend std::size_t hash_value(WrapperType const &);
 
-  struct Tag
-  { };
-
-  enum TagType
-  {
-    ANNOTATED_TAG,
-    UNDERLIES_ENUM_TAG
-  };
-
-  struct AnnotatedTag : public Tag
-  {
-    static constexpr TagType type = ANNOTATED_TAG;
-
-    std::vector<std::string> Annotations;
-  };
-
-  struct UnderliesEnumTag : public Tag
-  {
-    static constexpr TagType type = UNDERLIES_ENUM_TAG;
-
-    clang::QualType EnumBaseType;
-  };
-
-  template<typename T>
-  struct ConstructibleTag : public T
-  {
-    template<typename ...Args>
-    ConstructibleTag(Args &&...args)
-    : T{ {}, std::forward<Args>(args)... }
-    {}
-  };
-
-  using TagSet = std::unordered_map<TagType, std::shared_ptr<Tag>>;
-
 public:
-  WrapperType()
-  : WrapperType("void", {})
-  {}
-
-  explicit WrapperType(clang::QualType const &Type)
-  : WrapperType(Type, {})
-  {}
-
-  explicit WrapperType(clang::Type const *Type)
-  : WrapperType(Type, {})
-  {}
-
-  explicit WrapperType(std::string const &TypeName)
-  : WrapperType(TypeName, {})
-  {}
-
-  explicit WrapperType(clang::TypeDecl const *Decl)
-  : WrapperType(Decl, {})
-  {}
+  WrapperType();
+  explicit WrapperType(clang::QualType const &Type);
+  explicit WrapperType(clang::Type const *Type);
+  explicit WrapperType(std::string const &TypeName);
+  explicit WrapperType(clang::TypeDecl const *Decl);
 
   bool operator==(WrapperType const &Wt) const
   { return type() == Wt.type(); }
@@ -92,8 +44,6 @@ public:
   bool isEnum() const;
   bool isScopedEnum() const;
   bool isIntegral() const;
-  bool isIntegralUnderlyingEnum() const;
-  bool isIntegralUnderlyingScopedEnum() const;
   bool isFloating() const;
   bool isReference() const;
   bool isLValueReference() const;
@@ -111,6 +61,8 @@ public:
   WrapperType pointerTo(unsigned Repeat = 0u) const;
   WrapperType pointee(bool Recursive = false) const;
 
+  WrapperType underlyingIntegerType() const;
+
   unsigned qualifiers() const;
   WrapperType qualified(unsigned Qualifiers) const;
   WrapperType unqualified() const;
@@ -118,14 +70,8 @@ public:
   WrapperType withConst() const;
   WrapperType withoutConst() const;
 
-  WrapperType withEnum() const;
-  WrapperType withoutEnum() const;
-
   WrapperType getBase() const;
   void setBase(WrapperType const &NewBase);
-
-  std::vector<std::string> getAnnotations() const;
-  void setAnnotations(std::vector<std::string> const &Annotations);
 
   std::string str() const;
 
@@ -135,11 +81,6 @@ public:
                      Identifier::Quals Quals = Identifier::KEEP_QUALS) const;
 
 private:
-  WrapperType(clang::QualType const &Type, TagSet const &Tags);
-  WrapperType(clang::Type const *Type, TagSet const &Tags);
-  WrapperType(std::string const &TypeName, TagSet const &Tags);
-  WrapperType(clang::TypeDecl const *Decl, TagSet const &Tags);
-
   clang::QualType const &type() const;
   clang::Type const *typePtr() const;
   clang::QualType baseType() const;
@@ -148,53 +89,7 @@ private:
   static clang::QualType requalifyType(clang::QualType const &Type,
                                        unsigned Qualifiers);
 
-  template<typename TAG>
-  bool hasTag() const
-  { return Tags_.find(TAG::type) != Tags_.end(); }
-
-  template<typename TAG>
-  std::shared_ptr<TAG> getTag() const
-  {
-    auto It(Tags_.find(TAG::type));
-    assert(It != Tags_.end());
-
-    auto Tag(std::static_pointer_cast<TAG>(It->second));
-    assert(Tag);
-
-    return Tag;
-  }
-
-  template<typename TAG, typename ...ARGS>
-  void addTag(ARGS &&...args)
-  {
-    Tags_[TAG::type] =
-      std::make_shared<ConstructibleTag<TAG>>(std::forward<ARGS>(args)...);
-  }
-
-  template<typename TAG>
-  void removeTag()
-  { Tags_.erase(TAG::type); }
-
-  template<typename TAG, typename ...ARGS>
-  TagSet withTag(ARGS &&...args) const
-  {
-    auto TagsNew(Tags_);
-    TagsNew[TAG::type] =
-      std::make_shared<ConstructibleTag<TAG>>(std::forward<ARGS>(args)...);
-    return TagsNew;
-  }
-
-  template<typename TAG>
-  TagSet withoutTag() const
-  {
-    auto TagsNew(Tags_);
-    TagsNew.erase(TAG::type);
-    return TagsNew;
-  }
-
   clang::QualType Type_;
-
-  TagSet Tags_;
 };
 
 inline std::size_t hash_value(WrapperType const &Wt)
