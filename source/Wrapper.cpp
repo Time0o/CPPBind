@@ -1,4 +1,6 @@
 #include <deque>
+#include <memory>
+#include <vector>
 
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/graph/breadth_first_search.hpp"
@@ -76,13 +78,13 @@ Wrapper::RecordInheritanceGraph::basesFirstOrdering() const
 }
 
 void
-Wrapper::overload()
+Wrapper::overload(std::shared_ptr<IdentifierIndex> II)
 {
   for (auto &Wr : Records_)
-    Wr.overload(II_);
+    Wr.overload(II);
 
   for (auto &Wf : Functions_)
-    Wf.overload(II_);
+    Wf.overload(II);
 }
 
 std::vector<WrapperVariable const *>
@@ -134,16 +136,18 @@ Wrapper::getRecords() const
 }
 
 void
-Wrapper::addIdentifier(WrapperVariable const &Wv)
-{ II_->add(Wv.getName(), IdentifierIndex::CONST); } // XXX
+Wrapper::addIdentifier(std::shared_ptr<IdentifierIndex> II,
+                       WrapperVariable const &Wv)
+{ II->add(Wv.getName(), IdentifierIndex::CONST); } // XXX
 
 void
-Wrapper::addIdentifier(WrapperFunction const &Wf)
+Wrapper::addIdentifier(std::shared_ptr<IdentifierIndex> II,
+                       WrapperFunction const &Wf)
 {
-  if (II_->has(Wf.getName()))
-    II_->pushOverload(Wf.getName());
+  if (II->has(Wf.getName()))
+    II->pushOverload(Wf.getName());
   else
-    II_->add(Wf.getName(), IdentifierIndex::FUNC); // XXX
+    II->add(Wf.getName(), IdentifierIndex::FUNC); // XXX
 }
 
 } // namespace cppbind

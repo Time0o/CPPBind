@@ -51,38 +51,35 @@ class Wrapper
                                     std::vector<WrapperRecord const *>>;
 
 public:
-  explicit Wrapper(std::shared_ptr<IdentifierIndex> IdentifierIndex,
-                   std::string const &InputFile)
-  : II_(IdentifierIndex), // XXX don't store this here?
-    InputFile_(InputFile)
-  {}
-
   template<typename ...ARGS>
-  void addWrapperVariable(ARGS&&... args)
+  void addWrapperVariable(std::shared_ptr<IdentifierIndex> II,
+                          ARGS&&... args)
   {
     Variables_.emplace_back(std::forward<ARGS>(args)...);
 
-    addIdentifier(Variables_.back());
+    addIdentifier(II, Variables_.back());
   }
 
   template<typename ...ARGS>
-  void addWrapperFunction(ARGS&&... args)
+  void addWrapperFunction(std::shared_ptr<IdentifierIndex> II,
+                          ARGS&&... args)
   {
     Functions_.emplace_back(std::forward<ARGS>(args)...);
 
-    addIdentifier(Functions_.back());
+    addIdentifier(II, Functions_.back());
   }
 
   template<typename ...ARGS>
-  void addWrapperRecord(ARGS&&... args)
+  void addWrapperRecord(std::shared_ptr<IdentifierIndex> II,
+                        ARGS&&... args)
   {
     Records_.emplace_back(std::forward<ARGS>(args)...);
 
     for (auto &Wv : Records_.back().getVariables())
-      addIdentifier(*Wv);
+      addIdentifier(II, *Wv);
 
     for (auto &Wf : Records_.back().getFunctions())
-      addIdentifier(*Wf);
+      addIdentifier(II, *Wf);
 
     auto const &Record(Records_.back());
 
@@ -90,10 +87,7 @@ public:
     RecordTypes_.insert(std::make_pair(Record.getType(), &Record));
   }
 
-  void overload();
-
-  std::string getInputFile() const
-  { return InputFile_; }
+  void overload(std::shared_ptr<IdentifierIndex> II);
 
   std::vector<WrapperVariable const *> getVariables() const;
 
@@ -102,17 +96,13 @@ public:
   std::vector<RecordWithBases> getRecords() const;
 
 private:
-  void addIdentifier(WrapperVariable const &Wv);
-  void addIdentifier(WrapperFunction const &Wf);
-
-  std::shared_ptr<IdentifierIndex> II_;
-
-  std::string InputFile_;
+  void addIdentifier(std::shared_ptr<IdentifierIndex> II,
+                     WrapperVariable const &Wv);
+  void addIdentifier(std::shared_ptr<IdentifierIndex> II,
+                     WrapperFunction const &Wf);
 
   std::deque<WrapperVariable> Variables_;
-
   std::deque<WrapperFunction> Functions_;
-
   std::deque<WrapperRecord> Records_;
   RecordInheritanceGraph RecordInheritances_;
   RecordTypeLookup RecordTypes_;

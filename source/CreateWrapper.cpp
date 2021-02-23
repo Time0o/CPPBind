@@ -70,22 +70,22 @@ CreateWrapperConsumer::handleVarDecl(clang::VarDecl const *Decl)
     throw CPPBindError("global variables without external linkage should have static storage and be constant"); // XXX
   }
 
-  Wr_->addWrapperVariable(Decl);
+  Wr_->addWrapperVariable(II_, Decl);
 }
 
 void
 CreateWrapperConsumer::handleEnumDecl(clang::EnumDecl const *Decl)
 {
   for (auto const &ConstantDecl : Decl->enumerators())
-    Wr_->addWrapperVariable(Identifier(ConstantDecl), WrapperType(Decl));
+    Wr_->addWrapperVariable(II_, Identifier(ConstantDecl), WrapperType(Decl));
 }
 
 void
 CreateWrapperConsumer::handlefunctionDecl(clang::FunctionDecl const *Decl)
-{ Wr_->addWrapperFunction(Decl); }
+{ Wr_->addWrapperFunction(II_, Decl); }
 
 void
 CreateWrapperConsumer::handleStructOrClassDecl(clang::CXXRecordDecl const *Decl)
-{ Wr_->addWrapperRecord(Decl); }
+{ Wr_->addWrapperRecord(II_, Decl); }
 
 } // namespace cppbind

@@ -13,7 +13,8 @@ class Wrapper;
 class Backend
 {
 public:
-  static void run(std::shared_ptr<Wrapper> Wrapper);
+  static void run(std::string const &InputFile,
+                  std::shared_ptr<Wrapper> Wrapper);
 
 private:
   static auto addModuleSearchPath(std::string const &Path);

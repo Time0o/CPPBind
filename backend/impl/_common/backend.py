@@ -4,8 +4,8 @@ from util import Generic
 
 
 class Backend(metaclass=Generic):
-    def __init__(self, wrapper, options):
-        self._input_file = Path(wrapper.input_file())
+    def __init__(self, input_file, wrapper, options):
+        self._input_file = Path(input_file)
         self._output_files = []
 
         self._wrapper = wrapper

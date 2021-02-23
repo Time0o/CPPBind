@@ -23,8 +23,10 @@ namespace cppbind
 class CreateWrapperConsumer : public GenericASTConsumer
 {
 public:
-  explicit CreateWrapperConsumer(std::shared_ptr<Wrapper> Wrapper)
-  : Wr_(Wrapper)
+  explicit CreateWrapperConsumer(std::shared_ptr<Wrapper> Wrapper,
+                                 std::shared_ptr<IdentifierIndex> II)
+  : Wr_(Wrapper),
+    II_(II)
   {}
 
 private:
@@ -79,6 +81,7 @@ private:
   void handleStructOrClassDecl(clang::CXXRecordDecl const *Decl);
 
   std::shared_ptr<Wrapper> Wr_;
+  std::shared_ptr<IdentifierIndex> II_;
 };
 
 // XXX what about parallel invocations?
@@ -94,22 +97,26 @@ private:
   std::unique_ptr<CreateWrapperConsumer> makeConsumer() override
   {
     // XXX skip source files, filter headers?
-    return std::make_unique<CreateWrapperConsumer>(Wr_);
+    return std::make_unique<CreateWrapperConsumer>(Wr_, II_);
   }
 
   void beforeProcessing() override
-  { Wr_ = std::make_shared<Wrapper>(II_, CompilerState().currentFile()); }
+  {
+    InputFile_ = CompilerState().currentFile();
+    Wr_ = std::make_shared<Wrapper>();
+  }
 
   void afterProcessing() override
   {
     // XXX too early?
-    Wr_->overload();
+    Wr_->overload(II_);
 
-    Backend::run(Wr_);
+    Backend::run(InputFile_, Wr_);
   }
 
-  std::shared_ptr<IdentifierIndex> II_;
+  std::string InputFile_;
   std::shared_ptr<Wrapper> Wr_;
+  std::shared_ptr<IdentifierIndex> II_;
 };
 
 class CreateWrapperToolRunner

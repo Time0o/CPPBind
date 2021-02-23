@@ -38,7 +38,8 @@ auto Backend::addModuleSearchPath(std::string const &Path)
   Sys.attr("path").cast<py::list>().append(Path);
 }
 
-void Backend::run(std::shared_ptr<Wrapper> Wrapper)
+void Backend::run(std::string const &InputFile,
+                  std::shared_ptr<Wrapper> Wrapper)
 {
   auto BE = OPT("backend");
 
@@ -52,7 +53,7 @@ void Backend::run(std::shared_ptr<Wrapper> Wrapper)
     auto BackendModule(importModule(BE + BACKEND_IMPL_BACKEND_MOD_POSTFIX));
 
     auto RunModule(importModule(BACKEND_IMPL_RUN_MOD));
-    RunModule.attr("run")(Wrapper, &Options());
+    RunModule.attr("run")(InputFile, Wrapper, &Options());
 
   } catch (std::runtime_error const &e) {
     throw CPPBindError(ErrorMsg() << "in backend:" << ErrorMsg::endl << e.what());
@@ -125,7 +126,6 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
   py::implicitly_convertible<std::string, Identifier>();
 
   py::class_<Wrapper, std::shared_ptr<Wrapper>>(m, "Wrapper")
-    .def("input_file", &Wrapper::getInputFile)
     .def("variables", &Wrapper::getVariables,
          py::return_value_policy::reference_internal)
     .def("functions", &Wrapper::getFunctions,
