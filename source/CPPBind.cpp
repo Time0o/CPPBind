@@ -4,13 +4,12 @@
 #include "Error.hpp"
 #include "Logging.hpp"
 #include "Options.hpp"
-#include "OptionsInit.hpp"
 
 using namespace cppbind;
 
 int main(int argc, char const **argv)
 {
-  initOptions();
+  Options().init();
 
   auto Parser(Options().parser(argc, argv));
 

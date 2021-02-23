@@ -1,7 +1,3 @@
-#ifndef GUARD_OPTIONS_INIT_H
-
-#define GUARD_OPTIONS_INIT_H
-
 #include <string>
 
 #include "Identifier.hpp"
@@ -11,7 +7,7 @@
 namespace cppbind
 {
 
-inline void initOptions()
+void OptionsRegistry::init()
 {
   Options().add<std::string>("backend")
     .setDescription("Language for which to create bindings", "be")
@@ -29,7 +25,7 @@ inline void initOptions()
     .done();
 
   Options().add<std::string>("output-directory")
-    .setDescription("Directory in which to place generated files", "ns")
+    .setDescription("Directory in which to place generated files", "outdir")
     .setDefault("")
     .done();
 
@@ -60,5 +56,3 @@ inline void initOptions()
 }
 
 } // namespace cppbind
-
-#endif // GUARD_OPTIONS_INIT_H

@@ -86,6 +86,8 @@ class OptionsRegistry : private mixin::NotCopyOrMoveable
   };
 
 public:
+  static void init();
+
   template<typename T = std::string>
   T get(llvm::StringRef Name) const
   {
