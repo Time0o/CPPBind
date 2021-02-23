@@ -24,14 +24,8 @@ public:
   Identifier getName() const
   { return Name_; }
 
-  void setName(Identifier const &Name)
-  { Name_ = Name; }
-
   WrapperType getType() const
   { return Type_; }
-
-  void setType(WrapperType const &Type)
-  { Type_ = Type; }
 
 private:
   Identifier Name_;

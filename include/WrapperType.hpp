@@ -70,9 +70,6 @@ public:
   WrapperType withConst() const;
   WrapperType withoutConst() const;
 
-  WrapperType getBase() const;
-  void setBase(WrapperType const &NewBase);
-
   std::string str() const;
 
   std::string format(bool Mangled = false,
@@ -85,6 +82,9 @@ private:
   clang::Type const *typePtr() const;
   clang::QualType baseType() const;
   clang::Type const *baseTypePtr() const;
+
+  WrapperType getBase() const;
+  void setBase(WrapperType const &NewBase);
 
   static clang::QualType requalifyType(clang::QualType const &Type,
                                        unsigned Qualifiers);

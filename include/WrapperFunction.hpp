@@ -107,20 +107,11 @@ public:
   Identifier getName() const
   { return Name_; }
 
-  void setName(Identifier const &Name)
-  { Name_ = Name; }
-
   WrapperType getType() const
   { return Type_; }
 
-  void setType(WrapperType const &Type)
-  { Type_ = Type; }
-
   std::optional<WrapperDefaultArgument> getDefaultArgument() const
   { return DefaultArgument_; }
-
-  void setDefaultArgument(WrapperDefaultArgument const &DefaultArgument)
-  { DefaultArgument_ = DefaultArgument; }
 
   bool isSelf() const
   { return Name_ == Identifier(Identifier::SELF); }
@@ -161,21 +152,13 @@ public:
   Identifier getName(bool Overloaded = false,
                      bool ReplaceOperatorName = false) const;
 
-  void setName(Identifier const &Name) // TODO: remove?
-  { Name_ = Name; }
-
   WrapperRecord const *getParent() const
   { return Parent_; }
-
-  void setParent(WrapperRecord const *Parent); // TODO: remove?
 
   std::vector<WrapperParameter> getParameters(bool SkipSelf = false) const;
 
   WrapperType getReturnType() const
   { return ReturnType_; }
-
-  void setReturnType(WrapperType const &ReturnType) // TODO: remove?
-  { ReturnType_ = ReturnType; }
 
   std::optional<std::string> getOverloadedOperator() const;
 

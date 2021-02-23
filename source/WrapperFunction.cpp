@@ -143,30 +143,6 @@ WrapperFunction::getName(bool Overloaded, bool ReplaceOperatorName) const
   return Name;
 }
 
-void
-WrapperFunction::setParent(WrapperRecord const *Parent)
-{
-  Parent_ = Parent;
-
-  Name_ = getName().unqualified().qualified(getParent()->getName());
-
-  if (isInstance()) {
-    auto ParentType(getParent()->getType());
-
-    WrapperParameter Self(Identifier(Identifier::SELF), ParentType.pointerTo());
-
-    if (!Parameters_.empty() && Parameters_.front().isSelf())
-      Parameters_.front() = Self;
-    else
-      Parameters_.insert(Parameters_.begin(), Self);
-
-  } else if (isConstructor()) {
-    auto ParentType(getParent()->getType());
-
-    setReturnType(ParentType.pointerTo());
-  }
-}
-
 std::vector<WrapperParameter>
 WrapperFunction::getParameters(bool SkipSelf) const
 {
@@ -267,21 +243,42 @@ WrapperFunction::determineOverloadedOperator(clang::FunctionDecl const *Decl)
 WrapperFunctionBuilder &
 WrapperFunctionBuilder::setParent(WrapperRecord const *Parent)
 {
-  Wf_.setParent(Parent);
+  auto ParentName(Parent->getName());
+  auto ParentType(Parent->getType());
+
+  Wf_.Parent_ = Parent;
+
+  Wf_.Name_ = Wf_.Name_.unqualified().qualified(ParentName);
+
+  if (Wf_.NameOverloaded_)
+    Wf_.NameOverloaded_ = Wf_.NameOverloaded_->unqualified().qualified(ParentName);
+
+  if (Wf_.isInstance()) {
+    WrapperParameter Self(Identifier(Identifier::SELF), ParentType.pointerTo());
+
+    if (!Wf_.Parameters_.empty() && Wf_.Parameters_.front().isSelf())
+      Wf_.Parameters_.front() = Self;
+    else
+      Wf_.Parameters_.insert(Wf_.Parameters_.begin(), Self);
+
+  } else if (Wf_.isConstructor()) {
+    Wf_.ReturnType_ = ParentType.pointerTo();
+  }
+
   return *this;
 }
 
 WrapperFunctionBuilder &
 WrapperFunctionBuilder::setName(Identifier const &Name)
 {
-  Wf_.setName(Name);
+  Wf_.Name_ = Name;
   return *this;
 }
 
 WrapperFunctionBuilder &
 WrapperFunctionBuilder::setReturnType(WrapperType const &ReturnType)
 {
-  Wf_.setReturnType(ReturnType);
+  Wf_.ReturnType_ = ReturnType;
   return *this;
 }
 
