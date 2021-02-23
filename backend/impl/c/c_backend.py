@@ -12,7 +12,7 @@ Type.__str__ = lambda self: self.str()
 import text
 
 
-def _name_c(get=lambda self: self.name, case=Id.SNAKE_CASE):
+def _name_c(get=lambda self: self.name(), case=Id.SNAKE_CASE):
     @property
     def _name_c_closure(self):
         return get(self).format(case=case, quals=Id.REPLACE_QUALS)
@@ -91,18 +91,18 @@ class CBackend(Backend):
 
     def wrap_variable(self, v):
         #XXX generalize
-        self._wrapper_header.append(f"extern {TT().c(v.type)} {v.name_c};")
+        self._wrapper_header.append(f"extern {TT().c(v.type())} {v.name_c};")
 
         args = dotdict({
             'v': v
         })
 
         self._wrapper_source.append(
-            TT().variable(v.type, args).format(
-                varin=v.name, varout=f"{TT().c(v.type)} {v.name_c}"))
+            TT().variable(v.type(), args).format(
+                varin=v.name(), varout=f"{TT().c(v.type())} {v.name_c}"))
 
     def wrap_record(self, r):
-        for f in r.functions:
+        for f in r.functions():
             if not f.is_destructor():
                 self.wrap_function(f)
 
@@ -133,7 +133,7 @@ class CBackend(Backend):
 
     def _function_header(self, f):
         #XXX generalize
-        parameters = ', '.join(f"{TT().c(p.type)} {p.name_c}" for p in f.parameters())
+        parameters = ', '.join(f"{TT().c(p.type())} {p.name_c}" for p in f.parameters())
 
         return f"{TT().c(f.return_type())} {f.name_c}({parameters})"
 

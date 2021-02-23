@@ -102,18 +102,20 @@ WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
 }
 
 void
-WrapperFunction::overload(unsigned Overload)
+WrapperFunction::overload(std::shared_ptr<IdentifierIndex> II)
 {
+  if (!II->hasOverload(Name_))
+    return;
+
+  unsigned Overload = II->popOverload(Name_);
+
   auto Postfix = OPT("wrapper-func-overload-postfix");
 
-  auto numReplaced = string::replaceAll(Postfix, "%o", std::to_string(Overload));
-#ifdef NDEBUG
-  (void)numReplaced;
-#else
-  assert(numReplaced > 0u);
-#endif
+  string::replaceAll(Postfix, "%o", std::to_string(Overload));
 
   NameOverloaded_ = Identifier(Name_.str() + Postfix);
+
+  II->add(*NameOverloaded_, IdentifierIndex::FUNC); // XXX
 }
 
 Identifier
@@ -192,12 +194,7 @@ WrapperFunction::determineParameters(clang::FunctionDecl const *Decl)
     if (ParamName.empty()) {
       ParamName = OPT("wrapper-func-unnamed-param-placeholder");
 
-      auto numReplaced = string::replaceAll(ParamName, "%p", std::to_string(i + 1u));
-#ifdef NDEBUG
-      (void)numReplaced;
-#else
-      assert(numReplaced > 0u);
-#endif
+      string::replaceAll(ParamName, "%p", std::to_string(i + 1u));
 
       ParamList.emplace_back(Identifier(ParamName),
                              WrapperType(Param->getType()),

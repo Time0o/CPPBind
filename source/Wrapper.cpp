@@ -78,19 +78,39 @@ Wrapper::RecordInheritanceGraph::basesFirstOrdering() const
 void
 Wrapper::overload()
 {
-  for (auto &Wr : Records_) {
-    for (auto &Wf : Wr.Functions)
-      overloadIdentifier(Wf);
-  }
+  for (auto &Wr : Records_)
+    Wr.overload(II_);
 
   for (auto &Wf : Functions_)
-    overloadIdentifier(Wf);
+    Wf.overload(II_);
 }
 
-std::deque<Wrapper::RecordWithBases>
-Wrapper::records() const
+std::vector<WrapperVariable const *>
+Wrapper::getVariables() const
 {
-  std::deque<RecordWithBases> Records;
+  std::vector<WrapperVariable const *> Variables;
+
+  for (auto const &F : Variables_)
+    Variables.push_back(&F);
+
+  return Variables;
+}
+
+std::vector<WrapperFunction const *>
+Wrapper::getFunctions() const
+{
+  std::vector<WrapperFunction const *> Functions;
+
+  for (auto const &F : Functions_)
+    Functions.push_back(&F);
+
+  return Functions;
+}
+
+std::vector<Wrapper::RecordWithBases>
+Wrapper::getRecords() const
+{
+  std::vector<RecordWithBases> Records;
 
   auto recordFromType = [&](WrapperType const &Type)
   {
@@ -103,7 +123,7 @@ Wrapper::records() const
   for (auto Type : RecordInheritances_.basesFirstOrdering()) {
     auto Record(recordFromType(Type));
 
-    std::deque<WrapperRecord const *> Bases;
+    std::vector<WrapperRecord const *> Bases;
     for (auto const &BaseType : RecordInheritances_.bases(Type, true))
       Bases.push_back(recordFromType(BaseType));
 
@@ -114,26 +134,16 @@ Wrapper::records() const
 }
 
 void
-Wrapper::addIdentifier(WrapperVariable &Wv)
+Wrapper::addIdentifier(WrapperVariable const &Wv)
 { II_->add(Wv.getName(), IdentifierIndex::CONST); } // XXX
 
 void
-Wrapper::addIdentifier(WrapperFunction &Wf)
+Wrapper::addIdentifier(WrapperFunction const &Wf)
 {
   if (II_->has(Wf.getName()))
     II_->pushOverload(Wf.getName());
   else
     II_->add(Wf.getName(), IdentifierIndex::FUNC); // XXX
-}
-
-void
-Wrapper::overloadIdentifier(WrapperFunction &Wf)
-{
-  if (!II_->hasOverload(Wf.getName()))
-    return;
-
-  Wf.overload(II_->popOverload(Wf.getName()));
-  II_->add(Wf.getName(true), IdentifierIndex::FUNC); // XXX
 }
 
 } // namespace cppbind

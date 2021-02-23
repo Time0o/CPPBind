@@ -36,7 +36,7 @@ class LuaTypeTranslator(TypeTranslator):
 
     @classmethod
     def _lua_input_skip_defaulted(cls, t, args):
-        if args.p.default_argument is not None:
+        if args.p.default_argument() is not None:
             return f"if (lua_gettop(L) < {args.i+1}) break;"
 
     @rule(lambda _: True)

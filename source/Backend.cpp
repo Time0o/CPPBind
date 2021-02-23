@@ -125,15 +125,12 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
   py::implicitly_convertible<std::string, Identifier>();
 
   py::class_<Wrapper, std::shared_ptr<Wrapper>>(m, "Wrapper")
-    .def("input_file", &Wrapper::inputFile)
-    .def("variables",
-         &Wrapper::variables,
+    .def("input_file", &Wrapper::getInputFile)
+    .def("variables", &Wrapper::getVariables,
          py::return_value_policy::reference_internal)
-    .def("functions",
-         &Wrapper::functions,
+    .def("functions", &Wrapper::getFunctions,
          py::return_value_policy::reference_internal)
-    .def("records",
-         &Wrapper::records,
+    .def("records", &Wrapper::getRecords,
          py::return_value_policy::reference_internal);
 
   py::class_<Type>(m, "Type", py::dynamic_attr())
@@ -148,8 +145,6 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
          "compact"_a = false,
          "case"_a = Identifier::ORIG_CASE,
          "quals"_a = Identifier::KEEP_QUALS)
-    .def_property("base", &WrapperType::getBase, &WrapperType::setBase)
-    .def_property("annotations", &WrapperType::getAnnotations, &WrapperType::setAnnotations)
     .def("is_const", &WrapperType::isConst)
     .def("is_matched_by", &WrapperType::isMatchedBy, "matcher"_a)
     .def("is_fundamental", &WrapperType::isFundamental, "which"_a = nullptr)
@@ -158,8 +153,6 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_enum", &WrapperType::isEnum)
     .def("is_scoped_enum", &WrapperType::isScopedEnum)
     .def("is_integral", &WrapperType::isIntegral)
-    .def("is_integral_underlying_enum", &WrapperType::isIntegralUnderlyingEnum)
-    .def("is_integral_underlying_scoped_enum", &WrapperType::isIntegralUnderlyingScopedEnum)
     .def("is_floating", &WrapperType::isFloating)
     .def("is_reference", &WrapperType::isReference)
     .def("is_lvalue_reference", &WrapperType::isLValueReference)
@@ -183,10 +176,8 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
 
   py::class_<Variable>(m, "Variable", py::dynamic_attr())
     .def(py::init<Identifier, WrapperType>(), "name"_a, "type"_a)
-    .def_property("name", &WrapperVariable::getName,
-                          &WrapperVariable::setName)
-    .def_property("type", &WrapperVariable::getType,
-                          &WrapperVariable::setType);
+    .def("name", &WrapperVariable::getName)
+    .def("type", &WrapperVariable::getType);
 
   py::class_<Function>(m, "Function", py::dynamic_attr())
     .def("name", &WrapperFunction::getName, "overloaded"_a = false)
@@ -201,36 +192,33 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_const", &WrapperFunction::isConst)
     .def("is_noexcept", &WrapperFunction::isNoexcept);
 
-  auto PyRecord = py::class_<Record>(m, "Record", py::dynamic_attr())
-    .def_property_readonly("name", &WrapperRecord::getName)
-    .def_property_readonly("type", &WrapperRecord::getType)
-    .def_property_readonly("constructors", &WrapperRecord::getConstructors)
-    .def_property_readonly("destructor", &WrapperRecord::getDestructor)
-    .def_readwrite("variables", &WrapperRecord::Variables)
-    .def_readwrite("functions", &WrapperRecord::Functions)
-    .def("is_abstract", &WrapperRecord::isAbstract)
-    .def("is_copyable", &WrapperRecord::isCopyable)
-    .def("is_moveable", &WrapperRecord::isMoveable);
-
   py::class_<Parameter>(m, "Parameter")
-    // XXX pass default argument
-    .def(py::init<Identifier, WrapperType>(), "name"_a, "type"_a)
-    .def_static("self", &WrapperParameter::self, "type"_a)
-    .def_property("name", &WrapperParameter::getName,
-                          &WrapperParameter::setName)
-    .def_property("type", &WrapperParameter::getType,
-                          &WrapperParameter::setType)
-    .def_property("default_argument", &WrapperParameter::getDefaultArgument,
-                                      &WrapperParameter::setDefaultArgument)
+    .def("name", &WrapperParameter::getName)
+    .def("type", &WrapperParameter::getType)
+    .def("default_argument", &WrapperParameter::getDefaultArgument)
     .def("is_self", &WrapperParameter::isSelf);
 
   py::class_<DefaultArgument>(m, "DefaultArgument")
-    // XXX constructor
     .def("__str__", &WrapperDefaultArgument::str)
     .def("str", &WrapperDefaultArgument::str)
     .def("is_int", &WrapperDefaultArgument::isInt)
     .def("is_float", &WrapperDefaultArgument::isFloat)
     .def("is_true", &WrapperDefaultArgument::isTrue);
+
+  auto PyRecord = py::class_<Record>(m, "Record", py::dynamic_attr())
+    .def("name", &WrapperRecord::getName)
+    .def("type", &WrapperRecord::getType)
+    .def("variables", &WrapperRecord::getVariables,
+         py::return_value_policy::reference_internal)
+    .def("functions", &WrapperRecord::getFunctions,
+         py::return_value_policy::reference_internal)
+    .def("constructors", &WrapperRecord::getConstructors,
+         py::return_value_policy::reference_internal)
+    .def("destructor", &WrapperRecord::getDestructor,
+         py::return_value_policy::reference_internal)
+    .def("is_abstract", &WrapperRecord::isAbstract)
+    .def("is_copyable", &WrapperRecord::isCopyable)
+    .def("is_moveable", &WrapperRecord::isMoveable);
 
   #define GET_OPT(NAME) [](OptionsRegistry const &Self) \
                         { return Self.get<>(NAME); }

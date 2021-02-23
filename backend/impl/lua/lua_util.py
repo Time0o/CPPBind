@@ -187,7 +187,7 @@ def _creategenericmetatable():
 def _createmetatable(r):
     set_methods = []
 
-    for f in r.functions:
+    for f in r.functions():
         if f.is_constructor() or f.is_destructor():
             continue
 
@@ -215,7 +215,7 @@ def _createmetatable(r):
         f"""
         void createmetatable_{r.name_lua}(lua_State *L)
         {{{{
-          lua_pushstring(L, "{r.type.format(mangled=True)}");
+          lua_pushstring(L, "{r.type().format(mangled=True)}");
 
           lua_newtable(L);
 

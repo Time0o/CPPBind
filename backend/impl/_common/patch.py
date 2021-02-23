@@ -10,23 +10,23 @@ def _function_declare_parameters(self):
         return
 
     def declare_parameter(p):
-        p_type = p.type
+        decl_type = p.type()
 
-        if p_type.is_record():
-            p_type = p_type.pointer_to()
-        elif p_type.is_reference():
-            p_type = p_type.referenced().pointer_to()
+        if decl_type.is_record():
+            decl_type = decl_type.pointer_to()
+        elif decl_type.is_reference():
+            decl_type = decl_type.referenced().pointer_to()
 
-        if p_type.is_const():
-            p_type = p_type.without_const()
+        if decl_type.is_const():
+            decl_type = decl_type.without_const()
 
-        decl = f"{p_type} {p.name_interm}"
+        decl = f"{decl_type} {p.name_interm}"
 
-        if p.default_argument is not None:
-            default = f"{p.default_argument}"
+        if p.default_argument() is not None:
+            default = f"{p.default_argument()}"
 
-            if p_type.is_scoped_enum():
-                default = f"static_cast<{p_type}>({default})"
+            if p.type().is_scoped_enum():
+                default = f"static_cast<{p.type()}>({default})"
 
             decl = f"{decl} = {default}"
 
@@ -45,7 +45,7 @@ def _function_forward_parameters(self):
             'i': i
         })
 
-        return TT().input(p.type, args).format(inp=p.name, interm=p.name_interm)
+        return TT().input(p.type(), args).format(inp=p.name(), interm=p.name_interm)
 
     translate_parameters = []
     has_default_parameters = False
@@ -74,9 +74,9 @@ def _function_forward_call(self):
     def forward_parameter(p):
         fwd = f"{p.name_interm}"
 
-        if p.type.is_record() or p.type.is_lvalue_reference():
+        if p.type().is_record() or p.type().is_lvalue_reference():
             fwd = f"*{fwd}"
-        elif p.type.is_rvalue_reference():
+        elif p.type().is_rvalue_reference():
             fwd = f"std::move(*{fwd})"
 
         return fwd
@@ -87,7 +87,7 @@ def _function_forward_call(self):
         this = self.parameters()[0].name_interm
 
     if self.is_constructor():
-        call = f"new {self.parent().type}({parameters})"
+        call = f"new {self.parent().type()}({parameters})"
     elif self.is_destructor():
         call = f"delete {this}"
     elif self.is_instance():
@@ -116,7 +116,7 @@ def _function_forward_call(self):
 
 @property
 def _parameter_name_interm(self):
-    return f"_{self.name}"
+    return f"_{self.name()}"
 
 
 Function.declare_parameters = _function_declare_parameters

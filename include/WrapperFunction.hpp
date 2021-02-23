@@ -16,6 +16,7 @@
 #include "llvm/ADT/SmallString.h"
 
 #include "Identifier.hpp"
+#include "IdentifierIndex.hpp"
 #include "WrapperType.hpp"
 
 namespace clang
@@ -144,7 +145,7 @@ public:
 
   explicit WrapperFunction(clang::CXXMethodDecl const *Decl);
 
-  void overload(unsigned Overload);
+  void overload(std::shared_ptr<IdentifierIndex> II);
 
   Identifier getName(bool Overloaded = false) const;
 

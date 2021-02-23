@@ -1,12 +1,15 @@
 #ifndef GUARD_WRAPPER_RECORD_H
 #define GUARD_WRAPPER_RECORD_H
 
+#include <deque>
+#include <memory>
 #include <utility>
 #include <vector>
 
 #include "clang/AST/DeclCXX.h"
 
 #include "Identifier.hpp"
+#include "IdentifierIndex.hpp"
 #include "Mixin.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperType.hpp"
@@ -20,6 +23,8 @@ class WrapperRecord : private mixin::NotCopyOrMoveable
 public:
   explicit WrapperRecord(clang::CXXRecordDecl const *Decl);
 
+  void overload(std::shared_ptr<IdentifierIndex> II);
+
   Identifier getName() const;
 
   WrapperType getType() const
@@ -28,8 +33,11 @@ public:
   std::vector<WrapperType> getBaseTypes() const
   { return BaseTypes_; }
 
-  std::vector<WrapperFunction> getConstructors() const;
-  WrapperFunction getDestructor() const;
+  std::vector<WrapperVariable const *> getVariables() const;
+
+  std::vector<WrapperFunction const *> getFunctions() const;
+  std::vector<WrapperFunction const *> getConstructors() const;
+  WrapperFunction const *getDestructor() const;
 
   bool isAbstract() const
   { return IsAbstract_; }
@@ -44,10 +52,10 @@ private:
   std::vector<WrapperType> determinePublicBaseTypes(
     clang::CXXRecordDecl const *Decl) const;
 
-  std::vector<WrapperVariable> determinePublicMemberVariables(
+  std::deque<WrapperVariable> determinePublicMemberVariables(
     clang::CXXRecordDecl const *Decl) const;
 
-  std::vector<WrapperFunction> determinePublicMemberFunctions(
+  std::deque<WrapperFunction> determinePublicMemberFunctions(
     clang::CXXRecordDecl const *Decl) const;
 
   static bool determineIfAbstract(clang::CXXRecordDecl const *Decl);
@@ -63,11 +71,9 @@ private:
   WrapperType Type_;
   std::vector<WrapperType> BaseTypes_;
 
-public:
-  std::vector<WrapperVariable> Variables;
-  std::vector<WrapperFunction> Functions;
+  std::deque<WrapperVariable> Variables_;
+  std::deque<WrapperFunction> Functions_;
 
-private:
   bool IsAbstract_;
   bool IsCopyable_;
   bool IsMoveable_;

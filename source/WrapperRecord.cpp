@@ -1,6 +1,7 @@
 #include <cassert>
 #include <deque>
 #include <iterator>
+#include <memory>
 #include <queue>
 #include <utility>
 #include <vector>
@@ -9,6 +10,7 @@
 
 #include "ClangUtils.hpp"
 #include "Identifier.hpp"
+#include "IdentifierIndex.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperRecord.hpp"
 #include "WrapperType.hpp"
@@ -20,36 +22,65 @@ namespace cppbind
 WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl)
 : Type_(Decl->getTypeForDecl()),
   BaseTypes_(determinePublicBaseTypes(Decl)),
+  Variables_(determinePublicMemberVariables(Decl)),
+  Functions_(determinePublicMemberFunctions(Decl)),
   IsAbstract_(determineIfAbstract(Decl)),
   IsCopyable_(determineIfCopyable(Decl)),
   IsMoveable_(determineIfMoveable(Decl))
+{}
+
+void
+WrapperRecord::overload(std::shared_ptr<IdentifierIndex> II)
 {
-  Variables = determinePublicMemberVariables(Decl);
-  Functions = determinePublicMemberFunctions(Decl);
+  for (auto &F : Functions_)
+    F.overload(II);
 }
 
 Identifier
 WrapperRecord::getName() const
 { return Identifier(Type_.format(false, true)); }
 
-std::vector<WrapperFunction>
+std::vector<WrapperVariable const *>
+WrapperRecord::getVariables() const
+{
+  std::vector<WrapperVariable const *> Variables;
+
+  for (auto const &F : Variables_)
+    Variables.push_back(&F);
+
+  return Variables;
+}
+
+std::vector<WrapperFunction const *>
+WrapperRecord::getFunctions() const
+{
+  std::vector<WrapperFunction const *> Functions;
+
+  for (auto const &F : Functions_)
+    Functions.push_back(&F);
+
+  return Functions;
+}
+
+std::vector<WrapperFunction const *>
 WrapperRecord::getConstructors() const
 {
-  std::vector<WrapperFunction> Constructors;
-  for (auto const &Wf : Functions) {
-    if (Wf.isConstructor())
-      Constructors.push_back(Wf);
+  std::vector<WrapperFunction const *> Constructors;
+
+  for (auto const &F : Functions_) {
+    if (F.isConstructor())
+      Constructors.push_back(&F);
   }
 
   return Constructors;
 }
 
-WrapperFunction
+WrapperFunction const *
 WrapperRecord::getDestructor() const
 {
-  for (auto const &Wf : Functions) {
-    if (Wf.isDestructor())
-      return Wf;
+  for (auto const &F : Functions_) {
+    if (F.isDestructor())
+      return &F;
   }
 
   assert(false); // XXX
@@ -69,12 +100,12 @@ WrapperRecord::determinePublicBaseTypes(
   return BaseTypes;
 }
 
-std::vector<WrapperVariable>
+std::deque<WrapperVariable>
 WrapperRecord::determinePublicMemberVariables(
   clang::CXXRecordDecl const *Decl) const
 { return {}; } // TODO
 
-std::vector<WrapperFunction>
+std::deque<WrapperFunction>
 WrapperRecord::determinePublicMemberFunctions(
   clang::CXXRecordDecl const *Decl) const
 {
@@ -115,8 +146,7 @@ WrapperRecord::determinePublicMemberFunctions(
   }
 
   // prune uninteresting member functions
-  std::vector<WrapperFunction> PublicMethods;
-  PublicMethods.reserve(PublicMethodDecls.size());
+  std::deque<WrapperFunction> PublicMethods;
 
   for (auto const *MethodDecl : PublicMethodDecls) {
     if (MethodDecl->isDeleted())

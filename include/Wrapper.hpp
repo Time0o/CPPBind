@@ -5,6 +5,7 @@
 #include <memory>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/graph/labeled_graph.hpp"
@@ -47,12 +48,12 @@ class Wrapper
   using RecordTypeLookup = std::unordered_map<WrapperType, WrapperRecord const *> ;
 
   using RecordWithBases = std::pair<WrapperRecord const *,
-                                    std::deque<WrapperRecord const *>>;
+                                    std::vector<WrapperRecord const *>>;
 
 public:
   explicit Wrapper(std::shared_ptr<IdentifierIndex> IdentifierIndex,
                    std::string const &InputFile)
-  : II_(IdentifierIndex),
+  : II_(IdentifierIndex), // XXX don't store this here?
     InputFile_(InputFile)
   {}
 
@@ -77,11 +78,11 @@ public:
   {
     Records_.emplace_back(std::forward<ARGS>(args)...);
 
-    for (auto &Wv : Records_.back().Variables)
-      addIdentifier(Wv);
+    for (auto &Wv : Records_.back().getVariables())
+      addIdentifier(*Wv);
 
-    for (auto &Wf : Records_.back().Functions)
-      addIdentifier(Wf);
+    for (auto &Wf : Records_.back().getFunctions())
+      addIdentifier(*Wf);
 
     auto const &Record(Records_.back());
 
@@ -91,21 +92,18 @@ public:
 
   void overload();
 
-  std::string inputFile() const
+  std::string getInputFile() const
   { return InputFile_; }
 
-  std::deque<WrapperVariable> const *variables() const
-  { return &Variables_; }
+  std::vector<WrapperVariable const *> getVariables() const;
 
-  std::deque<WrapperFunction> const *functions() const
-  { return &Functions_; }
+  std::vector<WrapperFunction const *> getFunctions() const;
 
-  std::deque<RecordWithBases> records() const;
+  std::vector<RecordWithBases> getRecords() const;
 
 private:
-  void addIdentifier(WrapperVariable &Wv);
-  void addIdentifier(WrapperFunction &Wf);
-  void overloadIdentifier(WrapperFunction &Wf);
+  void addIdentifier(WrapperVariable const &Wv);
+  void addIdentifier(WrapperFunction const &Wf);
 
   std::shared_ptr<IdentifierIndex> II_;
 

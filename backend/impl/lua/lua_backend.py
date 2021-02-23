@@ -6,7 +6,7 @@ from cppbind import Identifier as Id, Type, Variable, Record, Function, Paramete
 from text import code
 
 
-def _name_lua(get=lambda self: self.name, case=Id.SNAKE_CASE, quals=Id.REPLACE_QUALS):
+def _name_lua(get=lambda self: self.name(), case=Id.SNAKE_CASE, quals=Id.REPLACE_QUALS):
     @property
     def _name_lua_closure(self):
         return get(self).format(case=case, quals=quals)
@@ -99,10 +99,10 @@ class LuaBackend(Backend):
             }}}} // namespace __{r.name_lua}
             """,
             function_definitions=self._function_definitions(
-                [f for f in r.functions if not f.is_destructor()]),
+                [f for f in r.functions() if not f.is_destructor()]),
             register=self._register(
-                variables=r.variables,
-                functions=[f for f in r.functions if not f.is_instance()])))
+                variables=r.variables(),
+                functions=[f for f in r.functions() if not f.is_instance()])))
 
     def wrap_function(self, f):
         self._wrapper_module.append(code(
@@ -129,7 +129,7 @@ class LuaBackend(Backend):
 
                 }}}} // namespace __{r.name_lua}
                 """,
-                function_declarations=self._function_declarations(r.functions)))
+                function_declarations=self._function_declarations(r.functions())))
 
         return '\n\n'.join(forward_declarations)
 
@@ -225,12 +225,12 @@ class LuaBackend(Backend):
 
         def register_variable(v):
             # XXX generalize
-            if v.type.is_enum():
-                push = f"{util.pushintegral(f'static_cast<{v.type.without_enum()}>({v.name})', constexpr=True)}"
-            elif v.type.is_integral():
-                push = f"{util.pushintegral(v.name, constexpr=True)}"
-            elif v.type.is_floating():
-                push = f"{util.pushfloating(v.name, constexpr=True)}"
+            if v.type().is_enum():
+                push = f"{util.pushintegral(f'static_cast<{v.type().without_enum()}>({v.name()})', constexpr=True)}"
+            elif v.type().is_integral():
+                push = f"{util.pushintegral(v.name(), constexpr=True)}"
+            elif v.type().is_floating():
+                push = f"{util.pushfloating(v.name(), constexpr=True)}"
 
             return code(
                 f"""
