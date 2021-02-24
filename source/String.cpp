@@ -3,6 +3,7 @@
 #include <locale>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "String.hpp"
@@ -84,6 +85,17 @@ std::vector<std::string> split(std::string const &Str,
   }
 
   return Split;
+}
+
+std::pair<std::string, std::string> splitFirst(std::string const &Str,
+                                               std::string const &Delim)
+{
+  std::size_t Pos = Str.find(Delim);
+
+  if (Pos == std::string::npos)
+    return std::make_pair(Str, "");
+
+  return std::make_pair(Str.substr(0, Pos), Str.substr(Pos + Delim.size()));
 }
 
 std::string paste(std::vector<std::string> const &Strs,
