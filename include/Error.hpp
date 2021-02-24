@@ -15,26 +15,6 @@ public:
   {}
 };
 
-class ErrorMsg
-{
-public:
-    enum : char
-    { endl = '\n' };
-
-    template<typename T>
-    ErrorMsg &operator<<(T const  &Val)
-    {
-      SS_ << Val;
-      return *this;
-    }
-
-    operator std::string() const
-    { return SS_.str(); }
-
-private:
-    std::stringstream SS_;
-};
-
 } // namespace cppbind
 
 #endif // GUARD_ERROR_H

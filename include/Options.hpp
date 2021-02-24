@@ -111,7 +111,7 @@ public:
 
     auto Opt(std::dynamic_pointer_cast<llvm::cl::opt<T>>(Opt_));
     if (!Opt)
-      throw CPPBindError(ErrorMsg() << Name.str() << ": invalid type");
+      throw CPPBindError(string::Builder() << Name.str() << ": invalid type");
 
     T Value = *Opt;
 
@@ -130,7 +130,7 @@ public:
 
     auto Opt(std::dynamic_pointer_cast<llvm::cl::list<V>>(Opt_));
     if (!Opt)
-      throw CPPBindError(ErrorMsg() << Name.str() << ": invalid type");
+      throw CPPBindError(string::Builder() << Name.str() << ": invalid type");
 
     T Values;
     for (auto const &Value : *Opt)
@@ -266,7 +266,7 @@ private:
 
     for (auto const &[Assert, Msg] : Assertions) {
       if (!Assert(Value))
-        throw CPPBindError(ErrorMsg() << Name.str() << ": " << Msg);
+        throw CPPBindError(string::Builder() << Name.str() << ": " << Msg);
     }
   }
 

@@ -56,7 +56,7 @@ void Backend::run(std::string const &InputFile,
     RunModule.attr("run")(InputFile, Wrapper, &Options());
 
   } catch (std::runtime_error const &e) {
-    throw CPPBindError(ErrorMsg() << "in backend:" << ErrorMsg::endl << e.what());
+    throw CPPBindError(string::Builder() << "in backend:\n" << e.what());
   }
 }
 

@@ -1,6 +1,7 @@
 #ifndef GUARD_STRING_H
 #define GUARD_STRING_H
 
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -9,6 +10,23 @@ namespace cppbind
 
 namespace string
 {
+
+class Builder
+{
+public:
+  template<typename T>
+  Builder &operator<<(T const  &Val)
+  {
+    SS_ << Val;
+    return *this;
+  }
+
+  operator std::string() const
+  { return SS_.str(); }
+
+private:
+  std::stringstream SS_;
+};
 
 std::string ltrim(std::string const &Str);
 std::string rtrim(std::string const &Str);
