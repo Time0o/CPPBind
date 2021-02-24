@@ -30,7 +30,7 @@ inline bool isDestructor(clang::FunctionDecl const *Decl)
 inline auto const *asDestructor(clang::FunctionDecl const *Decl)
 { return llvm::dyn_cast<clang::CXXDestructorDecl>(Decl); }
 
-inline auto const *baseDecl(clang::CXXBaseSpecifier const &Base)
+inline auto const *base(clang::CXXBaseSpecifier const &Base)
 {
   auto const *BaseType(Base.getType()->getAs<clang::RecordType>());
 

@@ -131,7 +131,7 @@ WrapperRecord::determinePublicMemberFunctions(
     if (Base.getAccessSpecifier() != clang::AS_public)
       continue;
 
-    for (auto const *MethodDecl : decl::baseDecl(Base)->methods()) {
+    for (auto const *MethodDecl : decl::base(Base)->methods()) {
       if (decl::isConstructor(MethodDecl) ||
           decl::isDestructor(MethodDecl) ||
           MethodDecl->isCopyAssignmentOperator() ||
@@ -144,7 +144,7 @@ WrapperRecord::determinePublicMemberFunctions(
       PublicMethodDecls.push_back(MethodDecl);
     }
 
-    for (auto const &BaseOfBase : decl::baseDecl(Base)->bases())
+    for (auto const &BaseOfBase : decl::base(Base)->bases())
       BaseQueue.push(BaseOfBase);
   }
 
