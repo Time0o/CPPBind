@@ -146,7 +146,6 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
          "case"_a = Identifier::ORIG_CASE,
          "quals"_a = Identifier::KEEP_QUALS)
     .def("is_const", &WrapperType::isConst)
-    .def("is_matched_by", &WrapperType::isMatchedBy, "matcher"_a)
     .def("is_fundamental", &WrapperType::isFundamental, "which"_a = nullptr)
     .def("is_void", &WrapperType::isVoid)
     .def("is_boolean", &WrapperType::isBoolean)

@@ -37,7 +37,6 @@ public:
   bool operator!=(WrapperType const &Wt) const
   { return !(*this == Wt); }
 
-  bool isMatchedBy(char const *Matcher) const;
   bool isFundamental(char const *Which = nullptr) const;
   bool isVoid() const;
   bool isBoolean() const;

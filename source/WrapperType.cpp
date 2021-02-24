@@ -5,7 +5,6 @@
 
 #include "llvm/ADT/StringRef.h"
 
-#include "ClangUtils.hpp"
 #include "CompilerState.hpp"
 #include "FundamentalTypes.hpp"
 #include "Identifier.hpp"
@@ -35,10 +34,6 @@ WrapperType::WrapperType(std::string const &TypeName)
 WrapperType::WrapperType(clang::TypeDecl const *Decl)
 : WrapperType(Decl->getTypeForDecl())
 {}
-
-bool
-WrapperType::isMatchedBy(char const *Matcher) const
-{ return decl::matchDecl(typePtr(), llvm::StringRef(Matcher)); }
 
 bool
 WrapperType::isFundamental(char const *Which) const

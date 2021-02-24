@@ -37,40 +37,6 @@ inline auto const *baseDecl(clang::CXXBaseSpecifier const &Base)
   return llvm::dyn_cast<clang::CXXRecordDecl>(BaseType->getDecl());
 }
 
-template<typename T>
-bool matchDecl(T const *Decl, llvm::StringRef MatcherSource)
-{
-  return false;
-
-// XXX fix for clang 8
-#if 0
-  using namespace clang::ast_matchers;
-  using namespace clang::ast_matchers::dynamic;
-
-  Diagnostics Diag;
-  auto Matcher = Parser::parseMatcherExpression(MatcherSource, &Diag);
-
-  if (!Matcher)
-    throw CPPBindError(Diag.toString());
-
-  struct DeclMatchesCallback : MatchFinder::MatchCallback
-  {
-    void run(const MatchFinder::MatchResult &) override
-    { Result = true; }
-
-    bool Result = false;
-
-  } Callback;
-
-  MatchFinder Finder;
-  Finder.addDynamicMatcher(*Matcher, &Callback);
-
-  Finder.match(*Decl, ASTContext());
-
-  return Callback.Result;
-#endif
-}
-
 } // namespace decl
 
 } // namespace cppbind
