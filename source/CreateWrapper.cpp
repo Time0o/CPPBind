@@ -1,4 +1,5 @@
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "clang/AST/Decl.h"
@@ -9,8 +10,10 @@
 #include "Error.hpp"
 #include "FundamentalTypes.hpp"
 #include "Identifier.hpp"
+#include "IdentifierIndex.hpp"
 #include "Logging.hpp"
 #include "Options.hpp"
+#include "String.hpp"
 #include "Wrapper.hpp"
 #include "WrapperType.hpp"
 
@@ -21,30 +24,89 @@ using namespace clang::ast_matchers;
 namespace cppbind
 {
 
-void
-CreateWrapperConsumer::addHandlers()
+CreateWrapperConsumer::CreateWrapperConsumer(
+  std::shared_ptr<IdentifierIndex> II,
+  std::shared_ptr<Wrapper> Wrapper)
+: II_(II),
+  Wr_(Wrapper)
 {
   addFundamentalTypesHandler();
-
-  if (OPT(bool, "ignore-nested-namespaces"))
-    addWrapperHandlers(inNamespace(OPT("namespace")));
-  else
-    addWrapperHandlers(inNamespace<true>(OPT("namespace")));
+  addWrapperHandlers();
 }
 
 void
 CreateWrapperConsumer::addFundamentalTypesHandler()
 {
-  using namespace clang::ast_matchers;
+  auto FundamentalTypeMatcher(
+    valueDecl(hasParent(namespaceDecl(hasName("__fundamental_types")))));
 
   addHandler<clang::ValueDecl>(
-    "fundamentalTypeValueDecl",
-    valueDecl(inNamespace("__fundamental_types")),
-    &CreateWrapperConsumer::handleFundamentalTypeValueDecl);
+    "fundamentalTypeDecl",
+    FundamentalTypeMatcher.bind("fundamentalTypeDecl"),
+    &CreateWrapperConsumer::handleFundamentalTypeDecl);
 }
 
 void
-CreateWrapperConsumer::handleFundamentalTypeValueDecl(clang::ValueDecl const *Decl)
+CreateWrapperConsumer::addWrapperHandlers()
+{
+  for (auto const &MatcherRule : OPT(std::vector<std::string>, "match")) {
+    auto const &[MatcherID, MatcherSource] = string::splitFirst(MatcherRule, ":");
+
+    if (MatcherID == "const") {
+      addWrapperHandler<clang::EnumDecl>(
+        "enumConst",
+        string::Builder() << "enumDecl("
+                          <<   "allOf("
+                          <<     "hasParent(namespaceDecl()),"
+                          <<     MatcherSource
+                          <<   ")"
+                          << ")",
+        &CreateWrapperConsumer::handleEnumConst);
+
+      addWrapperHandler<clang::VarDecl>(
+        "VarConst",
+        string::Builder() << "varDecl("
+                          <<   "allOf("
+                          <<     "hasStaticStorageDuration(),"
+                          <<     "hasType(isConstQualified()),"
+                          <<     "hasParent(namespaceDecl()),"
+                          <<     MatcherSource
+                          <<   ")"
+                          << ")",
+        &CreateWrapperConsumer::handleVarConst);
+
+    } else if (MatcherID == "function") {
+      addWrapperHandler<clang::FunctionDecl>(
+        "function",
+        string::Builder() << "functionDecl("
+                          <<   "allOf("
+                          <<     "hasParent(namespaceDecl()),"
+                          <<     MatcherSource
+                          <<   ")"
+                          << ")",
+        &CreateWrapperConsumer::handleFunction);
+
+    } else if (MatcherID == "record") {
+      addWrapperHandler<clang::CXXRecordDecl>(
+        "record",
+        string::Builder() << "cxxRecordDecl("
+                          <<   "allOf("
+                          <<     "anyOf(isClass(), isStruct()),"
+                          <<     "isDefinition(),"
+                          <<     "hasParent(namespaceDecl()),"
+                          <<      MatcherSource
+                          <<   ")"
+                          << ")",
+        &CreateWrapperConsumer::handleRecord);
+
+    } else {
+      throw CPPBindError(string::Builder() << "invalid matcher: '" << MatcherID << "'");
+    }
+  }
+}
+
+void
+CreateWrapperConsumer::handleFundamentalTypeDecl(clang::ValueDecl const *Decl)
 {
   auto const *Type = Decl->getType().getTypePtr();
 
@@ -55,37 +117,22 @@ CreateWrapperConsumer::handleFundamentalTypeValueDecl(clang::ValueDecl const *De
 }
 
 void
-CreateWrapperConsumer::handleEnumDecl(clang::EnumDecl const *Decl)
+CreateWrapperConsumer::handleEnumConst(clang::EnumDecl const *Decl)
 {
   for (auto const &ConstantDecl : Decl->enumerators())
     Wr_->addWrapperVariable(II_, Identifier(ConstantDecl), WrapperType(Decl));
 }
 
 void
-CreateWrapperConsumer::handleVarDecl(clang::VarDecl const *Decl)
-{
-  auto SC = Decl->getStorageClass();
-
-  if (SC == clang::SC_Extern || SC == clang::SC_PrivateExtern) {
-    log::warn() << "global variable with external linkage ignored"; // XXX
-    return;
-  }
-
-  WrapperType Type(Decl->getType());
-
-  if (!Decl->isConstexpr() && !(SC == clang::SC_Static && Type.isConst())) {
-    throw CPPBindError("global variables without external linkage should have static storage and be constant"); // XXX
-  }
-
-  Wr_->addWrapperVariable(II_, Decl);
-}
+CreateWrapperConsumer::handleVarConst(clang::VarDecl const *Decl)
+{ Wr_->addWrapperVariable(II_, Decl); }
 
 void
-CreateWrapperConsumer::handleFunctionDecl(clang::FunctionDecl const *Decl)
+CreateWrapperConsumer::handleFunction(clang::FunctionDecl const *Decl)
 { Wr_->addWrapperFunction(II_, Decl); }
 
 void
-CreateWrapperConsumer::handleCXXRecordDecl(clang::CXXRecordDecl const *Decl)
+CreateWrapperConsumer::handleRecord(clang::CXXRecordDecl const *Decl)
 { Wr_->addWrapperRecord(II_, Decl); }
 
 } // namespace cppbind

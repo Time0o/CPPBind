@@ -4,6 +4,7 @@
 #include <cassert>
 #include <functional>
 #include <memory>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -24,9 +25,9 @@ class GenericASTConsumer : public clang::ASTConsumer
   class Handler : public clang::ast_matchers::MatchFinder::MatchCallback
   {
   public:
-    Handler(llvm::StringRef ID, T_MATCHER const &Matcher)
+    Handler(std::string const &ID, T_MATCHER const &Matcher)
     : ID_(ID),
-      Matcher_(Matcher.bind(ID))
+      Matcher_(Matcher)
     {}
 
     template<typename FUNC>
@@ -46,24 +47,18 @@ class GenericASTConsumer : public clang::ASTConsumer
     }
 
   private:
-    llvm::StringRef ID_;
+    std::string ID_;
     T_MATCHER Matcher_;
     std::vector<std::function<void(T const *Node)>> Actions_;
   };
 
 public:
   void HandleTranslationUnit(clang::ASTContext &Context) override
-  {
-    // XXX is this called more than once?
-
-    addHandlers();
-
-    MatchFinder_.matchAST(Context);
-  }
+  { MatchFinder_.matchAST(Context); }
 
 protected:
   template<typename T, typename T_MATCHER, typename FUNC>
-  void addHandler(llvm::StringRef ID, T_MATCHER const &Matcher, FUNC &&Action)
+  void addHandler(std::string const &ID, T_MATCHER const &Matcher, FUNC &&Action)
   {
     auto Handler(std::make_unique<Handler<T, T_MATCHER>>(ID, Matcher));
 
@@ -74,8 +69,7 @@ protected:
   }
 
 private:
-  virtual void addHandlers() = 0;
-
+  // XXX style
   template<typename M>
   struct MemberFunctionPointerClass;
 

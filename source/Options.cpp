@@ -1,4 +1,6 @@
+#include <regex>
 #include <string>
+#include <vector>
 
 #include "Identifier.hpp"
 #include "Options.hpp"
@@ -14,14 +16,21 @@ void OptionsRegistry::init()
     .setOptional(false)
     .done();
 
-  Options().add<std::string>("namespace")
-    .setDescription("Namespace in which to look for bindable entities", "ns")
-    .setOptional(false)
-    .done();
+  auto validMatchers = [](std::vector<std::string> const &Matchers) {
+    std::regex MatcherRegex(R"#([a-zA-Z]+:[a-zA-Z\(\)"]+)#");
 
-  Options().add<bool>("ignore-nested-namespaces")
-    .setDescription("Don't look for bindable entities in nested namespaces")
-    .setDefault(false)
+    for (auto const &Matcher : Matchers) {
+      if (!std::regex_match(Matcher, MatcherRegex))
+        return false;
+    }
+
+    return true;
+  };
+
+  Options().add<std::vector<std::string>>("match")
+    .setDescription("Matcher rules for declarations to be wrapped", "match")
+    .setOptional(false)
+    .addAssertion(validMatchers, "invalid matcher rule (must have form decl_type:matcher)")
     .done();
 
   Options().add<std::string>("output-directory")

@@ -76,7 +76,10 @@ class BackendTestGenerator:
             self._subprocess([
                 kwargs['cppbind'],
                 test_input,
-                '--namespace', 'test',
+                '--match',
+                ('const:hasAncestor(namespaceDecl(hasName("test"))),'
+                 'function:hasAncestor(namespaceDecl(hasName("test"))),'
+                 'record:hasAncestor(namespaceDecl(hasName("test")))'),
                 '--backend', f'{self._test_lang}',
                 '--output-directory', f'{output_dir}',
                 '--'
