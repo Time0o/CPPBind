@@ -23,10 +23,10 @@ namespace cppbind
 class CreateWrapperConsumer : public GenericASTConsumer
 {
 public:
-  explicit CreateWrapperConsumer(std::shared_ptr<Wrapper> Wrapper,
-                                 std::shared_ptr<IdentifierIndex> II)
-  : Wr_(Wrapper),
-    II_(II)
+  explicit CreateWrapperConsumer(std::shared_ptr<IdentifierIndex> II,
+                                 std::shared_ptr<Wrapper> Wrapper)
+  : II_(II),
+    Wr_(Wrapper)
   {}
 
 private:
@@ -52,36 +52,36 @@ private:
   {
     using namespace clang::ast_matchers;
 
-    addHandler<clang::VarDecl>(
-      "varDecl",
-      varDecl(inNamespaceMatcher),
-      &CreateWrapperConsumer::handleVarDecl);
-
     addHandler<clang::EnumDecl>(
       "enumDecl",
       enumDecl(inNamespaceMatcher),
       &CreateWrapperConsumer::handleEnumDecl);
 
+    addHandler<clang::VarDecl>(
+      "varDecl",
+      varDecl(inNamespaceMatcher),
+      &CreateWrapperConsumer::handleVarDecl);
+
     addHandler<clang::CXXRecordDecl>(
       "structOrClassDecl",
       cxxRecordDecl(allOf(inNamespaceMatcher,
                           anyOf(isClass(), isStruct()), isDefinition())),
-      &CreateWrapperConsumer::handleStructOrClassDecl);
+      &CreateWrapperConsumer::handleCXXRecordDecl);
 
     addHandler<clang::FunctionDecl>(
       "functionDecl",
       functionDecl(inNamespaceMatcher),
-      &CreateWrapperConsumer::handlefunctionDecl);
+      &CreateWrapperConsumer::handleFunctionDecl);
   }
 
   void handleFundamentalTypeValueDecl(clang::ValueDecl const *Decl);
-  void handleVarDecl(clang::VarDecl const *Decl);
   void handleEnumDecl(clang::EnumDecl const *Decl);
-  void handlefunctionDecl(clang::FunctionDecl const *Decl);
-  void handleStructOrClassDecl(clang::CXXRecordDecl const *Decl);
+  void handleVarDecl(clang::VarDecl const *Decl);
+  void handleFunctionDecl(clang::FunctionDecl const *Decl);
+  void handleCXXRecordDecl(clang::CXXRecordDecl const *Decl);
 
-  std::shared_ptr<Wrapper> Wr_;
   std::shared_ptr<IdentifierIndex> II_;
+  std::shared_ptr<Wrapper> Wr_;
 };
 
 // XXX what about parallel invocations?
@@ -97,7 +97,7 @@ private:
   std::unique_ptr<CreateWrapperConsumer> makeConsumer() override
   {
     // XXX skip source files, filter headers?
-    return std::make_unique<CreateWrapperConsumer>(Wr_, II_);
+    return std::make_unique<CreateWrapperConsumer>(II_, Wr_);
   }
 
   void beforeProcessing() override

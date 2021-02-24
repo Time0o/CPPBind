@@ -55,6 +55,13 @@ CreateWrapperConsumer::handleFundamentalTypeValueDecl(clang::ValueDecl const *De
 }
 
 void
+CreateWrapperConsumer::handleEnumDecl(clang::EnumDecl const *Decl)
+{
+  for (auto const &ConstantDecl : Decl->enumerators())
+    Wr_->addWrapperVariable(II_, Identifier(ConstantDecl), WrapperType(Decl));
+}
+
+void
 CreateWrapperConsumer::handleVarDecl(clang::VarDecl const *Decl)
 {
   auto SC = Decl->getStorageClass();
@@ -74,18 +81,11 @@ CreateWrapperConsumer::handleVarDecl(clang::VarDecl const *Decl)
 }
 
 void
-CreateWrapperConsumer::handleEnumDecl(clang::EnumDecl const *Decl)
-{
-  for (auto const &ConstantDecl : Decl->enumerators())
-    Wr_->addWrapperVariable(II_, Identifier(ConstantDecl), WrapperType(Decl));
-}
-
-void
-CreateWrapperConsumer::handlefunctionDecl(clang::FunctionDecl const *Decl)
+CreateWrapperConsumer::handleFunctionDecl(clang::FunctionDecl const *Decl)
 { Wr_->addWrapperFunction(II_, Decl); }
 
 void
-CreateWrapperConsumer::handleStructOrClassDecl(clang::CXXRecordDecl const *Decl)
+CreateWrapperConsumer::handleCXXRecordDecl(clang::CXXRecordDecl const *Decl)
 { Wr_->addWrapperRecord(II_, Decl); }
 
 } // namespace cppbind
