@@ -2,6 +2,7 @@
 #define GUARD_IDENTIFIER_H
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "clang/AST/Decl.h"
@@ -145,6 +146,21 @@ private:
   std::vector<Component> Components_;
 };
 
+inline std::size_t hash_value(Identifier const &Id)
+{ return reinterpret_cast<std::size_t>(std::hash<std::string>()(Id.str())); }
+
 } // namespace cppbind
+
+namespace std
+{
+
+template<>
+struct hash<cppbind::Identifier>
+{
+  std::size_t operator()(cppbind::Identifier const &Id) const
+  { return cppbind::hash_value(Id); }
+};
+
+} // namespace std
 
 #endif // GUARD_IDENTIFIER_H

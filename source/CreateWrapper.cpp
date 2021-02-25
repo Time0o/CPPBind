@@ -7,6 +7,7 @@
 #include "clang/AST/Type.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 
+#include "ClangUtils.hpp"
 #include "Error.hpp"
 #include "FundamentalTypes.hpp"
 #include "Identifier.hpp"
@@ -92,7 +93,6 @@ CreateWrapperConsumer::addWrapperHandlers()
         string::Builder() << "cxxRecordDecl("
                           <<   "allOf("
                           <<     "anyOf(isClass(), isStruct()),"
-                          <<     "isDefinition(),"
                           <<     "hasParent(namespaceDecl()),"
                           <<      MatcherSource
                           <<   ")"
@@ -129,7 +129,10 @@ CreateWrapperConsumer::handleVarConst(clang::VarDecl const *Decl)
 
 void
 CreateWrapperConsumer::handleFunction(clang::FunctionDecl const *Decl)
-{ Wr_->addWrapperFunction(II_, Decl); }
+{
+  if (!decl::isMethod(Decl))
+    Wr_->addWrapperFunction(II_, Decl);
+}
 
 void
 CreateWrapperConsumer::handleRecord(clang::CXXRecordDecl const *Decl)

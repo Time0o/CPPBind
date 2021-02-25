@@ -4,6 +4,7 @@
 #include <cassert>
 #include <map>
 #include <memory>
+#include <utility>
 
 #include "Error.hpp"
 #include "Identifier.hpp"
@@ -16,74 +17,66 @@ class IdentifierIndex
 public:
   enum Type
   {
-    ANY,
     CONST,
-    FUNC
+    FUNC,
+    RECORD
   };
 
 private:
   struct Props
   {
-    explicit Props(Type Type) : Type(Type) {}
+    explicit Props(Type Type, bool IsDefinition)
+    : Type(Type),
+      IsDefinition(IsDefinition)
+    {}
 
     Type Type;
+    bool IsDefinition;
   };
 
-  struct AnyProps : public Props
-  { AnyProps() : Props(ANY) {} };
-
   struct ConstProps : public Props
-  { ConstProps() : Props(CONST) {} };
+  {
+    ConstProps()
+    : Props(CONST, true)
+    {}
+  };
 
   struct FuncProps : public Props
   {
-    FuncProps() : Props(FUNC) {}
+    FuncProps(bool IsDefinition)
+    : Props(FUNC, IsDefinition)
+    {}
 
     unsigned CurrentOverload = 1u;
     unsigned MaxOverload = 1u;
   };
 
+  struct RecordProps : public Props
+  {
+    RecordProps(bool IsDefinition)
+    : Props(RECORD, IsDefinition)
+    {}
+  };
+
 public:
-  Identifier add(Identifier Id, Type Type)
+  Identifier addDeclaration(Identifier Id, Type Type)
+  { return add(Id, Type, false); }
+
+  Identifier addDefinition(Identifier Id, Type Type)
+  { return add(Id, Type, true); }
+
+  bool hasDeclaration(Identifier const &Id, Type Type) const
+  { return has(Id, Type, false); }
+
+  bool hasDefinition(Identifier const &Id, Type Type) const
+  { return has(Id, Type, true); }
+
+  bool hasOverload(Identifier const &Id) const
   {
-    if (has(Id)) {
-      if (Type != FUNC)
-        throw CPPBindError("duplicate identifier");
+    auto P(props<FuncProps>(Id));
+    assert(P);
 
-      do {
-        Id = Identifier(Id.str() + "_");
-      } while (has(Id));
-    }
-
-    std::shared_ptr<Props> P;
-
-    switch (Type) {
-      case ANY:
-        P = std::make_shared<AnyProps>();
-        break;
-      case CONST:
-        P = std::make_shared<ConstProps>();
-        break;
-      case FUNC:
-        P = std::make_shared<FuncProps>();
-        break;
-    }
-
-    Index_[Id] = P;
-
-    return Id;
-  }
-
-  bool has(Identifier const &Id) const
-  { return static_cast<bool>(props<AnyProps>(Id)); }
-
-  bool has(Identifier const &Id, Type Type) const
-  {
-    auto Props(props<AnyProps>(Id));
-    if (!Props)
-      return false;
-
-    return Props->Type == Type;
+    return P->MaxOverload > 1u;
   }
 
   void pushOverload(Identifier const &Id)
@@ -92,14 +85,6 @@ public:
     assert(P);
 
     ++P->MaxOverload;
-  }
-
-  bool hasOverload(Identifier const &Id) const
-  {
-    auto P(props<FuncProps>(Id));
-    assert(P);
-
-    return P->MaxOverload > 1u;
   }
 
   unsigned popOverload(Identifier const &Id) const
@@ -114,6 +99,38 @@ public:
   }
 
 private:
+  Identifier add(Identifier Id, Type Type, bool Definition)
+  {
+    // XXX conflict resolution
+
+    std::shared_ptr<Props> P;
+
+    switch (Type) {
+      case CONST:
+        P = std::make_shared<ConstProps>();
+        break;
+      case FUNC:
+        P = std::make_shared<FuncProps>(Definition);
+        break;
+      case RECORD:
+        P = std::make_shared<RecordProps>(Definition);
+        break;
+    }
+
+    Index_[Id] = P;
+
+    return Id;
+  }
+
+  bool has(Identifier const &Id, Type Type, bool Definition) const
+  {
+    auto Props(props<Props>(Id));
+    if (!Props)
+      return false;
+
+    return Props->Type == Type && (!Definition || Props->IsDefinition);
+  }
+
   template<typename T>
   std::shared_ptr<T> props(Identifier const &Id) const
   {

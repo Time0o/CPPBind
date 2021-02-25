@@ -21,6 +21,12 @@ namespace cppbind
 namespace decl
 {
 
+inline bool isMethod(clang::FunctionDecl const *Decl)
+{ return llvm::isa<clang::CXXMethodDecl>(Decl); };
+
+inline auto const *asMethod(clang::FunctionDecl const *Decl)
+{ return llvm::dyn_cast<clang::CXXMethodDecl>(Decl); }
+
 inline bool isConstructor(clang::FunctionDecl const *Decl)
 { return llvm::isa<clang::CXXConstructorDecl>(Decl); };
 

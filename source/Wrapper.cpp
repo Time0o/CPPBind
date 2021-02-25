@@ -101,20 +101,12 @@ Wrapper::getRecords() const
 {
   std::vector<RecordWithBases> Records;
 
-  auto recordFromType = [&](WrapperType const &Type)
-  {
-    auto It(RecordTypes_.find(Type));
-    assert(It != RecordTypes_.end());
-
-    return It->second;
-  };
-
   for (auto Type : RecordInheritances_.basesFirstOrdering()) {
-    auto Record(recordFromType(Type));
+    auto Record(getRecordFromType(Type));
 
     std::vector<WrapperRecord const *> Bases;
     for (auto const &BaseType : RecordInheritances_.bases(Type, true))
-      Bases.push_back(recordFromType(BaseType));
+      Bases.push_back(getRecordFromType(BaseType));
 
     Records.push_back(std::make_pair(Record, Bases));
   }
@@ -123,18 +115,88 @@ Wrapper::getRecords() const
 }
 
 void
-Wrapper::addIdentifier(std::shared_ptr<IdentifierIndex> II,
-                       WrapperVariable const &Wv)
-{ II->add(Wv.getName(), IdentifierIndex::CONST); } // XXX
+Wrapper::addVariable(std::shared_ptr<IdentifierIndex> II,
+                     WrapperVariable const *Variable)
+{ II->addDefinition(Variable->getName(), IdentifierIndex::CONST); }
 
 void
-Wrapper::addIdentifier(std::shared_ptr<IdentifierIndex> II,
-                       WrapperFunction const &Wf)
+Wrapper::addFunction(std::shared_ptr<IdentifierIndex> II,
+                     WrapperFunction const *Function)
 {
-  if (II->has(Wf.getName()))
-    II->pushOverload(Wf.getName());
-  else
-    II->add(Wf.getName(), IdentifierIndex::FUNC); // XXX
+  if (II->hasDefinition(Function->getName(), IdentifierIndex::FUNC)) {
+    auto Previous(getFunctionFromName(Function->getName()));
+
+    assert(*Function != *Previous);
+
+    II->pushOverload(Function->getName());
+
+  } else if (II->hasDeclaration(Function->getName(), IdentifierIndex::FUNC)) {
+    auto Previous(getFunctionFromName(Function->getName()));
+
+    if (Function->isDefinition() && *Function == *Previous) {
+      II->addDefinition(Function->getName(), IdentifierIndex::FUNC);
+
+      Functions_.pop_back();
+
+      return;
+    }
+
+    assert(*Function != *Previous);
+
+    II->pushOverload(Function->getName());
+
+  } else {
+    if (Function->isDefinition())
+      II->addDefinition(Function->getName(), IdentifierIndex::FUNC);
+    else
+      II->addDeclaration(Function->getName(), IdentifierIndex::FUNC);
+  }
+
+  FunctionNames_.insert(std::make_pair(Function->getName(), Function));
+}
+
+void
+Wrapper::addRecord(std::shared_ptr<IdentifierIndex> II,
+                   WrapperRecord const *Record)
+{
+  auto RecordName(Record->getName());
+
+  if (!Record->isDefinition()) {
+    II->addDeclaration(RecordName, IdentifierIndex::RECORD);
+
+    Records_.pop_back();
+
+    return;
+  }
+
+  II->addDefinition(RecordName, IdentifierIndex::RECORD);
+
+  for (auto Variable : Record->getVariables())
+    addVariable(II, Variable);
+
+  for (auto Function : Record->getFunctions())
+    addFunction(II, Function);
+
+  RecordTypes_.insert(std::make_pair(Record->getType(), Record));
+  RecordInheritances_.add(Record->getType(), Record->getBaseTypes());
+}
+
+WrapperFunction const *
+Wrapper::getFunctionFromName(Identifier const &Name) const
+{
+  auto It(FunctionNames_.find(Name));
+  assert(It != FunctionNames_.end());
+
+  return It->second;
+}
+
+WrapperRecord const *
+Wrapper::getRecordFromType(WrapperType const &Type) const
+{
+  auto It(RecordTypes_.find(Type));
+  assert(It != RecordTypes_.end());
+
+  return It->second;
 }
 
 } // namespace cppbind

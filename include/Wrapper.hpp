@@ -10,6 +10,7 @@
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/graph/labeled_graph.hpp"
 
+#include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
 #include "WrapperVariable.hpp"
 #include "WrapperFunction.hpp"
@@ -21,6 +22,12 @@ namespace cppbind
 
 class Wrapper
 {
+  using FunctionNameLookup = std::unordered_map<Identifier,
+                                                WrapperFunction const *>;
+
+  using RecordTypeLookup = std::unordered_map<WrapperType,
+                                              WrapperRecord const *> ;
+
   class RecordInheritanceGraph
   {
   public:
@@ -45,67 +52,59 @@ class Wrapper
     LabeledGraph G_;
   };
 
-  using RecordTypeLookup = std::unordered_map<WrapperType, WrapperRecord const *> ;
-
   using RecordWithBases = std::pair<WrapperRecord const *,
                                     std::vector<WrapperRecord const *>>;
 
 public:
   template<typename ...ARGS>
-  void addWrapperVariable(std::shared_ptr<IdentifierIndex> II,
-                          ARGS&&... args)
+  void addWrapperVariable(std::shared_ptr<IdentifierIndex> II, ARGS &&...Args)
   {
-    Variables_.emplace_back(std::forward<ARGS>(args)...);
-
-    addIdentifier(II, Variables_.back());
+    Variables_.emplace_back(std::forward<ARGS>(Args)...);
+    addVariable(II, &Variables_.back());
   }
 
   template<typename ...ARGS>
-  void addWrapperFunction(std::shared_ptr<IdentifierIndex> II,
-                          ARGS&&... args)
+  void addWrapperFunction(std::shared_ptr<IdentifierIndex> II, ARGS &&...Args)
   {
-    Functions_.emplace_back(std::forward<ARGS>(args)...);
-
-    addIdentifier(II, Functions_.back());
+    Functions_.emplace_back(std::forward<ARGS>(Args)...);
+    addFunction(II, &Functions_.back());
   }
 
   template<typename ...ARGS>
-  void addWrapperRecord(std::shared_ptr<IdentifierIndex> II,
-                        ARGS&&... args)
+  void addWrapperRecord(std::shared_ptr<IdentifierIndex> II, ARGS &&...Args)
   {
-    Records_.emplace_back(std::forward<ARGS>(args)...);
-
-    for (auto &Wv : Records_.back().getVariables())
-      addIdentifier(II, *Wv);
-
-    for (auto &Wf : Records_.back().getFunctions())
-      addIdentifier(II, *Wf);
-
-    auto const &Record(Records_.back());
-
-    RecordInheritances_.add(Record.getType(), Record.getBaseTypes());
-    RecordTypes_.insert(std::make_pair(Record.getType(), &Record));
+    Records_.emplace_back(std::forward<ARGS>(Args)...);
+    addRecord(II, &Records_.back());
   }
 
   void overload(std::shared_ptr<IdentifierIndex> II);
 
   std::vector<WrapperVariable const *> getVariables() const;
-
   std::vector<WrapperFunction const *> getFunctions() const;
-
   std::vector<RecordWithBases> getRecords() const;
 
 private:
-  void addIdentifier(std::shared_ptr<IdentifierIndex> II,
-                     WrapperVariable const &Wv);
-  void addIdentifier(std::shared_ptr<IdentifierIndex> II,
-                     WrapperFunction const &Wf);
+  void addVariable(std::shared_ptr<IdentifierIndex> II,
+                   WrapperVariable const *Variable);
+
+  void addFunction(std::shared_ptr<IdentifierIndex> II,
+                   WrapperFunction const *Function);
+
+  void addRecord(std::shared_ptr<IdentifierIndex> II,
+                 WrapperRecord const *Record);
+
+  WrapperFunction const *getFunctionFromName(Identifier const &Name) const;
+
+  WrapperRecord const *getRecordFromType(WrapperType const &Type) const;
 
   std::deque<WrapperVariable> Variables_;
+
   std::deque<WrapperFunction> Functions_;
+  FunctionNameLookup FunctionNames_;
+
   std::deque<WrapperRecord> Records_;
-  RecordInheritanceGraph RecordInheritances_;
   RecordTypeLookup RecordTypes_;
+  RecordInheritanceGraph RecordInheritances_;
 };
 
 } // namespace cppbind
