@@ -155,7 +155,7 @@ public:
   WrapperRecord const *getParent() const
   { return Parent_; }
 
-  std::vector<WrapperParameter> getParameters(bool SkipSelf = false) const;
+  std::vector<WrapperParameter const *> getParameters(bool SkipSelf = false) const;
 
   WrapperType getReturnType() const
   { return ReturnType_; }

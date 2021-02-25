@@ -6,14 +6,14 @@
 #include <string>
 
 #include "Error.hpp"
-#include "Mixin.hpp"
 #include "Path.hpp"
+#include "Util.hpp"
 
 namespace cppbind
 {
 
 template<typename T>
-class Snippet : private mixin::NotCopyOrMoveable
+class Snippet : private util::NotCopyOrMoveable
 {
 public:
   ~Snippet()

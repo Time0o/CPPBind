@@ -27,6 +27,7 @@
 #include "Logging.hpp"
 #include "Options.hpp"
 #include "String.hpp"
+#include "Util.hpp"
 #include "WrapperRecord.hpp"
 
 namespace cppbind
@@ -143,16 +144,13 @@ WrapperFunction::getName(bool Overloaded, bool ReplaceOperatorName) const
   return Name;
 }
 
-std::vector<WrapperParameter>
+std::vector<WrapperParameter const *>
 WrapperFunction::getParameters(bool SkipSelf) const
 {
-  if (Parameters_.empty())
-    return Parameters_;
+  if (SkipSelf && !Parameters_.empty() && Parameters_.front().isSelf())
+    return util::vectorOfPointers(Parameters_.begin() + 1, Parameters_.end());
 
-  if (SkipSelf && Parameters_.front().isSelf())
-    return std::vector<WrapperParameter>(Parameters_.begin() + 1, Parameters_.end());
-
-  return Parameters_;
+  return util::vectorOfPointers(Parameters_.begin(), Parameters_.end());
 }
 
 std::optional<std::string>

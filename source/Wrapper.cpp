@@ -7,6 +7,7 @@
 #include "boost/graph/topological_sort.hpp"
 
 #include "IdentifierIndex.hpp"
+#include "Util.hpp"
 #include "Wrapper.hpp"
 
 namespace cppbind
@@ -89,25 +90,11 @@ Wrapper::overload(std::shared_ptr<IdentifierIndex> II)
 
 std::vector<WrapperVariable const *>
 Wrapper::getVariables() const
-{
-  std::vector<WrapperVariable const *> Variables;
-
-  for (auto const &F : Variables_)
-    Variables.push_back(&F);
-
-  return Variables;
-}
+{ return util::vectorOfPointers(Variables_.begin(), Variables_.end()); }
 
 std::vector<WrapperFunction const *>
 Wrapper::getFunctions() const
-{
-  std::vector<WrapperFunction const *> Functions;
-
-  for (auto const &F : Functions_)
-    Functions.push_back(&F);
-
-  return Functions;
-}
+{ return util::vectorOfPointers(Functions_.begin(), Functions_.end()); }
 
 std::vector<Wrapper::RecordWithBases>
 Wrapper::getRecords() const

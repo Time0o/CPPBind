@@ -10,7 +10,7 @@
 
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
-#include "Mixin.hpp"
+#include "Util.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperType.hpp"
 #include "WrapperVariable.hpp"
@@ -18,7 +18,7 @@
 namespace cppbind
 {
 
-class WrapperRecord : private mixin::NotCopyOrMoveable
+class WrapperRecord : private util::NotCopyOrMoveable
 {
 public:
   explicit WrapperRecord(clang::CXXRecordDecl const *Decl);
