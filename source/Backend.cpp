@@ -71,19 +71,9 @@ using Parameter = WrapperParameter;
 using DefaultArgument = WrapperDefaultArgument;
 using Record = WrapperRecord;
 
-PYBIND11_MAKE_OPAQUE(std::vector<WrapperVariable>);
-PYBIND11_MAKE_OPAQUE(std::vector<WrapperFunction>);
-PYBIND11_MAKE_OPAQUE(std::vector<WrapperParameter>);
-PYBIND11_MAKE_OPAQUE(std::vector<WrapperRecord>);
-
 PYBIND11_EMBEDDED_MODULE(cppbind, m)
 {
   using namespace py::literals;
-
-  py::bind_vector<std::vector<WrapperVariable>>(m, "VectorVariables");
-  py::bind_vector<std::vector<WrapperFunction>>(m, "VectorFunctions");
-  py::bind_vector<std::vector<WrapperParameter>>(m, "VectorParameters");
-  py::bind_vector<std::vector<WrapperRecord>>(m, "VectorRecords");
 
   auto PyIdentifier = py::class_<Identifier>(m, "Identifier");
 
