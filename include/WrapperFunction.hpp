@@ -147,6 +147,11 @@ public:
 
   explicit WrapperFunction(clang::CXXMethodDecl const *Decl);
 
+  bool operator==(WrapperFunction const &Other) const;
+
+  bool operator!=(WrapperFunction const &Other) const
+  { return !(this->operator==(Other)); }
+
   void overload(std::shared_ptr<IdentifierIndex> II);
 
   Identifier getName(bool Overloaded = false,
@@ -161,6 +166,9 @@ public:
   { return ReturnType_; }
 
   std::optional<std::string> getOverloadedOperator() const;
+
+  bool isDefinition() const
+  { return IsDefinition_; }
 
   bool isMember() const
   { return Parent_; }
@@ -201,6 +209,7 @@ private:
   WrapperType ReturnType_;
   std::vector<WrapperParameter> Parameters_;
 
+  bool IsDefinition_ = false;
   bool IsConstructor_ = false;
   bool IsDestructor_ = false;
   bool IsStatic_ = false;

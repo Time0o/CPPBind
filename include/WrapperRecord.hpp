@@ -23,6 +23,12 @@ class WrapperRecord : private util::NotCopyOrMoveable
 public:
   explicit WrapperRecord(clang::CXXRecordDecl const *Decl);
 
+  bool operator==(WrapperRecord const &Other) const
+  { return getType() != Other.getType(); }
+
+  bool operator!=(WrapperRecord const &Other) const
+  { return !(this->operator==(Other)); }
+
   void overload(std::shared_ptr<IdentifierIndex> II);
 
   Identifier getName() const;
@@ -38,6 +44,9 @@ public:
   std::vector<WrapperFunction const *> getFunctions() const;
   std::vector<WrapperFunction const *> getConstructors() const;
   WrapperFunction const *getDestructor() const;
+
+  bool isDefinition() const
+  { return IsDefinition_; }
 
   bool isAbstract() const
   { return IsAbstract_; }
@@ -74,6 +83,7 @@ private:
   std::deque<WrapperVariable> Variables_;
   std::deque<WrapperFunction> Functions_;
 
+  bool IsDefinition_;
   bool IsAbstract_;
   bool IsCopyable_;
   bool IsMoveable_;

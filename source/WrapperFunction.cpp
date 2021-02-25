@@ -88,6 +88,7 @@ WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
 : Name_(determineName(Decl)),
   ReturnType_(determineReturnType(Decl)),
   Parameters_(determineParameters(Decl)),
+  IsDefinition_(Decl->isThisDeclarationADefinition()),
   IsNoexcept_(determineIfNoexcept(Decl)),
   OverloadedOperator_(determineOverloadedOperator(Decl))
 { assert(!Decl->isTemplateInstantiation()); } // XXX
@@ -96,6 +97,7 @@ WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
 : Name_(determineName(Decl)),
   ReturnType_(determineReturnType(Decl)),
   Parameters_(determineParameters(Decl)),
+  IsDefinition_(Decl->isThisDeclarationADefinition()),
   IsConstructor_(decl::isConstructor(Decl)),
   IsDestructor_(decl::isDestructor(Decl)),
   IsStatic_(Decl->isStatic()),
@@ -104,6 +106,29 @@ WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
   OverloadedOperator_(determineOverloadedOperator(Decl))
 {
   assert(!Decl->isTemplateInstantiation()); // XXX
+}
+
+bool
+WrapperFunction::operator==(WrapperFunction const &Other) const
+{
+  if (Name_ != Other.Name_)
+    return false;
+
+  if (Parent_ != Other.Parent_)
+    return false;
+
+  if (ReturnType_ != Other.ReturnType_)
+    return false;
+
+  if (Parameters_.size() != Other.Parameters_.size())
+    return false;
+
+  for (std::size_t i = 0; i < Parameters_.size(); ++i) {
+    if (Parameters_[i].getType() != Other.Parameters_[i].getType())
+      return false;
+  }
+
+  return true;
 }
 
 void
@@ -119,8 +144,6 @@ WrapperFunction::overload(std::shared_ptr<IdentifierIndex> II)
   string::replaceAll(Postfix, "%o", std::to_string(Overload));
 
   NameOverloaded_ = Identifier(Name_.str() + Postfix);
-
-  II->add(*NameOverloaded_, IdentifierIndex::FUNC); // XXX
 }
 
 Identifier

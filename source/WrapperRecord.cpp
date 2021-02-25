@@ -24,6 +24,7 @@ WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl)
   BaseTypes_(determinePublicBaseTypes(Decl)),
   Variables_(determinePublicMemberVariables(Decl)),
   Functions_(determinePublicMemberFunctions(Decl)),
+  IsDefinition_(Decl->isThisDeclarationADefinition()),
   IsAbstract_(determineIfAbstract(Decl)),
   IsCopyable_(determineIfCopyable(Decl)),
   IsMoveable_(determineIfMoveable(Decl))
