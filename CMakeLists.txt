@@ -89,6 +89,7 @@ if (CLANG_VERSION_MAJOR LESS 9)
       clangEdit
       clangAST
       clangASTMatchers
+      clangDynamicASTMatchers
       clangLex
       clangBasic)
 else()
