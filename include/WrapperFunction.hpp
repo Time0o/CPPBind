@@ -192,6 +192,9 @@ public:
   bool isNoexcept() const
   { return IsNoexcept_; }
 
+  bool isOverloaded() const
+  { return static_cast<bool>(Overload_); }
+
   bool isOverloadedOperator() const
   { return static_cast<bool>(OverloadedOperator_); }
 
@@ -205,8 +208,6 @@ private:
   WrapperRecord const *Parent_ = nullptr;
 
   Identifier Name_;
-  std::optional<Identifier> NameOverloaded_;
-
   WrapperType ReturnType_;
   std::deque<WrapperParameter> Parameters_;
 
@@ -217,6 +218,7 @@ private:
   bool IsConst_ = false;
   bool IsNoexcept_ = false;
 
+  std::optional<unsigned> Overload_;
   std::optional<OverloadedOperator> OverloadedOperator_;
 };
 

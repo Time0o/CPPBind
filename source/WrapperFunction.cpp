@@ -138,22 +138,13 @@ WrapperFunction::overload(std::shared_ptr<IdentifierIndex> II)
   if (!II->hasOverload(Name_))
     return;
 
-  unsigned Overload = II->popOverload(Name_);
-
-  auto Postfix = OPT("wrapper-func-overload-postfix");
-
-  string::replaceAll(Postfix, "%o", std::to_string(Overload));
-
-  NameOverloaded_ = Identifier(Name_.str() + Postfix);
+  Overload_ = II->popOverload(Name_);
 }
 
 Identifier
 WrapperFunction::getName(bool Overloaded, bool ReplaceOperatorName) const
 {
   Identifier Name(Name_);
-
-  if (Overloaded && NameOverloaded_)
-    Name = *NameOverloaded_;
 
   if (ReplaceOperatorName && isOverloadedOperator()) {
     auto NameStr(Name.str());
@@ -163,6 +154,14 @@ WrapperFunction::getName(bool Overloaded, bool ReplaceOperatorName) const
                     OverloadedOperator_->Name);
 
     Name = Identifier(NameStr);
+  }
+
+  if (Overloaded && isOverloaded()) {
+    auto Postfix = OPT("wrapper-func-overload-postfix");
+
+    string::replaceAll(Postfix, "%o", std::to_string(*Overload_));
+
+    Name = Identifier(Name.str() + Postfix);
   }
 
   return Name;
@@ -271,9 +270,6 @@ WrapperFunctionBuilder::setParent(WrapperRecord const *Parent)
   Wf_.Parent_ = Parent;
 
   Wf_.Name_ = Wf_.Name_.unqualified().qualified(ParentName);
-
-  if (Wf_.NameOverloaded_)
-    Wf_.NameOverloaded_ = Wf_.NameOverloaded_->unqualified().qualified(ParentName);
 
   if (Wf_.isInstance()) {
     WrapperParameter Self(Identifier(Identifier::SELF), ParentType.pointerTo());
