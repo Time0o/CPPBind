@@ -22,18 +22,6 @@ protected:
   ~NotCopyOrMoveable() = default;
 };
 
-template<typename T>
-std::vector<T const *> vectorOfPointers(std::deque<T> D)
-{
-  std::vector<T const *> V;
-  V.reserve(D.size());
-
-  for (auto const &Elem : D)
-    V.push_back(&Elem);
-
-  return V;
-}
-
 template<typename IT>
 std::vector<typename IT::value_type const *>
 vectorOfPointers(IT first, IT last)
