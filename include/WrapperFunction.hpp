@@ -53,13 +53,7 @@ public:
   bool isFloat() const
   { return is<llvm::APFloat>(); }
 
-  bool isTrue() const
-  { return BoolValue_; }
-
   std::string str() const;
-
-  std::string strBool() const
-  { return BoolValue_ ? "true" : "false"; }
 
 private:
   template<typename T>
@@ -80,7 +74,6 @@ private:
 
 private:
   std::variant<std::nullptr_t, llvm::APSInt, llvm::APFloat> Value_;
-  bool BoolValue_;
 };
 
 class WrapperParameter

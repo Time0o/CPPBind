@@ -194,8 +194,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("__str__", &WrapperDefaultArgument::str)
     .def("str", &WrapperDefaultArgument::str)
     .def("is_int", &WrapperDefaultArgument::isInt)
-    .def("is_float", &WrapperDefaultArgument::isFloat)
-    .def("is_true", &WrapperDefaultArgument::isTrue);
+    .def("is_float", &WrapperDefaultArgument::isFloat);
 
   auto PyRecord = py::class_<Record>(m, "Record", py::dynamic_attr())
     .def("name", &WrapperRecord::getName)

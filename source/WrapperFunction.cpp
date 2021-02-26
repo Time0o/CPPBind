@@ -63,14 +63,6 @@ WrapperDefaultArgument::WrapperDefaultArgument(clang::Expr const *Expr)
   default:
     throw CPPBindError("default value must have pointer, integer or floating point type"); // XXX
   }
-
-  bool ResultBool;
-#if __clang_major >= 9
-  if (Expr->EvaluateAsBooleanCondition(ResultBool, Ctx, true))
-#else
-  if (Expr->EvaluateAsBooleanCondition(ResultBool, Ctx))
-#endif
-    BoolValue_ = ResultBool;
 }
 
 std::string WrapperDefaultArgument::str() const
