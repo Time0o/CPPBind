@@ -39,45 +39,45 @@ namespace cppbind
 class IdentifierIndex;
 class WrapperRecord;
 
-class WrapperDefaultArgument
-{
-public:
-  explicit WrapperDefaultArgument(clang::Expr const *Expr);
-
-  bool isNullptrT() const
-  { return is<std::nullptr_t>(); }
-
-  bool isInt() const
-  { return is<llvm::APSInt>(); }
-
-  bool isFloat() const
-  { return is<llvm::APFloat>(); }
-
-  std::string str() const;
-
-private:
-  template<typename T>
-  bool is() const
-  { return std::holds_alternative<T>(Value_); }
-
-  template<typename T>
-  T as() const
-  { return std::get<T>(Value_); }
-
-  template<typename T>
-  static std::string APToString(T const &Val)
-  {
-    llvm::SmallString<40> Str;
-    Val.toString(Str); // XXX format as C literal
-    return Str.str().str();
-  }
-
-private:
-  std::variant<std::nullptr_t, llvm::APSInt, llvm::APFloat> Value_;
-};
-
 class WrapperParameter
 {
+  class DefaultArgument
+  {
+  public:
+    explicit DefaultArgument(clang::Expr const *Expr);
+
+    bool isNullptrT() const
+    { return is<std::nullptr_t>(); }
+
+    bool isInt() const
+    { return is<llvm::APSInt>(); }
+
+    bool isFloat() const
+    { return is<llvm::APFloat>(); }
+
+    std::string str() const;
+
+  private:
+    template<typename T>
+    bool is() const
+    { return std::holds_alternative<T>(Value_); }
+
+    template<typename T>
+    T as() const
+    { return std::get<T>(Value_); }
+
+    template<typename T>
+    static std::string APToString(T const &Val)
+    {
+      llvm::SmallString<40> Str;
+      Val.toString(Str); // XXX format as C literal
+      return Str.str().str();
+    }
+
+  private:
+    std::variant<std::nullptr_t, llvm::APSInt, llvm::APFloat> Value_;
+  };
+
 public:
   WrapperParameter(Identifier const &Name,
                    WrapperType const &Type,
@@ -86,7 +86,7 @@ public:
     Type_(Type)
   {
     if (DefaultExpr)
-      DefaultArgument_ = WrapperDefaultArgument(DefaultExpr);
+      DefaultArgument_ = DefaultArgument(DefaultExpr);
   }
 
   WrapperParameter(clang::ParmVarDecl const *Decl)
@@ -104,8 +104,13 @@ public:
   WrapperType getType() const
   { return Type_; }
 
-  std::optional<WrapperDefaultArgument> getDefaultArgument() const
-  { return DefaultArgument_; }
+  std::optional<std::string> getDefaultArgument() const
+  {
+    if (!DefaultArgument_)
+      return std::nullopt;
+
+    return DefaultArgument_->str();
+  }
 
   bool isSelf() const
   { return Name_ == Identifier(Identifier::SELF); }
@@ -113,7 +118,8 @@ public:
 private:
   Identifier Name_;
   WrapperType Type_;
-  std::optional<WrapperDefaultArgument> DefaultArgument_;
+
+  std::optional<DefaultArgument> DefaultArgument_;
 };
 
 class WrapperFunction

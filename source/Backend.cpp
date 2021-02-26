@@ -68,7 +68,6 @@ using Type = WrapperType;
 using Variable = WrapperVariable;
 using Function = WrapperFunction;
 using Parameter = WrapperParameter;
-using DefaultArgument = WrapperDefaultArgument;
 using Record = WrapperRecord;
 
 PYBIND11_EMBEDDED_MODULE(cppbind, m)
@@ -189,12 +188,6 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("type", &WrapperParameter::getType)
     .def("default_argument", &WrapperParameter::getDefaultArgument)
     .def("is_self", &WrapperParameter::isSelf);
-
-  py::class_<DefaultArgument>(m, "DefaultArgument")
-    .def("__str__", &WrapperDefaultArgument::str)
-    .def("str", &WrapperDefaultArgument::str)
-    .def("is_int", &WrapperDefaultArgument::isInt)
-    .def("is_float", &WrapperDefaultArgument::isFloat);
 
   auto PyRecord = py::class_<Record>(m, "Record", py::dynamic_attr())
     .def("name", &WrapperRecord::getName)
