@@ -1,6 +1,7 @@
 #include "WrapperFunction.hpp"
 
 #include <cassert>
+#include <deque>
 #include <memory>
 #include <optional>
 #include <string>
@@ -201,10 +202,10 @@ WrapperType
 WrapperFunction::determineReturnType(clang::FunctionDecl const *Decl)
 { return WrapperType(Decl->getReturnType()); }
 
-std::vector<WrapperParameter>
+std::deque<WrapperParameter>
 WrapperFunction::determineParameters(clang::FunctionDecl const *Decl)
 {
-  std::vector<WrapperParameter> ParamList;
+  std::deque<WrapperParameter> ParamList;
 
   auto Params(Decl->parameters());
 

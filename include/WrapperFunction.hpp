@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <deque>
 #include <memory>
 #include <optional>
 #include <string>
@@ -197,7 +198,7 @@ public:
 private:
   static Identifier determineName(clang::FunctionDecl const *Decl);
   static WrapperType determineReturnType(clang::FunctionDecl const *Decl);
-  static std::vector<WrapperParameter> determineParameters(clang::FunctionDecl const *Decl);
+  static std::deque<WrapperParameter> determineParameters(clang::FunctionDecl const *Decl);
   static bool determineIfNoexcept(clang::FunctionDecl const *Decl);
   static std::optional<OverloadedOperator> determineOverloadedOperator(clang::FunctionDecl const *Decl);
 
@@ -207,7 +208,7 @@ private:
   std::optional<Identifier> NameOverloaded_;
 
   WrapperType ReturnType_;
-  std::vector<WrapperParameter> Parameters_;
+  std::deque<WrapperParameter> Parameters_;
 
   bool IsDefinition_ = false;
   bool IsConstructor_ = false;
