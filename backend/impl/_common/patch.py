@@ -53,10 +53,10 @@ def _function_forward_parameters(self):
     for i, p in enumerate(self.parameters()):
         translate_parameters.append(translate(p, i))
 
-        if p.default_argument is not None:
+        if p.default_argument() is not None:
             has_default_parameters = True
 
-    translate_parameters = '\n\n'.join(translate_parameters)
+    translate_parameters = '\n'.join(translate_parameters)
 
     if has_default_parameters:
         return code(
