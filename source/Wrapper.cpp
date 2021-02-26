@@ -123,18 +123,20 @@ void
 Wrapper::addFunction(std::shared_ptr<IdentifierIndex> II,
                      WrapperFunction const *Function)
 {
-  if (II->hasDefinition(Function->getName(), IdentifierIndex::FUNC)) {
-    auto Previous(getFunctionFromName(Function->getName()));
+  auto FunctionNameTemplated(Function->getName(false, false, true));
+
+  if (II->hasDefinition(FunctionNameTemplated, IdentifierIndex::FUNC)) {
+    auto Previous(getFunctionFromName(FunctionNameTemplated));
 
     assert(*Function != *Previous);
 
-    II->pushOverload(Function->getName());
+    II->pushOverload(FunctionNameTemplated);
 
-  } else if (II->hasDeclaration(Function->getName(), IdentifierIndex::FUNC)) {
-    auto Previous(getFunctionFromName(Function->getName()));
+  } else if (II->hasDeclaration(FunctionNameTemplated, IdentifierIndex::FUNC)) {
+    auto Previous(getFunctionFromName(FunctionNameTemplated));
 
     if (Function->isDefinition() && *Function == *Previous) {
-      II->addDefinition(Function->getName(), IdentifierIndex::FUNC);
+      II->addDefinition(FunctionNameTemplated, IdentifierIndex::FUNC);
 
       Functions_.pop_back();
 
@@ -143,16 +145,16 @@ Wrapper::addFunction(std::shared_ptr<IdentifierIndex> II,
 
     assert(*Function != *Previous);
 
-    II->pushOverload(Function->getName());
+    II->pushOverload(FunctionNameTemplated);
 
   } else {
     if (Function->isDefinition())
-      II->addDefinition(Function->getName(), IdentifierIndex::FUNC);
+      II->addDefinition(FunctionNameTemplated, IdentifierIndex::FUNC);
     else
-      II->addDeclaration(Function->getName(), IdentifierIndex::FUNC);
+      II->addDeclaration(FunctionNameTemplated, IdentifierIndex::FUNC);
   }
 
-  FunctionNames_.insert(std::make_pair(Function->getName(), Function));
+  FunctionNames_.insert(std::make_pair(FunctionNameTemplated, Function));
 }
 
 void

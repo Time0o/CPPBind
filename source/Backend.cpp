@@ -168,12 +168,14 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
 
   py::class_<Function>(m, "Function", py::dynamic_attr())
     .def("name", &WrapperFunction::getName, "overloaded"_a = false,
-                                            "replace_operator_name"_a = false)
+                                            "without_operator_name"_a = false,
+                                            "with_template_postfix"_a = false)
     .def("parent", &WrapperFunction::getParent)
     .def("return_type", &WrapperFunction::getReturnType)
     .def("parameters", &WrapperFunction::getParameters, "skip_self"_a = false,
          py::return_value_policy::reference_internal)
     .def("overloaded_operator", &WrapperFunction::getOverloadedOperator)
+    .def("template_argument_list", &WrapperFunction::getTemplateArgumentList)
     .def("is_member", &WrapperFunction::isMember)
     .def("is_instance", &WrapperFunction::isInstance)
     .def("is_constructor", &WrapperFunction::isConstructor)
@@ -181,7 +183,8 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_static", &WrapperFunction::isStatic)
     .def("is_const", &WrapperFunction::isConst)
     .def("is_noexcept", &WrapperFunction::isNoexcept)
-    .def("is_overloaded_operator", &WrapperFunction::isOverloadedOperator);
+    .def("is_overloaded_operator", &WrapperFunction::isOverloadedOperator)
+    .def("is_template_instantiation", &WrapperFunction::isTemplateInstantiation);
 
   py::class_<Parameter>(m, "Parameter")
     .def("name", &WrapperParameter::getName)

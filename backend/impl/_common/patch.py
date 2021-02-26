@@ -90,10 +90,18 @@ def _function_forward_call(self):
         call = f"new {self.parent().type()}({parameters})"
     elif self.is_destructor():
         call = f"delete {this}"
-    elif self.is_instance():
-        call = f"{this}->{self.name().format(quals=Id.REMOVE_QUALS)}({parameters})"
     else:
-        call = f"{self.name()}({parameters})"
+        function_name = self.name()
+
+        if self.is_instance():
+            call = f"{this}->{self.name().format(quals=Id.REMOVE_QUALS)}"
+        else:
+            call = f"{self.name()}"
+
+        if self.template_argument_list():
+            call = f"{call}{self.template_argument_list()}"
+
+        call = f"{call}({parameters})"
 
     if self.return_type().is_lvalue_reference():
         call = f"&{call}"
@@ -148,7 +156,8 @@ def name(get=lambda self: self.name(),
 Variable.name_target = name(default_case=Id.SNAKE_CASE_CAP_ALL)
 
 Function.name_target = name(get=lambda f: f.name(overloaded=True,
-                                                 replace_operator_name=True))
+                                                 without_operator_name=True,
+                                                 with_template_postfix=True))
 
 Parameter.name_target = name()
 Parameter.name_interm = name(default_prefix='_')

@@ -55,9 +55,9 @@ void OptionsRegistry::init()
                   "postfix must create valid identifiers")
     .done();
 
-  Options().add<std::string>("wrapper-func-unnamed-param-placeholder")
-    .setDescription("Wrapper function unnamed parameter placeholder, "
-                     "use %p to denote parameter number", "placeholder")
+  Options().add<std::string>("wrapper-func-numbered-param-postfix")
+    .setDescription("Wrapper function numbered parameter postfix, "
+                     "use %p to denote parameter number", "postfix")
     .setDefault("_%p")
     .addAssertion(validPostfix("%p"),
                   "postfix must create valid identifiers")

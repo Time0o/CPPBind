@@ -4,7 +4,10 @@
 #include <deque>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <string>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "clang/AST/APValue.h"
@@ -84,8 +87,9 @@ WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
   Parameters_(determineParameters(Decl)),
   IsDefinition_(Decl->isThisDeclarationADefinition()),
   IsNoexcept_(determineIfNoexcept(Decl)),
-  OverloadedOperator_(determineOverloadedOperator(Decl))
-{ assert(!Decl->isTemplateInstantiation()); } // XXX
+  OverloadedOperator_(determineOverloadedOperator(Decl)),
+  TemplateArguments_(determineTemplateArguments(Decl))
+{}
 
 WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
 : Name_(determineName(Decl)),
@@ -97,10 +101,9 @@ WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
   IsStatic_(Decl->isStatic()),
   IsConst_(Decl->isConst()),
   IsNoexcept_(determineIfNoexcept(Decl)),
-  OverloadedOperator_(determineOverloadedOperator(Decl))
-{
-  assert(!Decl->isTemplateInstantiation()); // XXX
-}
+  OverloadedOperator_(determineOverloadedOperator(Decl)),
+  TemplateArguments_(determineTemplateArguments(Decl))
+{}
 
 bool
 WrapperFunction::operator==(WrapperFunction const &Other) const
@@ -122,24 +125,31 @@ WrapperFunction::operator==(WrapperFunction const &Other) const
       return false;
   }
 
+  if (TemplateArguments_ != Other.TemplateArguments_)
+    return false;
+
   return true;
 }
 
 void
 WrapperFunction::overload(std::shared_ptr<IdentifierIndex> II)
 {
-  if (!II->hasOverload(Name_))
+  auto NameTemplated(getName(false, false, true));
+
+  if (!II->hasOverload(NameTemplated))
     return;
 
-  Overload_ = II->popOverload(Name_);
+  Overload_ = II->popOverload(NameTemplated);
 }
 
 Identifier
-WrapperFunction::getName(bool Overloaded, bool ReplaceOperatorName) const
+WrapperFunction::getName(bool Overloaded,
+                         bool WithoutOperatorName,
+                         bool WithTemplatePostfix) const
 {
   Identifier Name(Name_);
 
-  if (ReplaceOperatorName && isOverloadedOperator()) {
+  if (WithoutOperatorName && isOverloadedOperator()) {
     auto NameStr(Name.str());
 
     string::replace(NameStr,
@@ -147,6 +157,15 @@ WrapperFunction::getName(bool Overloaded, bool ReplaceOperatorName) const
                     OverloadedOperator_->Name);
 
     Name = Identifier(NameStr);
+  }
+
+  if (WithTemplatePostfix && isTemplateInstantiation()) {
+    std::string Postfix;
+
+    for (auto const &TemplateArg : *TemplateArguments_)
+      Postfix += "_" + TemplateArg.str();
+
+    Name = Identifier(Name.str() + Postfix);
   }
 
   if (Overloaded && isOverloaded()) {
@@ -172,10 +191,26 @@ WrapperFunction::getParameters(bool SkipSelf) const
 std::optional<std::string>
 WrapperFunction::getOverloadedOperator() const
 {
-  if (!OverloadedOperator_)
+  if (!isOverloadedOperator())
     return std::nullopt;
 
   return OverloadedOperator_->Name;
+}
+
+std::optional<std::string>
+WrapperFunction::getTemplateArgumentList() const
+{
+  if (!isTemplateInstantiation())
+    return std::nullopt;
+
+  std::ostringstream SS;
+
+  SS << "<" << TemplateArguments_->front().str();
+  for (std::size_t i = 1; i < TemplateArguments_->size(); ++i)
+    SS << ", " << (*TemplateArguments_)[i].str();
+  SS << ">";
+
+  return SS.str();
 }
 
 Identifier
@@ -197,31 +232,60 @@ WrapperFunction::determineReturnType(clang::FunctionDecl const *Decl)
 std::deque<WrapperParameter>
 WrapperFunction::determineParameters(clang::FunctionDecl const *Decl)
 {
-  std::deque<WrapperParameter> ParamList;
-
   auto Params(Decl->parameters());
 
-  for (unsigned i = 0u; i < Params.size(); ++i) {
-    auto const &Param(Params[i]);
+  // determine parameter names
+  std::deque<std::string> ParamNames;
 
-    auto ParamName(Param->getNameAsString());
+  std::unordered_map<std::string, std::pair<unsigned, unsigned>> ParamNameCounts;
+
+  for (unsigned i = 0u; i < Params.size(); ++i) {
+    auto ParamName(Params[i]->getNameAsString());
 
     if (ParamName.empty()) {
-      ParamName = OPT("wrapper-func-unnamed-param-placeholder");
-
-      string::replaceAll(ParamName, "%p", std::to_string(i + 1u));
-
-      ParamList.emplace_back(Identifier(ParamName),
-                             WrapperType(Param->getType()),
-                             Param->getDefaultArg());
+      postfixParameterName(ParamName, i + 1u);
 
     } else {
+      auto It(ParamNameCounts.find(ParamName));
 
-      ParamList.emplace_back(Param);
+      if (It == ParamNameCounts.end()) {
+        ParamNameCounts[ParamName] = std::make_pair(i, 1);
+
+      } else {
+        auto [FirstOccurrence, Count] = It->second;
+
+        ParamNameCounts[ParamName] = std::make_pair(FirstOccurrence, ++Count);
+
+        if (Count == 2)
+          postfixParameterName(ParamNames[FirstOccurrence], 1);
+
+        postfixParameterName(ParamName, Count);
+      }
     }
+
+    ParamNames.push_back(ParamName);
+  }
+
+  // construct parameter list
+  std::deque<WrapperParameter> ParamList;
+
+  for (unsigned i = 0u; i < Params.size(); ++i) {
+    ParamList.emplace_back(Identifier(ParamNames[i]),
+                           WrapperType(Params[i]->getType()),
+                           Params[i]->getDefaultArg());
   }
 
   return ParamList;
+}
+
+void
+WrapperFunction::postfixParameterName(std::string &ParamName, unsigned p)
+{
+  auto Postfix(OPT("wrapper-func-numbered-param-postfix"));
+
+  string::replaceAll(Postfix, "%p", std::to_string(p));
+
+  ParamName += Postfix;
 }
 
 bool
@@ -252,6 +316,26 @@ WrapperFunction::determineOverloadedOperator(clang::FunctionDecl const *Decl)
   default:
     llvm_unreachable("invalid overloaded operator kind");
   }
+}
+
+std::optional<std::deque<WrapperFunction::TemplateArgument>>
+WrapperFunction::determineTemplateArguments(clang::FunctionDecl const *Decl)
+{
+  if (!Decl->isTemplateInstantiation())
+    return std::nullopt;
+
+  std::deque<TemplateArgument> TemplateArguments;
+
+  for (auto const &Arg : Decl->getTemplateSpecializationArgs()->asArray()) {
+    if (Arg.getKind() == clang::TemplateArgument::Pack) {
+      for (auto const &PackArg : Arg.getPackAsArray())
+        TemplateArguments.emplace_back(PackArg);
+    } else {
+      TemplateArguments.emplace_back(Arg);
+    }
+  }
+
+  return TemplateArguments;
 }
 
 WrapperFunctionBuilder &

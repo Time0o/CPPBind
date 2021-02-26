@@ -79,12 +79,15 @@ CreateWrapperConsumer::addWrapperHandlers()
     } else if (MatcherID == "function") {
       addWrapperHandler<clang::FunctionDecl>(
         "function",
-        string::Builder() << "functionDecl("
-                          <<   "allOf("
-                          <<     "hasParent(namespaceDecl()),"
-                          <<     MatcherSource
-                          <<   ")"
-                          << ")",
+        string::Builder()
+          << "functionDecl("
+          <<   "allOf("
+          <<     "anyOf(hasParent(namespaceDecl()),"
+          <<           "allOf(isTemplateInstantiation(),"
+          <<                 "hasParent(functionTemplateDecl(hasParent(namespaceDecl()))))),"
+          <<     MatcherSource
+          <<   ")"
+          << ")",
         &CreateWrapperConsumer::handleFunction);
 
     } else if (MatcherID == "record") {

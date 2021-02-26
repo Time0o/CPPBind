@@ -6,6 +6,7 @@
 #include <deque>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <variant>
@@ -13,8 +14,10 @@
 
 #include "clang/AST/Decl.h"
 #include "clang/AST/Expr.h"
+#include "clang/AST/TemplateBase.h"
 
 #include "llvm/ADT/SmallString.h"
+#include "llvm/Support/raw_ostream.h"
 
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
@@ -137,6 +140,33 @@ class WrapperFunction
     std::string Spelling;
   };
 
+  class TemplateArgument
+  {
+  public:
+    explicit TemplateArgument(clang::TemplateArgument const &Arg)
+    : Arg_(Arg)
+    {}
+
+    bool operator==(TemplateArgument const &Other) const
+    { return Arg_.structurallyEquals(Other.Arg_); }
+
+    bool operator!=(TemplateArgument const &Other) const
+    { return !operator==(Other); }
+
+    std::string str() const
+    {
+      std::string Str;
+      llvm::raw_string_ostream SS(Str);
+
+      Arg_.dump(SS);
+
+      return SS.str();
+    }
+
+  private:
+    clang::TemplateArgument Arg_;
+  };
+
 public:
   WrapperFunction(Identifier const &Name)
   : Name_(Name),
@@ -155,7 +185,8 @@ public:
   void overload(std::shared_ptr<IdentifierIndex> II);
 
   Identifier getName(bool Overloaded = false,
-                     bool ReplaceOperatorName = false) const;
+                     bool WithoutOperatorName = false,
+                     bool WithTemplatePostfix = false) const;
 
   WrapperRecord const *getParent() const
   { return Parent_; }
@@ -166,6 +197,8 @@ public:
   { return ReturnType_; }
 
   std::optional<std::string> getOverloadedOperator() const;
+
+  std::optional<std::string> getTemplateArgumentList() const;
 
   bool isDefinition() const
   { return IsDefinition_; }
@@ -197,12 +230,30 @@ public:
   bool isOverloadedOperator() const
   { return static_cast<bool>(OverloadedOperator_); }
 
+  bool isTemplateInstantiation() const
+  { return static_cast<bool>(TemplateArguments_); }
+
 private:
-  static Identifier determineName(clang::FunctionDecl const *Decl);
-  static WrapperType determineReturnType(clang::FunctionDecl const *Decl);
-  static std::deque<WrapperParameter> determineParameters(clang::FunctionDecl const *Decl);
-  static bool determineIfNoexcept(clang::FunctionDecl const *Decl);
-  static std::optional<OverloadedOperator> determineOverloadedOperator(clang::FunctionDecl const *Decl);
+  static Identifier
+  determineName(clang::FunctionDecl const *Decl);
+
+  static WrapperType
+  determineReturnType(clang::FunctionDecl const *Decl);
+
+  static std::deque<WrapperParameter>
+  determineParameters(clang::FunctionDecl const *Decl);
+
+  static void
+  postfixParameterName(std::string &ParamName, unsigned p);
+
+  static bool
+  determineIfNoexcept(clang::FunctionDecl const *Decl);
+
+  static std::optional<OverloadedOperator>
+  determineOverloadedOperator(clang::FunctionDecl const *Decl);
+
+  static std::optional<std::deque<TemplateArgument>>
+  determineTemplateArguments(clang::FunctionDecl const *Decl);
 
   WrapperRecord const *Parent_ = nullptr;
 
@@ -219,6 +270,7 @@ private:
 
   std::optional<unsigned> Overload_;
   std::optional<OverloadedOperator> OverloadedOperator_;
+  std::optional<std::deque<TemplateArgument>> TemplateArguments_;
 };
 
 class WrapperFunctionBuilder
