@@ -19,6 +19,7 @@
 #include "llvm/ADT/SmallString.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include "ClangUtil.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
 #include "WrapperType.hpp"
@@ -129,7 +130,7 @@ class WrapperFunction
 {
   friend class WrapperFunctionBuilder;
 
-  struct OverloadedOperator
+  struct OverloadedOperator // XXX move into clang_util?
   {
     OverloadedOperator(std::string const &Name, std::string const &Spelling)
     : Name(Name),
@@ -231,7 +232,7 @@ public:
   { return static_cast<bool>(OverloadedOperator_); }
 
   bool isTemplateInstantiation() const
-  { return static_cast<bool>(TemplateArguments_); }
+  { return static_cast<bool>(TemplateArgumentList_); }
 
 private:
   static Identifier
@@ -252,8 +253,8 @@ private:
   static std::optional<OverloadedOperator>
   determineOverloadedOperator(clang::FunctionDecl const *Decl);
 
-  static std::optional<std::deque<TemplateArgument>>
-  determineTemplateArguments(clang::FunctionDecl const *Decl);
+  static std::optional<clang_util::TemplateArgumentList>
+  determineTemplateArgumentList(clang::FunctionDecl const *Decl);
 
   WrapperRecord const *Parent_ = nullptr;
 
@@ -270,7 +271,7 @@ private:
 
   std::optional<unsigned> Overload_;
   std::optional<OverloadedOperator> OverloadedOperator_;
-  std::optional<std::deque<TemplateArgument>> TemplateArguments_;
+  std::optional<clang_util::TemplateArgumentList> TemplateArgumentList_;
 };
 
 class WrapperFunctionBuilder

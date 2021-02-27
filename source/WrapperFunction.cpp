@@ -87,7 +87,7 @@ WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
   IsDefinition_(Decl->isThisDeclarationADefinition()),
   IsNoexcept_(determineIfNoexcept(Decl)),
   OverloadedOperator_(determineOverloadedOperator(Decl)),
-  TemplateArguments_(determineTemplateArguments(Decl))
+  TemplateArgumentList_(determineTemplateArgumentList(Decl))
 {}
 
 WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
@@ -101,7 +101,7 @@ WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
   IsConst_(Decl->isConst()),
   IsNoexcept_(determineIfNoexcept(Decl)),
   OverloadedOperator_(determineOverloadedOperator(Decl)),
-  TemplateArguments_(determineTemplateArguments(Decl))
+  TemplateArgumentList_(determineTemplateArgumentList(Decl))
 {}
 
 bool
@@ -124,7 +124,7 @@ WrapperFunction::operator==(WrapperFunction const &Other) const
       return false;
   }
 
-  if (TemplateArguments_ != Other.TemplateArguments_)
+  if (TemplateArgumentList_ != Other.TemplateArgumentList_)
     return false;
 
   return true;
@@ -161,7 +161,7 @@ WrapperFunction::getName(bool Overloaded,
   if (WithTemplatePostfix && isTemplateInstantiation()) {
     std::string Postfix;
 
-    for (auto const &TemplateArg : *TemplateArguments_)
+    for (auto const &TemplateArg : *TemplateArgumentList_)
       Postfix += "_" + TemplateArg.str();
 
     Name = Identifier(Name.str() + Postfix);
@@ -202,14 +202,7 @@ WrapperFunction::getTemplateArgumentList() const
   if (!isTemplateInstantiation())
     return std::nullopt;
 
-  std::ostringstream SS;
-
-  SS << "<" << TemplateArguments_->front().str();
-  for (std::size_t i = 1; i < TemplateArguments_->size(); ++i)
-    SS << ", " << (*TemplateArguments_)[i].str();
-  SS << ">";
-
-  return SS.str();
+  return TemplateArgumentList_->str();
 }
 
 Identifier
@@ -317,25 +310,9 @@ WrapperFunction::determineOverloadedOperator(clang::FunctionDecl const *Decl)
   }
 }
 
-std::optional<std::deque<WrapperFunction::TemplateArgument>>
-WrapperFunction::determineTemplateArguments(clang::FunctionDecl const *Decl)
-{
-  if (!Decl->isTemplateInstantiation())
-    return std::nullopt;
-
-  std::deque<TemplateArgument> TemplateArguments;
-
-  for (auto const &Arg : Decl->getTemplateSpecializationArgs()->asArray()) {
-    if (Arg.getKind() == clang::TemplateArgument::Pack) {
-      for (auto const &PackArg : Arg.getPackAsArray())
-        TemplateArguments.emplace_back(PackArg);
-    } else {
-      TemplateArguments.emplace_back(Arg);
-    }
-  }
-
-  return TemplateArguments;
-}
+std::optional<clang_util::TemplateArgumentList>
+WrapperFunction::determineTemplateArgumentList(clang::FunctionDecl const *Decl)
+{ return clang_util::TemplateArgumentList::fromDecl(Decl); }
 
 WrapperFunctionBuilder &
 WrapperFunctionBuilder::setParent(WrapperRecord const *Parent)
