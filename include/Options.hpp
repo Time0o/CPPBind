@@ -7,6 +7,7 @@
 #include <initializer_list>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -23,7 +24,6 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/FormatVariadic.h"
 
-#include "Error.hpp"
 #include "String.hpp"
 #include "Util.hpp"
 
@@ -112,7 +112,7 @@ public:
 
     auto Opt(std::dynamic_pointer_cast<llvm::cl::opt<T>>(Opt_));
     if (!Opt)
-      throw CPPBindError(llvm::formatv("{0}: invalid type", Name));
+      throw std::invalid_argument(llvm::formatv("{0}: invalid type", Name));
 
     T Value = *Opt;
 
@@ -131,7 +131,7 @@ public:
 
     auto Opt(std::dynamic_pointer_cast<llvm::cl::list<V>>(Opt_));
     if (!Opt)
-      throw CPPBindError(llvm::formatv("{0}: invalid type", Name));
+      throw std::invalid_argument(llvm::formatv("{0}: invalid type", Name));
 
     T Values;
     for (auto const &Value : *Opt)
@@ -267,7 +267,7 @@ private:
 
     for (auto const &[Assert, Msg] : Assertions) {
       if (!Assert(Value))
-        throw CPPBindError(llvm::formatv("{0}: {1}", Name, Msg));
+        throw std::runtime_error(llvm::formatv("{0}: {1}", Name, Msg));
     }
   }
 

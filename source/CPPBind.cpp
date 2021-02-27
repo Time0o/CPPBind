@@ -1,9 +1,9 @@
 #include <cstdlib>
+#include <exception>
 
 #include "llvm/Support/raw_ostream.h"
 
 #include "CreateWrapper.hpp"
-#include "Error.hpp"
 #include "Options.hpp"
 
 using namespace cppbind;
@@ -18,7 +18,7 @@ int main(int argc, char const **argv)
 
   try {
     Runner.run();
-  } catch (CPPBindError const &Err) {
+  } catch (std::exception const &Err) {
     llvm::errs() << Err.what();
     return EXIT_FAILURE;
   }

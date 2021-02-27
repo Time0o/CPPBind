@@ -13,7 +13,6 @@
 #include "pybind11/stl_bind.h"
 
 #include "Backend.hpp"
-#include "Error.hpp"
 #include "Identifier.hpp"
 #include "Options.hpp"
 #include "Path.hpp"
@@ -57,7 +56,7 @@ void Backend::run(std::string const &InputFile,
     RunModule.attr("run")(InputFile, Wrapper, &Options());
 
   } catch (std::runtime_error const &e) {
-    throw CPPBindError(llvm::formatv("in backend:\n{0}", e.what()));
+    throw std::runtime_error(llvm::formatv("in backend:\n{0}", e.what()));
   }
 }
 

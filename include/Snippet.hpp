@@ -3,9 +3,9 @@
 
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 
-#include "Error.hpp"
 #include "Path.hpp"
 #include "Util.hpp"
 
@@ -47,7 +47,7 @@ public:
 
     std::ofstream Stream(Path_);
     if (!Stream)
-      throw CPPBindError("failed to generate temporary file");
+      throw std::runtime_error("failed to generate temporary file");
 
     Stream << str();
 

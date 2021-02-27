@@ -1,4 +1,5 @@
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -10,7 +11,6 @@
 #include "llvm/Support/FormatVariadic.h"
 
 #include "ClangUtil.hpp"
-#include "Error.hpp"
 #include "FundamentalTypes.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
@@ -104,7 +104,7 @@ CreateWrapperConsumer::addWrapperHandlers()
         &CreateWrapperConsumer::handleRecord);
 
     } else {
-      throw CPPBindError(llvm::formatv("invalid matcher: '{0}'", MatcherID));
+      throw std::invalid_argument(llvm::formatv("invalid matcher: '{0}'", MatcherID));
     }
   }
 }

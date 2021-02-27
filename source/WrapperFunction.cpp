@@ -5,6 +5,7 @@
 #include <memory>
 #include <optional>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -25,7 +26,6 @@
 
 #include "ClangUtil.hpp"
 #include "CompilerState.hpp"
-#include "Error.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
 #include "Options.hpp"
@@ -41,10 +41,10 @@ WrapperParameter::DefaultArgument::DefaultArgument(clang::Expr const *Expr)
   auto &Ctx(ASTContext());
 
   if (Expr->HasSideEffects(Ctx))
-    throw CPPBindError("default value must not have side effects");
+    throw std::runtime_error("default value must not have side effects");
 
   if (Expr->isValueDependent() || Expr->isTypeDependent())
-    throw CPPBindError("default value must not be value/type dependent");
+    throw std::runtime_error("default value must not be value/type dependent");
 
   if (Expr->isNullPointerConstant(Ctx, clang::Expr::NPC_NeverValueDependent)) {
     Value_ = nullptr;
@@ -53,7 +53,7 @@ WrapperParameter::DefaultArgument::DefaultArgument(clang::Expr const *Expr)
 
   clang::Expr::EvalResult Result;
   if (!Expr->EvaluateAsRValue(Result, Ctx, true))
-    throw CPPBindError("default value must be constant foldable to rvalue");
+    throw std::runtime_error("default value must be constant foldable to rvalue");
 
   switch(Result.Val.getKind()) {
   case clang::APValue::Int:
@@ -63,7 +63,7 @@ WrapperParameter::DefaultArgument::DefaultArgument(clang::Expr const *Expr)
     Value_ = Result.Val.getFloat();
     break;
   default:
-    throw CPPBindError("default value must have pointer, integer or floating point type"); // XXX
+    throw std::runtime_error("default value must have pointer, integer or floating point type"); // XXX
   }
 }
 

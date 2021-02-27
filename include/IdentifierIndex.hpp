@@ -6,7 +6,6 @@
 #include <memory>
 #include <utility>
 
-#include "Error.hpp"
 #include "Identifier.hpp"
 
 namespace cppbind
