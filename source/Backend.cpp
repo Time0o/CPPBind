@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include "llvm/Support/FormatVariadic.h"
+
 #include "pybind11/embed.h"
 #include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
@@ -56,7 +58,7 @@ void Backend::run(std::string const &InputFile,
     RunModule.attr("run")(InputFile, Wrapper, &Options());
 
   } catch (std::runtime_error const &e) {
-    throw CPPBindError(string::Builder() << "in backend:\n" << e.what());
+    throw CPPBindError(llvm::formatv("in backend:\n{0}", e.what()));
   }
 }
 

@@ -7,6 +7,8 @@
 #include "clang/AST/Type.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 
+#include "llvm/Support/FormatVariadic.h"
+
 #include "ClangUtil.hpp"
 #include "Error.hpp"
 #include "FundamentalTypes.hpp"
@@ -56,54 +58,54 @@ CreateWrapperConsumer::addWrapperHandlers()
     if (MatcherID == "const") {
       addWrapperHandler<clang::EnumDecl>(
         "enumConst",
-        string::Builder() << "enumDecl("
-                          <<   "allOf("
-                          <<     "hasParent(namespaceDecl()),"
-                          <<     MatcherSource
-                          <<   ")"
-                          << ")",
+        llvm::formatv("enumDecl("
+                        "allOf("
+                          "hasParent(namespaceDecl()),"
+                          "{0}"
+                        ")"
+                      ")", MatcherSource),
         &CreateWrapperConsumer::handleEnumConst);
 
       addWrapperHandler<clang::VarDecl>(
         "VarConst",
-        string::Builder() << "varDecl("
-                          <<   "allOf("
-                          <<     "hasStaticStorageDuration(),"
-                          <<     "hasType(isConstQualified()),"
-                          <<     "hasParent(namespaceDecl()),"
-                          <<     MatcherSource
-                          <<   ")"
-                          << ")",
+        llvm::formatv("varDecl("
+                        "allOf("
+                          "hasStaticStorageDuration(),"
+                          "hasType(isConstQualified()),"
+                          "hasParent(namespaceDecl()),"
+                          "{0}"
+                        ")"
+                      ")", MatcherSource),
         &CreateWrapperConsumer::handleVarConst);
 
     } else if (MatcherID == "function") {
       addWrapperHandler<clang::FunctionDecl>(
         "function",
-        string::Builder()
-          << "functionDecl("
-          <<   "allOf("
-          <<     "anyOf(hasParent(namespaceDecl()),"
-          <<           "allOf(isTemplateInstantiation(),"
-          <<                 "hasParent(functionTemplateDecl(hasParent(namespaceDecl()))))),"
-          <<     MatcherSource
-          <<   ")"
-          << ")",
+        llvm::formatv(
+          "functionDecl("
+            "allOf("
+              "anyOf(hasParent(namespaceDecl()),"
+                    "allOf(isTemplateInstantiation(),"
+                          "hasParent(functionTemplateDecl(hasParent(namespaceDecl()))))),"
+              "{0}"
+            ")"
+          ")", MatcherSource),
         &CreateWrapperConsumer::handleFunction);
 
     } else if (MatcherID == "record") {
       addWrapperHandler<clang::CXXRecordDecl>(
         "record",
-        string::Builder() << "cxxRecordDecl("
-                          <<   "allOf("
-                          <<     "anyOf(isClass(), isStruct()),"
-                          <<     "hasParent(namespaceDecl()),"
-                          <<      MatcherSource
-                          <<   ")"
-                          << ")",
+        llvm::formatv("cxxRecordDecl("
+                        "allOf("
+                          "anyOf(isClass(), isStruct()),"
+                          "hasParent(namespaceDecl()),"
+                          "{0}"
+                        ")"
+                      ")", MatcherSource),
         &CreateWrapperConsumer::handleRecord);
 
     } else {
-      throw CPPBindError(string::Builder() << "invalid matcher: '" << MatcherID << "'");
+      throw CPPBindError(llvm::formatv("invalid matcher: '{0}'", MatcherID));
     }
   }
 }
