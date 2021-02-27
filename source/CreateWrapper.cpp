@@ -7,7 +7,7 @@
 #include "clang/AST/Type.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 
-#include "ClangUtils.hpp"
+#include "ClangUtil.hpp"
 #include "Error.hpp"
 #include "FundamentalTypes.hpp"
 #include "Identifier.hpp"
@@ -133,7 +133,7 @@ CreateWrapperConsumer::handleVarConst(clang::VarDecl const *Decl)
 void
 CreateWrapperConsumer::handleFunction(clang::FunctionDecl const *Decl)
 {
-  if (!decl::isMethod(Decl))
+  if (!clang_util::isMethod(Decl)) // XXX exclude this case in matcher expression
     Wr_->addWrapperFunction(II_, Decl);
 }
 

@@ -1,7 +1,7 @@
-#ifndef GUARD_CLANG_UTILS_H
-#define GUARD_CLANG_UTILS_H
+#ifndef GUARD_CLANG_UTIL_H
+#define GUARD_CLANG_UTIL_H
 
-#include <string>
+#include <stdexcept>
 
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
@@ -10,15 +10,12 @@
 
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Casting.h"
+#include "llvm/Support/Error.h"
+#include "llvm/Support/FormatVariadic.h"
 
 #include "CompilerState.hpp"
-#include "Error.hpp"
-#include "String.hpp"
 
-namespace cppbind
-{
-
-namespace decl
+namespace clang_util
 {
 
 inline bool isMethod(clang::FunctionDecl const *Decl)
@@ -47,37 +44,29 @@ inline auto const *base(clang::CXXBaseSpecifier const &Base)
 }
 
 template<typename T>
-inline auto matcher(std::string const &ID, std::string const &MatcherSource)
+auto matcher(llvm::StringRef ID, llvm::StringRef MatcherSource)
 {
   using namespace clang::ast_matchers;
   using namespace clang::ast_matchers::dynamic;
 
-  llvm::StringRef IDStringRef(ID);
-  llvm::StringRef MatcherSourceStringRef(MatcherSource);
-
   Diagnostics Diag;
-  auto Matcher(Parser::parseMatcherExpression(MatcherSourceStringRef, &Diag));
+  auto Matcher(Parser::parseMatcherExpression(MatcherSource, &Diag));
 
   if (!Matcher)
-    throw CPPBindError(Diag.toString());
+    throw std::invalid_argument(Diag.toString());
 
-  if (!Matcher->canConvertTo<T>()) {
-    throw CPPBindError(
-      string::Builder() << "no valid conversion for '" << ID << "' matcher");
-  }
+  if (!Matcher->canConvertTo<T>())
+    throw std::invalid_argument(
+      llvm::formatv("no valid conversion for '{0}' matcher", ID));
 
-  auto MatcherBound(Matcher->tryBind(IDStringRef));
+  auto MatcherBound(Matcher->tryBind(ID));
 
-  if (!MatcherBound) {
-    throw CPPBindError(
-      string::Builder() << "failed to bind '" << ID << "' matcher");
-  }
+  if (!MatcherBound)
+    throw std::runtime_error(llvm::formatv("failed to bind '{0}' matcher", ID));
 
   return MatcherBound->convertTo<T>();
 }
 
-} // namespace decl
+} // namespace clang_util
 
-} // namespace cppbind
-
-#endif // GUARD_CLANG_UTILS_H
+#endif // GUARD_CLANG_UTIL_H

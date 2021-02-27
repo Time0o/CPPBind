@@ -10,7 +10,7 @@
 #include "clang/Tooling/Tooling.h"
 
 #include "Backend.hpp"
-#include "ClangUtils.hpp"
+#include "ClangUtil.hpp"
 #include "CompilerState.hpp"
 #include "GenericASTConsumer.hpp"
 #include "GenericFrontendAction.hpp"
@@ -36,7 +36,7 @@ private:
                          FUNC &&Action)
   {
     addHandler<T>(MatcherID,
-                  decl::matcher<clang::Decl>(MatcherID, MatcherSource),
+                  clang_util::matcher<clang::Decl>(MatcherID, MatcherSource),
                   std::forward<FUNC>(Action));
   }
 

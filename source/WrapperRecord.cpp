@@ -8,7 +8,7 @@
 
 #include "clang/AST/DeclCXX.h"
 
-#include "ClangUtils.hpp"
+#include "ClangUtil.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
 #include "WrapperFunction.hpp"
@@ -132,9 +132,9 @@ WrapperRecord::determinePublicMemberFunctions(
     if (Base.getAccessSpecifier() != clang::AS_public)
       continue;
 
-    for (auto const *MethodDecl : decl::base(Base)->methods()) {
-      if (decl::isConstructor(MethodDecl) ||
-          decl::isDestructor(MethodDecl) ||
+    for (auto const *MethodDecl : clang_util::base(Base)->methods()) {
+      if (clang_util::isConstructor(MethodDecl) ||
+          clang_util::isDestructor(MethodDecl) ||
           MethodDecl->isCopyAssignmentOperator() ||
           MethodDecl->isMoveAssignmentOperator())
         continue;
@@ -145,7 +145,7 @@ WrapperRecord::determinePublicMemberFunctions(
       PublicMethodDecls.push_back(MethodDecl);
     }
 
-    for (auto const &BaseOfBase : decl::base(Base)->bases())
+    for (auto const &BaseOfBase : clang_util::base(Base)->bases())
       BaseQueue.push(BaseOfBase);
   }
 
@@ -156,17 +156,17 @@ WrapperRecord::determinePublicMemberFunctions(
     if (MethodDecl->isDeleted())
       continue;
 
-    if (decl::isConstructor(MethodDecl)) {
+    if (clang_util::isConstructor(MethodDecl)) {
       if (Decl->isAbstract())
         continue;
 
-      if (decl::asConstructor(MethodDecl)->isCopyConstructor() ||
-          decl::asConstructor(MethodDecl)->isMoveConstructor()) {
+      if (clang_util::asConstructor(MethodDecl)->isCopyConstructor() ||
+          clang_util::asConstructor(MethodDecl)->isMoveConstructor()) {
         continue;
       }
     }
 
-    if (decl::isDestructor(MethodDecl)) {
+    if (clang_util::isDestructor(MethodDecl)) {
       if (Decl->isAbstract())
         continue;
     } else if (MethodDecl->size_overridden_methods() != 0) {

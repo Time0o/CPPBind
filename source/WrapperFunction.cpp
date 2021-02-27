@@ -23,7 +23,7 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
 
-#include "ClangUtils.hpp"
+#include "ClangUtil.hpp"
 #include "CompilerState.hpp"
 #include "Error.hpp"
 #include "Identifier.hpp"
@@ -96,8 +96,8 @@ WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
   ReturnType_(determineReturnType(Decl)),
   Parameters_(determineParameters(Decl)),
   IsDefinition_(Decl->isThisDeclarationADefinition()),
-  IsConstructor_(decl::isConstructor(Decl)),
-  IsDestructor_(decl::isDestructor(Decl)),
+  IsConstructor_(clang_util::isConstructor(Decl)),
+  IsDestructor_(clang_util::isDestructor(Decl)),
   IsStatic_(Decl->isStatic()),
   IsConst_(Decl->isConst()),
   IsNoexcept_(determineIfNoexcept(Decl)),
@@ -216,10 +216,10 @@ WrapperFunction::getTemplateArgumentList() const
 Identifier
 WrapperFunction::determineName(clang::FunctionDecl const *Decl)
 {
-  if (decl::isConstructor(Decl))
+  if (clang_util::isConstructor(Decl))
     return Identifier(Identifier::NEW);
 
-  if (decl::isDestructor(Decl))
+  if (clang_util::isDestructor(Decl))
     return Identifier(Identifier::DELETE);
 
   return Identifier(Decl);
