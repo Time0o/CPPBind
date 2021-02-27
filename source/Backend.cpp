@@ -15,7 +15,6 @@
 #include "Backend.hpp"
 #include "Error.hpp"
 #include "Identifier.hpp"
-#include "Logging.hpp"
 #include "Options.hpp"
 #include "Path.hpp"
 #include "Snippet.hpp"

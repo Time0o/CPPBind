@@ -14,7 +14,6 @@
 #include "FundamentalTypes.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
-#include "Logging.hpp"
 #include "Options.hpp"
 #include "String.hpp"
 #include "Wrapper.hpp"

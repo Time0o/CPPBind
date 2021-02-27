@@ -28,7 +28,6 @@
 #include "Error.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
-#include "Logging.hpp"
 #include "Options.hpp"
 #include "String.hpp"
 #include "Util.hpp"
