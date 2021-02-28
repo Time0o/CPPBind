@@ -254,7 +254,10 @@ if(CMAKE_BUILD_TYPE STREQUAL Debug)
                   --cppbind $<TARGET_FILE:${CPPBIND}>
                   --clang ${CMAKE_C_COMPILER}
                   --clangpp ${CMAKE_CXX_COMPILER}
-                  --clang-args Wall Werror
+                  --clang-common-args Wall Werror
+                  --clang-cppbind-args std=c++17
+                  --clang-clang-args std=c18
+                  --clang-clangpp-args std=c++17
                   --run-valgrind ${RUN_VALGRIND}
                   --valgrind ${VALGRIND}
                   --lua ${LUA}

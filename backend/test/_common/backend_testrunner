@@ -75,6 +75,7 @@ class BackendTestGenerator:
 
             self._subprocess([
                 kwargs['cppbind'],
+                *self._clang_args('cppbind', **kwargs),
                 test_input,
                 '--match',
                 ('const:hasAncestor(namespaceDecl(hasName("test"))),'
@@ -173,7 +174,7 @@ class BackendTestGenerator:
 
         self._subprocess([
             kwargs['clangpp'],
-            *kwargs['clang_args'],
+            *self._clang_args('clangpp', **kwargs),
             '-c', cpp_src,
             '-o', cpp_obj,
             '-I', self._test_input_dir,
@@ -182,7 +183,7 @@ class BackendTestGenerator:
 
         self._subprocess([
             kwargs['clang'],
-            *kwargs['clang_args'],
+            *self._clang_args('clang', **kwargs),
             '-c', c_src,
             '-o', c_obj,
             '-I', self._test_output_dir()
@@ -190,7 +191,7 @@ class BackendTestGenerator:
 
         self._subprocess([
             kwargs['clangpp'],
-            *kwargs['clang_args'],
+            *self._clang_args('clangpp', **kwargs),
             cpp_obj,
             c_obj,
             '-o', test_bin
@@ -202,7 +203,7 @@ class BackendTestGenerator:
 
         self._subprocess([
             kwargs['clangpp'],
-            *kwargs['clang_args'],
+            *self._clang_args('clangpp', **kwargs),
             '-shared', '-fPIC', mod_src,
             '-o', mod,
             '-I', kwargs['lua_include_dir'],
@@ -251,6 +252,16 @@ class BackendTestGenerator:
 
     def _test_output(self, test, ext):
         return os.path.join(self._test_output_dir(), f"test_{test}{ext}")
+
+    @staticmethod
+    def _clang_args(which, **kwargs):
+        args = kwargs.get('clang_common_args', []) + \
+               kwargs.get(f'clang_{which}_args', [])
+
+        if which == 'cppbind':
+            return [f"--extra-arg=-{arg}" for arg in args]
+        else:
+            return [f"-{arg}" for arg in args]
 
     @classmethod
     def _subprocess(cls, args, **kwargs):
@@ -340,8 +351,14 @@ if __name__ == '__main__':
                             help="clang executable (C)")
     run_parser.add_argument('--clangpp', default='clang++',
                             help="clang executable (C++)")
-    run_parser.add_argument('--clang-args', type=lambda arg: f'-{arg}', nargs="+",
-                            help="extra clang arguments")
+    run_parser.add_argument('--clang-common-args', nargs="+",
+                            help="extra clang arguments (common)")
+    run_parser.add_argument('--clang-cppbind-args', nargs="+",
+                            help="extra clang arguments (cppbind)")
+    run_parser.add_argument('--clang-clang-args', nargs="+",
+                            help="extra clang arguments (C)")
+    run_parser.add_argument('--clang-clangpp-args', nargs="+",
+                            help="extra clang arguments (C++)")
     run_parser.add_argument('--run-valgrind', choices=['yes', 'no'],
                             help="run tests under valgrind and fail on leaks")
     run_parser.add_argument('--valgrind', default='valgrind',
