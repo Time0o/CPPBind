@@ -5,7 +5,6 @@
 #include <memory>
 #include <optional>
 #include <sstream>
-#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -28,23 +27,43 @@
 #include "CompilerState.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
+#include "Logging.hpp"
 #include "Options.hpp"
 #include "String.hpp"
 #include "Util.hpp"
+#include "WrapperObject.hpp"
 #include "WrapperRecord.hpp"
 
 namespace cppbind
 {
+
+WrapperParameter::WrapperParameter(Identifier const &Name,
+                                   WrapperType const &Type)
+: Name_(Name),
+  Type_(Type)
+{}
+
+WrapperParameter::WrapperParameter(Identifier const &Name,
+                                   clang::ParmVarDecl const *Decl)
+: WrapperObject<clang::ParmVarDecl>(Decl),
+  Name_(Name),
+  Type_(Decl->getType())
+{
+  auto const *DefaultExpr = Decl->getDefaultArg();
+
+  if (DefaultExpr)
+    DefaultArgument_ = DefaultArgument(DefaultExpr);
+}
 
 WrapperParameter::DefaultArgument::DefaultArgument(clang::Expr const *Expr)
 {
   auto &Ctx(ASTContext());
 
   if (Expr->HasSideEffects(Ctx))
-    throw std::runtime_error("default value must not have side effects");
+    exception("default value must not have side effects");
 
   if (Expr->isValueDependent() || Expr->isTypeDependent())
-    throw std::runtime_error("default value must not be value/type dependent");
+    exception("default value must not be value/type dependent");
 
   if (Expr->isNullPointerConstant(Ctx, clang::Expr::NPC_NeverValueDependent)) {
     Value_ = nullptr;
@@ -53,7 +72,7 @@ WrapperParameter::DefaultArgument::DefaultArgument(clang::Expr const *Expr)
 
   clang::Expr::EvalResult Result;
   if (!Expr->EvaluateAsRValue(Result, Ctx, true))
-    throw std::runtime_error("default value must be constant foldable to rvalue");
+    exception("default value must be constant foldable to rvalue");
 
   switch(Result.Val.getKind()) {
   case clang::APValue::Int:
@@ -63,7 +82,7 @@ WrapperParameter::DefaultArgument::DefaultArgument(clang::Expr const *Expr)
     Value_ = Result.Val.getFloat();
     break;
   default:
-    throw std::runtime_error("default value must have pointer, integer or floating point type"); // XXX
+    exception("default value must have pointer, integer or floating point type"); // XXX
   }
 }
 
@@ -80,8 +99,14 @@ WrapperParameter::DefaultArgument::str() const
   llvm_unreachable("invalid default argument type");
 }
 
+WrapperFunction::WrapperFunction(Identifier const &Name)
+: Name_(Name),
+  ReturnType_("void")
+{}
+
 WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
-: Name_(determineName(Decl)),
+: WrapperObject<clang::FunctionDecl>(Decl),
+  Name_(determineName(Decl)),
   ReturnType_(determineReturnType(Decl)),
   Parameters_(determineParameters(Decl)),
   IsDefinition_(Decl->isThisDeclarationADefinition()),
@@ -91,7 +116,8 @@ WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
 {}
 
 WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
-: Name_(determineName(Decl)),
+: WrapperObject<clang::FunctionDecl>(Decl),
+  Name_(determineName(Decl)),
   ReturnType_(determineReturnType(Decl)),
   Parameters_(determineParameters(Decl)),
   IsDefinition_(Decl->isThisDeclarationADefinition()),
@@ -260,11 +286,8 @@ WrapperFunction::determineParameters(clang::FunctionDecl const *Decl)
   // construct parameter list
   std::deque<WrapperParameter> ParamList;
 
-  for (unsigned i = 0u; i < Params.size(); ++i) {
-    ParamList.emplace_back(Identifier(ParamNames[i]),
-                           WrapperType(Params[i]->getType()),
-                           Params[i]->getDefaultArg());
-  }
+  for (unsigned i = 0u; i < Params.size(); ++i)
+    ParamList.emplace_back(Identifier(ParamNames[i]), Params[i]);
 
   return ParamList;
 }

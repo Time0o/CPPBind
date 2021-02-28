@@ -4,7 +4,6 @@
 #include <cassert>
 #include <deque>
 #include <sstream>
-#include <stdexcept>
 #include <string>
 
 #include "clang/AST/Decl.h"
@@ -16,9 +15,9 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/Error.h"
-#include "llvm/Support/FormatVariadic.h"
 
 #include "CompilerState.hpp"
+#include "Logging.hpp"
 
 namespace clang_util
 {
@@ -58,16 +57,15 @@ auto matcher(llvm::StringRef ID, llvm::StringRef MatcherSource)
   auto Matcher(Parser::parseMatcherExpression(MatcherSource, &Diag));
 
   if (!Matcher)
-    throw std::invalid_argument(Diag.toString());
+    exception(Diag.toString());
 
   if (!Matcher->canConvertTo<T>())
-    throw std::invalid_argument(
-      llvm::formatv("no valid conversion for '{0}' matcher", ID));
+    exception("no valid conversion for '{0}' matcher", ID);
 
   auto MatcherBound(Matcher->tryBind(ID));
 
   if (!MatcherBound)
-    throw std::runtime_error(llvm::formatv("failed to bind '{0}' matcher", ID));
+    exception("failed to bind '{0}' matcher", ID);
 
   return MatcherBound->convertTo<T>();
 }

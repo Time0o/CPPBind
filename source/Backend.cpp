@@ -1,6 +1,5 @@
 #include <memory>
 #include <optional>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -14,6 +13,7 @@
 
 #include "Backend.hpp"
 #include "Identifier.hpp"
+#include "Logging.hpp"
 #include "Options.hpp"
 #include "Path.hpp"
 #include "Snippet.hpp"
@@ -56,7 +56,7 @@ void Backend::run(std::string const &InputFile,
     RunModule.attr("run")(InputFile, Wrapper, &Options());
 
   } catch (std::runtime_error const &e) {
-    throw std::runtime_error(llvm::formatv("in backend:\n{0}", e.what()));
+    exception("in backend:\n{0}", e.what());
   }
 }
 

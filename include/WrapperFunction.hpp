@@ -22,6 +22,7 @@
 #include "ClangUtil.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
+#include "WrapperObject.hpp"
 #include "WrapperType.hpp"
 
 namespace clang
@@ -43,7 +44,7 @@ namespace cppbind
 class IdentifierIndex;
 class WrapperRecord;
 
-class WrapperParameter
+class WrapperParameter : public WrapperObject<clang::ParmVarDecl>
 {
   class DefaultArgument
   {
@@ -83,21 +84,9 @@ class WrapperParameter
   };
 
 public:
-  WrapperParameter(Identifier const &Name,
-                   WrapperType const &Type,
-                   clang::Expr const *DefaultExpr = nullptr)
-  : Name_(Name),
-    Type_(Type)
-  {
-    if (DefaultExpr)
-      DefaultArgument_ = DefaultArgument(DefaultExpr);
-  }
+  WrapperParameter(Identifier const &Name, WrapperType const &Type);
 
-  WrapperParameter(clang::ParmVarDecl const *Decl)
-  : WrapperParameter(Identifier(Decl->getNameAsString()),
-                     WrapperType(Decl->getType()),
-                     Decl->getDefaultArg())
-  {}
+  WrapperParameter(Identifier const &Name, clang::ParmVarDecl const *Decl);
 
   static WrapperParameter self(WrapperType const &Type)
   { return WrapperParameter(Identifier(Identifier::SELF), Type); }
@@ -126,7 +115,7 @@ private:
   std::optional<DefaultArgument> DefaultArgument_;
 };
 
-class WrapperFunction
+class WrapperFunction : public WrapperObject<clang::FunctionDecl>
 {
   friend class WrapperFunctionBuilder;
 
@@ -142,10 +131,7 @@ class WrapperFunction
   };
 
 public:
-  WrapperFunction(Identifier const &Name)
-  : Name_(Name),
-    ReturnType_("void")
-  {}
+  WrapperFunction(Identifier const &Name);
 
   explicit WrapperFunction(clang::FunctionDecl const *Decl);
 
@@ -273,5 +259,13 @@ private:
 };
 
 } // namespace cppbind
+
+namespace llvm
+{
+
+LLVM_WRAPPER_OBJECT_FORMAT_PROVIDER(cppbind::WrapperParameter, clang::ParmVarDecl)
+LLVM_WRAPPER_OBJECT_FORMAT_PROVIDER(cppbind::WrapperFunction, clang::FunctionDecl)
+
+} // namespace llvm
 
 #endif // GUARD_WRAPPER_FUNCTION_H

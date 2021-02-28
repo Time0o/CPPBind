@@ -13,7 +13,9 @@
 #include "ClangUtil.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
+#include "Logging.hpp"
 #include "WrapperFunction.hpp"
+#include "WrapperObject.hpp"
 #include "WrapperRecord.hpp"
 #include "WrapperType.hpp"
 #include "WrapperVariable.hpp"
@@ -22,7 +24,8 @@ namespace cppbind
 {
 
 WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl)
-: Name_(Decl),
+: WrapperObject(Decl),
+  Name_(Decl),
   Type_(Decl->getTypeForDecl()),
   BaseTypes_(determinePublicBaseTypes(Decl)),
   Variables_(determinePublicMemberVariables(Decl)),

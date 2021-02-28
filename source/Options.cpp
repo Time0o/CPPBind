@@ -62,6 +62,10 @@ void OptionsRegistry::init()
     .addAssertion(validPostfix("%p"),
                   "postfix must create valid identifiers")
     .done();
+
+  Options().add<bool>("verbose")
+    .setDescription("More verbose output")
+    .done();
 }
 
 } // namespace cppbind

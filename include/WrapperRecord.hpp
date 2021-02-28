@@ -15,13 +15,15 @@
 #include "IdentifierIndex.hpp"
 #include "Util.hpp"
 #include "WrapperFunction.hpp"
+#include "WrapperObject.hpp"
 #include "WrapperType.hpp"
 #include "WrapperVariable.hpp"
 
 namespace cppbind
 {
 
-class WrapperRecord : private util::NotCopyOrMoveable
+class WrapperRecord : public WrapperObject<clang::CXXRecordDecl>,
+                      private util::NotCopyOrMoveable
 {
 public:
   explicit WrapperRecord(clang::CXXRecordDecl const *Decl);
@@ -117,5 +119,12 @@ private:
 };
 
 } // namespace cppbind
+
+namespace llvm
+{
+
+LLVM_WRAPPER_OBJECT_FORMAT_PROVIDER(cppbind::WrapperRecord, clang::CXXRecordDecl)
+
+} // namespace llvm
 
 #endif // GUARD_WRAPPER_RECORD_H

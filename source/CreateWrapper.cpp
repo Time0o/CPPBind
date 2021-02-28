@@ -1,5 +1,4 @@
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -8,12 +7,11 @@
 #include "clang/AST/Type.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 
-#include "llvm/Support/FormatVariadic.h"
-
 #include "ClangUtil.hpp"
 #include "FundamentalTypes.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
+#include "Logging.hpp"
 #include "Options.hpp"
 #include "String.hpp"
 #include "Wrapper.hpp"
@@ -108,7 +106,7 @@ CreateWrapperConsumer::addWrapperHandlers()
         &CreateWrapperConsumer::handleRecord);
 
     } else {
-      throw std::invalid_argument(llvm::formatv("invalid matcher: '{0}'", MatcherID));
+      exception("invalid matcher: '{0}'", MatcherID);
     }
   }
 }

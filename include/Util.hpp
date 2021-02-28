@@ -3,9 +3,6 @@
 
 #include <deque>
 
-namespace cppbind
-{
-
 namespace util
 {
 
@@ -35,7 +32,5 @@ vectorOfPointers(IT first, IT last)
 }
 
 } // namespace util
-
-} // namespace cppbind
 
 #endif // GUARD_UTIL_H

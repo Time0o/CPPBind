@@ -2,6 +2,7 @@
 #define GUARD_WRAPPER_VARIABLE_H
 
 #include "Identifier.hpp"
+#include "WrapperObject.hpp"
 #include "WrapperType.hpp"
 
 #include "clang/AST/Decl.h"
@@ -9,7 +10,7 @@
 namespace cppbind
 {
 
-class WrapperVariable
+class WrapperVariable : public WrapperObject<clang::VarDecl>
 {
 public:
   WrapperVariable(Identifier const &Name, WrapperType const &Type)
@@ -18,7 +19,9 @@ public:
   {}
 
   explicit WrapperVariable(clang::VarDecl const *Decl)
-  : WrapperVariable(Identifier(Decl), WrapperType(Decl->getType()))
+  : WrapperObject<clang::VarDecl>(Decl),
+    Name_(Decl),
+    Type_(Decl->getType())
   {}
 
   Identifier getName() const
@@ -33,5 +36,12 @@ private:
 };
 
 } // namespace cppbind
+
+namespace llvm
+{
+
+LLVM_WRAPPER_OBJECT_FORMAT_PROVIDER(cppbind::WrapperVariable, clang::VarDecl)
+
+} // namespace llvm
 
 #endif // GUARD_WRAPPER_VARIABLE_H
