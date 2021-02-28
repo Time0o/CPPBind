@@ -132,9 +132,9 @@ std::vector<std::string>
 Identifier::Component::splitNamePascalCase(std::string const &Name)
 {
   static boost::regex R(
-    "(?<=[A-Z])(?=[A-Z][a-z])"
-    "|(?<=[^A-Z])(?=[A-Z])"
-    "|(?<=[A-Za-z])(?=[^A-Za-z])"
+    "(?<=[A-Z0-9])(?=[A-Z][a-z])"
+    "|(?<=[0-9])(?=[a-z])"
+    "|(?<=[a-z])(?=[A-Z0-9])"
   );
 
   std::vector<std::string> NameWords;
