@@ -27,5 +27,19 @@ int main()
   assert(test_sum_int_int(1, 2) == 3);
   assert(test_sum_int_int_long_long(1, 2, 3, 4) == 10);
 
+  /* record templates */
+  {
+    void *any_stack = test_any_stack_int_new();
+
+    test_any_stack_int_push_int(any_stack, 1);
+    test_any_stack_int_push_double(any_stack, 3.14);
+
+    assert(test_any_stack_int_pop_double(any_stack) == 3.14);
+    assert(test_any_stack_int_pop_int(any_stack) == 1);
+
+    assert(test_any_stack_int_empty(any_stack));
+
+    _delete(any_stack);
+  }
   return 0;
 }

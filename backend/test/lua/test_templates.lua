@@ -21,3 +21,16 @@ assert(test.test_pi_double() == test.TEST_PI)
 -- template parameter packs
 assert(test.test_sum_int_int(1, 2) == 3)
 assert(test.test_sum_int_int_long_long(1, 2, 3, 4) == 10)
+
+-- record templates
+do
+  local any_stack = test.TestAnyStackInt.new()
+
+  any_stack:push_int(1)
+  any_stack:push_double(3.14)
+
+  assert(any_stack:pop_double() == 3.14)
+  assert(any_stack:pop_int() == 1)
+
+  assert(any_stack:empty())
+end

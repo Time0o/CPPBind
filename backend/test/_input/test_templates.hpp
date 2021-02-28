@@ -1,6 +1,8 @@
 #pragma clang diagnostic ignored "-Wc++17-extensions"
 
+#include <any>
 #include <cmath>
+#include <stack>
 #include <type_traits>
 
 namespace test
@@ -49,6 +51,34 @@ typename std::common_type<ARGS...>::type sum(ARGS ...args)
 template int sum<int, int>(int, int);
 template long sum<int, int, long, long>(int, int, long, long);
 
-// XXX records
+// record templates
+template<typename T_DEFAULT>
+class AnyStack
+{
+public:
+  template<typename T = T_DEFAULT>
+  void push(T val)
+  { _stack.push(val); }
+
+  template<typename T = T_DEFAULT>
+  T pop()
+  {
+    std::any ret(_stack.top());
+    _stack.pop();
+    return std::any_cast<T>(ret);
+  }
+
+  bool empty() const
+  { return _stack.empty(); }
+
+private:
+  std::stack<std::any> _stack;
+};
+
+template class AnyStack<int>;
+template void AnyStack<int>::push<>(int val);
+template int AnyStack<int>::pop<>();
+template void AnyStack<int>::push<double>(double val);
+template double AnyStack<int>::pop<double>();
 
 } // namespace test
