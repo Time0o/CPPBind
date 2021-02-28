@@ -3,14 +3,13 @@
 
 #include <cassert>
 #include <deque>
-#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
-#include "clang/AST/TemplateBase.h"
+#include "clang/AST/DeclTemplate.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/Dynamic/Parser.h"
 
@@ -103,9 +102,9 @@ private:
 class TemplateArgumentList
 {
 public:
-  TemplateArgumentList(clang::TemplateArgumentList const *Args)
+  TemplateArgumentList(clang::TemplateArgumentList const &Args)
   {
-    for (auto const &Arg : Args->asArray()) {
+    for (auto const &Arg : Args.asArray()) {
       if (Arg.getKind() == clang::TemplateArgument::Pack) {
         for (auto const &PackArg : Arg.getPackAsArray())
           Args_.emplace_back(PackArg);
@@ -113,19 +112,6 @@ public:
         Args_.emplace_back(Arg);
       }
     }
-  }
-
-  template<typename T>
-  static std::optional<TemplateArgumentList> fromDecl(T const *Decl)
-  {
-    if (!Decl->isTemplateInstantiation())
-      return std::nullopt;
-
-    auto Args = Decl->getTemplateSpecializationArgs();
-    if (!Args)
-      return std::nullopt;
-
-    return TemplateArgumentList(Args);
   }
 
   bool operator==(TemplateArgumentList const &Other) const
@@ -143,14 +129,19 @@ public:
   std::deque<TemplateArgument>::const_iterator end() const
   { return Args_.end(); }
 
-  std::string str() const
+  std::string str(bool AsPostfix = false) const
   {
     std::ostringstream SS;
 
-    SS << "<" << Args_.front().str();
-    for (std::size_t i = 1; i < Args_.size(); ++i)
-      SS << ", " << Args_[i].str();
-    SS << ">";
+    if (AsPostfix) {
+      for (auto const &Arg : Args_)
+        SS << "_" << Arg.str();
+    } else {
+      SS << "<" << Args_.front().str();
+      for (std::size_t i = 1; i < Args_.size(); ++i)
+        SS << ", " << Args_[i].str();
+      SS << ">";
+    }
 
     return SS.str();
   }

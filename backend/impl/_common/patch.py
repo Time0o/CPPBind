@@ -162,4 +162,5 @@ Function.name_target = name(get=lambda f: f.name(overloaded=True,
 Parameter.name_target = name()
 Parameter.name_interm = name(default_prefix='_')
 
-Record.name_target = name(default_case=Id.PASCAL_CASE)
+Record.name_target = name(get=lambda r: r.name(with_template_postfix=True),
+                          default_case=Id.PASCAL_CASE)

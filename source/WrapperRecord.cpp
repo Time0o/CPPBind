@@ -2,11 +2,13 @@
 #include <deque>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <queue>
 #include <utility>
 #include <vector>
 
 #include "clang/AST/DeclCXX.h"
+#include "clang/AST/DeclTemplate.h"
 
 #include "ClangUtil.hpp"
 #include "Identifier.hpp"
@@ -20,14 +22,16 @@ namespace cppbind
 {
 
 WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl)
-: Type_(Decl->getTypeForDecl()),
+: Name_(Decl),
+  Type_(Decl->getTypeForDecl()),
   BaseTypes_(determinePublicBaseTypes(Decl)),
   Variables_(determinePublicMemberVariables(Decl)),
   Functions_(determinePublicMemberFunctions(Decl)),
   IsDefinition_(Decl->isThisDeclarationADefinition()),
   IsAbstract_(determineIfAbstract(Decl)),
   IsCopyable_(determineIfCopyable(Decl)),
-  IsMoveable_(determineIfMoveable(Decl))
+  IsMoveable_(determineIfMoveable(Decl)),
+  TemplateArgumentList_(determineTemplateArgumentList(Decl))
 {}
 
 void
@@ -38,8 +42,15 @@ WrapperRecord::overload(std::shared_ptr<IdentifierIndex> II)
 }
 
 Identifier
-WrapperRecord::getName() const
-{ return Identifier(Type_.format(false, true)); }
+WrapperRecord::getName(bool WithTemplatePostfix) const
+{
+  Identifier Name(Name_);
+
+  if (WithTemplatePostfix && isTemplateInstantiation())
+    Name = Identifier(Name.str() + TemplateArgumentList_->str(true));
+
+  return Name;
+}
 
 std::vector<WrapperVariable const *>
 WrapperRecord::getVariables() const
@@ -87,6 +98,15 @@ WrapperRecord::getDestructor() const
   assert(false); // XXX
 }
 
+std::optional<std::string>
+WrapperRecord::getTemplateArgumentList() const
+{
+  if (!isTemplateInstantiation())
+    return std::nullopt;
+
+  return TemplateArgumentList_->str();
+}
+
 std::vector<WrapperType>
 WrapperRecord::determinePublicBaseTypes(
   clang::CXXRecordDecl const *Decl) const
@@ -110,15 +130,72 @@ std::deque<WrapperFunction>
 WrapperRecord::determinePublicMemberFunctions(
   clang::CXXRecordDecl const *Decl) const
 {
-  // determine public and publicy inherited member functions
+  auto PublicMethodDecls(determinePublicMemberFunctionDecls(Decl));
+
+  auto InheritedPublicMethodDecls(determineInheritedPublicMemberFunctionDecls(Decl));
+
+  PublicMethodDecls.insert(PublicMethodDecls.end(),
+                           InheritedPublicMethodDecls.begin(),
+                           InheritedPublicMethodDecls.end());
+
+  PublicMethodDecls = prunePublicMemberFunctionDecls(Decl, PublicMethodDecls);
+
+  std::deque<WrapperFunction> PublicMethods;
+
+  for (auto const *MethodDecl : PublicMethodDecls) {
+    PublicMethods.emplace_back(WrapperFunctionBuilder(MethodDecl)
+                              .setParent(this)
+                              .build());
+  }
+
+  if (Decl->needsImplicitDefaultConstructor() && !Decl->isAbstract())
+    PublicMethods.push_back(implicitDefaultConstructor(Decl));
+
+  if (Decl->needsImplicitDestructor())
+    PublicMethods.push_back(implicitDestructor(Decl));
+
+  return PublicMethods;
+}
+
+std::deque<clang::CXXMethodDecl const *>
+WrapperRecord::determinePublicMemberFunctionDecls(
+  clang::CXXRecordDecl const *Decl) const
+{
   std::deque<clang::CXXMethodDecl const *> PublicMethodDecls;
 
   for (auto const *MethodDecl : Decl->methods()) {
-    if (MethodDecl->getAccess() != clang::AS_public)
+    if (MethodDecl->getAccess() == clang::AS_public)
+      PublicMethodDecls.push_back(MethodDecl);
+  }
+
+  for (auto const *InnerDecl :
+       static_cast<clang::DeclContext const *>(Decl)->decls()) {
+
+    auto const *FunctionTemplateDecl =
+      llvm::dyn_cast<clang::FunctionTemplateDecl>(InnerDecl);
+
+    if (!FunctionTemplateDecl)
       continue;
 
-    PublicMethodDecls.push_back(MethodDecl);
+    for (auto const *FunctionDecl : FunctionTemplateDecl->specializations()) {
+      assert(FunctionDecl);
+
+      auto const *MethodDecl = clang_util::asMethod(FunctionDecl);
+      assert(MethodDecl);
+
+      if (MethodDecl->getAccess() == clang::AS_public)
+        PublicMethodDecls.push_back(MethodDecl);
+    }
   }
+
+  return PublicMethodDecls;
+}
+
+std::deque<clang::CXXMethodDecl const *>
+WrapperRecord::determineInheritedPublicMemberFunctionDecls(
+  clang::CXXRecordDecl const *Decl) const
+{
+  std::deque<clang::CXXMethodDecl const *> PublicMethodDecls;
 
   std::queue<clang::CXXBaseSpecifier> BaseQueue;
 
@@ -132,25 +209,29 @@ WrapperRecord::determinePublicMemberFunctions(
     if (Base.getAccessSpecifier() != clang::AS_public)
       continue;
 
-    for (auto const *MethodDecl : clang_util::base(Base)->methods()) {
-      if (clang_util::isConstructor(MethodDecl) ||
-          clang_util::isDestructor(MethodDecl) ||
-          MethodDecl->isCopyAssignmentOperator() ||
-          MethodDecl->isMoveAssignmentOperator())
-        continue;
+    for (auto const *MethodDecl :
+         determinePublicMemberFunctionDecls(clang_util::base(Base))) {
+      if (!clang_util::isConstructor(MethodDecl) &&
+          !clang_util::isDestructor(MethodDecl) &&
+          !MethodDecl->isCopyAssignmentOperator() &&
+          !MethodDecl->isMoveAssignmentOperator())
+        PublicMethodDecls.push_back(MethodDecl);
 
-      if (MethodDecl->getAccess() != clang::AS_public)
-        continue;
-
-      PublicMethodDecls.push_back(MethodDecl);
     }
 
     for (auto const &BaseOfBase : clang_util::base(Base)->bases())
       BaseQueue.push(BaseOfBase);
   }
 
-  // prune uninteresting member functions
-  std::deque<WrapperFunction> PublicMethods;
+  return PublicMethodDecls;
+}
+
+std::deque<clang::CXXMethodDecl const *>
+WrapperRecord::prunePublicMemberFunctionDecls(
+  clang::CXXRecordDecl const *Decl,
+  std::deque<clang::CXXMethodDecl const *> const &PublicMethodDecls) const
+{
+  std::deque<clang::CXXMethodDecl const *> PrunedPublicMethodDecls;
 
   for (auto const *MethodDecl : PublicMethodDecls) {
     if (MethodDecl->isDeleted())
@@ -173,20 +254,10 @@ WrapperRecord::determinePublicMemberFunctions(
       continue;
     }
 
-    PublicMethods.emplace_back(WrapperFunctionBuilder(MethodDecl)
-                              .setParent(this)
-                              .build());
+    PrunedPublicMethodDecls.push_back(MethodDecl);
   }
 
-  // add implicit constructor
-  if (Decl->needsImplicitDefaultConstructor() && !Decl->isAbstract())
-    PublicMethods.push_back(implicitDefaultConstructor(Decl));
-
-  // add implicit constructor
-  if (Decl->needsImplicitDestructor())
-    PublicMethods.push_back(implicitDestructor(Decl));
-
-  return PublicMethods;
+  return PrunedPublicMethodDecls;
 }
 
 bool
@@ -219,6 +290,16 @@ WrapperRecord::determineIfMoveable(clang::CXXRecordDecl const *Decl)
   }
 
   return true;
+}
+
+std::optional<clang_util::TemplateArgumentList>
+WrapperRecord::determineTemplateArgumentList(clang::CXXRecordDecl const *Decl)
+{
+  if (!llvm::isa<clang::ClassTemplateSpecializationDecl>(Decl))
+    return std::nullopt;
+
+  return clang_util::TemplateArgumentList(
+    llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(Decl)->getTemplateArgs());
 }
 
 WrapperFunction

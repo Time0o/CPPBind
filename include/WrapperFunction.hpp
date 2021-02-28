@@ -141,33 +141,6 @@ class WrapperFunction
     std::string Spelling;
   };
 
-  class TemplateArgument
-  {
-  public:
-    explicit TemplateArgument(clang::TemplateArgument const &Arg)
-    : Arg_(Arg)
-    {}
-
-    bool operator==(TemplateArgument const &Other) const
-    { return Arg_.structurallyEquals(Other.Arg_); }
-
-    bool operator!=(TemplateArgument const &Other) const
-    { return !operator==(Other); }
-
-    std::string str() const
-    {
-      std::string Str;
-      llvm::raw_string_ostream SS(Str);
-
-      Arg_.dump(SS);
-
-      return SS.str();
-    }
-
-  private:
-    clang::TemplateArgument Arg_;
-  };
-
 public:
   WrapperFunction(Identifier const &Name)
   : Name_(Name),

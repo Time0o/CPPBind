@@ -95,13 +95,16 @@ CreateWrapperConsumer::addWrapperHandlers()
     } else if (MatcherID == "record") {
       addWrapperHandler<clang::CXXRecordDecl>(
         "record",
-        llvm::formatv("cxxRecordDecl("
-                        "allOf("
-                          "anyOf(isClass(), isStruct()),"
-                          "hasParent(namespaceDecl()),"
-                          "{0}"
-                        ")"
-                      ")", MatcherSource),
+        llvm::formatv(
+          "cxxRecordDecl("
+            "allOf("
+              "anyOf(isClass(), isStruct()),"
+              "anyOf(hasParent(namespaceDecl()),"
+                    "allOf(isTemplateInstantiation(),"
+                          "hasParent(classTemplateDecl(hasParent(namespaceDecl()))))),"
+               "{0}"
+            ")"
+          ")", MatcherSource),
         &CreateWrapperConsumer::handleRecord);
 
     } else {

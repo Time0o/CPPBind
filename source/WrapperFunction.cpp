@@ -158,13 +158,12 @@ WrapperFunction::getName(bool Overloaded,
     Name = Identifier(NameStr);
   }
 
-  if (WithTemplatePostfix && isTemplateInstantiation()) {
-    std::string Postfix;
+  if (WithTemplatePostfix) {
+    if (isMember() && Parent_->isTemplateInstantiation())
+      Name = Name.unqualified().qualified(Parent_->getName(true));
 
-    for (auto const &TemplateArg : *TemplateArgumentList_)
-      Postfix += "_" + TemplateArg.str();
-
-    Name = Identifier(Name.str() + Postfix);
+    if (isTemplateInstantiation())
+      Name = Identifier(Name.str() + TemplateArgumentList_->str(true));
   }
 
   if (Overloaded && isOverloaded()) {
@@ -312,7 +311,16 @@ WrapperFunction::determineOverloadedOperator(clang::FunctionDecl const *Decl)
 
 std::optional<clang_util::TemplateArgumentList>
 WrapperFunction::determineTemplateArgumentList(clang::FunctionDecl const *Decl)
-{ return clang_util::TemplateArgumentList::fromDecl(Decl); }
+{
+  if (!Decl->isTemplateInstantiation())
+    return std::nullopt;
+
+  auto Args = Decl->getTemplateSpecializationArgs();
+  if (!Args)
+    return std::nullopt;
+
+  return clang_util::TemplateArgumentList(*Args);
+}
 
 WrapperFunctionBuilder &
 WrapperFunctionBuilder::setParent(WrapperRecord const *Parent)

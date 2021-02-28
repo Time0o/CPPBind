@@ -193,7 +193,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_self", &WrapperParameter::isSelf);
 
   auto PyRecord = py::class_<Record>(m, "Record", py::dynamic_attr())
-    .def("name", &WrapperRecord::getName)
+    .def("name", &WrapperRecord::getName, "with_template_postfix"_a = false)
     .def("type", &WrapperRecord::getType)
     .def("variables", &WrapperRecord::getVariables,
          py::return_value_policy::reference_internal)
@@ -203,6 +203,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
          py::return_value_policy::reference_internal)
     .def("destructor", &WrapperRecord::getDestructor,
          py::return_value_policy::reference_internal)
+    .def("template_argument_list", &WrapperRecord::getTemplateArgumentList)
     .def("is_abstract", &WrapperRecord::isAbstract)
     .def("is_copyable", &WrapperRecord::isCopyable)
     .def("is_moveable", &WrapperRecord::isMoveable);

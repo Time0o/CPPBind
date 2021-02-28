@@ -3,11 +3,14 @@
 
 #include <deque>
 #include <memory>
+#include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include "clang/AST/DeclCXX.h"
 
+#include "ClangUtil.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
 #include "Util.hpp"
@@ -31,7 +34,7 @@ public:
 
   void overload(std::shared_ptr<IdentifierIndex> II);
 
-  Identifier getName() const;
+  Identifier getName(bool WithTemplatePostfix = false) const;
 
   WrapperType getType() const
   { return Type_; }
@@ -45,6 +48,8 @@ public:
   std::vector<WrapperFunction const *> getConstructors() const;
   WrapperFunction const *getDestructor() const;
 
+  std::optional<std::string> getTemplateArgumentList() const;
+
   bool isDefinition() const
   { return IsDefinition_; }
 
@@ -57,6 +62,9 @@ public:
   bool isMoveable() const
   { return IsMoveable_; }
 
+  bool isTemplateInstantiation() const
+  { return static_cast<bool>(TemplateArgumentList_); }
+
 private:
   std::vector<WrapperType> determinePublicBaseTypes(
     clang::CXXRecordDecl const *Decl) const;
@@ -67,9 +75,25 @@ private:
   std::deque<WrapperFunction> determinePublicMemberFunctions(
     clang::CXXRecordDecl const *Decl) const;
 
+  std::deque<clang::CXXMethodDecl const *>
+  determinePublicMemberFunctionDecls(
+    clang::CXXRecordDecl const *Decl) const;
+
+  std::deque<clang::CXXMethodDecl const *>
+  determineInheritedPublicMemberFunctionDecls(
+    clang::CXXRecordDecl const *Decl) const;
+
+  std::deque<clang::CXXMethodDecl const *>
+  prunePublicMemberFunctionDecls(
+    clang::CXXRecordDecl const *Decl,
+    std::deque<clang::CXXMethodDecl const *> const &PublicMethodDecls) const;
+
   static bool determineIfAbstract(clang::CXXRecordDecl const *Decl);
   static bool determineIfCopyable(clang::CXXRecordDecl const *Decl);
   static bool determineIfMoveable(clang::CXXRecordDecl const *Decl);
+
+  static std::optional<clang_util::TemplateArgumentList>
+  determineTemplateArgumentList(clang::CXXRecordDecl const *Decl);
 
   WrapperFunction implicitDefaultConstructor(
     clang::CXXRecordDecl const *Decl) const;
@@ -77,6 +101,7 @@ private:
   WrapperFunction implicitDestructor(
     clang::CXXRecordDecl const *Decl) const;
 
+  Identifier Name_;
   WrapperType Type_;
   std::vector<WrapperType> BaseTypes_;
 
@@ -87,6 +112,8 @@ private:
   bool IsAbstract_;
   bool IsCopyable_;
   bool IsMoveable_;
+
+  std::optional<clang_util::TemplateArgumentList> TemplateArgumentList_;
 };
 
 } // namespace cppbind
