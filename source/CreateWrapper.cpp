@@ -83,6 +83,7 @@ CreateWrapperConsumer::addWrapperHandlers()
         llvm::formatv(
           "functionDecl("
             "allOf("
+              "unless(cxxMethodDecl()),"
               "anyOf(hasParent(namespaceDecl()),"
                     "allOf(isTemplateInstantiation(),"
                           "hasParent(functionTemplateDecl(hasParent(namespaceDecl()))))),"
@@ -133,10 +134,7 @@ CreateWrapperConsumer::handleVarConst(clang::VarDecl const *Decl)
 
 void
 CreateWrapperConsumer::handleFunction(clang::FunctionDecl const *Decl)
-{
-  if (!clang_util::isMethod(Decl)) // XXX exclude this case in matcher expression
-    Wr_->addWrapperFunction(II_, Decl);
-}
+{ Wr_->addWrapperFunction(II_, Decl); }
 
 void
 CreateWrapperConsumer::handleRecord(clang::CXXRecordDecl const *Decl)
