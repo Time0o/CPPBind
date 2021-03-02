@@ -177,8 +177,8 @@ WrapperFunction::getName(bool Overloaded,
     auto NameStr(Name.str());
 
     string::replace(NameStr,
-                    OverloadedOperator_->Spelling,
-                    OverloadedOperator_->Name);
+                    OverloadedOperator_->second,
+                    OverloadedOperator_->first);
 
     Name = Identifier(NameStr);
   }
@@ -224,7 +224,7 @@ WrapperFunction::getOverloadedOperator() const
   if (!isOverloadedOperator())
     return std::nullopt;
 
-  return OverloadedOperator_->Name;
+  return OverloadedOperator_->first;
 }
 
 std::optional<std::string>
@@ -321,7 +321,7 @@ WrapperFunction::determineIfNoexcept(clang::FunctionDecl const *Decl)
   return EST == clang::EST_BasicNoexcept || EST == clang::EST_NoexceptTrue;
 }
 
-std::optional<WrapperFunction::OverloadedOperator>
+std::optional<std::pair<std::string, std::string>>
 WrapperFunction::determineOverloadedOperator(clang::FunctionDecl const *Decl)
 {
   using namespace clang;
@@ -331,7 +331,7 @@ WrapperFunction::determineOverloadedOperator(clang::FunctionDecl const *Decl)
 
   switch (Decl->getOverloadedOperator()) {
 #define OVERLOADED_OPERATOR(Name,Spelling,Token,Unary,Binary,MemberOnly) \
-  case OO_##Name: return OverloadedOperator(#Name, Spelling);
+  case OO_##Name: return std::make_pair(#Name, Spelling);
 #include "clang/Basic/OperatorKinds.def"
   default:
     llvm_unreachable("invalid overloaded operator kind");
