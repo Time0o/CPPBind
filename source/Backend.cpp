@@ -18,7 +18,7 @@
 #include "Path.hpp"
 #include "Snippet.hpp"
 #include "Wrapper.hpp"
-#include "WrapperVariable.hpp"
+#include "WrapperConstant.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperRecord.hpp"
 #include "WrapperType.hpp"
@@ -65,7 +65,7 @@ void Backend::run(std::string const &InputFile,
 using namespace cppbind;
 
 using Type = WrapperType;
-using Variable = WrapperVariable;
+using Constant = WrapperConstant;
 using Function = WrapperFunction;
 using Parameter = WrapperParameter;
 using Record = WrapperRecord;
@@ -115,7 +115,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
   py::implicitly_convertible<std::string, Identifier>();
 
   py::class_<Wrapper, std::shared_ptr<Wrapper>>(m, "Wrapper")
-    .def("variables", &Wrapper::getVariables,
+    .def("constants", &Wrapper::getConstants,
          py::return_value_policy::reference_internal)
     .def("functions", &Wrapper::getFunctions,
          py::return_value_policy::reference_internal)
@@ -161,10 +161,9 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("with_const", &WrapperType::withConst)
     .def("without_const", &WrapperType::withoutConst);
 
-  py::class_<Variable>(m, "Variable", py::dynamic_attr())
-    .def(py::init<Identifier, WrapperType>(), "name"_a, "type"_a)
-    .def("name", &WrapperVariable::getName)
-    .def("type", &WrapperVariable::getType);
+  py::class_<Constant>(m, "Constant", py::dynamic_attr())
+    .def("name", &WrapperConstant::getName)
+    .def("type", &WrapperConstant::getType);
 
   py::class_<Function>(m, "Function", py::dynamic_attr())
     .def("name", &WrapperFunction::getName, "overloaded"_a = false,
@@ -195,8 +194,6 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
   auto PyRecord = py::class_<Record>(m, "Record", py::dynamic_attr())
     .def("name", &WrapperRecord::getName, "with_template_postfix"_a = false)
     .def("type", &WrapperRecord::getType)
-    .def("variables", &WrapperRecord::getVariables,
-         py::return_value_policy::reference_internal)
     .def("functions", &WrapperRecord::getFunctions,
          py::return_value_policy::reference_internal)
     .def("constructors", &WrapperRecord::getConstructors,

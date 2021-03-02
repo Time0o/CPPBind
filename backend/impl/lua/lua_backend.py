@@ -2,7 +2,7 @@ import type_info
 import lua_util as util
 
 from backend import Backend
-from cppbind import Identifier as Id, Type, Variable, Record, Function, Parameter
+from cppbind import Identifier as Id, Type, Constant, Record, Function, Parameter
 from text import code
 
 
@@ -60,12 +60,12 @@ class LuaBackend(Backend):
 
             }} // extern "C"
             """,
-            register_module=self._register(variables=self.variables(),
+            register_module=self._register(constants=self.constants(),
                                            functions=self.functions(),
                                            records=self.records()),
             module_name=self._module_name()))
 
-    def wrap_variable(self, c):
+    def wrap_constant(self, c):
         pass
 
     def wrap_record(self, r):
@@ -86,7 +86,7 @@ class LuaBackend(Backend):
             function_definitions=self._function_definitions(
                 [f for f in r.functions() if not f.is_destructor()]),
             register=self._register(
-                variables=r.variables(),
+                constants=r.constants(),
                 functions=[f for f in r.functions() if not f.is_instance()])))
 
     def wrap_function(self, f):
@@ -185,30 +185,30 @@ class LuaBackend(Backend):
         return self.input_file().filename()
 
     @classmethod
-    def _register(cls, variables=[], functions=[], records=[]):
+    def _register(cls, constants=[], functions=[], records=[]):
         return code(
             f"""
             void __register(lua_State *L)
             {{{{
               lua_createtable(L, 0, {len(functions)});
 
-              {{register_variables}}
+              {{register_constants}}
 
               {{register_functions}}
 
               {{register_records}}
             }}}}
             """,
-            register_variables=cls._register_variables(variables),
+            register_constants=cls._register_constants(constants),
             register_functions=cls._register_functions(functions),
             register_records=cls._register_records(records))
 
     @classmethod
-    def _register_variables(cls, variables):
-        if not variables:
-            return "// no variables"
+    def _register_constants(cls, constants):
+        if not constants:
+            return "// no constants"
 
-        def register_variable(v):
+        def register_constant(v):
             # XXX generalize
             if v.type().is_enum():
                 arg = f"static_cast<{v.type().underlying_integer_type()}>({v.name()})"
@@ -226,7 +226,7 @@ class LuaBackend(Backend):
                 """,
                 push=push)
 
-        return '\n\n'.join(map(register_variable, variables))
+        return '\n\n'.join(map(register_constant, constants))
 
     @staticmethod
     def _register_functions(functions):

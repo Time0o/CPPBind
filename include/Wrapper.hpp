@@ -12,7 +12,7 @@
 
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
-#include "WrapperVariable.hpp"
+#include "WrapperConstant.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperRecord.hpp"
 #include "WrapperType.hpp"
@@ -54,10 +54,10 @@ class Wrapper
 
 public:
   template<typename ...ARGS>
-  void addWrapperVariable(std::shared_ptr<IdentifierIndex> II, ARGS &&...Args)
+  void addWrapperConstant(std::shared_ptr<IdentifierIndex> II, ARGS &&...Args)
   {
-    Variables_.emplace_back(std::forward<ARGS>(Args)...);
-    addVariable(II, &Variables_.back());
+    Constants_.emplace_back(std::forward<ARGS>(Args)...);
+    addConstant(II, &Constants_.back());
   }
 
   template<typename ...ARGS>
@@ -76,7 +76,7 @@ public:
 
   void overload(std::shared_ptr<IdentifierIndex> II);
 
-  std::vector<WrapperVariable const *> getVariables() const;
+  std::vector<WrapperConstant const *> getConstants() const;
 
   std::vector<WrapperFunction const *> getFunctions() const;
 
@@ -84,8 +84,8 @@ public:
               std::vector<WrapperRecord const *>>> getRecords() const;
 
 private:
-  void addVariable(std::shared_ptr<IdentifierIndex> II,
-                   WrapperVariable const *Variable);
+  void addConstant(std::shared_ptr<IdentifierIndex> II,
+                   WrapperConstant const *Constant);
 
   void addFunction(std::shared_ptr<IdentifierIndex> II,
                    WrapperFunction const *Function);
@@ -97,7 +97,7 @@ private:
 
   WrapperRecord const *getRecordFromType(WrapperType const &Type) const;
 
-  std::deque<WrapperVariable> Variables_;
+  std::deque<WrapperConstant> Constants_;
 
   std::deque<WrapperFunction> Functions_;
   FunctionNameLookup FunctionNames_;

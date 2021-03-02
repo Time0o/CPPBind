@@ -126,12 +126,12 @@ void
 CreateWrapperConsumer::handleEnumConst(clang::EnumDecl const *Decl)
 {
   for (auto const &ConstantDecl : Decl->enumerators())
-    Wr_->addWrapperVariable(II_, Identifier(ConstantDecl), WrapperType(Decl));
+    Wr_->addWrapperConstant(II_, ConstantDecl);
 }
 
 void
 CreateWrapperConsumer::handleVarConst(clang::VarDecl const *Decl)
-{ Wr_->addWrapperVariable(II_, Decl); }
+{ Wr_->addWrapperConstant(II_, Decl); }
 
 void
 CreateWrapperConsumer::handleFunction(clang::FunctionDecl const *Decl)

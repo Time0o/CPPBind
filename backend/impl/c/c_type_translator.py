@@ -30,11 +30,11 @@ class CTypeTranslator(TypeTranslator):
         return str(t)
 
     @rule(lambda t: t.is_enum())
-    def variable(cls, t, args):
+    def constant(cls, t, args):
         return f"{{varout}} = static_cast<{t.underlying_integer_type()}>({{varin}});"
 
     @rule(lambda _: True)
-    def variable(cls, t, args):
+    def constant(cls, t, args):
         return f"{{varout}} = static_cast<{t}>({{varin}});"
 
     @rule(lambda t: t.is_scoped_enum())

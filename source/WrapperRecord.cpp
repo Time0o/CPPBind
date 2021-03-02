@@ -18,7 +18,7 @@
 #include "WrapperObject.hpp"
 #include "WrapperRecord.hpp"
 #include "WrapperType.hpp"
-#include "WrapperVariable.hpp"
+#include "WrapperConstant.hpp"
 
 namespace cppbind
 {
@@ -28,7 +28,6 @@ WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl)
   Name_(Decl),
   Type_(Decl->getTypeForDecl()),
   BaseTypes_(determinePublicBaseTypes(Decl)),
-  Variables_(determinePublicMemberVariables(Decl)),
   Functions_(determinePublicMemberFunctions(Decl)),
   IsDefinition_(Decl->isThisDeclarationADefinition()),
   IsAbstract_(determineIfAbstract(Decl)),
@@ -53,17 +52,6 @@ WrapperRecord::getName(bool WithTemplatePostfix) const
     Name = Identifier(Name.str() + TemplateArgumentList_->str(true));
 
   return Name;
-}
-
-std::vector<WrapperVariable const *>
-WrapperRecord::getVariables() const
-{
-  std::vector<WrapperVariable const *> Variables;
-
-  for (auto const &F : Variables_)
-    Variables.push_back(&F);
-
-  return Variables;
 }
 
 std::vector<WrapperFunction const *>
@@ -123,11 +111,6 @@ WrapperRecord::determinePublicBaseTypes(
 
   return BaseTypes;
 }
-
-std::deque<WrapperVariable>
-WrapperRecord::determinePublicMemberVariables(
-  clang::CXXRecordDecl const *Decl) const
-{ return {}; } // TODO
 
 std::deque<WrapperFunction>
 WrapperRecord::determinePublicMemberFunctions(

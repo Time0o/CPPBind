@@ -2,7 +2,7 @@ import c_util
 import type_info
 
 from backend import Backend
-from cppbind import Identifier as Id, Type, Variable, Record, Function, Parameter
+from cppbind import Identifier as Id, Type, Constant, Record, Function, Parameter
 from type_translator import TypeTranslator as TT
 from text import code
 from util import dotdict
@@ -73,7 +73,7 @@ class CBackend(Backend):
             } // extern "C"
             """))
 
-    def wrap_variable(self, v):
+    def wrap_constant(self, v):
         #XXX generalize
         self._wrapper_header.append(f"extern {TT().c(v.type())} {v.name_target()};")
 
@@ -82,7 +82,7 @@ class CBackend(Backend):
         })
 
         self._wrapper_source.append(
-            TT().variable(v.type(), args).format(
+            TT().constant(v.type(), args).format(
                 varin=v.name(), varout=f"{TT().c(v.type())} {v.name_target()}"))
 
     def wrap_record(self, r):

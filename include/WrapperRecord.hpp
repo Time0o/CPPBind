@@ -17,7 +17,7 @@
 #include "WrapperFunction.hpp"
 #include "WrapperObject.hpp"
 #include "WrapperType.hpp"
-#include "WrapperVariable.hpp"
+#include "WrapperConstant.hpp"
 
 namespace cppbind
 {
@@ -44,8 +44,6 @@ public:
   std::vector<WrapperType> getBaseTypes() const
   { return BaseTypes_; }
 
-  std::vector<WrapperVariable const *> getVariables() const;
-
   std::vector<WrapperFunction const *> getFunctions() const;
   std::vector<WrapperFunction const *> getConstructors() const;
   WrapperFunction const *getDestructor() const;
@@ -69,9 +67,6 @@ public:
 
 private:
   std::vector<WrapperType> determinePublicBaseTypes(
-    clang::CXXRecordDecl const *Decl) const;
-
-  std::deque<WrapperVariable> determinePublicMemberVariables(
     clang::CXXRecordDecl const *Decl) const;
 
   std::deque<WrapperFunction> determinePublicMemberFunctions(
@@ -107,7 +102,6 @@ private:
   WrapperType Type_;
   std::vector<WrapperType> BaseTypes_;
 
-  std::deque<WrapperVariable> Variables_;
   std::deque<WrapperFunction> Functions_;
 
   bool IsDefinition_;

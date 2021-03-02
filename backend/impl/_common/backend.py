@@ -9,7 +9,7 @@ class Backend(metaclass=Generic):
         self._output_files = []
 
         self._wrapper = wrapper
-        self._variables = wrapper.variables()
+        self._constants = wrapper.constants()
         self._records = wrapper.records()
         self._functions = wrapper.functions()
 
@@ -18,8 +18,8 @@ class Backend(metaclass=Generic):
     def run(self):
         self.wrap_before()
 
-        for v in self._variables:
-            self.wrap_variable(v)
+        for v in self._constants:
+            self.wrap_constant(v)
 
         for r, _ in self._records:
             self.wrap_record(r)
@@ -50,8 +50,8 @@ class Backend(metaclass=Generic):
     def wrapper(self):
         return self._wrapper
 
-    def variables(self):
-        return self._variables
+    def constants(self):
+        return self._constants
 
     def records(self, with_bases=False):
         if with_bases:
@@ -79,7 +79,7 @@ class Backend(metaclass=Generic):
         pass
 
     @abstractmethod
-    def wrap_variable(self, c):
+    def wrap_constant(self, c):
         pass
 
     @abstractmethod

@@ -1,4 +1,4 @@
-from cppbind import Variable, Function, Parameter, Record, Identifier as Id
+from cppbind import Constant, Function, Parameter, Record, Identifier as Id
 from text import code
 from type_translator import TypeTranslator as TT
 from util import dotdict
@@ -153,7 +153,7 @@ def name(get=lambda self: self.name(),
     return _name_closure
 
 
-Variable.name_target = name(default_case=Id.SNAKE_CASE_CAP_ALL)
+Constant.name_target = name(default_case=Id.SNAKE_CASE_CAP_ALL)
 
 Function.name_target = name(get=lambda f: f.name(overloaded=True,
                                                  without_operator_name=True,

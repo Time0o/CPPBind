@@ -87,16 +87,16 @@ Wrapper::overload(std::shared_ptr<IdentifierIndex> II)
     Wf.overload(II);
 }
 
-std::vector<WrapperVariable const *>
-Wrapper::getVariables() const
+std::vector<WrapperConstant const *>
+Wrapper::getConstants() const
 {
-  std::vector<WrapperVariable const *> Vars;
-  Vars.reserve(Variables_.size());
+  std::vector<WrapperConstant const *> Consts;
+  Consts.reserve(Constants_.size());
 
-  for (auto const &Var : Variables_)
-    Vars.push_back(&Var);
+  for (auto const &Const : Constants_)
+    Consts.push_back(&Const);
 
-  return Vars;
+  return Consts;
 }
 
 std::vector<WrapperFunction const *>
@@ -132,9 +132,9 @@ Wrapper::getRecords() const
 }
 
 void
-Wrapper::addVariable(std::shared_ptr<IdentifierIndex> II,
-                     WrapperVariable const *Variable)
-{ II->addDefinition(Variable->getName(), IdentifierIndex::CONST); }
+Wrapper::addConstant(std::shared_ptr<IdentifierIndex> II,
+                     WrapperConstant const *Constant)
+{ II->addDefinition(Constant->getName(), IdentifierIndex::CONST); }
 
 void
 Wrapper::addFunction(std::shared_ptr<IdentifierIndex> II,
@@ -189,9 +189,6 @@ Wrapper::addRecord(std::shared_ptr<IdentifierIndex> II,
   }
 
   II->addDefinition(RecordName, IdentifierIndex::RECORD);
-
-  for (auto Variable : Record->getVariables())
-    addVariable(II, Variable);
 
   for (auto Function : Record->getFunctions())
     addFunction(II, Function);

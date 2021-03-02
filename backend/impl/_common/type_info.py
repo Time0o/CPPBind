@@ -308,7 +308,7 @@ def _type_instances():
     for r, bases in Backend().records(with_bases=True):
         add_type(r.type(), (b.type() for b in bases))
 
-    for v in Backend().variables():
+    for v in Backend().constants():
         if v.type().is_pointer() and not v.pointee().is_record():
             add_type(v.type().pointee())
 
