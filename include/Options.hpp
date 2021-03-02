@@ -24,7 +24,7 @@
 
 #include "Logging.hpp"
 #include "String.hpp"
-#include "Util.hpp"
+#include "Mixin.hpp"
 
 namespace cppbind
 {
@@ -33,7 +33,7 @@ template<typename T>
 using OptionChoices =
   std::initializer_list<std::tuple<llvm::StringRef, T, llvm::StringRef>>;
 
-class OptionsRegistry : private util::NotCopyOrMoveable
+class OptionsRegistry : private mixin::NotCopyOrMoveable
 {
   friend OptionsRegistry &Options();
 

@@ -7,13 +7,12 @@
 
 #include "Logging.hpp"
 #include "Path.hpp"
-#include "Util.hpp"
 
 namespace cppbind
 {
 
 template<typename T>
-class Snippet : private util::NotCopyOrMoveable
+class Snippet : private mixin::NotCopyOrMoveable
 {
 public:
   ~Snippet()

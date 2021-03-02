@@ -9,12 +9,12 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/Frontend/CompilerInstance.h"
 
-#include "Util.hpp"
+#include "Mixin.hpp"
 
 namespace cppbind
 {
 
-class CompilerStateRegistry : private util::NotCopyOrMoveable
+class CompilerStateRegistry : private mixin::NotCopyOrMoveable
 {
   friend CompilerStateRegistry &CompilerState();
 

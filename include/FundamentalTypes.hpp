@@ -7,13 +7,13 @@
 
 #include "clang/AST/Type.h"
 
+#include "Mixin.hpp"
 #include "Print.hpp"
-#include "Util.hpp"
 
 namespace cppbind
 {
 
-class FundamentalTypeRegistry : private util::NotCopyOrMoveable
+class FundamentalTypeRegistry : private mixin::NotCopyOrMoveable
 {
   friend FundamentalTypeRegistry &FundamentalTypes();
 

@@ -1,9 +1,7 @@
-#ifndef GUARD_UTIL_H
-#define GUARD_UTIL_H
+#ifndef GUARD_MIXIN_H
+#define GUARD_MIXIN_H
 
-#include <deque>
-
-namespace util
+namespace mixin
 {
 
 class NotCopyOrMoveable
@@ -19,18 +17,6 @@ protected:
   ~NotCopyOrMoveable() = default;
 };
 
-template<typename IT>
-std::vector<typename IT::value_type const *>
-vectorOfPointers(IT first, IT last)
-{
-  std::vector<typename IT::value_type const *> V;
+} // namespace mixin
 
-  for (auto It = first; It != last; ++It)
-    V.push_back(&(*It));
-
-  return V;
-}
-
-} // namespace util
-
-#endif // GUARD_UTIL_H
+#endif // GUARD_MIXIN_H

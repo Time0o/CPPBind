@@ -30,7 +30,6 @@
 #include "Logging.hpp"
 #include "Options.hpp"
 #include "String.hpp"
-#include "Util.hpp"
 #include "WrapperObject.hpp"
 #include "WrapperRecord.hpp"
 
@@ -206,10 +205,17 @@ WrapperFunction::getName(bool Overloaded,
 std::vector<WrapperParameter const *>
 WrapperFunction::getParameters(bool SkipSelf) const
 {
-  if (SkipSelf && !Parameters_.empty() && Parameters_.front().isSelf())
-    return util::vectorOfPointers(Parameters_.begin() + 1, Parameters_.end());
+  std::vector<WrapperParameter const *> Params;
+  Params.reserve(Parameters_.size());
 
-  return util::vectorOfPointers(Parameters_.begin(), Parameters_.end());
+  for (auto const &Param : Parameters_) {
+    if (SkipSelf && Param.isSelf())
+      continue;
+
+    Params.push_back(&Param);
+  }
+
+  return Params;
 }
 
 std::optional<std::string>

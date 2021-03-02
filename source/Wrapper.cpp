@@ -7,7 +7,6 @@
 #include "boost/graph/topological_sort.hpp"
 
 #include "IdentifierIndex.hpp"
-#include "Util.hpp"
 #include "Wrapper.hpp"
 
 namespace cppbind
@@ -90,16 +89,34 @@ Wrapper::overload(std::shared_ptr<IdentifierIndex> II)
 
 std::vector<WrapperVariable const *>
 Wrapper::getVariables() const
-{ return util::vectorOfPointers(Variables_.begin(), Variables_.end()); }
+{
+  std::vector<WrapperVariable const *> Vars;
+  Vars.reserve(Variables_.size());
+
+  for (auto const &Var : Variables_)
+    Vars.push_back(&Var);
+
+  return Vars;
+}
 
 std::vector<WrapperFunction const *>
 Wrapper::getFunctions() const
-{ return util::vectorOfPointers(Functions_.begin(), Functions_.end()); }
+{
+  std::vector<WrapperFunction const *> Funcs;
+  Funcs.reserve(Functions_.size());
 
-std::vector<Wrapper::RecordWithBases>
+  for (auto const &Func : Functions_)
+    Funcs.push_back(&Func);
+
+  return Funcs;
+}
+
+std::vector<std::pair<WrapperRecord const *,
+            std::vector<WrapperRecord const *>>>
 Wrapper::getRecords() const
 {
-  std::vector<RecordWithBases> Records;
+  std::vector<std::pair<WrapperRecord const *,
+              std::vector<WrapperRecord const *>>> RecordsAndBases;
 
   for (auto Type : RecordInheritances_.basesFirstOrdering()) {
     auto Record(getRecordFromType(Type));
@@ -108,10 +125,10 @@ Wrapper::getRecords() const
     for (auto const &BaseType : RecordInheritances_.bases(Type, true))
       Bases.push_back(getRecordFromType(BaseType));
 
-    Records.push_back(std::make_pair(Record, Bases));
+    RecordsAndBases.push_back(std::make_pair(Record, Bases));
   }
 
-  return Records;
+  return RecordsAndBases;
 }
 
 void

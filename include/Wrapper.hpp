@@ -52,9 +52,6 @@ class Wrapper
     LabeledGraph G_;
   };
 
-  using RecordWithBases = std::pair<WrapperRecord const *,
-                                    std::vector<WrapperRecord const *>>;
-
 public:
   template<typename ...ARGS>
   void addWrapperVariable(std::shared_ptr<IdentifierIndex> II, ARGS &&...Args)
@@ -80,8 +77,11 @@ public:
   void overload(std::shared_ptr<IdentifierIndex> II);
 
   std::vector<WrapperVariable const *> getVariables() const;
+
   std::vector<WrapperFunction const *> getFunctions() const;
-  std::vector<RecordWithBases> getRecords() const;
+
+  std::vector<std::pair<WrapperRecord const *,
+              std::vector<WrapperRecord const *>>> getRecords() const;
 
 private:
   void addVariable(std::shared_ptr<IdentifierIndex> II,
