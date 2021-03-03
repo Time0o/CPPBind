@@ -19,9 +19,10 @@
 #include "llvm/ADT/SmallString.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include "ClangUtil.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
+#include "LLVMFormat.hpp"
+#include "TemplateArgument.hpp"
 #include "WrapperObject.hpp"
 #include "WrapperType.hpp"
 
@@ -201,7 +202,7 @@ private:
   static std::optional<std::pair<std::string, std::string>>
   determineOverloadedOperator(clang::FunctionDecl const *Decl);
 
-  static std::optional<clang_util::TemplateArgumentList>
+  static std::optional<TemplateArgumentList>
   determineTemplateArgumentList(clang::FunctionDecl const *Decl);
 
   WrapperRecord const *Parent_ = nullptr;
@@ -219,7 +220,7 @@ private:
 
   std::optional<unsigned> Overload_;
   std::optional<std::pair<std::string, std::string>> OverloadedOperator_;
-  std::optional<clang_util::TemplateArgumentList> TemplateArgumentList_;
+  std::optional<TemplateArgumentList> TemplateArgumentList_;
 };
 
 class WrapperFunctionBuilder
@@ -251,10 +252,8 @@ private:
 
 namespace llvm
 {
-
-LLVM_WRAPPER_OBJECT_FORMAT_PROVIDER(cppbind::WrapperParameter, clang::ParmVarDecl)
-LLVM_WRAPPER_OBJECT_FORMAT_PROVIDER(cppbind::WrapperFunction, clang::FunctionDecl)
-
-} // namespace llvm
+  LLVM_FORMAT_PROVIDER(cppbind::WrapperParameter);
+  LLVM_FORMAT_PROVIDER(cppbind::WrapperFunction);
+}
 
 #endif // GUARD_WRAPPER_FUNCTION_H

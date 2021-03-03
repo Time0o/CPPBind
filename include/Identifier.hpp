@@ -8,6 +8,7 @@
 #include "clang/AST/Decl.h"
 #include "clang/Basic/IdentifierTable.h"
 
+#include "LLVMFormat.hpp"
 #include "String.hpp"
 
 namespace cppbind
@@ -162,5 +163,7 @@ struct hash<cppbind::Identifier>
 };
 
 } // namespace std
+
+namespace llvm { LLVM_FORMAT_PROVIDER(cppbind::Identifier); }
 
 #endif // GUARD_IDENTIFIER_H

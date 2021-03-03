@@ -14,6 +14,7 @@
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
 #include "Logging.hpp"
+#include "TemplateArgument.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperObject.hpp"
 #include "WrapperRecord.hpp"
@@ -166,7 +167,7 @@ WrapperRecord::determinePublicMemberFunctionDecls(
     for (auto const *FunctionDecl : FunctionTemplateDecl->specializations()) {
       assert(FunctionDecl);
 
-      auto const *MethodDecl = clang_util::asMethod(FunctionDecl);
+      auto const *MethodDecl = llvm::dyn_cast<clang::CXXMethodDecl>(FunctionDecl);
       assert(MethodDecl);
 
       if (MethodDecl->getAccess() == clang::AS_public)
@@ -196,16 +197,16 @@ WrapperRecord::determineInheritedPublicMemberFunctionDecls(
       continue;
 
     for (auto const *MethodDecl :
-         determinePublicMemberFunctionDecls(clang_util::base(Base))) {
-      if (!clang_util::isConstructor(MethodDecl) &&
-          !clang_util::isDestructor(MethodDecl) &&
+         determinePublicMemberFunctionDecls(declBase(Base))) {
+      if (!llvm::isa<clang::CXXConstructorDecl>(MethodDecl) &&
+          !llvm::isa<clang::CXXDestructorDecl>(MethodDecl) &&
           !MethodDecl->isCopyAssignmentOperator() &&
           !MethodDecl->isMoveAssignmentOperator())
         PublicMethodDecls.push_back(MethodDecl);
 
     }
 
-    for (auto const &BaseOfBase : clang_util::base(Base)->bases())
+    for (auto const &BaseOfBase : declBase(Base)->bases())
       BaseQueue.push(BaseOfBase);
   }
 
@@ -223,17 +224,19 @@ WrapperRecord::prunePublicMemberFunctionDecls(
     if (MethodDecl->isDeleted())
       continue;
 
-    if (clang_util::isConstructor(MethodDecl)) {
+    if (llvm::isa<clang::CXXConstructorDecl>(MethodDecl)) {
       if (Decl->isAbstract())
         continue;
 
-      if (clang_util::asConstructor(MethodDecl)->isCopyConstructor() ||
-          clang_util::asConstructor(MethodDecl)->isMoveConstructor()) {
+      auto const *ConstructorDecl =
+        llvm::dyn_cast<clang::CXXConstructorDecl>(MethodDecl);
+
+      if (ConstructorDecl->isCopyConstructor() ||
+          ConstructorDecl->isMoveConstructor())
         continue;
-      }
     }
 
-    if (clang_util::isDestructor(MethodDecl)) {
+    if (llvm::isa<clang::CXXDestructorDecl>(MethodDecl)) {
       if (Decl->isAbstract())
         continue;
     } else if (MethodDecl->size_overridden_methods() != 0) {
@@ -278,13 +281,13 @@ WrapperRecord::determineIfMoveable(clang::CXXRecordDecl const *Decl)
   return true;
 }
 
-std::optional<clang_util::TemplateArgumentList>
+std::optional<TemplateArgumentList>
 WrapperRecord::determineTemplateArgumentList(clang::CXXRecordDecl const *Decl)
 {
   if (!llvm::isa<clang::ClassTemplateSpecializationDecl>(Decl))
     return std::nullopt;
 
-  return clang_util::TemplateArgumentList(
+  return TemplateArgumentList(
     llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(Decl)->getTemplateArgs());
 }
 

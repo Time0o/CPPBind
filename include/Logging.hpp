@@ -8,6 +8,9 @@
 #include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/raw_ostream.h"
 
+namespace cppbind
+{
+
 template<typename ...ARGS>
 std::string fmt(std::string Fmt, ARGS &&...Args)
 {
@@ -38,5 +41,7 @@ void error(std::string const &Fmt, ARGS &&...Args)
 template<typename ...ARGS>
 void exception(std::string const &Fmt, ARGS &&...Args)
 { throw std::runtime_error(fmt(Fmt, std::forward<ARGS>(Args)...)); }
+
+} // namespace cppbind
 
 #endif // GUARD_LOGGING_H

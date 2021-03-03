@@ -4,13 +4,14 @@
 #include <cassert>
 #include <cstdlib>
 #include <cxxabi.h>
+#include <sstream>
 #include <string>
 
 #include "llvm/ADT/StringRef.h"
-#include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/raw_ostream.h"
 
 #include "CompilerState.hpp"
+#include "String.hpp"
 
 namespace cppbind
 {
@@ -27,28 +28,15 @@ public:
   : Decl_(Decl)
   {}
 
-private:
-  T_DECL const *Decl_ = nullptr;
-};
-
-} // namespace cppbind
-
-namespace llvm
-{
-
-template<typename T_DECL>
-class format_provider<cppbind::WrapperObject<T_DECL>>
-{
-public:
-  static void format(cppbind::WrapperObject<T_DECL> const &Obj,
-                     llvm::raw_ostream &SS,
-                     llvm::StringRef)
+  std::string str() const
   {
-    T_DECL const *Decl = Obj.Decl_;
+    std::ostringstream SS;
 
-    SS << "wrapper for declaration '" << declName(Decl) << "'"
-       << " of type '" << declType(Decl) << "'"
-       << " (at " << declLocation(Decl) << ")";
+    SS << "wrapper for declaration '" << declName(Decl_) << "'"
+       << " of type '" << declType(Decl_) << "'"
+       << " (at " << declLocation(Decl_) << ")";
+
+    return SS.str();
   }
 
 private:
@@ -76,20 +64,17 @@ private:
   {
     auto const &SM(cppbind::ASTContext().getSourceManager());
 
-    return Decl ? Decl->getSourceRange().printToString(SM) : "???";
+    if (!Decl)
+      return "???";
+
+    auto SourceRange(Decl->getSourceRange().printToString(SM));
+
+    return string::splitFirst(SourceRange, ",").first;
   }
+
+  T_DECL const *Decl_ = nullptr;
 };
 
-} // namespace llvm
-
-#define LLVM_WRAPPER_OBJECT_FORMAT_PROVIDER(T, T_DECL) \
-  template<> \
-  struct format_provider<T> \
-  { \
-    static void format(T const &Obj, \
-                       llvm::raw_ostream &SS, \
-                       llvm::StringRef Options) \
-    { format_provider<cppbind::WrapperObject<T_DECL>>::format(Obj, SS, Options); } \
-  }; \
+} // namespace cppbind
 
 #endif // GUARD_WRAPPER_OBJECT_H

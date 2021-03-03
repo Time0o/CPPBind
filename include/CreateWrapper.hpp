@@ -36,7 +36,7 @@ private:
                          FUNC &&Action)
   {
     addHandler<T>(MatcherID,
-                  clang_util::matcher<clang::Decl>(MatcherID, MatcherSource),
+                  declMatcher<clang::Decl>(MatcherID, MatcherSource),
                   std::forward<FUNC>(Action));
   }
 

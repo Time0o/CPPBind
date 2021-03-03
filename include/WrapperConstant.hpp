@@ -2,6 +2,7 @@
 #define GUARD_WRAPPER_CONSTANT_H
 
 #include "Identifier.hpp"
+#include "LLVMFormat.hpp"
 #include "WrapperObject.hpp"
 #include "WrapperType.hpp"
 
@@ -32,11 +33,6 @@ private:
 
 } // namespace cppbind
 
-namespace llvm
-{
-
-LLVM_WRAPPER_OBJECT_FORMAT_PROVIDER(cppbind::WrapperConstant, clang::ValueDecl)
-
-} // namespace llvm
+namespace llvm { LLVM_FORMAT_PROVIDER(cppbind::WrapperConstant); }
 
 #endif // GUARD_WRAPPER_CONSTANT_H

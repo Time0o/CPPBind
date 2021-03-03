@@ -23,13 +23,13 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
 
-#include "ClangUtil.hpp"
 #include "CompilerState.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
 #include "Logging.hpp"
 #include "Options.hpp"
 #include "String.hpp"
+#include "TemplateArgument.hpp"
 #include "WrapperObject.hpp"
 #include "WrapperRecord.hpp"
 
@@ -120,8 +120,8 @@ WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
   ReturnType_(determineReturnType(Decl)),
   Parameters_(determineParameters(Decl)),
   IsDefinition_(Decl->isThisDeclarationADefinition()),
-  IsConstructor_(clang_util::isConstructor(Decl)),
-  IsDestructor_(clang_util::isDestructor(Decl)),
+  IsConstructor_(llvm::isa<clang::CXXConstructorDecl>(Decl)),
+  IsDestructor_(llvm::isa<clang::CXXDestructorDecl>(Decl)),
   IsStatic_(Decl->isStatic()),
   IsConst_(Decl->isConst()),
   IsNoexcept_(determineIfNoexcept(Decl)),
@@ -239,10 +239,10 @@ WrapperFunction::getTemplateArgumentList() const
 Identifier
 WrapperFunction::determineName(clang::FunctionDecl const *Decl)
 {
-  if (clang_util::isConstructor(Decl))
+  if (llvm::isa<clang::CXXConstructorDecl>(Decl))
     return Identifier(Identifier::NEW);
 
-  if (clang_util::isDestructor(Decl))
+  if (llvm::isa<clang::CXXDestructorDecl>(Decl))
     return Identifier(Identifier::DELETE);
 
   return Identifier(Decl);
@@ -338,7 +338,7 @@ WrapperFunction::determineOverloadedOperator(clang::FunctionDecl const *Decl)
   }
 }
 
-std::optional<clang_util::TemplateArgumentList>
+std::optional<TemplateArgumentList>
 WrapperFunction::determineTemplateArgumentList(clang::FunctionDecl const *Decl)
 {
   if (!Decl->isTemplateInstantiation())
@@ -348,7 +348,7 @@ WrapperFunction::determineTemplateArgumentList(clang::FunctionDecl const *Decl)
   if (!Args)
     return std::nullopt;
 
-  return clang_util::TemplateArgumentList(*Args);
+  return TemplateArgumentList(*Args);
 }
 
 WrapperFunctionBuilder &

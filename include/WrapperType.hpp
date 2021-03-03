@@ -16,6 +16,7 @@
 
 #include "FundamentalTypes.hpp"
 #include "Identifier.hpp"
+#include "LLVMFormat.hpp"
 
 namespace cppbind
 {
@@ -107,5 +108,7 @@ struct hash<cppbind::WrapperType>
 };
 
 } // namespace std
+
+namespace llvm { LLVM_FORMAT_PROVIDER(cppbind::WrapperType); }
 
 #endif // GUARD_WRAPPER_TYPE_H

@@ -3,8 +3,6 @@
 #include <string>
 #include <vector>
 
-#include "llvm/Support/FormatVariadic.h"
-
 #include "pybind11/embed.h"
 #include "pybind11/operators.h"
 #include "pybind11/pybind11.h"

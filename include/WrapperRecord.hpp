@@ -10,10 +10,11 @@
 
 #include "clang/AST/DeclCXX.h"
 
-#include "ClangUtil.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
+#include "LLVMFormat.hpp"
 #include "Mixin.hpp"
+#include "TemplateArgument.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperObject.hpp"
 #include "WrapperType.hpp"
@@ -89,7 +90,7 @@ private:
   static bool determineIfCopyable(clang::CXXRecordDecl const *Decl);
   static bool determineIfMoveable(clang::CXXRecordDecl const *Decl);
 
-  static std::optional<clang_util::TemplateArgumentList>
+  static std::optional<TemplateArgumentList>
   determineTemplateArgumentList(clang::CXXRecordDecl const *Decl);
 
   WrapperFunction implicitDefaultConstructor(
@@ -109,16 +110,11 @@ private:
   bool IsCopyable_;
   bool IsMoveable_;
 
-  std::optional<clang_util::TemplateArgumentList> TemplateArgumentList_;
+  std::optional<TemplateArgumentList> TemplateArgumentList_;
 };
 
 } // namespace cppbind
 
-namespace llvm
-{
-
-LLVM_WRAPPER_OBJECT_FORMAT_PROVIDER(cppbind::WrapperRecord, clang::CXXRecordDecl)
-
-} // namespace llvm
+namespace llvm { LLVM_FORMAT_PROVIDER(cppbind::WrapperRecord); }
 
 #endif // GUARD_WRAPPER_RECORD_H
