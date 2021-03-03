@@ -87,7 +87,7 @@ def _function_forward_call(self):
         this = self.parameters()[0].name_interm()
 
     if self.is_constructor():
-        call = f"new {self.parent().type()}({parameters})"
+        call = f"new {self.return_type().pointee()}({parameters})"
     elif self.is_destructor():
         call = f"delete {this}"
     else:

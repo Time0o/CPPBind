@@ -161,7 +161,7 @@ Wrapper::addFunction(std::shared_ptr<IdentifierIndex> II,
       return;
   }
 
-  auto FunctionNameTemplated(Function->getName(false, false, true));
+  auto FunctionNameTemplated(Function->getName(true));
 
   if (II->hasDefinition(FunctionNameTemplated, IdentifierIndex::FUNC)) {
     auto const *Previous(objLookup(FunctionNames_, FunctionNameTemplated));

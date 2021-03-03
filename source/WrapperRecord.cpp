@@ -26,6 +26,7 @@ namespace cppbind
 
 WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl)
 : WrapperObject(Decl),
+  TemplateArgumentList_(determineTemplateArgumentList(Decl)),
   Name_(Decl),
   Type_(Decl->getTypeForDecl()),
   BaseTypes_(determinePublicBaseTypes(Decl)),
@@ -33,8 +34,7 @@ WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl)
   IsDefinition_(Decl->isThisDeclarationADefinition()),
   IsAbstract_(determineIfAbstract(Decl)),
   IsCopyable_(determineIfCopyable(Decl)),
-  IsMoveable_(determineIfMoveable(Decl)),
-  TemplateArgumentList_(determineTemplateArgumentList(Decl))
+  IsMoveable_(determineIfMoveable(Decl))
 {}
 
 void

@@ -164,10 +164,9 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("type", &WrapperConstant::getType);
 
   py::class_<Function>(m, "Function", py::dynamic_attr())
-    .def("name", &WrapperFunction::getName, "overloaded"_a = false,
+    .def("name", &WrapperFunction::getName, "with_template_postfix"_a = false,
                                             "without_operator_name"_a = false,
-                                            "with_template_postfix"_a = false)
-    .def("parent", &WrapperFunction::getParent)
+                                            "overloaded"_a = false)
     .def("return_type", &WrapperFunction::getReturnType)
     .def("parameters", &WrapperFunction::getParameters, "skip_self"_a = false,
          py::return_value_policy::reference_internal)

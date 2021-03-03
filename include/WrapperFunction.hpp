@@ -97,12 +97,9 @@ public:
 
   void overload(std::shared_ptr<IdentifierIndex> II);
 
-  Identifier getName(bool Overloaded = false,
+  Identifier getName(bool WithTemplatePostfix = false,
                      bool WithoutOperatorName = false,
-                     bool WithTemplatePostfix = false) const;
-
-  WrapperRecord const *getParent() const
-  { return Parent_; }
+                     bool Overloaded = false) const;
 
   std::vector<WrapperParameter const *> getParameters(bool SkipSelf = false) const;
 
@@ -117,7 +114,7 @@ public:
   { return IsDefinition_; }
 
   bool isMember() const
-  { return Parent_; }
+  { return IsMember_; }
 
   bool isInstance() const
   { return isMember() && !isConstructor() && !isStatic(); }
@@ -168,24 +165,23 @@ private:
   static std::optional<TemplateArgumentList>
   determineTemplateArgumentList(clang::FunctionDecl const *Decl);
 
-  WrapperRecord const *Parent_ = nullptr;
+  std::optional<TemplateArgumentList> TemplateArgumentList_;
+
+  std::optional<OverloadedOperator> OverloadedOperator_;
+
+  std::optional<unsigned> Overload_;
 
   Identifier Name_;
   WrapperType ReturnType_;
   std::deque<WrapperParameter> Parameters_;
 
   bool IsDefinition_ = false;
+  bool IsMember_ = false;
   bool IsConstructor_ = false;
   bool IsDestructor_ = false;
   bool IsStatic_ = false;
   bool IsConst_ = false;
   bool IsNoexcept_ = false;
-
-  std::optional<unsigned> Overload_;
-
-  std::optional<OverloadedOperator> OverloadedOperator_;
-
-  std::optional<TemplateArgumentList> TemplateArgumentList_;
 };
 
 class WrapperFunctionBuilder

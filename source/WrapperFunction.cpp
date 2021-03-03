@@ -84,37 +84,35 @@ WrapperFunction::WrapperFunction(Identifier const &Name)
 
 WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
 : WrapperObject<clang::FunctionDecl>(Decl),
+  TemplateArgumentList_(determineTemplateArgumentList(Decl)),
+  OverloadedOperator_(determineOverloadedOperator(Decl)),
   Name_(determineName(Decl)),
   ReturnType_(determineReturnType(Decl)),
   Parameters_(determineParameters(Decl)),
   IsDefinition_(Decl->isThisDeclarationADefinition()),
-  IsNoexcept_(determineIfNoexcept(Decl)),
-  OverloadedOperator_(determineOverloadedOperator(Decl)),
-  TemplateArgumentList_(determineTemplateArgumentList(Decl))
+  IsNoexcept_(determineIfNoexcept(Decl))
 {}
 
 WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
 : WrapperObject<clang::FunctionDecl>(Decl),
+  TemplateArgumentList_(determineTemplateArgumentList(Decl)),
+  OverloadedOperator_(determineOverloadedOperator(Decl)),
   Name_(determineName(Decl)),
   ReturnType_(determineReturnType(Decl)),
   Parameters_(determineParameters(Decl)),
   IsDefinition_(Decl->isThisDeclarationADefinition()),
+  IsMember_(true),
   IsConstructor_(llvm::isa<clang::CXXConstructorDecl>(Decl)),
   IsDestructor_(llvm::isa<clang::CXXDestructorDecl>(Decl)),
   IsStatic_(Decl->isStatic()),
   IsConst_(Decl->isConst()),
-  IsNoexcept_(determineIfNoexcept(Decl)),
-  OverloadedOperator_(determineOverloadedOperator(Decl)),
-  TemplateArgumentList_(determineTemplateArgumentList(Decl))
+  IsNoexcept_(determineIfNoexcept(Decl))
 {}
 
 bool
 WrapperFunction::operator==(WrapperFunction const &Other) const
 {
   if (Name_ != Other.Name_)
-    return false;
-
-  if (Parent_ != Other.Parent_)
     return false;
 
   if (ReturnType_ != Other.ReturnType_)
@@ -137,7 +135,7 @@ WrapperFunction::operator==(WrapperFunction const &Other) const
 void
 WrapperFunction::overload(std::shared_ptr<IdentifierIndex> II)
 {
-  auto NameTemplated(getName(false, false, true));
+  auto NameTemplated(getName(true));
 
   if (!II->hasOverload(NameTemplated))
     return;
@@ -146,9 +144,9 @@ WrapperFunction::overload(std::shared_ptr<IdentifierIndex> II)
 }
 
 Identifier
-WrapperFunction::getName(bool Overloaded,
+WrapperFunction::getName(bool WithTemplatePostfix,
                          bool WithoutOperatorName,
-                         bool WithTemplatePostfix) const
+                         bool Overloaded) const
 {
   Identifier Name(Name_);
 
@@ -163,9 +161,6 @@ WrapperFunction::getName(bool Overloaded,
   }
 
   if (WithTemplatePostfix) {
-    if (isMember() && Parent_->isTemplateInstantiation())
-      Name = Name.unqualified().qualified(Parent_->getName(true));
-
     if (isTemplateInstantiation())
       Name = Identifier(Name.str() + TemplateArgumentList_->str(true));
   }
@@ -333,12 +328,12 @@ WrapperFunction::determineTemplateArgumentList(clang::FunctionDecl const *Decl)
 WrapperFunctionBuilder &
 WrapperFunctionBuilder::setParent(WrapperRecord const *Parent)
 {
-  auto ParentName(Parent->getName());
+  auto ParentNameTemplated(Parent->getName(true));
   auto ParentType(Parent->getType());
 
-  Wf_.Parent_ = Parent;
+  Wf_.IsMember_ = true;
 
-  Wf_.Name_ = Wf_.Name_.unqualified().qualified(ParentName);
+  Wf_.Name_ = Wf_.Name_.unqualified().qualified(ParentNameTemplated);
 
   if (Wf_.isInstance()) {
     WrapperParameter Self(Identifier(Identifier::SELF), ParentType.pointerTo());

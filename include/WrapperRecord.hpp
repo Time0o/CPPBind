@@ -13,7 +13,6 @@
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
 #include "LLVMFormat.hpp"
-#include "Mixin.hpp"
 #include "TemplateArgument.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperObject.hpp"
@@ -23,8 +22,7 @@
 namespace cppbind
 {
 
-class WrapperRecord : public WrapperObject<clang::CXXRecordDecl>,
-                      private mixin::NotCopyOrMoveable
+class WrapperRecord : public WrapperObject<clang::CXXRecordDecl>
 {
 public:
   explicit WrapperRecord(clang::CXXRecordDecl const *Decl);
@@ -99,6 +97,8 @@ private:
   WrapperFunction implicitDestructor(
     clang::CXXRecordDecl const *Decl) const;
 
+  std::optional<TemplateArgumentList> TemplateArgumentList_;
+
   Identifier Name_;
   WrapperType Type_;
   std::vector<WrapperType> BaseTypes_;
@@ -109,8 +109,6 @@ private:
   bool IsAbstract_;
   bool IsCopyable_;
   bool IsMoveable_;
-
-  std::optional<TemplateArgumentList> TemplateArgumentList_;
 };
 
 } // namespace cppbind
