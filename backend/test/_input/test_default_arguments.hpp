@@ -5,6 +5,11 @@ namespace test
 
 constexpr double e = 2.71828;
 
+enum : int { EXP_DEFAULT = 1 };
+
+constexpr bool round_default()
+{ return false; }
+
 enum class Round
 {
   NEAREST,
@@ -14,8 +19,8 @@ enum class Round
 
 inline double pow_default_arguments(
   double base = e,
-  int exp = 1,
-  bool round = false,
+  int exp = EXP_DEFAULT,
+  bool round = round_default(),
   Round rounding_mode = Round::NEAREST)
 {
   double p = std::pow(base, exp);

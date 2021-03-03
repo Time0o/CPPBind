@@ -47,57 +47,34 @@ WrapperParameter::WrapperParameter(Identifier const &Name,
                                    clang::ParmVarDecl const *Decl)
 : WrapperObject<clang::ParmVarDecl>(Decl),
   Name_(Name),
-  Type_(Decl->getType())
+  Type_(Decl->getType()),
+  DefaultArgument_(determineDefaultArgument(Decl))
+{}
+
+std::optional<std::string>
+WrapperParameter::determineDefaultArgument(clang::ParmVarDecl const *Decl)
 {
   auto const *DefaultExpr = Decl->getDefaultArg();
-
-  if (DefaultExpr)
-    DefaultArgument_ = DefaultArgument(DefaultExpr);
-}
-
-WrapperParameter::DefaultArgument::DefaultArgument(clang::Expr const *Expr)
-{
-  auto &Ctx(ASTContext());
-
-  if (Expr->HasSideEffects(Ctx))
-    throw exception("default value must not have side effects");
-
-  if (Expr->isValueDependent() || Expr->isTypeDependent())
-    throw exception("default value must not be value/type dependent");
-
-  if (Expr->isNullPointerConstant(Ctx, clang::Expr::NPC_NeverValueDependent)) {
-    Value_ = nullptr;
-    return;
-  }
+  if (!DefaultExpr)
+    return std::nullopt;
 
   clang::Expr::EvalResult Result;
-  if (!Expr->EvaluateAsRValue(Result, Ctx, true))
-    throw exception("default value '{0}' not constant foldable to rvalue",
-                    print::stmt(Expr));
+  if (DefaultExpr->EvaluateAsRValue(Result, ASTContext(), true)) {
+    llvm::SmallString<40> StrBuf;
 
-  switch(Result.Val.getKind()) {
-  case clang::APValue::Int:
-    Value_ = Result.Val.getInt();
-    break;
-  case clang::APValue::Float:
-    Value_ = Result.Val.getFloat();
-    break;
-  default:
-    throw exception("default value must have pointer, integer or floating point type"); // XXX
+    switch(Result.Val.getKind()) {
+    case clang::APValue::Int:
+      Result.Val.getInt().toString(StrBuf);
+      return StrBuf.str().str();
+    case clang::APValue::Float:
+      Result.Val.getFloat().toString(StrBuf);
+      return StrBuf.str().str();
+    default:
+      break;
+    }
   }
-}
 
-std::string
-WrapperParameter::DefaultArgument::str() const
-{
-  if (isNullptrT())
-    return "nullptr";
-  else if (isInt())
-    return APToString(as<llvm::APSInt>());
-  else if (isFloat())
-    return APToString(as<llvm::APFloat>());
-
-  llvm_unreachable("invalid default argument type");
+  return print::stmt(DefaultExpr);
 }
 
 WrapperFunction::WrapperFunction(Identifier const &Name)
