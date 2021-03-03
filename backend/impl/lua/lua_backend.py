@@ -86,7 +86,6 @@ class LuaBackend(Backend):
             function_definitions=self._function_definitions(
                 [f for f in r.functions() if not f.is_destructor()]),
             register=self._register(
-                constants=r.constants(),
                 functions=[f for f in r.functions() if not f.is_instance()])))
 
     def wrap_function(self, f):
