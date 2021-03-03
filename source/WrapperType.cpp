@@ -98,8 +98,6 @@ WrapperType::isRecord() const
   if (isStruct() || isClass())
     return true;
 
-  assert(!type()->isRecordType()); // XXX
-
   return false;
 }
 
