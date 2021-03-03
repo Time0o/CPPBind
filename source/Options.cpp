@@ -27,8 +27,8 @@ void OptionsRegistry::init()
     return true;
   };
 
-  Options().add<std::vector<std::string>>("match")
-    .setDescription("Matcher rules for declarations to be wrapped", "match")
+  Options().add<std::vector<std::string>>("wrap")
+    .setDescription("Matcher rules for declarations to be wrapped", "wrap")
     .setOptional(false)
     .addAssertion(validMatchers, "invalid matcher rule (must have form decl_type:matcher)")
     .done();

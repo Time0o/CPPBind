@@ -49,7 +49,7 @@ CreateWrapperConsumer::addFundamentalTypesHandler()
 void
 CreateWrapperConsumer::addWrapperHandlers()
 {
-  for (auto const &MatcherRule : OPT(std::vector<std::string>, "match")) {
+  for (auto const &MatcherRule : OPT(std::vector<std::string>, "wrap")) {
     auto const &[MatcherID, MatcherSource] = string::splitFirst(MatcherRule, ":");
 
     if (MatcherID == "const") {
