@@ -25,7 +25,7 @@ public:
   {
     assert(Type->isFundamentalType());
 
-    auto TypeName(printType(Type, PrintingPolicy::DEFAULT));
+    auto TypeName(print::type(Type));
 
     FundamentalTypes_[TypeName] = Type;
   }

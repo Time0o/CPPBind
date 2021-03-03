@@ -244,21 +244,21 @@ WrapperType::format(bool Mangled,
                     Identifier::Quals Quals) const
 {
   if (Mangled)
-    return printMangledQualType(type());
+    return print::mangledQualType(type());
 
   if (getBase().isRecord()) {
-    PrintingPolicy PPCompact = PrintingPolicy::CURRENT;
-    PrintingPolicy PPNonCompact = PrintingPolicy::NONE;
+    auto PPCompact = print::DEFAULT_POLICY;
+    auto PPNonCompact = print::NO_POLICY;
 
-    auto Str(printQualType(type(), Compact ? PPCompact : PPNonCompact));
-    auto StrBase(printQualType(requalifyType(baseType(), 0u), PPCompact));
+    auto Str(print::qualType(type(), Compact ? PPCompact : PPNonCompact));
+    auto StrBase(print::qualType(requalifyType(baseType(), 0u), PPCompact));
 
     string::replace(Str, StrBase, Identifier(StrBase).format(Case, Quals));
 
     return Str;
 
   } else {
-    return printQualType(type(), PrintingPolicy::CURRENT);
+    return print::qualType(type());
   }
 }
 

@@ -28,6 +28,7 @@
 #include "IdentifierIndex.hpp"
 #include "Logging.hpp"
 #include "Options.hpp"
+#include "Print.hpp"
 #include "String.hpp"
 #include "TemplateArgument.hpp"
 #include "WrapperObject.hpp"
@@ -71,7 +72,8 @@ WrapperParameter::DefaultArgument::DefaultArgument(clang::Expr const *Expr)
 
   clang::Expr::EvalResult Result;
   if (!Expr->EvaluateAsRValue(Result, Ctx, true))
-    throw exception("default value must be constant foldable to rvalue");
+    throw exception("default value '{0}' not constant foldable to rvalue",
+                    print::stmt(Expr));
 
   switch(Result.Val.getKind()) {
   case clang::APValue::Int:

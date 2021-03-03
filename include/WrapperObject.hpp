@@ -10,8 +10,7 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include "CompilerState.hpp"
-#include "String.hpp"
+#include "Print.hpp"
 
 namespace cppbind
 {
@@ -62,14 +61,10 @@ private:
 
   static std::string declLocation(T_DECL const *Decl)
   {
-    auto const &SM(cppbind::ASTContext().getSourceManager());
-
     if (!Decl)
       return "???";
 
-    auto SourceRange(Decl->getSourceRange().printToString(SM));
-
-    return string::splitFirst(SourceRange, ",").first;
+    return print::sourceRange(Decl->getSourceRange());
   }
 
   T_DECL const *Decl_ = nullptr;

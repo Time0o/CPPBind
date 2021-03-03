@@ -3,66 +3,38 @@
 
 #include <string>
 
-#include "clang/AST/ASTContext.h"
-#include "clang/AST/Mangle.h"
-#include "clang/AST/PrettyPrinter.h"
+#include "clang/AST/Stmt.h"
 #include "clang/AST/Type.h"
-
-#include "llvm/Support/raw_ostream.h"
+#include "clang/Basic/SourceLocation.h"
 
 #include "CompilerState.hpp"
 
 namespace cppbind
 {
 
-enum PrintingPolicy
+namespace print
 {
-  NONE,
-  DEFAULT,
-  CURRENT
+
+enum Policy
+{
+  NO_POLICY,
+  DEFAULT_POLICY,
+  QUALIFIED_POLICY
 };
 
-inline std::string printQualType(clang::QualType const &Type, PrintingPolicy PP)
-{
-  switch (PP) {
-  case NONE:
-    return Type.getAsString();
-  case DEFAULT:
-    {
-      clang::PrintingPolicy DefaultPP(CompilerState()->getLangOpts());
+std::string sourceRange(clang::SourceRange const &SR);
 
-      return Type.getAsString(DefaultPP);
-    }
-  case CURRENT:
-    {
-      clang::PrintingPolicy const &CurrentPP(ASTContext().getPrintingPolicy());
+std::string stmt(clang::Stmt const *Stmt, Policy P = DEFAULT_POLICY);
 
-      return Type.getAsString(CurrentPP);
-    }
-  }
-}
+std::string qualType(clang::QualType const &Type, Policy P = DEFAULT_POLICY);
 
-inline std::string printMangledQualType(clang::QualType const &Type)
-{
-  auto *MangleContext = clang::ItaniumMangleContext::create(
-                          ASTContext(),
-                          ASTContext().getDiagnostics());
+std::string mangledQualType(clang::QualType const &Type);
 
-  std::string MangledName;
-  llvm::raw_string_ostream Os(MangledName);
+std::string type(clang::Type const *Type, Policy P = DEFAULT_POLICY);
 
-  MangleContext->mangleTypeName(Type, Os);
+std::string mangledType(clang::Type const *Type);
 
-  delete MangleContext;
-
-  return MangledName;
-}
-
-inline std::string printType(clang::Type const *Type, PrintingPolicy PP)
-{ return printQualType(clang::QualType(Type, 0), PP); }
-
-inline std::string printMangledType(clang::Type const *Type)
-{ return printMangledQualType(clang::QualType(Type, 0)); }
+} // namespace print
 
 } // namespace cppbind
 
