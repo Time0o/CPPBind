@@ -3,6 +3,7 @@
 
 #include <deque>
 #include <memory>
+#include <optional>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -12,6 +13,7 @@
 
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
+#include "Logging.hpp"
 #include "WrapperConstant.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperRecord.hpp"
@@ -22,13 +24,16 @@ namespace cppbind
 
 class Wrapper
 {
-  using FunctionNameLookup = std::unordered_map<Identifier,
-                                                WrapperFunction const *>;
+  template<typename T, typename T_KEY>
+  using Lookup = std::unordered_map<T_KEY, T const *>;
 
-  using RecordTypeLookup = std::unordered_map<WrapperType,
-                                              WrapperRecord const *> ;
+  template<typename T>
+  using NameLookup = Lookup<T, Identifier>;
 
-  class RecordInheritanceGraph
+  template<typename T>
+  using TypeLookup = Lookup<T, WrapperType>;
+
+  class InheritanceGraph
   {
   public:
     void add(WrapperType const &Type, std::vector<WrapperType> const &BaseTypes);
@@ -93,18 +98,46 @@ private:
   void addRecord(std::shared_ptr<IdentifierIndex> II,
                  WrapperRecord const *Record);
 
-  WrapperFunction const *getFunctionFromName(Identifier const &Name) const;
+  template<typename T, typename T_KEY>
+  T const *objLookup(Lookup<T, T_KEY> const &Lookup, T_KEY const &Key) const
+  {
+    auto It(Lookup.find(Key));
 
-  WrapperRecord const *getRecordFromType(WrapperType const &Type) const;
+    if (It == Lookup.end())
+      return nullptr;
+
+    return It->second;
+  }
+
+  template<typename T>
+  void objCheckTypeWrapped(T const *Obj, WrapperType const &Type)
+  {
+    WrapperType RecordType;
+
+    if (Type.isRecord())
+      RecordType = Type;
+    else if (Type.isPointer() && Type.pointee().isRecord())
+      RecordType = Type.pointee();
+    else if (Type.isReference() && Type.referenced().isRecord())
+      RecordType = Type.referenced();
+    else
+      return;
+
+    if (!objLookup(RecordTypes_, RecordType.withoutConst()))
+      exception("type '{0}' of {1} is unwrapped", Type, *Obj);
+  }
 
   std::deque<WrapperConstant> Constants_;
+  NameLookup<WrapperConstant> ConstantNames_;
+  TypeLookup<WrapperConstant> ConstantTypes_;
 
   std::deque<WrapperFunction> Functions_;
-  FunctionNameLookup FunctionNames_;
+  NameLookup<WrapperFunction> FunctionNames_;
 
   std::deque<WrapperRecord> Records_;
-  RecordTypeLookup RecordTypes_;
-  RecordInheritanceGraph RecordInheritances_;
+  NameLookup<WrapperRecord> RecordNames_;
+  TypeLookup<WrapperRecord> RecordTypes_;
+  InheritanceGraph RecordInheritances_;
 };
 
 } // namespace cppbind

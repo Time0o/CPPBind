@@ -7,14 +7,15 @@
 #include "boost/graph/topological_sort.hpp"
 
 #include "IdentifierIndex.hpp"
+#include "Logging.hpp"
 #include "Wrapper.hpp"
 
 namespace cppbind
 {
 
 void
-Wrapper::RecordInheritanceGraph::add(WrapperType const &Type,
-                                     std::vector<WrapperType> const &BaseTypes)
+Wrapper::InheritanceGraph::add(WrapperType const &Type,
+                               std::vector<WrapperType> const &BaseTypes)
 {
   G_.graph()[boost::add_vertex(Type, G_)] = Type;
 
@@ -27,8 +28,7 @@ Wrapper::RecordInheritanceGraph::add(WrapperType const &Type,
 }
 
 std::deque<WrapperType>
-Wrapper::RecordInheritanceGraph::bases(WrapperType const &Type,
-                                       bool Recursive) const
+Wrapper::InheritanceGraph::bases(WrapperType const &Type, bool Recursive) const
 {
   std::deque<WrapperType> Bases;
 
@@ -63,7 +63,7 @@ Wrapper::RecordInheritanceGraph::bases(WrapperType const &Type,
 }
 
 std::deque<WrapperType>
-Wrapper::RecordInheritanceGraph::basesFirstOrdering() const
+Wrapper::InheritanceGraph::basesFirstOrdering() const
 {
   std::vector<boost::graph_traits<Graph>::vertex_descriptor> BasesFirstVertices;
   BasesFirstVertices.reserve(boost::num_vertices(G_));
@@ -119,11 +119,16 @@ Wrapper::getRecords() const
               std::vector<WrapperRecord const *>>> RecordsAndBases;
 
   for (auto Type : RecordInheritances_.basesFirstOrdering()) {
-    auto Record(getRecordFromType(Type));
+    auto const *Record(objLookup(RecordTypes_, Type));
+    assert(Record);
 
     std::vector<WrapperRecord const *> Bases;
-    for (auto const &BaseType : RecordInheritances_.bases(Type, true))
-      Bases.push_back(getRecordFromType(BaseType));
+    for (auto const &BaseType : RecordInheritances_.bases(Type, true)) {
+      auto const *Base(objLookup(RecordTypes_, BaseType));
+      assert(Base);
+
+      Bases.push_back(Base);
+    }
 
     RecordsAndBases.push_back(std::make_pair(Record, Bases));
   }
@@ -134,23 +139,37 @@ Wrapper::getRecords() const
 void
 Wrapper::addConstant(std::shared_ptr<IdentifierIndex> II,
                      WrapperConstant const *Constant)
-{ II->addDefinition(Constant->getName(), IdentifierIndex::CONST); }
+{
+  objCheckTypeWrapped(Constant, Constant->getType());
+
+  II->addDefinition(Constant->getName(), IdentifierIndex::CONST);
+
+  ConstantNames_[Constant->getName()] = Constant;
+  ConstantTypes_[Constant->getType()] = Constant;
+}
 
 void
 Wrapper::addFunction(std::shared_ptr<IdentifierIndex> II,
                      WrapperFunction const *Function)
 {
+  objCheckTypeWrapped(Function, Function->getReturnType());
+
+  for (auto const *Param : Function->getParameters())
+    objCheckTypeWrapped(Param, Param->getType());
+
   auto FunctionNameTemplated(Function->getName(false, false, true));
 
   if (II->hasDefinition(FunctionNameTemplated, IdentifierIndex::FUNC)) {
-    auto Previous(getFunctionFromName(FunctionNameTemplated));
+    auto const *Previous(objLookup(FunctionNames_, FunctionNameTemplated));
+    assert(Previous);
 
     assert(*Function != *Previous);
 
     II->pushOverload(FunctionNameTemplated);
 
   } else if (II->hasDeclaration(FunctionNameTemplated, IdentifierIndex::FUNC)) {
-    auto Previous(getFunctionFromName(FunctionNameTemplated));
+    auto Previous(objLookup(FunctionNames_, FunctionNameTemplated));
+    assert(Previous);
 
     if (Function->isDefinition() && *Function == *Previous) {
       II->addDefinition(FunctionNameTemplated, IdentifierIndex::FUNC);
@@ -171,48 +190,31 @@ Wrapper::addFunction(std::shared_ptr<IdentifierIndex> II,
       II->addDeclaration(FunctionNameTemplated, IdentifierIndex::FUNC);
   }
 
-  FunctionNames_.insert(std::make_pair(FunctionNameTemplated, Function));
+  FunctionNames_[FunctionNameTemplated] = Function;
 }
 
 void
 Wrapper::addRecord(std::shared_ptr<IdentifierIndex> II,
                    WrapperRecord const *Record)
 {
-  auto RecordName(Record->getName());
+  auto RecordNameTemplated(Record->getName(true));
 
   if (!Record->isDefinition()) {
-    II->addDeclaration(RecordName, IdentifierIndex::RECORD);
+    II->addDeclaration(RecordNameTemplated, IdentifierIndex::RECORD);
 
     Records_.pop_back();
 
     return;
   }
 
-  II->addDefinition(RecordName, IdentifierIndex::RECORD);
+  II->addDefinition(RecordNameTemplated, IdentifierIndex::RECORD);
+
+  RecordNames_[RecordNameTemplated] = Record;
+  RecordTypes_[Record->getType()] = Record;
+  RecordInheritances_.add(Record->getType(), Record->getBaseTypes());
 
   for (auto Function : Record->getFunctions())
     addFunction(II, Function);
-
-  RecordTypes_.insert(std::make_pair(Record->getType(), Record));
-  RecordInheritances_.add(Record->getType(), Record->getBaseTypes());
-}
-
-WrapperFunction const *
-Wrapper::getFunctionFromName(Identifier const &Name) const
-{
-  auto It(FunctionNames_.find(Name));
-  assert(It != FunctionNames_.end());
-
-  return It->second;
-}
-
-WrapperRecord const *
-Wrapper::getRecordFromType(WrapperType const &Type) const
-{
-  auto It(RecordTypes_.find(Type));
-  assert(It != RecordTypes_.end());
-
-  return It->second;
 }
 
 } // namespace cppbind
