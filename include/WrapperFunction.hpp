@@ -81,6 +81,8 @@ class WrapperFunction : public WrapperObject<clang::FunctionDecl>
 {
   friend class WrapperFunctionBuilder;
 
+  struct OverloadedOperator { std::string Name; std::string Spelling; };
+
 public:
   WrapperFunction(Identifier const &Name);
 
@@ -160,7 +162,7 @@ private:
   static bool
   determineIfNoexcept(clang::FunctionDecl const *Decl);
 
-  static std::optional<std::pair<std::string, std::string>>
+  static std::optional<OverloadedOperator>
   determineOverloadedOperator(clang::FunctionDecl const *Decl);
 
   static std::optional<TemplateArgumentList>
@@ -180,7 +182,9 @@ private:
   bool IsNoexcept_ = false;
 
   std::optional<unsigned> Overload_;
-  std::optional<std::pair<std::string, std::string>> OverloadedOperator_;
+
+  std::optional<OverloadedOperator> OverloadedOperator_;
+
   std::optional<TemplateArgumentList> TemplateArgumentList_;
 };
 
