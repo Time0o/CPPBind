@@ -77,10 +77,9 @@ class BackendTestGenerator:
                 kwargs['cppbind'],
                 *self._clang_args('cppbind', **kwargs),
                 test_input,
-                '--wrap',
-                ('const:hasAncestor(namespaceDecl(hasName("test"))),'
-                 'function:hasAncestor(namespaceDecl(hasName("test"))),'
-                 'record:hasAncestor(namespaceDecl(hasName("test")))'),
+                '--wrap', 'const:hasAncestor(namespaceDecl(hasName("test")))',
+                '--wrap','function:hasAncestor(namespaceDecl(hasName("test")))',
+                '--wrap','record:hasAncestor(namespaceDecl(hasName("test")))',
                 '--backend', f'{self._test_lang}',
                 '--output-directory', f'{output_dir}',
                 '--'

@@ -234,7 +234,6 @@ private:
     using V = typename T::value_type;
 
     auto Opt(std::make_shared<llvm::cl::list<V>>(Name,
-                                                 llvm::cl::CommaSeparated,
                                                  std::forward<ARGS>(Args)...));
 
     return Opt;

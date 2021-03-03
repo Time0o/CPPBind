@@ -16,21 +16,9 @@ void OptionsRegistry::init()
     .setOptional(false)
     .done();
 
-  auto validMatchers = [](std::vector<std::string> const &Matchers) {
-    std::regex MatcherRegex(R"#([a-zA-Z]+:[a-zA-Z\(\)"]+)#");
-
-    for (auto const &Matcher : Matchers) {
-      if (!std::regex_match(Matcher, MatcherRegex))
-        return false;
-    }
-
-    return true;
-  };
-
   Options().add<std::vector<std::string>>("wrap")
     .setDescription("Matcher rules for declarations to be wrapped", "wrap")
     .setOptional(false)
-    .addAssertion(validMatchers, "invalid matcher rule (must have form decl_type:matcher)")
     .done();
 
   Options().add<bool>("skip-unwrappable")
