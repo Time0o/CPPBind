@@ -33,6 +33,11 @@ void OptionsRegistry::init()
     .addAssertion(validMatchers, "invalid matcher rule (must have form decl_type:matcher)")
     .done();
 
+  Options().add<bool>("skip-unwrappable")
+    .setDescription("Skip unwrappable objects instead of failing")
+    .setDefault(false)
+    .done();
+
   Options().add<std::string>("output-directory")
     .setDescription("Directory in which to place generated files", "outdir")
     .setDefault("")

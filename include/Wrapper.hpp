@@ -14,6 +14,7 @@
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
 #include "Logging.hpp"
+#include "Options.hpp"
 #include "WrapperConstant.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperRecord.hpp"
@@ -110,7 +111,7 @@ private:
   }
 
   template<typename T>
-  void objCheckTypeWrapped(T const *Obj, WrapperType const &Type)
+  bool objCheckTypeWrapped(T const *Obj, WrapperType const &Type)
   {
     WrapperType RecordType;
 
@@ -121,10 +122,17 @@ private:
     else if (Type.isReference() && Type.referenced().isRecord())
       RecordType = Type.referenced();
     else
-      return;
+      return true;
 
-    if (!objLookup(RecordTypes_, RecordType.withoutConst()))
-      exception("type '{0}' of {1} is unwrapped", Type, *Obj);
+    if (objLookup(RecordTypes_, RecordType.withoutConst()))
+      return true;
+
+    if (OPT(bool, "skip-unwrappable")) {
+      warning("{0}: skipping because type '{1}' is unwrapped", *Obj, Type);
+      return false;
+    } else {
+      exception("{0}: type '{1}' is unwrapped", *Obj, Type);
+    }
   }
 
   std::deque<WrapperConstant> Constants_;

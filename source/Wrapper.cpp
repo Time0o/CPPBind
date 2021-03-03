@@ -140,7 +140,8 @@ void
 Wrapper::addConstant(std::shared_ptr<IdentifierIndex> II,
                      WrapperConstant const *Constant)
 {
-  objCheckTypeWrapped(Constant, Constant->getType());
+  if (!objCheckTypeWrapped(Constant, Constant->getType()))
+    return;
 
   II->addDefinition(Constant->getName(), IdentifierIndex::CONST);
 
@@ -152,10 +153,13 @@ void
 Wrapper::addFunction(std::shared_ptr<IdentifierIndex> II,
                      WrapperFunction const *Function)
 {
-  objCheckTypeWrapped(Function, Function->getReturnType());
+  if (!objCheckTypeWrapped(Function, Function->getReturnType()))
+    return;
 
-  for (auto const *Param : Function->getParameters())
-    objCheckTypeWrapped(Param, Param->getType());
+  for (auto const *Param : Function->getParameters()) {
+    if (!objCheckTypeWrapped(Function, Param->getType()))
+      return;
+  }
 
   auto FunctionNameTemplated(Function->getName(false, false, true));
 
