@@ -32,15 +32,15 @@ auto declMatcher(llvm::StringRef ID, llvm::StringRef MatcherSource)
   auto Matcher(Parser::parseMatcherExpression(MatcherSource, &Diag));
 
   if (!Matcher)
-    exception(Diag.toString());
+    throw exception(Diag.toString());
 
   if (!Matcher->canConvertTo<T>())
-    exception("no valid conversion for '{0}' matcher", ID);
+    throw exception("no valid conversion for '{0}' matcher", ID);
 
   auto MatcherBound(Matcher->tryBind(ID));
 
   if (!MatcherBound)
-    exception("failed to bind '{0}' matcher", ID);
+    throw exception("failed to bind '{0}' matcher", ID);
 
   return MatcherBound->convertTo<T>();
 }

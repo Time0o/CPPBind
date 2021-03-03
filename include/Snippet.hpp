@@ -46,7 +46,7 @@ public:
 
     std::ofstream Stream(Path_);
     if (!Stream)
-      exception("failed to generate temporary file");
+      throw exception("failed to generate temporary file");
 
     Stream << str();
 

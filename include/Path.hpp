@@ -23,7 +23,7 @@ inline std::string temporary()
   std::array<char, 7> Tmpnam = {'X', 'X', 'X', 'X', 'X', 'X', '\0'};
 
   if (mkstemp(Tmpnam.data()) == -1)
-    exception("failed to create temporary path");
+    throw exception("failed to create temporary path");
 
   return std::string(Tmpnam.begin(), Tmpnam.end());
 }

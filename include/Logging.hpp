@@ -39,8 +39,8 @@ void error(std::string const &Fmt, ARGS &&...Args)
 { log(llvm::errs(), "ERROR: " + Fmt, std::forward<ARGS>(Args)...); }
 
 template<typename ...ARGS>
-void exception(std::string const &Fmt, ARGS &&...Args)
-{ throw std::runtime_error(fmt(Fmt, std::forward<ARGS>(Args)...)); }
+std::runtime_error exception(std::string const &Fmt, ARGS &&...Args)
+{ return std::runtime_error(fmt(Fmt, std::forward<ARGS>(Args)...)); }
 
 } // namespace cppbind
 

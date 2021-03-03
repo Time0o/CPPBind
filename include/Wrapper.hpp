@@ -131,7 +131,7 @@ private:
       warning("{0}: skipping because type '{1}' is unwrapped", *Obj, Type);
       return false;
     } else {
-      exception("{0}: type '{1}' is unwrapped", *Obj, Type);
+      throw exception("{0}: type '{1}' is unwrapped", *Obj, Type);
     }
   }
 

@@ -106,7 +106,7 @@ CreateWrapperConsumer::addWrapperHandlers()
         &CreateWrapperConsumer::handleRecord);
 
     } else {
-      exception("invalid matcher: '{0}'", MatcherID);
+      throw exception("invalid matcher: '{0}'", MatcherID);
     }
   }
 }

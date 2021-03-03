@@ -54,7 +54,7 @@ void Backend::run(std::string const &InputFile,
     RunModule.attr("run")(InputFile, Wrapper, &Options());
 
   } catch (std::runtime_error const &e) {
-    exception("in backend:\n{0}", e.what());
+    throw exception("in backend:\n{0}", e.what());
   }
 }
 
