@@ -78,13 +78,6 @@ struct FundamentalTypesSnippet : public Snippet<FundamentalTypesSnippet>
   static std::string code();
 };
 
-struct TypeinfoSnippet : public Snippet<TypeinfoSnippet>
-{
-  static std::string include_();
-  static std::string namespace_();
-  static std::string code();
-};
-
 } // namespace cppbind
 
 #endif // GUARD_SNIPPET_H
