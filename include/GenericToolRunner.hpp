@@ -1,6 +1,7 @@
 #ifndef GUARD_TOOL_RUNNER_H
 #define GUARD_TOOL_RUNNER_H
 
+#include <cassert>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -13,6 +14,7 @@
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
 
+#include "Options.hpp"
 #include "Snippet.hpp"
 
 namespace clang { class FrontendAction; }
@@ -20,22 +22,20 @@ namespace clang { class FrontendAction; }
 namespace cppbind
 {
 
-// TODO: pass parser in constructor...
-template<typename T>
 class GenericToolRunner
 {
 public:
   GenericToolRunner(clang::tooling::CommonOptionsParser &Parser)
-  : Tool_(Parser.getCompilations(), Parser.getSourcePathList())
+  : Compilations_(Parser.getCompilations()),
+    SourcePathList_(Parser.getSourcePathList()),
+    Tool_(makeTool())
   {}
 
   int run()
   {
-    adjustArguments();
-
     beforeRun();
 
-    auto Factory(makeFactory());
+    auto Factory(makeFactory(Compilations_, SourcePathList_));
 
     int Ret = Tool_.run(Factory.get());
 
@@ -44,26 +44,12 @@ public:
     return Ret;
   }
 
-  std::vector<std::unique_ptr<clang::ASTUnit>> buildASTs()
-  {
-    std::vector<std::unique_ptr<clang::ASTUnit>> ASTs;
-    Tool_.buildASTs(ASTs); // XXX handle failure
-
-    return ASTs;
-  }
-
-  virtual std::unique_ptr<clang::tooling::FrontendActionFactory> makeFactory() = 0;
+  virtual std::unique_ptr<clang::tooling::FrontendActionFactory>
+  makeFactory(clang::tooling::CompilationDatabase const &Compilations,
+              std::vector<std::string> const &SourcePathList) = 0;
 
 protected:
-#if __clang_major__ >= 10
-  using FrontendActionPtr = std::unique_ptr<clang::FrontendAction>;
-  #define MAKE_FRONTEND_ACTION(Args) std::make_unique<T>(Args)
-#else
-  using FrontendActionPtr = clang::FrontendAction *;
-  #define MAKE_FRONTEND_ACTION(Args) new T(Args)
-#endif
-
-  template<typename ...ARGS>
+  template<typename T, typename ...ARGS>
   static std::unique_ptr<clang::tooling::FrontendActionFactory>
   makeFactoryWithArgs(ARGS&&... Args)
   {
@@ -74,11 +60,21 @@ protected:
       : StoredArgs_(std::forward_as_tuple(std::forward<ARGS>(Args)...))
       {}
 
-      FrontendActionPtr create() override
+#if __clang_major__ >= 10
+      std::unique_ptr<clang::FrontendAction> create() override
+#else
+      clang::FrontendAction *create() override
+#endif
       {
         return std::apply(
           [](auto&&... Args)
-          { return MAKE_FRONTEND_ACTION(std::forward<decltype(Args)>(Args)...); },
+          {
+#if __clang_major__ >= 10
+            return std::make_unique<T>(std::forward<decltype(Args)>(Args)...);
+#else
+            return new T(std::forward<decltype(Args)>(Args)...);
+#endif
+          },
           StoredArgs_);
       }
 
@@ -90,43 +86,52 @@ protected:
   }
 
 private:
-  static clang::tooling::ClangTool makeTool(clang::tooling::CommonOptionsParser &Parser)
+  clang::tooling::ClangTool makeTool() const
   {
-    return clang::tooling::ClangTool(Parser.getCompilations(),
-                                     Parser.getSourcePathList());
-  }
+    clang::tooling::ClangTool Tool(Compilations_, {"/dev/null"});
 
-  void adjustArguments()
-  {
     std::vector<clang::tooling::ArgumentsAdjuster> ArgumentsAdjusters;
 
     auto BEGIN = clang::tooling::ArgumentInsertPosition::BEGIN;
     auto END = clang::tooling::ArgumentInsertPosition::END;
 
-    ArgumentsAdjusters.push_back(
-      clang::tooling::getInsertArgumentAdjuster("-xc++-header", BEGIN));
-
-    for (auto const &ExtraInclude : extraIncludes()) {
+    auto insertArguments = [&](std::vector<std::string> const &Arguments,
+                               clang::tooling::ArgumentInsertPosition Where)
+    {
       ArgumentsAdjusters.push_back(
-        clang::tooling::getInsertArgumentAdjuster(
-          {"-include", ExtraInclude}, END));
-    }
+        clang::tooling::getInsertArgumentAdjuster(Arguments, Where));
+    };
 
-    ArgumentsAdjusters.push_back(
-      clang::tooling::getInsertArgumentAdjuster(clangIncludes(), END));
+    insertArguments({"-xc++-header"}, BEGIN);
+
+    for (auto const &Include : includeBefore())
+      insertArguments({"-include", Include}, END);
+
+    for (auto const &SourcePath : SourcePathList_)
+      insertArguments({"-include", SourcePath}, END);
+
+    for (auto const &Include : includeAfter())
+      insertArguments({"-include", Include}, END);
+
+    insertArguments(clangIncludes(), END);
 
     for (auto const &ArgumentsAdjuster : ArgumentsAdjusters)
-      Tool_.appendArgumentsAdjuster(ArgumentsAdjuster);
+      Tool.appendArgumentsAdjuster(ArgumentsAdjuster);
+
+    return Tool;
   }
 
-  static std::vector<std::string> extraIncludes()
+  static std::vector<std::string> includeBefore()
   {
-    static FundamentalTypesSnippet Ft;
+    static FundamentalTypesSnippet Ft; // XXX get rid of Snippet code
 
     Ft.fileCreate();
 
     return {Ft.filePath()};
   }
+
+  static std::vector<std::string> includeAfter()
+  { return {OPT("template-instantiations")}; }
 
   static std::vector<std::string> clangIncludes()
   {
@@ -143,6 +148,9 @@ private:
 
   virtual void beforeRun() {}
   virtual void afterRun() {}
+
+  clang::tooling::CompilationDatabase const &Compilations_;
+  std::vector<std::string> SourcePathList_;
 
   clang::tooling::ClangTool Tool_;
 };

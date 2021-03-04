@@ -25,10 +25,10 @@ namespace cppbind
 {
 
 CreateWrapperConsumer::CreateWrapperConsumer(
-  std::shared_ptr<IdentifierIndex> II,
-  std::shared_ptr<Wrapper> Wrapper)
-: II_(II),
-  Wr_(Wrapper)
+  std::shared_ptr<Wrapper> Wrapper,
+  std::shared_ptr<IdentifierIndex> II)
+: Wr_(Wrapper),
+  II_(II)
 {
   addFundamentalTypesHandler();
   addWrapperHandlers();

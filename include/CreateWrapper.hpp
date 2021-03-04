@@ -24,8 +24,8 @@ namespace cppbind
 class CreateWrapperConsumer : public GenericASTConsumer
 {
 public:
-  explicit CreateWrapperConsumer(std::shared_ptr<IdentifierIndex> II,
-                                 std::shared_ptr<Wrapper> Wrapper);
+  explicit CreateWrapperConsumer(std::shared_ptr<Wrapper> Wrapper,
+                                 std::shared_ptr<IdentifierIndex> II);
 
 private:
   void addFundamentalTypesHandler();
@@ -48,8 +48,8 @@ private:
   void handleFunction(clang::FunctionDecl const *Decl);
   void handleRecord(clang::CXXRecordDecl const *Decl);
 
-  std::shared_ptr<IdentifierIndex> II_;
   std::shared_ptr<Wrapper> Wr_;
+  std::shared_ptr<IdentifierIndex> II_;
 };
 
 // XXX what about parallel invocations?
@@ -57,15 +57,20 @@ class CreateWrapperFrontendAction
 : public GenericFrontendAction<CreateWrapperConsumer>
 {
 public:
-  explicit CreateWrapperFrontendAction(std::shared_ptr<IdentifierIndex> II)
-  : II_(II)
+  explicit CreateWrapperFrontendAction(
+    clang::tooling::CompilationDatabase const &Compilations,
+    std::vector<std::string> const &SourcePathList,
+    std::shared_ptr<IdentifierIndex> II)
+
+  : GenericFrontendAction<CreateWrapperConsumer>(Compilations, SourcePathList),
+    II_(II)
   {}
 
 private:
   std::unique_ptr<CreateWrapperConsumer> makeConsumer() override
   {
     // XXX skip source files, filter headers?
-    return std::make_unique<CreateWrapperConsumer>(II_, Wr_);
+    return std::make_unique<CreateWrapperConsumer>(Wr_, II_);
   }
 
   void beforeProcessing() override
@@ -87,14 +92,19 @@ private:
   std::shared_ptr<IdentifierIndex> II_;
 };
 
-class CreateWrapperToolRunner
-: public GenericToolRunner<CreateWrapperFrontendAction>
+class CreateWrapperToolRunner : public GenericToolRunner
 {
 public:
-  using GenericToolRunner<CreateWrapperFrontendAction>::GenericToolRunner;
+  using GenericToolRunner::GenericToolRunner;
 
-  std::unique_ptr<clang::tooling::FrontendActionFactory> makeFactory() override
-  { return makeFactoryWithArgs(II_); }
+  virtual std::unique_ptr<clang::tooling::FrontendActionFactory>
+  makeFactory(clang::tooling::CompilationDatabase const &Compilations,
+              std::vector<std::string> const &SourcePathList)
+  {
+    return makeFactoryWithArgs<CreateWrapperFrontendAction>(Compilations,
+                                                            SourcePathList,
+                                                            II_);
+  }
 
 protected:
   std::shared_ptr<IdentifierIndex> II_ = std::make_shared<IdentifierIndex>();

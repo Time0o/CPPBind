@@ -1,7 +1,10 @@
 #ifndef GUARD_GENERIC_FRONTEND_ACTION_H
 #define GUARD_GENERIC_FRONTEND_ACTION_H
 
+#include <deque>
 #include <memory>
+#include <string>
+#include <vector>
 
 #include "clang/Frontend/FrontendAction.h"
 
@@ -22,12 +25,17 @@ template<typename CONSUMER>
 class GenericFrontendAction : public clang::ASTFrontendAction
 {
 public:
+  GenericFrontendAction(clang::tooling::CompilationDatabase const &,
+                        std::vector<std::string> const &SourcePathList)
+  : SourcePathList_(SourcePathList.begin(), SourcePathList.end())
+  {}
+
   std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
     clang::CompilerInstance &CI,
-    llvm::StringRef File) override
+    llvm::StringRef) override
   {
     CompilerState().updateCompilerInstance(CI);
-    CompilerState().updateFile(File.str());
+    CompilerState().updateFile(nextSourcePath());
 
     beforeProcessing();
 
@@ -42,6 +50,18 @@ private:
 
   virtual void beforeProcessing() {};
   virtual void afterProcessing() {};
+
+  std::string nextSourcePath()
+  {
+    assert(!SourcePathList_.empty());
+
+    std::string SourceFile(SourcePathList_.front());
+    SourcePathList_.pop_front();
+
+    return SourceFile;
+  }
+
+  std::deque<std::string> SourcePathList_;
 };
 
 } // namespace cppbind
