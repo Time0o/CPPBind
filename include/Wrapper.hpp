@@ -63,21 +63,27 @@ public:
   void addWrapperConstant(std::shared_ptr<IdentifierIndex> II, ARGS &&...Args)
   {
     Constants_.emplace_back(std::forward<ARGS>(Args)...);
-    addConstant(II, &Constants_.back());
+
+    if (!addWrapperConstant(II, &Constants_.back()))
+      Constants_.pop_back();
   }
 
   template<typename ...ARGS>
   void addWrapperFunction(std::shared_ptr<IdentifierIndex> II, ARGS &&...Args)
   {
     Functions_.emplace_back(std::forward<ARGS>(Args)...);
-    addFunction(II, &Functions_.back());
+
+    if (!addWrapperFunction(II, &Functions_.back()))
+      Functions_.pop_back();
   }
 
   template<typename ...ARGS>
   void addWrapperRecord(std::shared_ptr<IdentifierIndex> II, ARGS &&...Args)
   {
     Records_.emplace_back(std::forward<ARGS>(Args)...);
-    addRecord(II, &Records_.back());
+
+    if (!addWrapperRecord(II, &Records_.back()))
+      Records_.pop_back();
   }
 
   void overload(std::shared_ptr<IdentifierIndex> II);
@@ -90,14 +96,14 @@ public:
               std::vector<WrapperRecord const *>>> getRecords() const;
 
 private:
-  void addConstant(std::shared_ptr<IdentifierIndex> II,
-                   WrapperConstant const *Constant);
+  bool addWrapperConstant(std::shared_ptr<IdentifierIndex> II,
+                          WrapperConstant *Constant);
 
-  void addFunction(std::shared_ptr<IdentifierIndex> II,
-                   WrapperFunction const *Function);
+  bool addWrapperFunction(std::shared_ptr<IdentifierIndex> II,
+                          WrapperFunction *Function);
 
-  void addRecord(std::shared_ptr<IdentifierIndex> II,
-                 WrapperRecord const *Record);
+  bool addWrapperRecord(std::shared_ptr<IdentifierIndex> II,
+                        WrapperRecord *Record);
 
   template<typename T, typename T_KEY>
   T const *objLookup(Lookup<T, T_KEY> const &Lookup, T_KEY const &Key) const

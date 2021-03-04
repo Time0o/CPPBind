@@ -101,7 +101,11 @@ public:
                      bool WithoutOperatorName = false,
                      bool Overloaded = false) const;
 
-  std::vector<WrapperParameter const *> getParameters(bool SkipSelf = false) const;
+  std::deque<WrapperParameter> const &getParameters() const
+  { return Parameters_; }
+
+  std::deque<WrapperParameter> &getParameters()
+  { return Parameters_; }
 
   WrapperType getReturnType() const
   { return ReturnType_; }

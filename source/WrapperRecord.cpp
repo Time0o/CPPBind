@@ -55,41 +55,6 @@ WrapperRecord::getName(bool WithTemplatePostfix) const
   return Name;
 }
 
-std::vector<WrapperFunction const *>
-WrapperRecord::getFunctions() const
-{
-  std::vector<WrapperFunction const *> Functions;
-
-  for (auto const &F : Functions_)
-    Functions.push_back(&F);
-
-  return Functions;
-}
-
-std::vector<WrapperFunction const *>
-WrapperRecord::getConstructors() const
-{
-  std::vector<WrapperFunction const *> Constructors;
-
-  for (auto const &F : Functions_) {
-    if (F.isConstructor())
-      Constructors.push_back(&F);
-  }
-
-  return Constructors;
-}
-
-WrapperFunction const *
-WrapperRecord::getDestructor() const
-{
-  for (auto const &F : Functions_) {
-    if (F.isDestructor())
-      return &F;
-  }
-
-  assert(false); // XXX
-}
-
 std::optional<std::string>
 WrapperRecord::getTemplateArgumentList() const
 {

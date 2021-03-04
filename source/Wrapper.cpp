@@ -136,39 +136,36 @@ Wrapper::getRecords() const
   return RecordsAndBases;
 }
 
-void
-Wrapper::addConstant(std::shared_ptr<IdentifierIndex> II,
-                     WrapperConstant const *Constant)
+bool
+Wrapper::addWrapperConstant(std::shared_ptr<IdentifierIndex> II,
+                            WrapperConstant *Constant)
 {
   if (!objCheckTypeWrapped(Constant, Constant->getType()))
-    return;
+    return false;
 
   II->addDefinition(Constant->getName(), IdentifierIndex::CONST);
 
   ConstantNames_[Constant->getName()] = Constant;
   ConstantTypes_[Constant->getType()] = Constant;
+
+  return true;
 }
 
-void
-Wrapper::addFunction(std::shared_ptr<IdentifierIndex> II,
-                     WrapperFunction const *Function)
+bool
+Wrapper::addWrapperFunction(std::shared_ptr<IdentifierIndex> II,
+                            WrapperFunction *Function)
 {
   if (!objCheckTypeWrapped(Function, Function->getReturnType()))
-    return;
+    return false;
 
-  for (auto const *Param : Function->getParameters()) {
-    if (!objCheckTypeWrapped(Function, Param->getType()))
-      return;
+  for (auto const &Param : Function->getParameters()) {
+    if (!objCheckTypeWrapped(Function, Param.getType()))
+      return false;
   }
 
   auto FunctionNameTemplated(Function->getName(true));
 
   if (II->hasDefinition(FunctionNameTemplated, IdentifierIndex::FUNC)) {
-    auto const *Previous(objLookup(FunctionNames_, FunctionNameTemplated));
-    assert(Previous);
-
-    assert(*Function != *Previous);
-
     II->pushOverload(FunctionNameTemplated);
 
   } else if (II->hasDeclaration(FunctionNameTemplated, IdentifierIndex::FUNC)) {
@@ -177,10 +174,7 @@ Wrapper::addFunction(std::shared_ptr<IdentifierIndex> II,
 
     if (Function->isDefinition() && *Function == *Previous) {
       II->addDefinition(FunctionNameTemplated, IdentifierIndex::FUNC);
-
-      Functions_.pop_back();
-
-      return;
+      return false;
     }
 
     assert(*Function != *Previous);
@@ -195,20 +189,19 @@ Wrapper::addFunction(std::shared_ptr<IdentifierIndex> II,
   }
 
   FunctionNames_[FunctionNameTemplated] = Function;
+
+  return true;
 }
 
-void
-Wrapper::addRecord(std::shared_ptr<IdentifierIndex> II,
-                   WrapperRecord const *Record)
+bool
+Wrapper::addWrapperRecord(std::shared_ptr<IdentifierIndex> II,
+                          WrapperRecord *Record)
 {
   auto RecordNameTemplated(Record->getName(true));
 
   if (!Record->isDefinition()) {
     II->addDeclaration(RecordNameTemplated, IdentifierIndex::RECORD);
-
-    Records_.pop_back();
-
-    return;
+    return false;
   }
 
   II->addDefinition(RecordNameTemplated, IdentifierIndex::RECORD);
@@ -217,8 +210,17 @@ Wrapper::addRecord(std::shared_ptr<IdentifierIndex> II,
   RecordTypes_[Record->getType()] = Record;
   RecordInheritances_.add(Record->getType(), Record->getBaseTypes());
 
-  for (auto Function : Record->getFunctions())
-    addFunction(II, Function);
+  auto &Functions(Record->getFunctions());
+
+  auto It(Functions.begin());
+  while (It != Functions.end()) {
+    if (!addWrapperFunction(II, &(*It)))
+      It = Functions.erase(It);
+    else
+      ++It;
+  }
+
+  return true;
 }
 
 } // namespace cppbind

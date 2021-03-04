@@ -168,7 +168,8 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
                                             "without_operator_name"_a = false,
                                             "overloaded"_a = false)
     .def("return_type", &WrapperFunction::getReturnType)
-    .def("parameters", &WrapperFunction::getParameters, "skip_self"_a = false,
+    .def("parameters",
+         py::overload_cast<>(&WrapperFunction::getParameters, py::const_),
          py::return_value_policy::reference_internal)
     .def("overloaded_operator", &WrapperFunction::getOverloadedOperator)
     .def("template_argument_list", &WrapperFunction::getTemplateArgumentList)
@@ -191,11 +192,8 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
   auto PyRecord = py::class_<Record>(m, "Record", py::dynamic_attr())
     .def("name", &WrapperRecord::getName, "with_template_postfix"_a = false)
     .def("type", &WrapperRecord::getType)
-    .def("functions", &WrapperRecord::getFunctions,
-         py::return_value_policy::reference_internal)
-    .def("constructors", &WrapperRecord::getConstructors,
-         py::return_value_policy::reference_internal)
-    .def("destructor", &WrapperRecord::getDestructor,
+    .def("functions",
+         py::overload_cast<>(&WrapperRecord::getFunctions, py::const_),
          py::return_value_policy::reference_internal)
     .def("template_argument_list", &WrapperRecord::getTemplateArgumentList)
     .def("is_abstract", &WrapperRecord::isAbstract)

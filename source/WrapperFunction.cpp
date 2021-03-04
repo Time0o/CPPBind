@@ -176,22 +176,6 @@ WrapperFunction::getName(bool WithTemplatePostfix,
   return Name;
 }
 
-std::vector<WrapperParameter const *>
-WrapperFunction::getParameters(bool SkipSelf) const
-{
-  std::vector<WrapperParameter const *> Params;
-  Params.reserve(Parameters_.size());
-
-  for (auto const &Param : Parameters_) {
-    if (SkipSelf && Param.isSelf())
-      continue;
-
-    Params.push_back(&Param);
-  }
-
-  return Params;
-}
-
 std::optional<std::string>
 WrapperFunction::getOverloadedOperator() const
 {

@@ -43,9 +43,11 @@ public:
   std::vector<WrapperType> getBaseTypes() const
   { return BaseTypes_; }
 
-  std::vector<WrapperFunction const *> getFunctions() const;
-  std::vector<WrapperFunction const *> getConstructors() const;
-  WrapperFunction const *getDestructor() const;
+  std::deque<WrapperFunction> const &getFunctions() const
+  { return Functions_; }
+
+  std::deque<WrapperFunction> &getFunctions()
+  { return Functions_; }
 
   std::optional<std::string> getTemplateArgumentList() const;
 

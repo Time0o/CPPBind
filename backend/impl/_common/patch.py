@@ -81,10 +81,13 @@ def _function_forward_call(self):
 
         return fwd
 
-    parameters = ', '.join(map(forward_parameter, self.parameters(skip_self=True)))
+    parameters = self.parameters()
 
     if self.is_instance():
-        this = self.parameters()[0].name_interm()
+        this = parameters[0].name_interm()
+        parameters = parameters[1:]
+
+    parameters = ', '.join(map(forward_parameter, parameters))
 
     if self.is_constructor():
         call = f"new {self.return_type().pointee()}({parameters})"
