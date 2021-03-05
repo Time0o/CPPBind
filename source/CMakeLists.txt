@@ -7,7 +7,6 @@ add_executable(${CPPBIND}
                "Identifier.cpp"
                "Options.cpp"
                "Print.cpp"
-               "Snippet.cpp"
                "String.cpp"
                "Wrapper.cpp"
                "WrapperFunction.cpp"

@@ -38,7 +38,7 @@ void
 CreateWrapperConsumer::addFundamentalTypesHandler()
 {
   auto FundamentalTypeMatcher(
-    valueDecl(hasParent(namespaceDecl(hasName("__fundamental_types")))));
+    valueDecl(hasParent(namespaceDecl(hasName("cppbind::fundamental_types")))));
 
   addHandler<clang::ValueDecl>(
     "fundamentalTypeDecl",

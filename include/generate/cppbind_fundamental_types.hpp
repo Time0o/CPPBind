@@ -1,24 +1,14 @@
-#include <sstream>
-#include <string>
+#ifndef GUARD_CPPBIND_FUNDAMENTAL_TYPES_H
+#define GUARD_CPPBIND_FUNDAMENTAL_TYPES_H
 
-#include "WrapperRecord.hpp"
-#include "Snippet.hpp"
+#include <cstddef>
 
 namespace cppbind
 {
 
-std::string
-FundamentalTypesSnippet::include_()
-{ return "#include <cstddef>"; }
-
-std::string
-FundamentalTypesSnippet::namespace_()
-{ return "__fundamental_types"; }
-
-std::string
-FundamentalTypesSnippet::code()
+namespace fundamental_types
 {
-  return &R"(
+
 extern void *_void;
 
 extern bool _bool;
@@ -44,7 +34,10 @@ extern char32_t _char32_t;
 
 extern float _float;
 extern double _double;
-extern long double _long_double;)"[1];
-}
+extern long double _long_double;
+
+} // namespace fundamental_type
 
 } // namespace cppbind
+
+#endif // GUARD_CPPBIND_FUNDAMENTAL_TYPES_H

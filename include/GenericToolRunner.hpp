@@ -15,7 +15,6 @@
 #include "clang/Tooling/Tooling.h"
 
 #include "Options.hpp"
-#include "Snippet.hpp"
 
 namespace clang { class FrontendAction; }
 
@@ -122,13 +121,7 @@ private:
   }
 
   static std::vector<std::string> includeBefore()
-  {
-    static FundamentalTypesSnippet Ft; // XXX get rid of Snippet code
-
-    Ft.fileCreate();
-
-    return {Ft.filePath()};
-  }
+  { return {INCLUDE_DIR "/cppbind_fundamental_types.hpp"}; }
 
   static std::vector<std::string> includeAfter()
   { return {OPT("template-instantiations")}; }

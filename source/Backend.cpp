@@ -14,7 +14,6 @@
 #include "Logging.hpp"
 #include "Options.hpp"
 #include "Path.hpp"
-#include "Snippet.hpp"
 #include "Wrapper.hpp"
 #include "WrapperConstant.hpp"
 #include "WrapperFunction.hpp"
