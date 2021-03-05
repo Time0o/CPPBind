@@ -32,11 +32,10 @@ class CBackend(Backend):
 
             #include <stdbool.h>
 
-            {c_util_declare}
-
+            {c_util_include}
             """,
             header_guard=self._header_guard(),
-            c_util_declare=c_util.declare()))
+            c_util_include=c_util.include()))
 
         self._wrapper_source.append(code(
             """
@@ -44,18 +43,21 @@ class CBackend(Backend):
 
             {input_header_include}
 
-            {type_info_define}
+            {type_info_include}
+
+            {type_info_type_instances}
 
             extern "C" {{
 
             {wrapper_header_include}
 
-            {c_util_define}
+            {c_util_include}
             """,
             input_header_include=self.input_file().include(),
-            type_info_define=type_info.define(),
+            type_info_include=type_info.include(),
+            type_info_type_instances=type_info.type_instances(),
             wrapper_header_include=self._wrapper_header.include(),
-            c_util_define=c_util.define()))
+            c_util_include=c_util.include(impl=True)))
 
     def wrap_after(self):
         self._wrapper_header.append(code(

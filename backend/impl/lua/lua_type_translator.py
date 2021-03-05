@@ -1,4 +1,4 @@
-import lua_util as util
+import lua_util
 import type_info as ti
 
 from cppbind import Identifier as Id
@@ -56,24 +56,24 @@ class LuaTypeTranslator(TypeTranslator):
 
     @input_rule(lambda t: t.is_scoped_enum())
     def input(cls, t, args):
-        return f"{{interm}} = static_cast<{t}>({util.tointegral(t.underlying_integer_type(), args.i + 1)});"
+        return f"{{interm}} = static_cast<{t}>({lua_util.tointegral(t.underlying_integer_type(), args.i + 1)});"
 
     @input_rule(lambda t: t.is_integral())
     def input(cls, t, args):
-        return f"{{interm}} = {util.tointegral(t, args.i + 1)};"
+        return f"{{interm}} = {lua_util.tointegral(t, args.i + 1)};"
 
     @input_rule(lambda t: t.is_floating())
     def input(cls, t, args):
-        return f"{{interm}} = {util.tofloating(t, args.i + 1)};"
+        return f"{{interm}} = {lua_util.tofloating(t, args.i + 1)};"
 
     @input_rule(lambda t: t.is_record())
     def input(cls, t, args):
-        return f"{{interm}} = {util.topointer(t, args.i + 1)};"
+        return f"{{interm}} = {lua_util.topointer(t, args.i + 1)};"
 
     @input_rule(lambda t: t.is_pointer() or \
                           t.is_reference() and t.referenced().is_record())
     def input(cls, t, args):
-        return f"{{interm}} = {util.topointer(t.pointee(), args.i + 1)};"
+        return f"{{interm}} = {lua_util.topointer(t.pointee(), args.i + 1)};"
 
     @rule(lambda t: t.is_reference())
     def input(cls, t, args):
@@ -95,22 +95,22 @@ class LuaTypeTranslator(TypeTranslator):
 
     @output_rule(lambda t: t.is_scoped_enum())
     def output(cls, t, args):
-        return f"{util.pushintegral(f'static_cast<{t.underlying_integer_type()}>({{outp}})')};"
+        return f"{lua_util.pushintegral(f'static_cast<{t.underlying_integer_type()}>({{outp}})')};"
 
     @output_rule(lambda t: t.is_integral())
     def output(cls, t, args):
-        return f"{util.pushintegral('{outp}')};"
+        return f"{lua_util.pushintegral('{outp}')};"
 
     @output_rule(lambda t: t.is_floating())
     def output(cls, t, args):
-        return f"{util.pushfloating('{outp}')};"
+        return f"{lua_util.pushfloating('{outp}')};"
 
     @output_rule(lambda t: t.is_record())
     def output(cls, t, args):
         return code(
             f"""
-            {util.pushpointer(f'new {t}({{outp}})', owning=True)};
-            {util.setmeta(t)};
+            {lua_util.pushpointer(f'new {t}({{outp}})', owning=True)};
+            {lua_util.setmetatable(t)};
             """)
 
     @output_rule(lambda t: t.is_pointer() or \
@@ -118,8 +118,8 @@ class LuaTypeTranslator(TypeTranslator):
     def output(cls, t, args):
         return code(
             f"""
-            {util.pushpointer('{outp}', owning=args.f.is_constructor())};
-            {util.setmeta(t.pointee())};
+            {lua_util.pushpointer('{outp}', owning=args.f.is_constructor())};
+            {lua_util.setmetatable(t.pointee())};
             """)
 
     @rule(lambda t: t.is_lvalue_reference())

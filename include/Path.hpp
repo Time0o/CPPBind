@@ -4,6 +4,7 @@
 #include <array>
 #include <cstdio>
 #include <cstdlib>
+#include <sstream>
 #include <string>
 
 #include "Logging.hpp"
@@ -14,9 +15,18 @@ namespace cppbind
 namespace path
 {
 
-inline std::string concat(std::string const &Path1,
-                          std::string const &Path2)
-{ return Path1 + "/" + Path2; }
+template<typename ...ARGS>
+std::string concat(ARGS &&...Args)
+{
+  std::ostringstream SS;
+
+  int Unpack[]{0, (SS << Args << "/", 0)...};
+  static_cast<void>(Unpack);
+
+  auto Path(SS.str());
+  Path.pop_back();
+  return Path;
+}
 
 inline std::string temporary()
 {

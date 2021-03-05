@@ -1,5 +1,5 @@
 import type_info
-import lua_util as util
+import lua_util
 
 from backend import Backend
 from cppbind import Identifier as Id, Type, Constant, Record, Function, Parameter
@@ -26,16 +26,22 @@ class LuaBackend(Backend):
 
             {input_include}
 
-            {type_info_define}
+            {type_info_include}
+
+            {type_info_type_instances}
+
+            {lua_util_include}
 
             {forward_declarations}
 
-            {util_define}
+            {lua_util_createmetatables}
             """,
             input_include=self.input_file().include(),
-            type_info_define=type_info.define(),
+            type_info_include=type_info.include(),
+            type_info_type_instances=type_info.type_instances(),
             forward_declarations=self._function_forward_declarations(),
-            util_define=util.define()))
+            lua_util_include=lua_util.include(),
+            lua_util_createmetatables=lua_util.createmetatables()))
 
     def wrap_after(self):
         ## XXX support different Lua versions
@@ -211,11 +217,11 @@ class LuaBackend(Backend):
             # XXX generalize
             if v.type().is_enum():
                 arg = f"static_cast<{v.type().underlying_integer_type()}>({v.name()})"
-                push = f"{util.pushintegral(arg, constexpr=True)}"
+                push = f"{lua_util.pushintegral(arg, constexpr=True)}"
             elif v.type().is_integral():
-                push = f"{util.pushintegral(v.name(), constexpr=True)}"
+                push = f"{lua_util.pushintegral(v.name(), constexpr=True)}"
             elif v.type().is_floating():
-                push = f"{util.pushfloating(v.name(), constexpr=True)}"
+                push = f"{lua_util.pushfloating(v.name(), constexpr=True)}"
 
             return code(
                 f"""

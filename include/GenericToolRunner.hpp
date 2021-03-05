@@ -15,6 +15,7 @@
 #include "clang/Tooling/Tooling.h"
 
 #include "Options.hpp"
+#include "Path.hpp"
 
 namespace clang { class FrontendAction; }
 
@@ -121,7 +122,7 @@ private:
   }
 
   static std::vector<std::string> includeBefore()
-  { return {INCLUDE_DIR "/cppbind_fundamental_types.hpp"}; }
+  { return {path::concat(GENERATE_DIR, "cppbind", "fundamental_types.hpp")}; }
 
   static std::vector<std::string> includeAfter()
   { return {OPT("template-instantiations")}; }
