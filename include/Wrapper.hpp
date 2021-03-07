@@ -66,6 +66,8 @@ public:
 
     if (!addWrapperConstant(II, &Constants_.back()))
       Constants_.pop_back();
+    else
+      log::info("created {0}", Constants_.back());
   }
 
   template<typename ...ARGS>
@@ -75,6 +77,8 @@ public:
 
     if (!addWrapperFunction(II, &Functions_.back()))
       Functions_.pop_back();
+    else
+      log::info("created {0}", Functions_.back());
   }
 
   template<typename ...ARGS>
@@ -84,6 +88,8 @@ public:
 
     if (!addWrapperRecord(II, &Records_.back()))
       Records_.pop_back();
+    else
+      log::info("created {0}", Records_.back());
   }
 
   void overload(std::shared_ptr<IdentifierIndex> II);
@@ -134,10 +140,10 @@ private:
       return true;
 
     if (OPT(bool, "skip-unwrappable")) {
-      warning("{0}: skipping because type '{1}' is unwrapped", *Obj, Type);
+      log::debug("{0}: skipping because type '{1}' is unwrapped", *Obj, Type);
       return false;
     } else {
-      throw exception("{0}: type '{1}' is unwrapped", *Obj, Type);
+      throw log::exception("{0}: type '{1}' is unwrapped", *Obj, Type);
     }
   }
 

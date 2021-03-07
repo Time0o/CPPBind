@@ -27,8 +27,7 @@ void OptionsRegistry::init()
     .done();
 
   Options().add<std::vector<std::string>>("template-instantiations")
-    .setDescription("File containing extra template instantiations")
-    .setDefault({})
+    .setDescription("File containing extra template instantiations") // TODO: metaname?
     .done();
 
   Options().add<std::string>("output-directory")
@@ -61,8 +60,11 @@ void OptionsRegistry::init()
                   "postfix must create valid identifiers")
     .done();
 
-  Options().add<bool>("verbose")
-    .setDescription("More verbose output")
+  Options().add<int>("verbosity")
+    .setDescription("Output verbosity")
+    .setDefault(0)
+    .addAssertion([](int Verbosity){ return Verbosity >= 0; },
+                  "verbosity must be non negative")
     .done();
 }
 

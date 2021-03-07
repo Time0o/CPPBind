@@ -56,7 +56,7 @@ GenericToolRunner::getSourceFiles(clang::tooling::CommonOptionsParser &Parser)
 
     auto It(SourceFilesByStem.find(Stem.string()));
     if (It != SourceFilesByStem.end())
-      throw exception("Source path stem '{0}' is not unique", Stem.string());
+      throw log::exception("Source path stem '{0}' is not unique", Stem.string());
 
     path DestPath(SourceFileDirPath / Filename);
 
@@ -75,7 +75,7 @@ GenericToolRunner::getSourceFiles(clang::tooling::CommonOptionsParser &Parser)
     auto It(SourceFilesByStem.find(Stem.string()));
 
     if (It == SourceFilesByStem.end()) {
-      throw exception(
+      throw log::exception(
         "Template instantiations '{0}' can't be matched to any source file",
         TIPath);
     }

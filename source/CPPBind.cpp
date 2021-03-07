@@ -15,10 +15,12 @@ int main(int argc, char const **argv)
 
   CreateWrapperToolRunner Runner(Parser);
 
+  log::Verbosity = OPT(int, "verbosity");
+
   try {
     Runner.run();
   } catch (std::exception const &Err) {
-    error(Err.what());
+    log::error(Err.what());
     return EXIT_FAILURE;
   }
 

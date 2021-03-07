@@ -52,7 +52,7 @@ TmpFile &operator<<(TmpFile &F, T const &What)
   std::ofstream FStream(F.Path_, Mode);
 
   if (!(FStream << What))
-    throw exception("Failed to write to temporary file");
+    throw log::exception("Failed to write to temporary file");
 
   FStream.flush();
 

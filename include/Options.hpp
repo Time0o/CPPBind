@@ -111,7 +111,7 @@ public:
 
     auto Opt(std::dynamic_pointer_cast<llvm::cl::opt<T>>(Opt_));
     if (!Opt)
-      throw exception("{0}: invalid type", Name);
+      throw log::exception("{0}: invalid type", Name);
 
     T Value = *Opt;
 
@@ -130,7 +130,7 @@ public:
 
     auto Opt(std::dynamic_pointer_cast<llvm::cl::list<V>>(Opt_));
     if (!Opt)
-      throw exception("{0}: invalid type", Name);
+      throw log::exception("{0}: invalid type", Name);
 
     T Values;
     for (auto const &Value : *Opt)
@@ -265,7 +265,7 @@ private:
 
     for (auto const &[Assert, Msg] : Assertions) {
       if (!Assert(Value))
-        throw exception("{0}: {1}", Name, Msg);
+        throw log::exception("{0}: {1}", Name, Msg);
     }
   }
 

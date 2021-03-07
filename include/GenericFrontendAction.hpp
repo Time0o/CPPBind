@@ -8,6 +8,7 @@
 #include "llvm/ADT/StringRef.h"
 
 #include "CompilerState.hpp"
+#include "Logging.hpp"
 
 namespace clang
 {
@@ -26,6 +27,8 @@ public:
     clang::CompilerInstance &CI,
     llvm::StringRef File) override
   {
+    log::info("processing input file '{0}'", File);
+
     CompilerState().updateCompilerInstance(CI);
     CompilerState().updateFile(File.str());
 

@@ -124,7 +124,7 @@ CreateWrapperConsumer::addWrapperHandlers()
         &CreateWrapperConsumer::handleRecord);
 
     } else {
-      throw exception("invalid matcher: '{0}'", MatcherID);
+      throw log::exception("invalid matcher: '{0}'", MatcherID);
     }
   }
 }

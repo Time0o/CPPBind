@@ -11,6 +11,9 @@
 namespace cppbind
 {
 
+namespace log
+{
+
 template<typename ...ARGS>
 std::string fmt(std::string Fmt, ARGS &&...Args)
 {
@@ -22,25 +25,36 @@ std::string fmt(std::string Fmt, ARGS &&...Args)
   return llvm::formatv(Fmt.c_str(), std::forward<ARGS>(Args)...);
 }
 
-template<typename ...ARGS>
+inline int Verbosity = 0;
+
+template<int VERBOSITY, typename ...ARGS>
 void log(llvm::raw_ostream &S, std::string const &Fmt, ARGS &&...Args)
-{ S << fmt(Fmt, std::forward<ARGS>(Args)...) << '\n'; }
+{
+  if (Verbosity >= VERBOSITY)
+    S << fmt(Fmt, std::forward<ARGS>(Args)...) << '\n';
+}
+
+template<typename ...ARGS>
+void debug(std::string const &Fmt, ARGS &&...Args)
+{ log<2>(llvm::outs(), "DEBUG: " + Fmt, std::forward<ARGS>(Args)...); }
 
 template<typename ...ARGS>
 void info(std::string const &Fmt, ARGS &&...Args)
-{ log(llvm::outs(), "INFO: " + Fmt, std::forward<ARGS>(Args)...); }
+{ log<1>(llvm::outs(), "INFO: " + Fmt, std::forward<ARGS>(Args)...); }
 
 template<typename ...ARGS>
 void warning(std::string const &Fmt, ARGS &&...Args)
-{ log(llvm::outs(), "WARNING: " + Fmt, std::forward<ARGS>(Args)...); }
+{ log<0>(llvm::errs(), "WARNING: " + Fmt, std::forward<ARGS>(Args)...); }
 
 template<typename ...ARGS>
 void error(std::string const &Fmt, ARGS &&...Args)
-{ log(llvm::errs(), "ERROR: " + Fmt, std::forward<ARGS>(Args)...); }
+{ log<0>(llvm::errs(), "ERROR: " + Fmt, std::forward<ARGS>(Args)...); }
 
 template<typename ...ARGS>
 std::runtime_error exception(std::string const &Fmt, ARGS &&...Args)
 { return std::runtime_error(fmt(Fmt, std::forward<ARGS>(Args)...)); }
+
+} // namespace log
 
 } // namespace cppbind
 
