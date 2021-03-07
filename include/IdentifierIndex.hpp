@@ -16,6 +16,7 @@ class IdentifierIndex
 public:
   enum Type
   {
+    TYPE,
     CONST,
     FUNC,
     RECORD
@@ -31,6 +32,13 @@ private:
 
     Type Type;
     bool IsDefinition;
+  };
+
+  struct TypeProps : public Props
+  {
+    TypeProps()
+    : Props(TYPE, true)
+    {}
   };
 
   struct ConstProps : public Props
@@ -105,6 +113,9 @@ private:
     std::shared_ptr<Props> P;
 
     switch (Type) {
+      case TYPE:
+        P = std::make_shared<TypeProps>();
+        break;
       case CONST:
         P = std::make_shared<ConstProps>();
         break;
@@ -139,13 +150,6 @@ private:
       return nullptr;
 
     auto Props(It->second);
-
-#ifndef NDEBUG
-    if constexpr (std::is_same_v<T, ConstProps>)
-      assert(Props->Type = CONST);
-    else if constexpr (std::is_same_v<T, FuncProps>)
-      assert(Props->Type = FUNC);
-#endif
 
     return std::static_pointer_cast<T>(Props);
   }

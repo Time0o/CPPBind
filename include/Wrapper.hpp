@@ -25,15 +25,6 @@ namespace cppbind
 
 class Wrapper
 {
-  template<typename T, typename T_KEY>
-  using Lookup = std::unordered_map<T_KEY, T const *>;
-
-  template<typename T>
-  using NameLookup = Lookup<T, Identifier>;
-
-  template<typename T>
-  using TypeLookup = Lookup<T, WrapperType>;
-
   class InheritanceGraph
   {
   public:
@@ -111,32 +102,12 @@ private:
   bool addWrapperRecord(std::shared_ptr<IdentifierIndex> II,
                         WrapperRecord *Record);
 
-  template<typename T, typename T_KEY>
-  T const *objLookup(Lookup<T, T_KEY> const &Lookup, T_KEY const &Key) const
-  {
-    auto It(Lookup.find(Key));
-
-    if (It == Lookup.end())
-      return nullptr;
-
-    return It->second;
-  }
-
   template<typename T>
-  bool objCheckTypeWrapped(T const *Obj, WrapperType const &Type)
+  bool checkTypeWrapped(std::shared_ptr<IdentifierIndex> II,
+                        WrapperType const &Type,
+                        T const *Obj) const
   {
-    WrapperType RecordType;
-
-    if (Type.isRecord())
-      RecordType = Type;
-    else if (Type.isPointer() && Type.pointee().isRecord())
-      RecordType = Type.pointee();
-    else if (Type.isReference() && Type.referenced().isRecord())
-      RecordType = Type.referenced();
-    else
-      return true;
-
-    if (objLookup(RecordTypes_, RecordType.withoutConst()))
+    if (typeWrapped(II, Type))
       return true;
 
     if (OPT(bool, "skip-unwrappable")) {
@@ -147,16 +118,15 @@ private:
     }
   }
 
+  bool typeWrapped(std::shared_ptr<IdentifierIndex> II,
+                   WrapperType const &Type) const;
+
   std::deque<WrapperConstant> Constants_;
-  NameLookup<WrapperConstant> ConstantNames_;
-  TypeLookup<WrapperConstant> ConstantTypes_;
 
   std::deque<WrapperFunction> Functions_;
-  NameLookup<WrapperFunction> FunctionNames_;
 
   std::deque<WrapperRecord> Records_;
-  NameLookup<WrapperRecord> RecordNames_;
-  TypeLookup<WrapperRecord> RecordTypes_;
+  std::unordered_map<WrapperType, WrapperRecord const *> RecordTypes_;
   InheritanceGraph RecordInheritances_;
 };
 

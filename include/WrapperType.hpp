@@ -70,6 +70,9 @@ public:
   WrapperType withConst() const;
   WrapperType withoutConst() const;
 
+  Identifier name() const
+  { return Identifier(format(true)); }
+
   std::string str() const;
 
   std::string format(bool Mangled = false,

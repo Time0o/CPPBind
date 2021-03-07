@@ -6,6 +6,7 @@
 #include "boost/graph/breadth_first_search.hpp"
 #include "boost/graph/topological_sort.hpp"
 
+#include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
 #include "Logging.hpp"
 #include "Wrapper.hpp"
@@ -119,13 +120,13 @@ Wrapper::getRecords() const
               std::vector<WrapperRecord const *>>> RecordsAndBases;
 
   for (auto Type : RecordInheritances_.basesFirstOrdering()) {
-    auto const *Record(objLookup(RecordTypes_, Type));
-    assert(Record);
+    auto RecordIt(RecordTypes_.find(Type));
+    auto const *Record = RecordIt->second;
 
     std::vector<WrapperRecord const *> Bases;
     for (auto const &BaseType : RecordInheritances_.bases(Type, true)) {
-      auto const *Base(objLookup(RecordTypes_, BaseType));
-      assert(Base);
+      auto BaseIt(RecordTypes_.find(BaseType));
+      auto const *Base = BaseIt->second;
 
       Bases.push_back(Base);
     }
@@ -140,13 +141,10 @@ bool
 Wrapper::addWrapperConstant(std::shared_ptr<IdentifierIndex> II,
                             WrapperConstant *Constant)
 {
-  if (!objCheckTypeWrapped(Constant, Constant->getType()))
+  if (!checkTypeWrapped(II, Constant->getType(), Constant))
     return false;
 
   II->addDefinition(Constant->getName(), IdentifierIndex::CONST);
-
-  ConstantNames_[Constant->getName()] = Constant;
-  ConstantTypes_[Constant->getType()] = Constant;
 
   return true;
 }
@@ -155,11 +153,11 @@ bool
 Wrapper::addWrapperFunction(std::shared_ptr<IdentifierIndex> II,
                             WrapperFunction *Function)
 {
-  if (!objCheckTypeWrapped(Function, Function->getReturnType()))
+  if (!checkTypeWrapped(II, Function->getReturnType(), Function))
     return false;
 
   for (auto const &Param : Function->getParameters()) {
-    if (!objCheckTypeWrapped(Function, Param.getType()))
+    if (!checkTypeWrapped(II, Param.getType(), Function))
       return false;
   }
 
@@ -169,15 +167,10 @@ Wrapper::addWrapperFunction(std::shared_ptr<IdentifierIndex> II,
     II->pushOverload(FunctionNameTemplated);
 
   } else if (II->hasDeclaration(FunctionNameTemplated, IdentifierIndex::FUNC)) {
-    auto Previous(objLookup(FunctionNames_, FunctionNameTemplated));
-    assert(Previous);
-
-    if (Function->isDefinition() && *Function == *Previous) {
+    if (Function->isDefinition()) {
       II->addDefinition(FunctionNameTemplated, IdentifierIndex::FUNC);
       return false;
     }
-
-    assert(*Function != *Previous);
 
     II->pushOverload(FunctionNameTemplated);
 
@@ -187,8 +180,6 @@ Wrapper::addWrapperFunction(std::shared_ptr<IdentifierIndex> II,
     else
       II->addDeclaration(FunctionNameTemplated, IdentifierIndex::FUNC);
   }
-
-  FunctionNames_[FunctionNameTemplated] = Function;
 
   return true;
 }
@@ -205,8 +196,8 @@ Wrapper::addWrapperRecord(std::shared_ptr<IdentifierIndex> II,
   }
 
   II->addDefinition(RecordNameTemplated, IdentifierIndex::RECORD);
+  II->addDefinition(Record->getType().name(), IdentifierIndex::TYPE);
 
-  RecordNames_[RecordNameTemplated] = Record;
   RecordTypes_[Record->getType()] = Record;
   RecordInheritances_.add(Record->getType(), Record->getBaseTypes());
 
@@ -221,6 +212,26 @@ Wrapper::addWrapperRecord(std::shared_ptr<IdentifierIndex> II,
   }
 
   return true;
+}
+
+bool
+Wrapper::typeWrapped(std::shared_ptr<IdentifierIndex> II,
+                     WrapperType const &Type) const
+{
+  WrapperType RecordType;
+
+  if (Type.isRecord())
+    RecordType = Type;
+  else if (Type.isPointer() && Type.pointee().isRecord())
+    RecordType = Type.pointee();
+  else if (Type.isReference() && Type.referenced().isRecord())
+    RecordType = Type.referenced();
+  else
+    return true;
+
+  RecordType = RecordType.withoutConst();
+
+  return II->hasDefinition(RecordType.name(), IdentifierIndex::TYPE);
 }
 
 } // namespace cppbind
