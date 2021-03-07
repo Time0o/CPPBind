@@ -32,7 +32,7 @@ jobs:
       - name: install-dependencies
         run: >
           sudo apt-get update &&
-          sudo apt-get install -yq libboost-dev libboost-graph-dev libboost-regex-dev lua5.3 lua5.3-dev valgrind &&
+          sudo apt-get install -yq libboost-dev libboost-filesystem-dev libboost-graph-dev libboost-regex-dev lua5.3 lua5.3-dev valgrind &&
           sudo apt-get install -yq ${{ matrix.LLVM_DEPENDENCIES }}
 
       - name: cmake-configure
