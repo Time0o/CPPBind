@@ -181,7 +181,7 @@ private:
       Opt->setValueStr(*Option.ValueDesc_);
 
     if constexpr (is_container_v<T>) {
-      Opt->setNumOccurrencesFlag(Option.Optional_ ? llvm::cl::Optional
+      Opt->setNumOccurrencesFlag(Option.Optional_ ? llvm::cl::ZeroOrMore
                                                   : llvm::cl::OneOrMore);
 
     } else {

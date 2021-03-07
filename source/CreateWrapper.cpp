@@ -55,7 +55,7 @@ CreateWrapperConsumer::addWrapperHandlers()
 {
   auto InputFile(path(CompilerState().currentFile()).filename().native());
 
-  for (auto const &MatcherRule : OPT(std::vector<std::string>, "wrap")) {
+  for (auto const &MatcherRule : OPT(std::vector<std::string>, "wrap-rule")) {
     auto const &[MatcherID, MatcherSource] = string::splitFirst(MatcherRule, ":");
 
     if (MatcherID == "const") {

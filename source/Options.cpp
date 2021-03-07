@@ -12,27 +12,22 @@ namespace cppbind
 void OptionsRegistry::init()
 {
   Options().add<std::string>("backend")
-    .setDescription("Language for which to create bindings", "be")
+    .setDescription("Language for which to create bindings")
     .setOptional(false)
     .done();
 
-  Options().add<std::vector<std::string>>("wrap")
-    .setDescription("Matcher rules for declarations to be wrapped", "wrap")
+  Options().add<std::vector<std::string>>("wrap-rule")
+    .setDescription("Matcher rule for declarations to be wrapped")
     .setOptional(false)
     .done();
 
-  Options().add<bool>("skip-unwrappable")
+  Options().add<std::vector<std::string>>("wrap-template-instantiations")
+    .setDescription("File containing extra template instantiations", "path")
+    .done();
+
+  Options().add<bool>("wrap-skip-unwrappable")
     .setDescription("Skip unwrappable objects instead of failing")
     .setDefault(false)
-    .done();
-
-  Options().add<std::vector<std::string>>("template-instantiations")
-    .setDescription("File containing extra template instantiations") // TODO: metaname?
-    .done();
-
-  Options().add<std::string>("output-directory")
-    .setDescription("Directory in which to place generated files", "outdir")
-    .setDefault("")
     .done();
 
   auto validPostfix = [](char const *Pat){
@@ -54,17 +49,22 @@ void OptionsRegistry::init()
 
   Options().add<std::string>("wrapper-func-numbered-param-postfix")
     .setDescription("Wrapper function numbered parameter postfix, "
-                     "use %p to denote parameter number", "postfix")
+                    "use %p to denote parameter number", "postfix")
     .setDefault("_%p")
     .addAssertion(validPostfix("%p"),
                   "postfix must create valid identifiers")
+    .done();
+
+  Options().add<std::string>("output-directory")
+    .setDescription("Directory in which to place generated files", "path")
+    .setDefault(".")
     .done();
 
   Options().add<int>("verbosity")
     .setDescription("Output verbosity")
     .setDefault(0)
     .addAssertion([](int Verbosity){ return Verbosity >= 0; },
-                  "verbosity must be non negative")
+                  "Verbosity must be non negative")
     .done();
 }
 

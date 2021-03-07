@@ -68,7 +68,7 @@ GenericToolRunner::getSourceFiles(clang::tooling::CommonOptionsParser &Parser)
   }
 
   for (auto const &TIPath :
-       OPT(std::vector<std::string>, "template-instantiations")) {
+       OPT(std::vector<std::string>, "wrap-template-instantiations")) {
 
     auto Stem(path(TIPath).stem());
 

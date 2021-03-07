@@ -110,7 +110,7 @@ private:
     if (typeWrapped(II, Type))
       return true;
 
-    if (OPT(bool, "skip-unwrappable")) {
+    if (OPT(bool, "wrap-skip-unwrappable")) {
       log::debug("{0}: skipping because type '{1}' is unwrapped", *Obj, Type);
       return false;
     } else {
