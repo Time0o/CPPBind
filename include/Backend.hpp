@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include "pybind11/embed.h"
+
 namespace cppbind
 {
 
@@ -17,8 +19,10 @@ public:
                   std::shared_ptr<Wrapper> Wrapper);
 
 private:
-  static auto addModuleSearchPath(std::string const &Path);
-  static auto importModule(std::string const &Module);
+  static pybind11::module_ importModule(std::string const &Module);
+
+  static void addModuleSearchPath(pybind11::module_ const &Sys,
+                                  std::string const &Path);
 };
 
 } // namespace cppbind

@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+#include "boost/filesystem/path.hpp"
+
 #include "pybind11/embed.h"
 #include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
@@ -13,38 +15,36 @@
 #include "Identifier.hpp"
 #include "Logging.hpp"
 #include "Options.hpp"
-#include "Path.hpp"
 #include "Wrapper.hpp"
 #include "WrapperConstant.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperRecord.hpp"
 #include "WrapperType.hpp"
 
-namespace py = pybind11;
-
 namespace cppbind
 {
 
-auto Backend::importModule(std::string const &Module)
-{ return py::module::import(Module.c_str()); }
+pybind11::module_ Backend::importModule(std::string const &Module)
+{ return pybind11::module_::import(Module.c_str()); }
 
-auto Backend::addModuleSearchPath(std::string const &Path)
-{
-  static auto Sys = importModule("sys");
-
-  Sys.attr("path").cast<py::list>().append(Path);
-}
+void Backend::addModuleSearchPath(pybind11::module_ const &Sys,
+                                  std::string const &Path)
+{ Sys.attr("path").cast<pybind11::list>().append(Path); }
 
 void Backend::run(std::string const &InputFile,
                   std::shared_ptr<Wrapper> Wrapper)
 {
+  using namespace boost::filesystem;
+
   auto BE = OPT("backend");
 
-  py::scoped_interpreter Guard;
+  pybind11::scoped_interpreter Guard;
 
   try {
-    addModuleSearchPath(BACKEND_IMPL_COMMON_DIR);
-    addModuleSearchPath(path::concat(BACKEND_IMPL_DIR, BE));
+    auto Sys(importModule("sys"));
+    addModuleSearchPath(Sys, BACKEND_IMPL_COMMON_DIR);
+
+    addModuleSearchPath(Sys, (path(BACKEND_IMPL_DIR) / BE).string());
 
     auto TypetransModule(importModule(BE + BACKEND_IMPL_TYPETRANS_MOD_POSTFIX));
     auto BackendModule(importModule(BE + BACKEND_IMPL_BACKEND_MOD_POSTFIX));
@@ -69,6 +69,8 @@ using Record = WrapperRecord;
 
 PYBIND11_EMBEDDED_MODULE(cppbind, m)
 {
+  namespace py = pybind11;
+
   using namespace py::literals;
 
   auto PyIdentifier = py::class_<Identifier>(m, "Identifier");
