@@ -26,8 +26,9 @@ void OptionsRegistry::init()
     .setDefault(false)
     .done();
 
-  Options().add<std::string>("template-instantiations")
+  Options().add<std::vector<std::string>>("template-instantiations")
     .setDescription("File containing extra template instantiations")
+    .setDefault({})
     .done();
 
   Options().add<std::string>("output-directory")

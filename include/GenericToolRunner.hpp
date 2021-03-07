@@ -1,21 +1,17 @@
 #ifndef GUARD_TOOL_RUNNER_H
 #define GUARD_TOOL_RUNNER_H
 
-#include <cassert>
+#include <deque>
 #include <memory>
-#include <sstream>
 #include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
 
-#include "clang/Frontend/ASTUnit.h"
-#include "clang/Tooling/ArgumentsAdjusters.h"
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
 
-#include "Options.hpp"
-#include "Path.hpp"
+#include "TmpFile.hpp"
 
 namespace clang { class FrontendAction; }
 
@@ -25,28 +21,9 @@ namespace cppbind
 class GenericToolRunner
 {
 public:
-  GenericToolRunner(clang::tooling::CommonOptionsParser &Parser)
-  : Compilations_(Parser.getCompilations()),
-    SourcePathList_(Parser.getSourcePathList()),
-    Tool_(makeTool())
-  {}
+  GenericToolRunner(clang::tooling::CommonOptionsParser &Parser);
 
-  int run()
-  {
-    beforeRun();
-
-    auto Factory(makeFactory(Compilations_, SourcePathList_));
-
-    int Ret = Tool_.run(Factory.get());
-
-    afterRun();
-
-    return Ret;
-  }
-
-  virtual std::unique_ptr<clang::tooling::FrontendActionFactory>
-  makeFactory(clang::tooling::CompilationDatabase const &Compilations,
-              std::vector<std::string> const &SourcePathList) = 0;
+  int run();
 
 protected:
   template<typename T, typename ...ARGS>
@@ -86,65 +63,22 @@ protected:
   }
 
 private:
-  clang::tooling::ClangTool makeTool() const
-  {
-    clang::tooling::ClangTool Tool(Compilations_, {"/dev/null"});
+  static clang::tooling::CompilationDatabase &getCompilations(
+    clang::tooling::CommonOptionsParser &Parser)
+  { return Parser.getCompilations(); }
 
-    std::vector<clang::tooling::ArgumentsAdjuster> ArgumentsAdjusters;
+  static std::deque<TmpFile> getSourceFiles(
+    clang::tooling::CommonOptionsParser &Parser);
 
-    auto BEGIN = clang::tooling::ArgumentInsertPosition::BEGIN;
-    auto END = clang::tooling::ArgumentInsertPosition::END;
+  clang::tooling::ClangTool getTool() const;
 
-    auto insertArguments = [&](std::vector<std::string> const &Arguments,
-                               clang::tooling::ArgumentInsertPosition Where)
-    {
-      ArgumentsAdjusters.push_back(
-        clang::tooling::getInsertArgumentAdjuster(Arguments, Where));
-    };
-
-    insertArguments({"-xc++-header"}, BEGIN);
-
-    for (auto const &Include : includeBefore())
-      insertArguments({"-include", Include}, END);
-
-    for (auto const &SourcePath : SourcePathList_)
-      insertArguments({"-include", SourcePath}, END);
-
-    for (auto const &Include : includeAfter())
-      insertArguments({"-include", Include}, END);
-
-    insertArguments(clangIncludes(), END);
-
-    for (auto const &ArgumentsAdjuster : ArgumentsAdjusters)
-      Tool.appendArgumentsAdjuster(ArgumentsAdjuster);
-
-    return Tool;
-  }
-
-  static std::vector<std::string> includeBefore()
-  { return {path::concat(GENERATE_DIR, "cppbind", "fundamental_types.hpp")}; }
-
-  static std::vector<std::string> includeAfter()
-  { return {OPT("template-instantiations")}; }
-
-  static std::vector<std::string> clangIncludes()
-  {
-    std::istringstream SS(CLANG_INCLUDE_PATHS);
-
-    std::vector<std::string> Includes;
-
-    std::string Inc;
-    while (SS >> Inc)
-      Includes.push_back(Inc);
-
-    return Includes;
-  }
+  virtual std::unique_ptr<clang::tooling::FrontendActionFactory> makeFactory() const = 0;
 
   virtual void beforeRun() {}
   virtual void afterRun() {}
 
-  clang::tooling::CompilationDatabase const &Compilations_;
-  std::vector<std::string> SourcePathList_;
+  clang::tooling::CompilationDatabase &Compilations_;
+  std::deque<TmpFile> SourceFiles_;
 
   clang::tooling::ClangTool Tool_;
 };

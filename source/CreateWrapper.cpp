@@ -2,6 +2,8 @@
 #include <string>
 #include <vector>
 
+#include "boost/filesystem/path.hpp"
+
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/Type.h"
@@ -17,8 +19,10 @@
 #include "Wrapper.hpp"
 #include "WrapperType.hpp"
 
+#include "CompilerState.hpp"
 #include "CreateWrapper.hpp"
 
+using namespace boost::filesystem;
 using namespace clang::ast_matchers;
 
 namespace cppbind
@@ -49,6 +53,8 @@ CreateWrapperConsumer::addFundamentalTypesHandler()
 void
 CreateWrapperConsumer::addWrapperHandlers()
 {
+  auto InputFile(path(CompilerState().currentFile()).filename().native());
+
   for (auto const &MatcherRule : OPT(std::vector<std::string>, "wrap")) {
     auto const &[MatcherID, MatcherSource] = string::splitFirst(MatcherRule, ":");
 
@@ -57,22 +63,28 @@ CreateWrapperConsumer::addWrapperHandlers()
         "enumConst",
         llvm::formatv("enumDecl("
                         "allOf("
+                          "isExpansionInFileMatching(\"{0}\"),"
                           "hasParent(namespaceDecl()),"
-                          "{0}"
+                          "{1}"
                         ")"
-                      ")", MatcherSource),
+                      ")",
+                      InputFile,
+                      MatcherSource),
         &CreateWrapperConsumer::handleEnumConst);
 
       addWrapperHandler<clang::VarDecl>(
         "VarConst",
         llvm::formatv("varDecl("
                         "allOf("
+                          "isExpansionInFileMatching(\"{0}\"),"
+                          "hasParent(namespaceDecl()),"
                           "hasStaticStorageDuration(),"
                           "hasType(isConstQualified()),"
-                          "hasParent(namespaceDecl()),"
-                          "{0}"
+                          "{1}"
                         ")"
-                      ")", MatcherSource),
+                      ")",
+                      InputFile,
+                      MatcherSource),
         &CreateWrapperConsumer::handleVarConst);
 
     } else if (MatcherID == "function") {
@@ -81,13 +93,16 @@ CreateWrapperConsumer::addWrapperHandlers()
         llvm::formatv(
           "functionDecl("
             "allOf("
+              "isExpansionInFileMatching(\"{0}\"),"
               "unless(cxxMethodDecl()),"
               "anyOf(hasParent(namespaceDecl()),"
                     "allOf(isTemplateInstantiation(),"
                           "hasParent(functionTemplateDecl(hasParent(namespaceDecl()))))),"
-              "{0}"
+              "{1}"
             ")"
-          ")", MatcherSource),
+          ")",
+          InputFile,
+          MatcherSource),
         &CreateWrapperConsumer::handleFunction);
 
     } else if (MatcherID == "record") {
@@ -96,13 +111,16 @@ CreateWrapperConsumer::addWrapperHandlers()
         llvm::formatv(
           "cxxRecordDecl("
             "allOf("
+              "isExpansionInFileMatching(\"{0}\"),"
               "anyOf(isClass(), isStruct()),"
               "anyOf(hasParent(namespaceDecl()),"
                     "allOf(isTemplateInstantiation(),"
                           "hasParent(classTemplateDecl(hasParent(namespaceDecl()))))),"
-               "{0}"
+              "{1}"
             ")"
-          ")", MatcherSource),
+          ")",
+          InputFile,
+          MatcherSource),
         &CreateWrapperConsumer::handleRecord);
 
     } else {
@@ -140,5 +158,9 @@ CreateWrapperConsumer::handleFunction(clang::FunctionDecl const *Decl)
 void
 CreateWrapperConsumer::handleRecord(clang::CXXRecordDecl const *Decl)
 { Wr_->addWrapperRecord(II_, Decl); }
+
+std::unique_ptr<clang::tooling::FrontendActionFactory>
+CreateWrapperToolRunner::makeFactory() const
+{ return makeFactoryWithArgs<CreateWrapperFrontendAction>(II_); }
 
 } // namespace cppbind

@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
@@ -57,13 +58,8 @@ class CreateWrapperFrontendAction
 : public GenericFrontendAction<CreateWrapperConsumer>
 {
 public:
-  explicit CreateWrapperFrontendAction(
-    clang::tooling::CompilationDatabase const &Compilations,
-    std::vector<std::string> const &SourcePathList,
-    std::shared_ptr<IdentifierIndex> II)
-
-  : GenericFrontendAction<CreateWrapperConsumer>(Compilations, SourcePathList),
-    II_(II)
+  explicit CreateWrapperFrontendAction(std::shared_ptr<IdentifierIndex> II)
+  : II_(II)
   {}
 
 private:
@@ -97,16 +93,9 @@ class CreateWrapperToolRunner : public GenericToolRunner
 public:
   using GenericToolRunner::GenericToolRunner;
 
-  virtual std::unique_ptr<clang::tooling::FrontendActionFactory>
-  makeFactory(clang::tooling::CompilationDatabase const &Compilations,
-              std::vector<std::string> const &SourcePathList)
-  {
-    return makeFactoryWithArgs<CreateWrapperFrontendAction>(Compilations,
-                                                            SourcePathList,
-                                                            II_);
-  }
+private:
+  std::unique_ptr<clang::tooling::FrontendActionFactory> makeFactory() const override;
 
-protected:
   std::shared_ptr<IdentifierIndex> II_ = std::make_shared<IdentifierIndex>();
 };
 

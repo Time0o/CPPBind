@@ -4,6 +4,7 @@ add_executable(${CPPBIND}
                "CPPBind.cpp"
                "Backend.cpp"
                "CreateWrapper.cpp"
+               "GenericToolRunner.cpp"
                "Identifier.cpp"
                "Options.cpp"
                "Print.cpp"
