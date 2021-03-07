@@ -8,6 +8,7 @@ add_executable(${CPPBIND}
                "Options.cpp"
                "Print.cpp"
                "String.cpp"
+               "TmpFile.cpp"
                "Wrapper.cpp"
                "WrapperFunction.cpp"
                "WrapperRecord.cpp"

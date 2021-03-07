@@ -113,7 +113,7 @@ endif()
 find_package(LLVM ${CLANG_VERSION_MAJOR} REQUIRED CONFIG)
 
 # find boost
-find_package(Boost 1.40 REQUIRED COMPONENTS graph regex)
+find_package(Boost 1.40 REQUIRED COMPONENTS filesystem graph regex)
 
 # find pybind11
 if(NOT EXISTS ${PYBIND11_DIR}/CMakeLists.txt)

@@ -4,6 +4,17 @@
 namespace mixin
 {
 
+class NotCopyable
+{
+public:
+  NotCopyable(NotCopyable const &)            = delete;
+  NotCopyable &operator=(NotCopyable const &) = delete;
+
+protected:
+  NotCopyable()  = default;
+  ~NotCopyable() = default;
+};
+
 class NotCopyOrMoveable
 {
 public:
