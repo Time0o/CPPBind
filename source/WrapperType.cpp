@@ -94,12 +94,7 @@ WrapperType::isPointer() const
 
 bool
 WrapperType::isRecord() const
-{
-  if (isStruct() || isClass())
-    return true;
-
-  return false;
-}
+{ return type()->isRecordType(); }
 
 bool
 WrapperType::isStruct() const
