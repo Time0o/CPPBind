@@ -157,6 +157,8 @@ WrapperFunction::getName(bool WithTemplatePostfix,
                     OverloadedOperator_->Spelling,
                     OverloadedOperator_->Name);
 
+    string::replace(NameStr, "operator", "op");
+
     Name = Identifier(NameStr);
   }
 
