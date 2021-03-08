@@ -22,9 +22,4 @@ enum struct ScopedEnum : unsigned
 constexpr unsigned unsigned_constexpr_1 = 1u;
 constexpr double double_constexpr_1 = 1.0;
 
-static unsigned const unsigned_static_const_1 = 1u;
-constexpr double double_static_const_1 = 1.0;
-
-// XXX extern variables
-
 }

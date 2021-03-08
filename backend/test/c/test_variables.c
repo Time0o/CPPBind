@@ -16,8 +16,5 @@ int main()
   assert(TEST_UNSIGNED_CONSTEXPR_1 == 1u);
   assert(TEST_DOUBLE_CONSTEXPR_1 == 1.0);
 
-  assert(TEST_UNSIGNED_STATIC_CONST_1 == 1u);
-  assert(TEST_DOUBLE_STATIC_CONST_1 == 1.0);
-
   return 0;
 }

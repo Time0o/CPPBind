@@ -2,8 +2,6 @@
 #include <string>
 #include <vector>
 
-#include "boost/filesystem/path.hpp"
-
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/Type.h"
@@ -22,7 +20,6 @@
 #include "CompilerState.hpp"
 #include "CreateWrapper.hpp"
 
-using namespace boost::filesystem;
 using namespace clang::ast_matchers;
 
 namespace cppbind
@@ -53,74 +50,61 @@ CreateWrapperConsumer::addFundamentalTypesHandler()
 void
 CreateWrapperConsumer::addWrapperHandlers()
 {
-  auto InputFile(path(CompilerState().currentFile()).filename().native());
+  auto InputFile(CompilerState().currentFile());
 
   for (auto const &MatcherRule : OPT(std::vector<std::string>, "wrap-rule")) {
-    auto const &[MatcherID, MatcherSource] = string::splitFirst(MatcherRule, ":");
+    auto Tmp(string::splitFirst(MatcherRule, ":"));
+
+    auto MatcherID(Tmp.first);
+    auto MatcherSource(Tmp.second);
+
+    auto match = [&](char const *DeclType,
+                     char const *RestrictionsFmt,
+                     auto ...RestrictionsFmtArgs)
+    {
+      auto MatcherRestrictions(
+        llvm::formatv(RestrictionsFmt, RestrictionsFmtArgs...));
+
+      return static_cast<std::string>(
+        llvm::formatv(
+          "{0}(allOf(isExpansionInFileMatching(\"{1}\"), {2}, {3}))",
+          DeclType, InputFile, MatcherRestrictions, MatcherSource));
+    };
+
+    char const *MatchToplevel = "hasParent(anyOf(namespaceDecl(),"
+                                                "translationUnitDecl()))";
 
     if (MatcherID == "const") {
       addWrapperHandler<clang::EnumDecl>(
         "enumConst",
-        llvm::formatv("enumDecl("
-                        "allOf("
-                          "isExpansionInFileMatching(\"{0}\"),"
-                          "hasParent(namespaceDecl()),"
-                          "{1}"
-                        ")"
-                      ")",
-                      InputFile,
-                      MatcherSource),
+        match("enumDecl", MatchToplevel),
         &CreateWrapperConsumer::handleEnumConst);
 
       addWrapperHandler<clang::VarDecl>(
         "VarConst",
-        llvm::formatv("varDecl("
-                        "allOf("
-                          "isExpansionInFileMatching(\"{0}\"),"
-                          "hasParent(namespaceDecl()),"
-                          "hasStaticStorageDuration(),"
-                          "hasType(isConstQualified()),"
-                          "{1}"
-                        ")"
-                      ")",
-                      InputFile,
-                      MatcherSource),
+        match("varDecl",
+              "allOf(isConstexpr(), {0})",
+              MatchToplevel),
         &CreateWrapperConsumer::handleVarConst);
 
     } else if (MatcherID == "function") {
       addWrapperHandler<clang::FunctionDecl>(
         "function",
-        llvm::formatv(
-          "functionDecl("
-            "allOf("
-              "isExpansionInFileMatching(\"{0}\"),"
-              "unless(cxxMethodDecl()),"
-              "anyOf(hasParent(namespaceDecl()),"
-                    "allOf(isTemplateInstantiation(),"
-                          "hasParent(functionTemplateDecl(hasParent(namespaceDecl()))))),"
-              "{1}"
-            ")"
-          ")",
-          InputFile,
-          MatcherSource),
+        match("functionDecl",
+              "allOf(unless(cxxMethodDecl()),"
+                    "anyOf({0}, allOf(isTemplateInstantiation(),"
+                                     "hasParent(functionTemplateDecl({0})))))",
+              MatchToplevel),
         &CreateWrapperConsumer::handleFunction);
 
     } else if (MatcherID == "record") {
       addWrapperHandler<clang::CXXRecordDecl>(
         "record",
-        llvm::formatv(
-          "cxxRecordDecl("
-            "allOf("
-              "isExpansionInFileMatching(\"{0}\"),"
-              "anyOf(isClass(), isStruct()),"
-              "anyOf(hasParent(namespaceDecl()),"
-                    "allOf(isTemplateInstantiation(),"
-                          "hasParent(classTemplateDecl(hasParent(namespaceDecl()))))),"
-              "{1}"
-            ")"
-          ")",
-          InputFile,
-          MatcherSource),
+        match("cxxRecordDecl",
+              "allOf(anyOf(isClass(), isStruct()),"
+                    "anyOf({0}, allOf(isTemplateInstantiation(),"
+                                     "hasParent(classTemplateDecl({0})))))",
+              MatchToplevel),
         &CreateWrapperConsumer::handleRecord);
 
     } else {

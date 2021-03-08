@@ -27,10 +27,10 @@ public:
     clang::CompilerInstance &CI,
     llvm::StringRef File) override
   {
-    log::info("processing input file '{0}'", File);
-
     CompilerState().updateCompilerInstance(CI);
     CompilerState().updateFile(File.str());
+
+    log::info("processing input file '{0}'", CompilerState().currentFile());
 
     beforeProcessing();
 

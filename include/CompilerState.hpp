@@ -19,8 +19,7 @@ class CompilerStateRegistry : private mixin::NotCopyOrMoveable
   friend CompilerStateRegistry &CompilerState();
 
 public:
-  void updateFile(std::string const &File)
-  { File_ = File; }
+  void updateFile(std::string const &File);
 
   void updateCompilerInstance(clang::CompilerInstance const &CI)
   { CI_ = CI; }

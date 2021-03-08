@@ -6,9 +6,15 @@ import text
 
 class Path:
     def __init__(self, path):
-        self._dirname, filename = \
-            os.path.normpath(path).rsplit(os.path.sep, 1)
+        path = os.path.normpath(path)
 
+        if not os.path.sep in path:
+            dirname = '.'
+            filename = path
+        else:
+            dirname, filename = os.path.normpath(path).rsplit(os.path.sep, 1)
+
+        self._dirname = dirname
         self._filename, self._ext = os.path.splitext(filename)
 
     def path(self):
