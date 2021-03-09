@@ -36,6 +36,10 @@ WrapperType::WrapperType(clang::TypeDecl const *Decl)
 {}
 
 bool
+WrapperType::operator==(WrapperType const &Other) const
+{ return Other.mangled() == mangled(); }
+
+bool
 WrapperType::isFundamental(char const *Which) const
 {
   if (!type()->isFundamentalType())
@@ -230,32 +234,11 @@ WrapperType::setBase(WrapperType const &NewBase)
 
 std::string
 WrapperType::str() const
-{ return format(); }
+{ return print::qualType(type()); }
 
 std::string
-WrapperType::format(bool Mangled,
-                    bool Compact,
-                    Identifier::Case Case,
-                    Identifier::Quals Quals) const
-{
-  if (Mangled)
-    return print::mangledQualType(type());
-
-  if (getBase().isRecord()) {
-    auto PPCompact = print::DEFAULT_POLICY;
-    auto PPNonCompact = print::NO_POLICY;
-
-    auto Str(print::qualType(type(), Compact ? PPCompact : PPNonCompact));
-    auto StrBase(print::qualType(requalifyType(baseType(), 0u), PPCompact));
-
-    string::replace(Str, StrBase, Identifier(StrBase).format(Case, Quals));
-
-    return Str;
-
-  } else {
-    return print::qualType(type());
-  }
-}
+WrapperType::mangled() const
+{ return print::mangledQualType(type()); }
 
 clang::QualType const &
 WrapperType::type() const

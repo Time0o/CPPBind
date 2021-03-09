@@ -52,7 +52,7 @@ def type_instances():
 
         template_params = ', '.join(map(str, template_params))
 
-        tis.append(f"type_instance<{template_params}> {t.format(mangled=True)};")
+        tis.append(f"type_instance<{template_params}> {t.mangled()};")
 
     return code(
         """

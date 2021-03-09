@@ -196,7 +196,7 @@ Wrapper::addWrapperRecord(std::shared_ptr<IdentifierIndex> II,
   }
 
   II->addDefinition(RecordNameTemplated, IdentifierIndex::RECORD);
-  II->addDefinition(Record->getType().name(), IdentifierIndex::TYPE);
+  II->addDefinition(Identifier(Record->getType().mangled()), IdentifierIndex::TYPE);
 
   RecordTypes_[Record->getType()] = Record;
   RecordInheritances_.add(Record->getType(), Record->getBaseTypes());
@@ -231,7 +231,7 @@ Wrapper::typeWrapped(std::shared_ptr<IdentifierIndex> II,
 
   RecordType = RecordType.withoutConst();
 
-  return II->hasDefinition(RecordType.name(), IdentifierIndex::TYPE);
+  return II->hasDefinition(Identifier(RecordType.mangled()), IdentifierIndex::TYPE);
 }
 
 } // namespace cppbind

@@ -128,11 +128,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def(hash(py::self))
     .def("__str__", &WrapperType::str)
     .def("str", &WrapperType::str)
-    .def("format", &WrapperType::format,
-         "mangled"_a = false,
-         "compact"_a = false,
-         "case"_a = Identifier::ORIG_CASE,
-         "quals"_a = Identifier::KEEP_QUALS)
+    .def("mangled", &WrapperType::mangled)
     .def("is_const", &WrapperType::isConst)
     .def("is_fundamental", &WrapperType::isFundamental, "which"_a = nullptr)
     .def("is_void", &WrapperType::isVoid)

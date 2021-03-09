@@ -60,7 +60,7 @@ def _createmetatable(r):
     if r.is_moveable():
         function_entries.append('{"_move", _move}')
 
-    key = f'"METATABLE_{r.type().format(mangled=True)}"'
+    key = f'"METATABLE_{r.type().mangled()}"'
 
     return code(
         """
@@ -104,4 +104,4 @@ def pushpointer(arg, owning=False):
 
 
 def setmetatable(t):
-    return f'{SETMETATABLE}(L, "METATABLE_{t.format(mangled=True)}");'
+    return f'{SETMETATABLE}(L, "METATABLE_{t.mangled()}");'

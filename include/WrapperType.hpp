@@ -32,11 +32,10 @@ public:
   explicit WrapperType(std::string const &TypeName);
   explicit WrapperType(clang::TypeDecl const *Decl);
 
-  bool operator==(WrapperType const &Wt) const
-  { return type() == Wt.type(); }
+  bool operator==(WrapperType const &Other) const;
 
-  bool operator!=(WrapperType const &Wt) const
-  { return !(*this == Wt); }
+  bool operator!=(WrapperType const &Other) const
+  { return !operator==(Other); }
 
   bool isFundamental(char const *Which = nullptr) const;
   bool isVoid() const;
@@ -70,15 +69,9 @@ public:
   WrapperType withConst() const;
   WrapperType withoutConst() const;
 
-  Identifier name() const
-  { return Identifier(format(true)); }
-
   std::string str() const;
 
-  std::string format(bool Mangled = false,
-                     bool Compact = false,
-                     Identifier::Case Case = Identifier::ORIG_CASE,
-                     Identifier::Quals Quals = Identifier::KEEP_QUALS) const;
+  std::string mangled() const;
 
 private:
   clang::QualType const &type() const;
@@ -96,7 +89,7 @@ private:
 };
 
 inline std::size_t hash_value(WrapperType const &Wt)
-{ return reinterpret_cast<std::size_t>(Wt.typePtr()); }
+{ return std::hash<std::string>()(Wt.mangled()); }
 
 } // namespace cppbind
 
