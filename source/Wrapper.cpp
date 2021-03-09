@@ -93,9 +93,23 @@ Wrapper::_addWrapperFunction(WrapperFunction *Function)
   if (!checkTypeWrapped(Function->getReturnType()))
     return false;
 
-  for (auto const &Param : Function->getParameters()) {
-    if (!checkTypeWrapped(Param.getType()))
+  auto &Params(Function->getParameters());
+
+  for (std::size_t i = 0; i < Params.size(); ++i) {
+    if (checkTypeWrapped(Params[i].getType()))
+      continue;
+
+    if (Params[i].getDefaultArgument()) {
+      log::debug("on second thought, pruning parameters instead");
+
+      for (std::size_t j = 0; j < Params.size() - i; ++j)
+        Params.pop_back();
+
+      break;
+
+    } else {
       return false;
+    }
   }
 
   auto FunctionNameTemplated(Function->getName(true));
@@ -141,6 +155,8 @@ Wrapper::_addWrapperRecord(WrapperRecord *Record)
 
   auto It(Functions.begin());
   while (It != Functions.end()) {
+    log::debug("considering member {0}", *It);
+
     if (!_addWrapperFunction(&(*It)))
       It = Functions.erase(It);
     else
