@@ -7,6 +7,8 @@
 
 #include "clang/AST/DeclTemplate.h"
 
+#include "Identifier.hpp"
+
 namespace cppbind
 {
 
@@ -74,14 +76,17 @@ public:
     if (AsPostfix) {
       for (auto const &Arg : Args_)
         SS << "_" << Arg.str();
+
+      return Identifier(SS.str()).format(Identifier::ORIG_CASE,
+                                         Identifier::REPLACE_QUALS);
     } else {
       SS << "<" << Args_.front().str();
       for (std::size_t i = 1; i < Args_.size(); ++i)
         SS << ", " << Args_[i].str();
       SS << ">";
-    }
 
-    return SS.str();
+      return SS.str();
+    }
   }
 
 private:
