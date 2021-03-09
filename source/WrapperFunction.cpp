@@ -54,7 +54,7 @@ WrapperParameter::WrapperParameter(Identifier const &Name,
 std::optional<std::string>
 WrapperParameter::determineDefaultArgument(clang::ParmVarDecl const *Decl)
 {
-  auto const *DefaultExpr = Decl->getDefaultArg();
+  auto const *DefaultExpr = Decl->getUninstantiatedDefaultArg();
   if (!DefaultExpr)
     return std::nullopt;
 
