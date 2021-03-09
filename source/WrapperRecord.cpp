@@ -82,17 +82,12 @@ std::deque<WrapperFunction>
 WrapperRecord::determinePublicMemberFunctions(
   clang::CXXRecordDecl const *Decl) const
 {
-  auto PublicMethodDecls(determinePublicMemberFunctionDecls(Decl));
+  std::deque<WrapperFunction> PublicMethods;
 
-  auto InheritedPublicMethodDecls(determineInheritedPublicMemberFunctionDecls(Decl));
-
-  PublicMethodDecls.insert(PublicMethodDecls.end(),
-                           InheritedPublicMethodDecls.begin(),
-                           InheritedPublicMethodDecls.end());
+  // member functions
+  auto PublicMethodDecls(determinePublicMemberFunctionDecls(Decl, true));
 
   PublicMethodDecls = prunePublicMemberFunctionDecls(Decl, PublicMethodDecls);
-
-  std::deque<WrapperFunction> PublicMethods;
 
   for (auto const *MethodDecl : PublicMethodDecls) {
     PublicMethods.emplace_back(WrapperFunctionBuilder(MethodDecl)
@@ -106,12 +101,22 @@ WrapperRecord::determinePublicMemberFunctions(
   if (Decl->needsImplicitDestructor())
     PublicMethods.push_back(implicitDestructor(Decl));
 
+  // callable member fields
+  auto PublicCallableFieldDecls(determinePublicCallableMemberFieldDecls(Decl));
+
+  for (auto const &[FieldDecl, MethodDecl] : PublicCallableFieldDecls) {
+    PublicMethods.emplace_back(WrapperFunctionBuilder(MethodDecl)
+                               .setName(Identifier(FieldDecl))
+                               .setParent(this)
+                               .build());
+  }
+
   return PublicMethods;
 }
 
 std::deque<clang::CXXMethodDecl const *>
 WrapperRecord::determinePublicMemberFunctionDecls(
-  clang::CXXRecordDecl const *Decl) const
+  clang::CXXRecordDecl const *Decl, bool IncludeInherited) const
 {
   std::deque<clang::CXXMethodDecl const *> PublicMethodDecls;
 
@@ -138,6 +143,15 @@ WrapperRecord::determinePublicMemberFunctionDecls(
       if (MethodDecl->getAccess() == clang::AS_public)
         PublicMethodDecls.push_back(MethodDecl);
     }
+  }
+
+  if (IncludeInherited) {
+    auto InheritedPublicMethodDecls(
+      determineInheritedPublicMemberFunctionDecls(Decl));
+
+    PublicMethodDecls.insert(PublicMethodDecls.end(),
+                             InheritedPublicMethodDecls.begin(),
+                             InheritedPublicMethodDecls.end());
   }
 
   return PublicMethodDecls;
@@ -212,6 +226,32 @@ WrapperRecord::prunePublicMemberFunctionDecls(
   }
 
   return PrunedPublicMethodDecls;
+}
+
+std::deque<std::pair<clang::FieldDecl const *, clang::CXXMethodDecl const *>>
+WrapperRecord::determinePublicCallableMemberFieldDecls(
+  clang::CXXRecordDecl const *Decl) const
+{
+  std::deque<std::pair<clang::FieldDecl const *, clang::CXXMethodDecl const *>>
+  PublicCallableMemberFieldDecls;
+
+  for (auto const *FieldDecl : Decl->fields()) {
+    if (FieldDecl->getAccess() != clang::AS_public)
+      continue;
+
+    auto const *RecordFieldDecl = FieldDecl->getType()->getAsCXXRecordDecl();
+    if (!RecordFieldDecl)
+      continue;
+
+    for (auto const *MethodDecl :
+         determinePublicMemberFunctionDecls(RecordFieldDecl, true))
+
+      if (MethodDecl->isOverloadedOperator() &&
+          MethodDecl->getOverloadedOperator() == clang::OO_Call)
+        PublicCallableMemberFieldDecls.emplace_back(FieldDecl, MethodDecl);
+  }
+
+  return PublicCallableMemberFieldDecls;
 }
 
 bool

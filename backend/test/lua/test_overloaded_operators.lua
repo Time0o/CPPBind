@@ -10,3 +10,9 @@ do
   local pointee2 = pointer:op_arrow()
   assert(pointee2:get_state() == 2)
 end
+
+do
+  local class = test.TestClassWithCallableMember.new()
+
+  assert(class:sum(1, 2) == 3)
+end

@@ -19,5 +19,13 @@ int main()
     _delete(pointee2);
   }
 
+  {
+    void * class = test_class_with_callable_member_new();
+
+    assert(test_class_with_callable_member_sum(class, 1, 2) == 3);
+
+    _delete(class);
+  }
+
   return 0;
 }

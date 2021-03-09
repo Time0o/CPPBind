@@ -35,6 +35,15 @@ private:
   Pointee _pointee;
 };
 
+struct ClassWithCallableMember
+{
+  struct Sum
+  {
+    int operator()(int a, int b) const
+    { return a + b; }
+  } sum;
+};
+
 // XXX test more operators (e.g. class Number)
 
 } // namespace test

@@ -75,7 +75,7 @@ private:
 
   std::deque<clang::CXXMethodDecl const *>
   determinePublicMemberFunctionDecls(
-    clang::CXXRecordDecl const *Decl) const;
+    clang::CXXRecordDecl const *Decl, bool IncludeInherited = false) const;
 
   std::deque<clang::CXXMethodDecl const *>
   determineInheritedPublicMemberFunctionDecls(
@@ -85,6 +85,10 @@ private:
   prunePublicMemberFunctionDecls(
     clang::CXXRecordDecl const *Decl,
     std::deque<clang::CXXMethodDecl const *> const &PublicMethodDecls) const;
+
+  std::deque<std::pair<clang::FieldDecl const *, clang::CXXMethodDecl const *>>
+  determinePublicCallableMemberFieldDecls(
+    clang::CXXRecordDecl const *Decl) const;
 
   static bool determineIfAbstract(clang::CXXRecordDecl const *Decl);
   static bool determineIfCopyable(clang::CXXRecordDecl const *Decl);
