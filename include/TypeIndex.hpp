@@ -3,11 +3,10 @@
 
 #include <deque>
 #include <set>
+#include <string>
 
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/graph/labeled_graph.hpp"
-
-#include "WrapperType.hpp"
 
 namespace cppbind
 {
@@ -16,9 +15,9 @@ class TypeIndex
 {
 public:
   template<typename IT>
-  void add(WrapperType const &Type, IT BasesFirst, IT BasesLast)
+  void add(std::string const &Type, IT BasesFirst, IT BasesLast)
   {
-    auto [_, New] = S_.insert(Type.mangled());
+    auto [_, New] = S_.insert(Type);
     if (!New)
       return;
 
@@ -32,23 +31,22 @@ public:
     }
   }
 
-  bool has(WrapperType const &Type) const
-  { return S_.find(Type.mangled()) != S_.end(); }
+  bool has(std::string const &Type) const;
 
-  std::deque<WrapperType> bases(WrapperType const &Type, bool Recursive = false) const;
+  std::deque<std::string> bases(std::string const &Type, bool Recursive = false) const;
 
-  std::deque<WrapperType> basesFirstOrdering() const;
+  std::deque<std::string> basesFirstOrdering() const;
 
 private:
   using Graph = boost::adjacency_list<boost::vecS,
                                       boost::vecS,
                                       boost::directedS,
-                                      WrapperType>;
+                                      std::string>;
 
-  using LabeledGraph = boost::labeled_graph<Graph, WrapperType>;
+  using LabeledGraph = boost::labeled_graph<Graph, std::string>;
 
-  void addVertex(WrapperType const &Type);
-  void addEdge(WrapperType const &SourceType, WrapperType const &TargetType);
+  void addVertex(std::string const &Type);
+  void addEdge(std::string const &SourceType, std::string const &TargetType);
 
   std::set<std::string> S_;
   LabeledGraph G_;

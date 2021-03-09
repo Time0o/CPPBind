@@ -1,7 +1,10 @@
 #include <cassert>
 #include <deque>
 #include <memory>
+#include <string>
+#include <unordered_map>
 #include <vector>
+#include <iostream> // TODO
 
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
@@ -53,22 +56,28 @@ Wrapper::getRecords() const
   std::vector<std::pair<WrapperRecord const *,
               std::vector<WrapperRecord const *>>> RecordsAndBases;
 
-  auto recordFromType = [&](WrapperType const &Type)
-  {
-    for (auto const &Record : Records_) {
-      if (Record.getType() == Type)
-        return &Record;
-    }
+  std::unordered_map<std::string, WrapperRecord const *> RecordTypesMangled;
 
-    assert(false);
-  };
+  for (auto const &Record : Records_) {
+    auto Type(Record.getType().mangled());
+
+    RecordTypesMangled[Type] = &Record;
+  }
 
   for (auto Type : TI_->basesFirstOrdering()) {
-    auto const *Record(recordFromType(Type));
+    auto It(RecordTypesMangled.find(Type));
+    if (It == RecordTypesMangled.end())
+      continue;
+
+    auto const *Record(It->second);
 
     std::vector<WrapperRecord const *> Bases;
-    for (auto const &BaseType : TI_->bases(Type, true))
-      Bases.push_back(recordFromType(BaseType));
+    for (auto const &BaseType : TI_->bases(Type, true)) {
+      auto It(RecordTypesMangled.find(BaseType));
+      assert(It != RecordTypesMangled.end());
+
+      Bases.push_back(It->second);
+    }
 
     RecordsAndBases.push_back(std::make_pair(Record, Bases));
   }
@@ -147,9 +156,13 @@ Wrapper::_addWrapperRecord(WrapperRecord *Record)
 
   II_->addDefinition(RecordNameTemplated, IdentifierIndex::RECORD);
 
-  TI_->add(Record->getType(),
-           Record->getBaseTypes().begin(),
-           Record->getBaseTypes().end());
+  std::string RecordType(Record->getType().mangled());
+
+  std::deque<std::string> BaseTypes;
+  for (auto const &BaseType : Record->getBaseTypes())
+    BaseTypes.push_back(BaseType.mangled());
+
+  TI_->add(RecordType, BaseTypes.begin(), BaseTypes.end());
 
   auto &Functions(Record->getFunctions());
 
@@ -182,7 +195,7 @@ Wrapper::typeWrapped(WrapperType const &Type) const
 
   RecordType = RecordType.withoutConst();
 
-  return TI_->has(RecordType);
+  return TI_->has(RecordType.mangled());
 }
 
 bool

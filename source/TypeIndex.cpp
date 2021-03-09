@@ -1,4 +1,5 @@
 #include <deque>
+#include <string>
 
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/graph/breadth_first_search.hpp"
@@ -6,30 +7,33 @@
 #include "boost/graph/topological_sort.hpp"
 
 #include "TypeIndex.hpp"
-#include "WrapperType.hpp"
 
 namespace cppbind
 {
 
+bool
+TypeIndex::has(std::string const &Type) const
+{ return S_.find(Type) != S_.end(); }
+
 void
-TypeIndex::addVertex(WrapperType const &Type)
+TypeIndex::addVertex(std::string const &Type)
 { G_.graph()[boost::add_vertex(Type, G_)] = Type; }
 
 void
-TypeIndex::addEdge(WrapperType const &SourceType, WrapperType const &TargetType)
+TypeIndex::addEdge(std::string const &SourceType, std::string const &TargetType)
 { boost::add_edge(G_.vertex(SourceType), G_.vertex(TargetType), G_.graph()); }
 
-std::deque<WrapperType>
-TypeIndex::bases(WrapperType const &Type, bool Recursive) const
+std::deque<std::string>
+TypeIndex::bases(std::string const &Type, bool Recursive) const
 {
-  std::deque<WrapperType> Bases;
+  std::deque<std::string> Bases;
 
   auto V = G_.vertex(Type);
 
   if (Recursive) {
     struct RecursiveBaseVisitor : public boost::default_bfs_visitor
     {
-      RecursiveBaseVisitor(std::deque<WrapperType> &Bases)
+      RecursiveBaseVisitor(std::deque<std::string> &Bases)
       : Bases_(Bases)
       {}
 
@@ -37,7 +41,7 @@ TypeIndex::bases(WrapperType const &Type, bool Recursive) const
       { Bases_.push_back(G[V]); }
 
     private:
-      std::deque<WrapperType> &Bases_;
+      std::deque<std::string> &Bases_;
     };
 
     RecursiveBaseVisitor Visitor(Bases);
@@ -54,13 +58,13 @@ TypeIndex::bases(WrapperType const &Type, bool Recursive) const
   return Bases;
 }
 
-std::deque<WrapperType>
+std::deque<std::string>
 TypeIndex::basesFirstOrdering() const
 {
   std::deque<boost::graph_traits<Graph>::vertex_descriptor> BasesFirstVertices;
   boost::topological_sort(G_.graph(), std::back_inserter(BasesFirstVertices));
 
-  std::deque<WrapperType> BasesFirst;
+  std::deque<std::string> BasesFirst;
   for (auto const &Vertex : BasesFirstVertices)
     BasesFirst.push_back(G_.graph()[Vertex]);
 
