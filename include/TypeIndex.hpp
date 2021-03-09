@@ -24,8 +24,12 @@ public:
 
     addVertex(Type);
 
-    for (auto It = BasesFirst; It != BasesLast; ++It)
-      addEdge(Type, *It);
+    for (auto It = BasesFirst; It != BasesLast; ++It) {
+      auto BaseType(*It);
+
+      if (has(BaseType))
+        addEdge(Type, *It);
+    }
   }
 
   bool has(WrapperType const &Type) const
