@@ -37,6 +37,17 @@ public:
   bool operator!=(WrapperType const &Other) const
   { return !operator==(Other); }
 
+  bool operator<(WrapperType const &Other) const;
+
+  bool operator>(WrapperType const &Other) const
+  { return Other < *this; }
+
+  bool operator<=(WrapperType const &Other) const
+  { return !operator>(Other); }
+
+  bool operator>=(WrapperType const &Other) const
+  { return !operator<(Other); }
+
   bool isFundamental(char const *Which = nullptr) const;
   bool isVoid() const;
   bool isBoolean() const;

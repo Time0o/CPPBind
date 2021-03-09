@@ -11,6 +11,7 @@ add_executable(${CPPBIND}
                "Print.cpp"
                "String.cpp"
                "TmpFile.cpp"
+               "TypeIndex.cpp"
                "Wrapper.cpp"
                "WrapperFunction.cpp"
                "WrapperRecord.cpp"

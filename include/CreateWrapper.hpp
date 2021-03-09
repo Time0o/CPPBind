@@ -17,6 +17,7 @@
 #include "GenericFrontendAction.hpp"
 #include "GenericToolRunner.hpp"
 #include "IdentifierIndex.hpp"
+#include "TypeIndex.hpp"
 #include "Wrapper.hpp"
 
 namespace cppbind
@@ -25,8 +26,7 @@ namespace cppbind
 class CreateWrapperConsumer : public GenericASTConsumer
 {
 public:
-  explicit CreateWrapperConsumer(std::shared_ptr<Wrapper> Wrapper,
-                                 std::shared_ptr<IdentifierIndex> II);
+  explicit CreateWrapperConsumer(std::shared_ptr<Wrapper> Wrapper);
 
 private:
   void addFundamentalTypesHandler();
@@ -49,43 +49,31 @@ private:
   void handleFunction(clang::FunctionDecl const *Decl);
   void handleRecord(clang::CXXRecordDecl const *Decl);
 
-  std::shared_ptr<Wrapper> Wr_;
-  std::shared_ptr<IdentifierIndex> II_;
+  std::shared_ptr<Wrapper> Wrapper_;
 };
 
-// XXX what about parallel invocations?
 class CreateWrapperFrontendAction
 : public GenericFrontendAction<CreateWrapperConsumer>
 {
 public:
-  explicit CreateWrapperFrontendAction(std::shared_ptr<IdentifierIndex> II)
-  : II_(II)
+  explicit CreateWrapperFrontendAction(std::shared_ptr<IdentifierIndex> II,
+                                       std::shared_ptr<TypeIndex> TI)
+  : II_(II),
+    TI_(TI)
   {}
 
 private:
   std::unique_ptr<CreateWrapperConsumer> makeConsumer() override
-  {
-    // XXX skip source files, filter headers?
-    return std::make_unique<CreateWrapperConsumer>(Wr_, II_);
-  }
+  { return std::make_unique<CreateWrapperConsumer>(Wrapper_); }
 
-  void beforeProcessing() override
-  {
-    InputFile_ = CompilerState().currentFile();
-    Wr_ = std::make_shared<Wrapper>();
-  }
+  void beforeProcessing() override;
+  void afterProcessing() override;
 
-  void afterProcessing() override
-  {
-    // XXX too early?
-    Wr_->overload(II_);
-
-    Backend::run(InputFile_, Wr_);
-  }
+  std::shared_ptr<IdentifierIndex> II_;
+  std::shared_ptr<TypeIndex> TI_;
 
   std::string InputFile_;
-  std::shared_ptr<Wrapper> Wr_;
-  std::shared_ptr<IdentifierIndex> II_;
+  std::shared_ptr<Wrapper> Wrapper_;
 };
 
 class CreateWrapperToolRunner : public GenericToolRunner
@@ -97,6 +85,7 @@ private:
   std::unique_ptr<clang::tooling::FrontendActionFactory> makeFactory() const override;
 
   std::shared_ptr<IdentifierIndex> II_ = std::make_shared<IdentifierIndex>();
+  std::shared_ptr<TypeIndex> TI_ = std::make_shared<TypeIndex>();
 };
 
 } // namespace cppbind

@@ -40,6 +40,10 @@ WrapperType::operator==(WrapperType const &Other) const
 { return Other.mangled() == mangled(); }
 
 bool
+WrapperType::operator<(WrapperType const &Other) const
+{ return mangled() < Other.mangled(); }
+
+bool
 WrapperType::isFundamental(char const *Which) const
 {
   if (!type()->isFundamentalType())

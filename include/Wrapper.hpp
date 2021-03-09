@@ -8,13 +8,11 @@
 #include <utility>
 #include <vector>
 
-#include "boost/graph/adjacency_list.hpp"
-#include "boost/graph/labeled_graph.hpp"
-
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
 #include "Logging.hpp"
 #include "Options.hpp"
+#include "TypeIndex.hpp"
 #include "WrapperConstant.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperRecord.hpp"
@@ -25,65 +23,38 @@ namespace cppbind
 
 class Wrapper
 {
-  class InheritanceGraph
-  {
-  public:
-    void add(WrapperType const &Type, std::vector<WrapperType> const &BaseTypes);
-
-    std::deque<WrapperType>
-    bases(WrapperType const &Type, bool Recursive = false) const;
-
-    std::deque<WrapperType>
-    basesFirstOrdering() const;
-
-  private:
-    using Graph = boost::adjacency_list<boost::vecS,
-                                        boost::vecS,
-                                        boost::directedS,
-                                        WrapperType>;
-
-    using LabeledGraph = boost::labeled_graph<Graph,
-                                              WrapperType,
-                                              boost::hash_mapS>;
-
-    LabeledGraph G_;
-  };
-
 public:
-  template<typename ...ARGS>
-  void addWrapperConstant(std::shared_ptr<IdentifierIndex> II, ARGS &&...Args)
-  {
-    Constants_.emplace_back(std::forward<ARGS>(Args)...);
+  Wrapper(std::shared_ptr<IdentifierIndex> II,
+          std::shared_ptr<TypeIndex> TI)
+  : II_(II),
+    TI_(TI)
+  {}
 
-    if (!addWrapperConstant(II, &Constants_.back()))
-      Constants_.pop_back();
-    else
-      log::info("created {0}", Constants_.back());
+  template<typename ...ARGS>
+  void addWrapperConstant(ARGS &&...Args)
+  {
+    addWrapperObject(&Wrapper::_addWrapperConstant,
+                     Constants_,
+                     std::forward<ARGS>(Args)...);
   }
 
   template<typename ...ARGS>
-  void addWrapperFunction(std::shared_ptr<IdentifierIndex> II, ARGS &&...Args)
+  void addWrapperFunction(ARGS &&...Args)
   {
-    Functions_.emplace_back(std::forward<ARGS>(Args)...);
-
-    if (!addWrapperFunction(II, &Functions_.back()))
-      Functions_.pop_back();
-    else
-      log::info("created {0}", Functions_.back());
+    addWrapperObject(&Wrapper::_addWrapperFunction,
+                     Functions_,
+                     std::forward<ARGS>(Args)...);
   }
 
   template<typename ...ARGS>
-  void addWrapperRecord(std::shared_ptr<IdentifierIndex> II, ARGS &&...Args)
+  void addWrapperRecord(ARGS &&...Args)
   {
-    Records_.emplace_back(std::forward<ARGS>(Args)...);
-
-    if (!addWrapperRecord(II, &Records_.back()))
-      Records_.pop_back();
-    else
-      log::info("created {0}", Records_.back());
+    addWrapperObject(&Wrapper::_addWrapperRecord,
+                     Records_,
+                     std::forward<ARGS>(Args)...);
   }
 
-  void overload(std::shared_ptr<IdentifierIndex> II);
+  void finalize();
 
   std::vector<WrapperConstant const *> getConstants() const;
 
@@ -93,41 +64,34 @@ public:
               std::vector<WrapperRecord const *>>> getRecords() const;
 
 private:
-  bool addWrapperConstant(std::shared_ptr<IdentifierIndex> II,
-                          WrapperConstant *Constant);
-
-  bool addWrapperFunction(std::shared_ptr<IdentifierIndex> II,
-                          WrapperFunction *Function);
-
-  bool addWrapperRecord(std::shared_ptr<IdentifierIndex> II,
-                        WrapperRecord *Record);
-
-  template<typename T>
-  bool checkTypeWrapped(std::shared_ptr<IdentifierIndex> II,
-                        WrapperType const &Type,
-                        T const *Obj) const
+  template<typename T, typename ...ARGS>
+  void addWrapperObject(bool(Wrapper::*addObj)(T *),
+                        std::deque<T> &Objs,
+                        ARGS &&...Args)
   {
-    if (typeWrapped(II, Type))
-      return true;
+    Objs.emplace_back(std::forward<ARGS>(Args)...);
 
-    if (OPT(bool, "wrap-skip-unwrappable")) {
-      log::debug("{0}: skipping because type '{1}' is unwrapped", *Obj, Type);
-      return false;
-    } else {
-      throw log::exception("{0}: type '{1}' is unwrapped", *Obj, Type);
-    }
+    log::info("creating {0}...", Objs.back());
+
+    if (!(this->*addObj)(&Objs.back()))
+      Objs.pop_back();
+    else
+      log::info("created {0}", Objs.back());
   }
 
-  bool typeWrapped(std::shared_ptr<IdentifierIndex> II,
-                   WrapperType const &Type) const;
+  bool _addWrapperConstant(WrapperConstant *Constant);
+  bool _addWrapperFunction(WrapperFunction *Function);
+  bool _addWrapperRecord(WrapperRecord *Record);
+
+  bool typeWrapped(WrapperType const &Type) const;
+  bool checkTypeWrapped(WrapperType const &Type) const;
 
   std::deque<WrapperConstant> Constants_;
-
   std::deque<WrapperFunction> Functions_;
-
   std::deque<WrapperRecord> Records_;
-  std::unordered_map<WrapperType, WrapperRecord const *> RecordTypes_;
-  InheritanceGraph RecordInheritances_;
+
+  std::shared_ptr<IdentifierIndex> II_;
+  std::shared_ptr<TypeIndex> TI_;
 };
 
 } // namespace cppbind

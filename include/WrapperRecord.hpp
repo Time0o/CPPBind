@@ -40,7 +40,7 @@ public:
   WrapperType getType() const
   { return Type_; }
 
-  std::vector<WrapperType> getBaseTypes() const
+  std::deque<WrapperType> const &getBaseTypes() const
   { return BaseTypes_; }
 
   std::deque<WrapperFunction> const &getFunctions() const
@@ -67,7 +67,7 @@ public:
   { return static_cast<bool>(TemplateArgumentList_); }
 
 private:
-  std::vector<WrapperType> determinePublicBaseTypes(
+  std::deque<WrapperType> determinePublicBaseTypes(
     clang::CXXRecordDecl const *Decl) const;
 
   std::deque<WrapperFunction> determinePublicMemberFunctions(
@@ -103,7 +103,7 @@ private:
 
   Identifier Name_;
   WrapperType Type_;
-  std::vector<WrapperType> BaseTypes_;
+  std::deque<WrapperType> BaseTypes_;
 
   std::deque<WrapperFunction> Functions_;
 

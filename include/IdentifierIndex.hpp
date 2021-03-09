@@ -16,7 +16,6 @@ class IdentifierIndex
 public:
   enum Type
   {
-    TYPE,
     CONST,
     FUNC,
     RECORD
@@ -32,13 +31,6 @@ private:
 
     Type Type;
     bool IsDefinition;
-  };
-
-  struct TypeProps : public Props
-  {
-    TypeProps()
-    : Props(TYPE, true)
-    {}
   };
 
   struct ConstProps : public Props
@@ -113,9 +105,6 @@ private:
     std::shared_ptr<Props> P;
 
     switch (Type) {
-      case TYPE:
-        P = std::make_shared<TypeProps>();
-        break;
       case CONST:
         P = std::make_shared<ConstProps>();
         break;

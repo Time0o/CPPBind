@@ -25,11 +25,8 @@ using namespace clang::ast_matchers;
 namespace cppbind
 {
 
-CreateWrapperConsumer::CreateWrapperConsumer(
-  std::shared_ptr<Wrapper> Wrapper,
-  std::shared_ptr<IdentifierIndex> II)
-: Wr_(Wrapper),
-  II_(II)
+CreateWrapperConsumer::CreateWrapperConsumer(std::shared_ptr<Wrapper> Wrapper)
+: Wrapper_(Wrapper)
 {
   addFundamentalTypesHandler();
   addWrapperHandlers();
@@ -133,23 +130,39 @@ void
 CreateWrapperConsumer::handleEnumConst(clang::EnumDecl const *Decl)
 {
   for (auto const &ConstantDecl : Decl->enumerators())
-    Wr_->addWrapperConstant(II_, ConstantDecl);
+    Wrapper_->addWrapperConstant(ConstantDecl);
 }
 
 void
 CreateWrapperConsumer::handleVarConst(clang::VarDecl const *Decl)
-{ Wr_->addWrapperConstant(II_, Decl); }
+{ Wrapper_->addWrapperConstant(Decl); }
 
 void
 CreateWrapperConsumer::handleFunction(clang::FunctionDecl const *Decl)
-{ Wr_->addWrapperFunction(II_, Decl); }
+{ Wrapper_->addWrapperFunction(Decl); }
 
 void
 CreateWrapperConsumer::handleRecord(clang::CXXRecordDecl const *Decl)
-{ Wr_->addWrapperRecord(II_, Decl); }
+{ Wrapper_->addWrapperRecord(Decl); }
+
+void
+CreateWrapperFrontendAction::beforeProcessing()
+{
+  InputFile_ = CompilerState().currentFile();
+
+  Wrapper_ = std::make_shared<Wrapper>(II_, TI_);
+}
+
+void
+CreateWrapperFrontendAction::afterProcessing()
+{
+  Wrapper_->finalize();
+
+  Backend::run(InputFile_, Wrapper_);
+}
 
 std::unique_ptr<clang::tooling::FrontendActionFactory>
 CreateWrapperToolRunner::makeFactory() const
-{ return makeFactoryWithArgs<CreateWrapperFrontendAction>(II_); }
+{ return makeFactoryWithArgs<CreateWrapperFrontendAction>(II_, TI_); }
 
 } // namespace cppbind

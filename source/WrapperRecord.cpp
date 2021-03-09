@@ -64,11 +64,11 @@ WrapperRecord::getTemplateArgumentList() const
   return TemplateArgumentList_->str();
 }
 
-std::vector<WrapperType>
+std::deque<WrapperType>
 WrapperRecord::determinePublicBaseTypes(
   clang::CXXRecordDecl const *Decl) const
 {
-  std::vector<WrapperType> BaseTypes;
+  std::deque<WrapperType> BaseTypes;
 
   for (auto const &Base : Decl->bases()) {
     if (Base.getAccessSpecifier() == clang::AS_public)
