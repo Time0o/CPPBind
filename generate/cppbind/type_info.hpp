@@ -203,36 +203,36 @@ void *make_typed(T *obj, ARGS &&...args)
   return static_cast<void *>(ptr);
 }
 
-typed_ptr *get_typed(void *ptr)
+inline typed_ptr *get_typed(void *ptr)
 { return static_cast<typed_ptr *>(ptr); }
 
 template<typename T>
 T *typed_pointer_cast(void *ptr)
 { return get_typed(ptr)->cast<T>(); }
 
-void *bind_own(void *obj)
+inline void *bind_own(void *obj)
 {
   get_typed(obj)->own();
   return obj;
 }
 
-void *bind_disown(void *obj)
+inline void *bind_disown(void *obj)
 {
   get_typed(obj)->disown();
   return obj;
 }
 
-void *bind_copy(void *obj)
+inline void *bind_copy(void *obj)
 { return get_typed(obj)->copy(); }
 
 // XXX copy assignment
 
-void *bind_move(void *obj)
+inline void *bind_move(void *obj)
 { return get_typed(obj)->move(); }
 
 // XXX move assignment
 
-void bind_delete(void *obj)
+inline void bind_delete(void *obj)
 {
   if (obj)
     delete get_typed(obj);
