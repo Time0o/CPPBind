@@ -80,6 +80,11 @@ void OptionsRegistry::init()
     .setDefault(".cpp")
     .done();
 
+  Options().add<bool>("output-relative-includes")
+    .setDescription("Use relative include paths in generated files")
+    .setDefault(false)
+    .done();
+
   Options().add<int>("verbosity")
     .setDescription("Output verbosity")
     .setDefault(0)

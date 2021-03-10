@@ -5,6 +5,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <unordered_map>
 
 #include "clang/AST/ASTContext.h"
 #include "clang/Frontend/CompilerInstance.h"
@@ -19,16 +20,19 @@ class CompilerStateRegistry : private mixin::NotCopyOrMoveable
   friend CompilerStateRegistry &CompilerState();
 
 public:
+  template<typename IT>
+  void updateFileList(IT First, IT Last)
+  {
+    for (auto It = First; It != Last; ++It)
+      updateFileEntry(*It);
+  }
+
   void updateFile(std::string const &File);
 
   void updateCompilerInstance(clang::CompilerInstance const &CI)
   { CI_ = CI; }
 
-  std::string currentFile() const
-  {
-    assert(File_);
-    return *File_;
-  }
+  std::string currentFile(bool Relative = false) const;
 
   clang::CompilerInstance const &currentCompilerInstance() const
   {
@@ -57,6 +61,10 @@ private:
 
     return CS;
   }
+
+  void updateFileEntry(std::string const &File);
+
+  std::unordered_map<std::string, std::string> FilesByStem_;
 
   std::optional<std::string> File_;
   std::optional<std::reference_wrapper<clang::CompilerInstance const>> CI_;

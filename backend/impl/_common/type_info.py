@@ -1,9 +1,13 @@
+import os
+
 from backend import Backend
 from collections import OrderedDict
+from cppbind import Definitions
+from file import Path
 from text import code
 
 
-_NS = "cppbind::type_info"
+_NS = f"{Definitions.gen_namespace}::type_info"
 
 TYPE = f"{_NS}::type"
 TYPE_INSTANCE = f"{_NS}::type_instance"
@@ -18,8 +22,8 @@ MOVE = f"{_NS}::_move"
 DELETE = f"{_NS}::_delete"
 
 
-def include():
-    return '#include "cppbind/type_info.hpp"'
+def path():
+    return Path(os.path.join('cppbind', 'type_info.hpp'))
 
 
 def type_instances():

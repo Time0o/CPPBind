@@ -11,6 +11,7 @@
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
 
+#include "CompilerState.hpp"
 #include "GenericToolRunner.hpp"
 #include "Logging.hpp"
 #include "Options.hpp"
@@ -45,26 +46,31 @@ GenericToolRunner::run()
 std::deque<TmpFile>
 GenericToolRunner::getSourceFiles(clang::tooling::CommonOptionsParser &Parser)
 {
+  auto &SourcePathList(Parser.getSourcePathList());
   auto SourceFileDirPath(temp_directory_path());
 
   std::deque<TmpFile> SourceFiles;
-  std::unordered_map<std::string, TmpFile *> SourceFilesByStem;
 
-  for (auto &SourcePath : Parser.getSourcePathList()) {
-    auto Filename(path(SourcePath).filename());
-    auto Stem(path(SourcePath).stem());
+  std::unordered_map<std::string, TmpFile *> SourceFilesByPath;
+  std::unordered_map<std::string, std::string> SourcePathsByStem;
 
-    auto It(SourceFilesByStem.find(Stem.string()));
-    if (It != SourceFilesByStem.end())
+  for (auto &SourcePath_ : SourcePathList) {
+    path SourcePath(SourcePath_);
+    auto Filename(SourcePath.filename());
+    auto Stem(SourcePath.stem());
+
+    auto PathIt(SourcePathsByStem.find(Stem.string()));
+    if (PathIt != SourcePathsByStem.end())
       throw log::exception("Source path stem '{0}' is not unique", Stem.string());
 
-    path DestPath(SourceFileDirPath / Filename);
+    TmpFile SourceFile((SourceFileDirPath / Filename).string());
 
-    auto &TmpSourceFile(SourceFiles.emplace_back(DestPath.native()));
+    SourceFile << "#include " << canonical(SourcePath) << '\n';
 
-    TmpSourceFile << "#include " << absolute(SourcePath) << '\n';
+    auto &SourceFileRef(SourceFiles.emplace_back(std::move(SourceFile)));
 
-    SourceFilesByStem.insert(std::make_pair(Stem.string(), &TmpSourceFile));
+    SourceFilesByPath.emplace(SourcePath.string(), &SourceFileRef);
+    SourcePathsByStem.emplace(Stem.string(), SourcePath.string());
   }
 
   for (auto const &TIPath :
@@ -72,19 +78,23 @@ GenericToolRunner::getSourceFiles(clang::tooling::CommonOptionsParser &Parser)
 
     auto Stem(path(TIPath).stem());
 
-    auto It(SourceFilesByStem.find(Stem.string()));
-
-    if (It == SourceFilesByStem.end()) {
+    auto PathIt(SourcePathsByStem.find(Stem.string()));
+    if (PathIt == SourcePathsByStem.end()) {
       throw log::exception(
         "Template instantiations '{0}' can't be matched to any source file",
         TIPath);
     }
 
-    auto *F(It->second);
+    auto FileIt(SourceFilesByPath.find(PathIt->second));
+    assert(FileIt != SourceFilesByPath.end());
+
+    auto *SourceFile(FileIt->second);
 
     std::ifstream TIStream(TIPath);
-    (*F) << TIStream.rdbuf() << '\n';
+    (*SourceFile) << TIStream.rdbuf() << '\n';
   }
+
+  CompilerState().updateFileList(SourcePathList.begin(), SourcePathList.end());
 
   return SourceFiles;
 }
@@ -113,7 +123,7 @@ GenericToolRunner::getTool() const
   insertArguments({"-xc++-header"}, BEGIN);
 
   auto FundamentalTypesInclude(
-    (path(GENERATE_DIR) / "cppbind" / "fundamental_types.hpp").string());
+    (path(GEN_INCLUDE_DIR) / "cppbind" / "fundamental_types.hpp").string());
 
   insertArguments({"-include", FundamentalTypesInclude}, END);
 

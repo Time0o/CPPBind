@@ -1,7 +1,8 @@
-import copy
 import os
 
-import text
+from copy import deepcopy
+from cppbind import Options
+from text import compress
 
 
 class Path:
@@ -33,11 +34,15 @@ class Path:
         return self._ext
 
     def include(self, system=False):
-        header = self.basename()
-        return "#include " + (f"<{header}>" if system else f'"{header}"')
+        header_path = self.path()
+
+        if Options.output_relative_includes and os.path.isabs(header_path):
+            header_path = self.basename()
+
+        return "#include " + (f"<{header_path}>" if system else f'"{header_path}"')
 
     def modified(self, dirname=None, filename=None, ext=None):
-        new_path = copy.deepcopy(self)
+        new_path = deepcopy(self)
 
         if dirname is not None:
             new_path._dirname = dirname.format(dirname=self._dirname)
@@ -46,6 +51,15 @@ class Path:
             new_path._filename = filename.format(filename=self._filename)
 
         if ext is not None:
+            if ext == 'c-header':
+                ext = Options.output_c_header_extension
+            elif ext == 'c-source':
+                ext = Options.output_c_source_extension
+            elif ext == 'cpp-header':
+                ext = Options.output_cpp_header_extension
+            elif ext == 'cpp-source':
+                ext = Options.output_cpp_source_extension
+
             new_path._ext = ext.format(ext=self._ext)
 
         return new_path
@@ -83,6 +97,6 @@ class File:
     def write(self):
         try:
             with open(self._path.path(), 'w') as f:
-                f.write(text.compress('\n'.join(self._content)))
+                f.write(compress('\n'.join(self._content)))
         except Exception as e:
             raise ValueError(f"while dumping output file: {e}")

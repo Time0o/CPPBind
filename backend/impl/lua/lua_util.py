@@ -1,9 +1,13 @@
+import os
 import type_info as ti
+
 from backend import Backend
+from cppbind import Definitions
+from file import Path
 from text import code
 
 
-_NS = "cppbind::lua"
+_NS = f"{Definitions.gen_namespace}::lua"
 
 TOINTEGRAL = f"{_NS}::tointegral"
 TOFLOATING = f"{_NS}::tofloating"
@@ -16,8 +20,8 @@ CREATEMETATABLE_GENERIC = f"{_NS}::createmetatable_generic"
 SETMETATABLE = f"{_NS}::setmetatable"
 
 
-def include():
-    return '#include "cppbind/lua/lua_util.hpp"'
+def path():
+    return Path(os.path.join('cppbind', 'lua', 'lua_util.hpp'))
 
 
 def createmetatables():

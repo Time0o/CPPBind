@@ -50,7 +50,7 @@ void Backend::run(std::string const &InputFile,
     auto BackendModule(importModule(BE + BACKEND_IMPL_BACKEND_MOD_POSTFIX));
 
     auto RunModule(importModule(BACKEND_IMPL_RUN_MOD));
-    RunModule.attr("run")(InputFile, Wrapper, &Options());
+    RunModule.attr("run")(InputFile, Wrapper);
 
   } catch (std::runtime_error const &e) {
     throw log::exception("in backend:\n{0}", e.what());
@@ -197,13 +197,22 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_copyable", &WrapperRecord::isCopyable)
     .def("is_moveable", &WrapperRecord::isMoveable);
 
-  #define GET_OPT(NAME) [](OptionsRegistry const &Self) \
-                        { return Self.get<>(NAME); }
+  #define RO_PROP(NAME, VALUE) \
+    .def_property_readonly_static(NAME, [](py::object const &){ return VALUE; })
 
-  py::class_<OptionsRegistry>(m, "Options")
-    .def("output-directory", GET_OPT("output-directory"))
-    .def("output-c-header-extension", GET_OPT("output-c-header-extension"))
-    .def("output-c-source-extension", GET_OPT("output-c-source-extension"))
-    .def("output-cpp-header-extension", GET_OPT("output-cpp-header-extension"))
-    .def("output-cpp-source-extension", GET_OPT("output-cpp-source-extension"));
+  struct Options_ {};
+
+  py::class_<Options_>(m, "Options")
+    RO_PROP("output_directory", OPT("output-directory"))
+    RO_PROP("output_c_header_extension", OPT("output-c-header-extension"))
+    RO_PROP("output_c_source_extension", OPT("output-c-source-extension"))
+    RO_PROP("output_cpp_header_extension", OPT("output-cpp-header-extension"))
+    RO_PROP("output_cpp_source_extension", OPT("output-cpp-source-extension"))
+    RO_PROP("output_relative_includes", OPT(bool, "output-relative-includes"));
+
+  struct Definitions_ {};
+
+  py::class_<Definitions_>(m, "Definitions")
+    RO_PROP("gen_include_dir", GEN_INCLUDE_DIR)
+    RO_PROP("gen_namespace", GEN_NAMESPACE);
 }

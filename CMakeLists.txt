@@ -21,12 +21,13 @@ set(PROJECT_COPYRIGHT "2020")
 
 set(SRC_DIR ${PROJECT_SOURCE_DIR}/source)
 set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
-set(GENERATE_DIR ${PROJECT_SOURCE_DIR}/generate)
-set(INCLUDE_GENERATE_DIR ${INCLUDE_DIR}/generate)
 set(TOOL_DIR ${PROJECT_SOURCE_DIR}/tool)
 set(DEPS_DIR ${PROJECT_SOURCE_DIR}/deps)
 set(PYBIND11_DIR ${DEPS_DIR}/pybind11)
 set(COVERAGE_DIR ${PROJECT_BINARY_DIR}/coverage)
+
+set(GEN_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/generate/)
+set(GEN_NAMESPACE "cppbind")
 
 set(BACKEND_DIR ${PROJECT_SOURCE_DIR}/backend)
 set(BACKEND_IMPL_DIR ${BACKEND_DIR}/impl)
@@ -177,7 +178,8 @@ function(target_pybind11_config TARGET)
   # definitions
   target_compile_definitions(
     ${TARGET} PRIVATE
-      -DGENERATE_DIR="${GENERATE_DIR}"
+      -DGEN_INCLUDE_DIR="${GEN_INCLUDE_DIR}"
+      -DGEN_NAMESPACE="${GEN_NAMESPACE}"
       -DBACKEND_IMPL_DIR="${BACKEND_IMPL_DIR}"
       -DBACKEND_IMPL_COMMON_DIR="${BACKEND_IMPL_COMMON_DIR}"
       -DBACKEND_IMPL_BACKEND_MOD_POSTFIX="${BACKEND_IMPL_BACKEND_MOD_POSTFIX}"
@@ -259,8 +261,8 @@ if(CMAKE_BUILD_TYPE STREQUAL Debug)
                   --clangpp ${CMAKE_CXX_COMPILER}
                   --clang-common-args Wall Werror
                   --clang-cppbind-args std=c++17
-                  --clang-clang-args std=c18 I${GENERATE_DIR}
-                  --clang-clangpp-args std=c++17 I${GENERATE_DIR}
+                  --clang-clang-args std=c18 I${GEN_INCLUDE_DIR}
+                  --clang-clangpp-args std=c++17 I${GEN_INCLUDE_DIR}
                   --run-valgrind ${RUN_VALGRIND}
                   --valgrind ${VALGRIND}
                   --lua ${LUA}

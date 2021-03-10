@@ -2,7 +2,7 @@ import type_info
 import lua_util
 
 from backend import Backend
-from cppbind import Identifier as Id, Type, Constant, Record, Function, Parameter
+from cppbind import Options
 from text import code
 
 
@@ -11,8 +11,7 @@ class LuaBackend(Backend):
         super().__init__(*args)
 
         self._wrapper_module = self.output_file(
-            self.input_file().modified(filename='{filename}_lua',
-                                       ext=self.option('output-cpp-source-extension')))
+            self.input_file().modified(filename='{filename}_lua', ext='cpp-source'))
 
     def wrap_before(self):
         self._wrapper_module.append(code(
@@ -38,10 +37,10 @@ class LuaBackend(Backend):
             {lua_util_createmetatables}
             """,
             input_include=self.input_file().include(),
-            type_info_include=type_info.include(),
+            type_info_include=type_info.path().include(),
             type_info_type_instances=type_info.type_instances(),
             forward_declarations=self._function_forward_declarations(),
-            lua_util_include=lua_util.include(),
+            lua_util_include=lua_util.path().include(),
             lua_util_createmetatables=lua_util.createmetatables()))
 
     def wrap_after(self):

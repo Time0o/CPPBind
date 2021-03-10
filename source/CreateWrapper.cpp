@@ -36,7 +36,7 @@ void
 CreateWrapperConsumer::addFundamentalTypesHandler()
 {
   auto FundamentalTypeMatcher(
-    valueDecl(hasParent(namespaceDecl(hasName("cppbind::fundamental_types")))));
+    valueDecl(hasParent(namespaceDecl(hasName(GEN_NAMESPACE "::fundamental_types")))));
 
   addHandler<clang::ValueDecl>(
     "fundamentalTypeDecl",
@@ -47,7 +47,7 @@ CreateWrapperConsumer::addFundamentalTypesHandler()
 void
 CreateWrapperConsumer::addWrapperHandlers()
 {
-  auto InputFile(CompilerState().currentFile());
+  auto InputFile(CompilerState().currentFile(true));
 
   for (auto const &MatcherRule : OPT(std::vector<std::string>, "wrap-rule")) {
     auto Tmp(string::splitFirst(MatcherRule, ":"));

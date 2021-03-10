@@ -1,8 +1,7 @@
 import c_util
 import type_info
-
 from backend import Backend
-from cppbind import Identifier as Id, Type, Constant, Record, Function, Parameter
+from cppbind import Options
 from type_translator import TypeTranslator as TT
 from text import code
 from util import dotdict
@@ -15,12 +14,10 @@ class CBackend(Backend):
         input_file = self.input_file()
 
         self._wrapper_header = self.output_file(
-            input_file.modified(filename='{filename}_c',
-                                ext=self.option('output-c-header-extension')))
+            input_file.modified(filename='{filename}_c', ext='c-header'))
 
         self._wrapper_source = self.output_file(
-            input_file.modified(filename='{filename}_c',
-                                ext=self.option('output-cpp-source-extension')))
+            input_file.modified(filename='{filename}_c', ext='cpp-source'))
 
     def wrap_before(self):
         self._wrapper_header.append(code(
@@ -37,7 +34,7 @@ class CBackend(Backend):
             {c_util_include}
             """,
             header_guard=self._header_guard(),
-            c_util_include=c_util.include()))
+            c_util_include=c_util.path().include()))
 
         self._wrapper_source.append(code(
             """
@@ -56,10 +53,10 @@ class CBackend(Backend):
             {c_util_include}
             """,
             input_header_include=self.input_file().include(),
-            type_info_include=type_info.include(),
+            type_info_include=type_info.path().include(),
             type_info_type_instances=type_info.type_instances(),
             wrapper_header_include=self._wrapper_header.include(),
-            c_util_include=c_util.include(impl=True)))
+            c_util_include=c_util.path(impl=True).include()))
 
     def wrap_after(self):
         self._wrapper_header.append(code(
