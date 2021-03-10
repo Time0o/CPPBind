@@ -15,10 +15,12 @@ class CBackend(Backend):
         input_file = self.input_file()
 
         self._wrapper_header = self.output_file(
-            input_file.modified(filename='{filename}_c', ext='.h'))
+            input_file.modified(filename='{filename}_c',
+                                ext=self.option('output-c-header-extension')))
 
         self._wrapper_source = self.output_file(
-            input_file.modified(filename='{filename}_c', ext='.cpp'))
+            input_file.modified(filename='{filename}_c',
+                                ext=self.option('output-cpp-source-extension')))
 
     def wrap_before(self):
         self._wrapper_header.append(code(

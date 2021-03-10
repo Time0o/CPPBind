@@ -11,7 +11,8 @@ class LuaBackend(Backend):
         super().__init__(*args)
 
         self._wrapper_module = self.output_file(
-            self.input_file().modified(filename='{filename}_lua', ext='.cpp'))
+            self.input_file().modified(filename='{filename}_lua',
+                                       ext=self.option('output-cpp-source-extension')))
 
     def wrap_before(self):
         self._wrapper_module.append(code(

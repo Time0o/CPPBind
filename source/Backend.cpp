@@ -201,5 +201,9 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
                         { return Self.get<>(NAME); }
 
   py::class_<OptionsRegistry>(m, "Options")
-    .def("output-directory", GET_OPT("output-directory"));
+    .def("output-directory", GET_OPT("output-directory"))
+    .def("output-c-header-extension", GET_OPT("output-c-header-extension"))
+    .def("output-c-source-extension", GET_OPT("output-c-source-extension"))
+    .def("output-cpp-header-extension", GET_OPT("output-cpp-header-extension"))
+    .def("output-cpp-source-extension", GET_OPT("output-cpp-source-extension"));
 }

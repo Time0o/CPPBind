@@ -60,6 +60,26 @@ void OptionsRegistry::init()
     .setDefault(".")
     .done();
 
+  Options().add<std::string>("output-c-header-extension")
+    .setDescription("Output C header file extension")
+    .setDefault(".h")
+    .done();
+
+  Options().add<std::string>("output-c-source-extension")
+    .setDescription("Output C source file extension")
+    .setDefault(".c")
+    .done();
+
+  Options().add<std::string>("output-cpp-header-extension")
+    .setDescription("Output C++ header file extension")
+    .setDefault(".hpp")
+    .done();
+
+  Options().add<std::string>("output-cpp-source-extension")
+    .setDescription("Output C++ source file extension")
+    .setDefault(".cpp")
+    .done();
+
   Options().add<int>("verbosity")
     .setDescription("Output verbosity")
     .setDefault(0)
