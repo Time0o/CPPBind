@@ -29,8 +29,8 @@ assert(test.test_not_bool_enum(test.TEST_BOOLEAN_FALSE) == test.TEST_BOOLEAN_TRU
 
 -- pointer parameters
 do
-  local iptr1 = test.test_util_int_new(1):_own()
-  local iptr2 = test.test_util_int_new(2):_own()
+  local iptr1 = test.test_util_int_new(1):own()
+  local iptr2 = test.test_util_int_new(2):own()
 
   local iptr_res = test.test_add_pointer(iptr1, iptr2)
   assert(test.test_util_int_deref(iptr1) == 3)
@@ -38,11 +38,11 @@ do
 end
 
 do
-  local iptr1 = test.test_util_int_new(1):_own()
-  local iptr2 = test.test_util_int_new(2):_own()
+  local iptr1 = test.test_util_int_new(1):own()
+  local iptr2 = test.test_util_int_new(2):own()
 
-  local iptr_ptr1 = test.test_util_int_ptr_new(iptr1):_own()
-  local iptr_ptr2 = test.test_util_int_ptr_new(iptr2):_own()
+  local iptr_ptr1 = test.test_util_int_ptr_new(iptr1):own()
+  local iptr_ptr2 = test.test_util_int_ptr_new(iptr2):own()
 
   local iptr_ptr_res = test.test_add_pointer_to_pointer(iptr_ptr1, iptr_ptr2)
   local iptr_res = test.test_util_int_ptr_deref(iptr_ptr_res)
@@ -51,7 +51,7 @@ do
 end
 
 do
-  local bptr_true = test.test_util_bool_enum_new(test.TEST_BOOLEAN_TRUE):_own()
+  local bptr_true = test.test_util_bool_enum_new(test.TEST_BOOLEAN_TRUE):own()
 
   local bptr_not_true = test.test_not_bool_enum_pointer(bptr_true)
   assert(test.test_util_bool_enum_deref(bptr_true) == test.TEST_BOOLEAN_FALSE)
@@ -59,8 +59,8 @@ do
 end
 
 do
-  local bptr_true = test.test_util_bool_enum_new(test.TEST_BOOLEAN_TRUE):_own()
-  local bptr_res = test.test_util_bool_enum_new(test.TEST_BOOLEAN_TRUE):_own()
+  local bptr_true = test.test_util_bool_enum_new(test.TEST_BOOLEAN_TRUE):own()
+  local bptr_res = test.test_util_bool_enum_new(test.TEST_BOOLEAN_TRUE):own()
 
   local bptr_ret = test.test_not_bool_enum_pointer_to_const(bptr_true, bptr_res)
   assert(test.test_util_bool_enum_deref(bptr_res) == test.TEST_BOOLEAN_FALSE)
@@ -68,8 +68,8 @@ do
 end
 
 do
-  local bptr_true = test.test_util_bool_enum_new(test.TEST_BOOLEAN_TRUE):_own()
-  local bptr_ptr_true = test.test_util_bool_enum_ptr_new(bptr_true):_own()
+  local bptr_true = test.test_util_bool_enum_new(test.TEST_BOOLEAN_TRUE):own()
+  local bptr_ptr_true = test.test_util_bool_enum_ptr_new(bptr_true):own()
 
   local bptr_ptr_not_true = test.test_not_bool_enum_pointer_to_pointer(bptr_ptr_true)
   local bptr_not_true = test.test_util_bool_enum_ptr_deref(bptr_ptr_not_true)

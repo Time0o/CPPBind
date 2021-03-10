@@ -14,9 +14,9 @@ int main()
     void * pointee2 = test_pointer_op_arrow(pointer);
     assert(test_pointee_get_state(pointee2) == 2);
 
-    _delete(pointer);
-    _delete(pointee1);
-    _delete(pointee2);
+    bind_delete(pointer);
+    bind_delete(pointee1);
+    bind_delete(pointee2);
   }
 
   {
@@ -24,7 +24,7 @@ int main()
 
     assert(test_class_with_callable_member_sum(class, 1, 2) == 3);
 
-    _delete(class);
+    bind_delete(class);
   }
 
   return 0;

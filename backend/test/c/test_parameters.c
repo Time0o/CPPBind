@@ -51,42 +51,42 @@ int main()
   }
 
   {
-    void *bptr_true = _own(test_util_bool_enum_new(TEST_BOOLEAN_TRUE));
+    void *bptr_true = bind_own(test_util_bool_enum_new(TEST_BOOLEAN_TRUE));
 
     void *bptr_not_true = test_not_bool_enum_pointer(bptr_true);
     assert(test_util_bool_enum_deref(bptr_true) == TEST_BOOLEAN_FALSE);
     assert(test_util_bool_enum_deref(bptr_not_true) == TEST_BOOLEAN_FALSE);
 
-    _delete(bptr_true);
-    _delete(bptr_not_true);
+    bind_delete(bptr_true);
+    bind_delete(bptr_not_true);
   }
 
   {
-    void *bptr_true = _own(test_util_bool_enum_new(TEST_BOOLEAN_TRUE));
-    void *bptr_res = _own(test_util_bool_enum_new(TEST_BOOLEAN_TRUE));
+    void *bptr_true = bind_own(test_util_bool_enum_new(TEST_BOOLEAN_TRUE));
+    void *bptr_res = bind_own(test_util_bool_enum_new(TEST_BOOLEAN_TRUE));
 
     void *bptr_ret = test_not_bool_enum_pointer_to_const(bptr_true, bptr_res);
     assert(test_util_bool_enum_deref(bptr_res) == TEST_BOOLEAN_FALSE);
     assert(test_util_bool_enum_deref(bptr_ret) == TEST_BOOLEAN_TRUE);
 
-    _delete(bptr_true);
-    _delete(bptr_res);
-    _delete(bptr_ret);
+    bind_delete(bptr_true);
+    bind_delete(bptr_res);
+    bind_delete(bptr_ret);
   }
 
   {
-    void *bptr_true = _own(test_util_bool_enum_new(TEST_BOOLEAN_TRUE));
-    void *bptr_ptr_true = _own(test_util_bool_enum_ptr_new(bptr_true));
+    void *bptr_true = bind_own(test_util_bool_enum_new(TEST_BOOLEAN_TRUE));
+    void *bptr_ptr_true = bind_own(test_util_bool_enum_ptr_new(bptr_true));
 
     void *bptr_ptr_not_true = test_not_bool_enum_pointer_to_pointer(bptr_ptr_true);
     void *bptr_not_true = test_util_bool_enum_ptr_deref(bptr_ptr_not_true);
     assert(test_util_bool_enum_deref(bptr_true) == TEST_BOOLEAN_FALSE);
     assert(test_util_bool_enum_deref(bptr_not_true) == TEST_BOOLEAN_FALSE);
 
-    _delete(bptr_true);
-    _delete(bptr_ptr_true);
-    _delete(bptr_ptr_not_true);
-    _delete(bptr_not_true);
+    bind_delete(bptr_true);
+    bind_delete(bptr_ptr_true);
+    bind_delete(bptr_ptr_not_true);
+    bind_delete(bptr_not_true);
   }
 
   /* lvalue reference parameters */
@@ -98,34 +98,34 @@ int main()
   }
 
   {
-    void *bptr_true = _own(test_util_bool_enum_new(TEST_BOOLEAN_TRUE));
+    void *bptr_true = bind_own(test_util_bool_enum_new(TEST_BOOLEAN_TRUE));
 
     void *bptr_not_true = test_not_bool_enum_lvalue_ref(bptr_true);
     assert(test_util_bool_enum_deref(bptr_true) == TEST_BOOLEAN_FALSE);
     assert(test_util_bool_enum_deref(bptr_not_true) == TEST_BOOLEAN_FALSE);
 
-    _delete(bptr_true);
-    _delete(bptr_not_true);
+    bind_delete(bptr_true);
+    bind_delete(bptr_not_true);
   }
 
   {
-    void *bptr_true = _own(test_util_bool_enum_new(TEST_BOOLEAN_TRUE));
+    void *bptr_true = bind_own(test_util_bool_enum_new(TEST_BOOLEAN_TRUE));
 
     assert(test_not_bool_enum_lvalue_ref_to_const(bptr_true) == TEST_BOOLEAN_FALSE);
 
-    _delete(bptr_true);
+    bind_delete(bptr_true);
   }
 
   {
     void *bptr_true = test_util_bool_enum_new(TEST_BOOLEAN_TRUE);
-    void *bptr_ptr_true = _own(test_util_bool_enum_ptr_new(bptr_true));
+    void *bptr_ptr_true = bind_own(test_util_bool_enum_ptr_new(bptr_true));
 
-    void *bptr_not_true = _own(test_not_bool_enum_lvalue_ref_to_pointer(bptr_ptr_true));
+    void *bptr_not_true = bind_own(test_not_bool_enum_lvalue_ref_to_pointer(bptr_ptr_true));
     assert(test_util_bool_enum_deref(bptr_not_true) == TEST_BOOLEAN_FALSE);
 
-    _delete(bptr_true);
-    _delete(bptr_ptr_true);
-    _delete(bptr_not_true);
+    bind_delete(bptr_true);
+    bind_delete(bptr_ptr_true);
+    bind_delete(bptr_not_true);
   }
 
   /* rvalue reference parameters */
@@ -136,11 +136,11 @@ int main()
   }
 
   {
-    void *b_true = _own(test_util_bool_enum_new(TEST_BOOLEAN_TRUE));
+    void *b_true = bind_own(test_util_bool_enum_new(TEST_BOOLEAN_TRUE));
 
     assert(test_not_bool_enum_rvalue_ref(b_true) == TEST_BOOLEAN_FALSE);
 
-    _delete(b_true);
+    bind_delete(b_true);
   }
 
   /* unused parameters */

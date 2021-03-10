@@ -55,10 +55,10 @@ def _createmetatable(r):
         function_entries.append(f"{{{entry_name}, {entry}}}")
 
     if r.is_copyable():
-        function_entries.append('{"_copy", _copy}')
+        function_entries.append('{"copy", bind_copy}')
 
     if r.is_moveable():
-        function_entries.append('{"_move", _move}')
+        function_entries.append('{"move", bind_move}')
 
     key = f'"METATABLE_{r.type().mangled()}"'
 

@@ -11,7 +11,7 @@ int main()
 
     assert(test_adder_add(adder, 1, 2) == 3);
 
-    _delete(adder);
+    bind_delete(adder);
   }
 
   return 0;

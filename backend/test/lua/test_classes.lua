@@ -43,7 +43,7 @@ do
 
   assert(test.TestCopyableClass.get_num_copied() == 0)
 
-  copyable_class_copy = copyable_class:_copy()
+  copyable_class_copy = copyable_class:copy()
   assert(copyable_class_copy:get_state() == 1)
 
   copyable_class_copy:set_state(2)
@@ -61,7 +61,7 @@ do
 
   assert(test.TestMoveableClass.get_num_moved() == 0)
 
-  moveable_class_moved = moveable_class:_move()
+  moveable_class_moved = moveable_class:move()
   assert(moveable_class_moved:get_state() == 1)
 
   assert(test.TestMoveableClass.get_num_moved() == 1)

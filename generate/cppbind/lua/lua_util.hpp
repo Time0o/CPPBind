@@ -34,19 +34,19 @@ inline type_info::typed_ptr *_self(lua_State *L, bool return_self = false)
   return cppbind::type_info::get_typed(*static_cast<void **>(userdata));
 }
 
-inline int _own(lua_State *L)
+inline int bind_own(lua_State *L)
 {
   _self(L, true)->own();
   return 1;
 }
 
-inline int _disown(lua_State *L)
+inline int bind_disown(lua_State *L)
 {
   _self(L, true)->disown();
   return 1;
 }
 
-inline int _copy(lua_State *L)
+inline int bind_copy(lua_State *L)
 {
   *static_cast<void **>(lua_newuserdata(L, sizeof(void *))) = _self(L)->copy();
 
@@ -56,7 +56,7 @@ inline int _copy(lua_State *L)
   return 1;
 }
 
-inline int _move(lua_State *L)
+inline int bind_move(lua_State *L)
 {
   *static_cast<void **>(lua_newuserdata(L, sizeof(void *))) = _self(L)->move();
 
@@ -66,7 +66,7 @@ inline int _move(lua_State *L)
   return 1;
 }
 
-inline int _delete(lua_State *L)
+inline int bind_delete(lua_State *L)
 {
   delete _self(L);
   return 0;
@@ -78,13 +78,13 @@ inline void createmetatable_generic(lua_State *L)
 
   lua_newtable(L);
 
-  lua_pushcfunction(L, _own);
-  lua_setfield(L, -2, "_own");
+  lua_pushcfunction(L, bind_own);
+  lua_setfield(L, -2, "own");
 
-  lua_pushcfunction(L, _disown);
-  lua_setfield(L, -2, "_disown");
+  lua_pushcfunction(L, bind_disown);
+  lua_setfield(L, -2, "disown");
 
-  lua_pushcfunction(L, _delete);
+  lua_pushcfunction(L, bind_delete);
   lua_setfield(L, -2, "__gc");
 
   lua_pushvalue(L, -1);
@@ -107,13 +107,13 @@ inline void createmetatable(
     lua_setfield(L, -2, function.first);
   }
 
-  lua_pushcfunction(L, _own);
-  lua_setfield(L, -2, "_own");
+  lua_pushcfunction(L, bind_own);
+  lua_setfield(L, -2, "own");
 
-  lua_pushcfunction(L, _disown);
-  lua_setfield(L, -2, "_disown");
+  lua_pushcfunction(L, bind_disown);
+  lua_setfield(L, -2, "disown");
 
-  lua_pushcfunction(L, _delete);
+  lua_pushcfunction(L, bind_delete);
   lua_setfield(L, -2, "__gc");
 
   lua_pushvalue(L, -1);

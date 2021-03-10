@@ -13,9 +13,9 @@ void test_func_local()
 
 int main()
 {
-  _delete(test_toplevel_new());
-  _delete(test_toplevel_nested_public_new());
-  _delete(test_toplevel_nested_public_nested_nested_public_new());
+  bind_delete(test_toplevel_new());
+  bind_delete(test_toplevel_nested_public_new());
+  bind_delete(test_toplevel_nested_public_nested_nested_public_new());
 
   return 0;
 }

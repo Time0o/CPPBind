@@ -210,30 +210,33 @@ template<typename T>
 T *typed_pointer_cast(void *ptr)
 { return get_typed(ptr)->cast<T>(); }
 
-void *_own(void *obj)
+void *bind_own(void *obj)
 {
   get_typed(obj)->own();
   return obj;
 }
 
-void *_disown(void *obj)
+void *bind_disown(void *obj)
 {
   get_typed(obj)->disown();
   return obj;
 }
 
-void *_copy(void *obj)
+void *bind_copy(void *obj)
 { return get_typed(obj)->copy(); }
 
 // XXX copy assignment
 
-void *_move(void *obj)
+void *bind_move(void *obj)
 { return get_typed(obj)->move(); }
 
 // XXX move assignment
 
-void _delete(void *obj)
-{ delete get_typed(obj); }
+void bind_delete(void *obj)
+{
+  if (obj)
+    delete get_typed(obj);
+}
 
 } // namespace type_info
 

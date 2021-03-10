@@ -14,7 +14,7 @@ int main()
   /* construction and deletion */
   {
     void *trivial = test_trivial_new();
-    _delete(trivial);
+    bind_delete(trivial);
   }
 
   /* member access */
@@ -23,7 +23,7 @@ int main()
 
     assert(test_a_class_get_state(a_class) == 0);
 
-    _delete(a_class);
+    bind_delete(a_class);
     assert(test_a_class_get_num_destroyed() == 1);
   }
 
@@ -35,7 +35,7 @@ int main()
     test_a_class_set_state(a_class, 2);
     assert(test_a_class_get_state(a_class) == 2);
 
-    _delete(a_class);
+    bind_delete(a_class);
     assert(test_a_class_get_num_destroyed() == 2);
   }
 
@@ -49,15 +49,15 @@ int main()
 
     assert(test_copyable_class_get_num_copied() == 0);
 
-    void *copyable_class_copy = _copy(copyable_class);
+    void *copyable_class_copy = bind_copy(copyable_class);
     assert(test_copyable_class_get_state(copyable_class_copy) == 1);
 
     test_copyable_class_set_state(copyable_class_copy, 2);
     assert(test_copyable_class_get_state(copyable_class) == 1);
     assert(test_copyable_class_get_state(copyable_class_copy) == 2);
 
-    _delete(copyable_class);
-    _delete(copyable_class_copy);
+    bind_delete(copyable_class);
+    bind_delete(copyable_class_copy);
 
     assert(test_copyable_class_get_num_copied() == 1);
   }
@@ -69,11 +69,11 @@ int main()
 
     assert(test_moveable_class_get_num_moved() == 0);
 
-    void *moveable_class_moved = _move(moveable_class);
+    void *moveable_class_moved = bind_move(moveable_class);
     assert(test_moveable_class_get_state(moveable_class_moved) == 1);
 
-    _delete(moveable_class);
-    _delete(moveable_class_moved);
+    bind_delete(moveable_class);
+    bind_delete(moveable_class_moved);
 
     assert(test_moveable_class_get_num_moved() == 1);
   }
@@ -93,9 +93,9 @@ int main()
 
     test_class_parameter_set_copyable(false);
 
-    _delete(a);
-    _delete(b);
-    _delete(c);
+    bind_delete(a);
+    bind_delete(b);
+    bind_delete(c);
   }
 
   /* pointer parameters */
@@ -107,9 +107,9 @@ int main()
     assert(test_class_parameter_get_state(a) == 3);
     assert(test_class_parameter_get_state(c) == 3);
 
-    _delete(a);
-    _delete(b);
-    _delete(c);
+    bind_delete(a);
+    bind_delete(b);
+    bind_delete(c);
   }
 
   /* lvalue reference parameters */
@@ -121,9 +121,9 @@ int main()
     assert(test_class_parameter_get_state(a) == 3);
     assert(test_class_parameter_get_state(c) == 3);
 
-    _delete(a);
-    _delete(b);
-    _delete(c);
+    bind_delete(a);
+    bind_delete(b);
+    bind_delete(c);
   }
 
   /* rvalue reference parameters */
@@ -137,7 +137,7 @@ int main()
 
     test_class_parameter_set_moveable(false);
 
-    _delete(a);
+    bind_delete(a);
   }
 
   return 0;

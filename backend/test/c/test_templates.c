@@ -39,7 +39,7 @@ int main()
 
     assert(test_any_stack_int_empty(any_stack));
 
-    _delete(any_stack);
+    bind_delete(any_stack);
   }
   return 0;
 }
