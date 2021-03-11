@@ -8,6 +8,8 @@ def _function_declare_parameters(self):
     if not self.parameters:
         return
 
+    using_directives = [f"using namespace {ns};" for ns in self.enclosing_namespaces()]
+
     def declare_parameter(p):
         decl_type = p.type()
 
@@ -33,7 +35,14 @@ def _function_declare_parameters(self):
 
     declarations = [declare_parameter(p) for p in self.parameters()]
 
-    return '\n'.join(declarations)
+    return code(
+        """
+        {using_directives}
+
+        {declarations}
+        """,
+        using_directives='\n'.join(using_directives),
+        declarations='\n'.join(declarations))
 
 
 def _function_forward_parameters(self):

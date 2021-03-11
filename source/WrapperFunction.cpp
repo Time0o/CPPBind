@@ -1,5 +1,3 @@
-#include "WrapperFunction.hpp"
-
 #include <cassert>
 #include <deque>
 #include <memory>
@@ -31,6 +29,7 @@
 #include "Print.hpp"
 #include "String.hpp"
 #include "TemplateArgument.hpp"
+#include "WrapperFunction.hpp"
 #include "WrapperObject.hpp"
 #include "WrapperRecord.hpp"
 
@@ -58,21 +57,7 @@ WrapperParameter::determineDefaultArgument(clang::ParmVarDecl const *Decl)
   if (!DefaultExpr)
     return std::nullopt;
 
-  clang::Expr::EvalResult Result;
-  if (DefaultExpr->EvaluateAsRValue(Result, ASTContext(), true)) {
-    llvm::SmallString<40> StrBuf;
-
-    switch(Result.Val.getKind()) {
-    case clang::APValue::Int:
-      Result.Val.getInt().toString(StrBuf);
-      return StrBuf.str().str();
-    case clang::APValue::Float:
-      Result.Val.getFloat().toString(StrBuf);
-      return StrBuf.str().str();
-    default:
-      break;
-    }
-  }
+  assert(!DefaultExpr->isInstantiationDependent()); // XXX
 
   return print::stmt(DefaultExpr);
 }
@@ -87,6 +72,7 @@ WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
   TemplateArgumentList_(determineTemplateArgumentList(Decl)),
   OverloadedOperator_(determineOverloadedOperator(Decl)),
   Name_(determineName(Decl)),
+  EnclosingNamespaces_(determineEnclosingNamespaces(Decl)),
   ReturnType_(determineReturnType(Decl)),
   Parameters_(determineParameters(Decl)),
   IsDefinition_(Decl->isThisDeclarationADefinition()),
@@ -98,6 +84,7 @@ WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
   TemplateArgumentList_(determineTemplateArgumentList(Decl)),
   OverloadedOperator_(determineOverloadedOperator(Decl)),
   Name_(determineName(Decl)),
+  EnclosingNamespaces_(determineEnclosingNamespaces(Decl)),
   ReturnType_(determineReturnType(Decl)),
   Parameters_(determineParameters(Decl)),
   IsDefinition_(Decl->isThisDeclarationADefinition()),
@@ -194,6 +181,25 @@ WrapperFunction::getTemplateArgumentList() const
     return std::nullopt;
 
   return TemplateArgumentList_->str();
+}
+
+std::deque<Identifier>
+WrapperFunction::determineEnclosingNamespaces(clang::FunctionDecl const *Decl)
+{
+  std::deque<Identifier> EnclosingNamespaces;
+
+  auto const *Context = Decl->getDeclContext();
+
+  while (!Context->isTranslationUnit()) {
+    if (Context->isNamespace()) {
+      EnclosingNamespaces.emplace_back(
+        llvm::dyn_cast<clang::NamespaceDecl>(Context));
+    }
+
+    Context = Context->getParent();
+  }
+
+  return EnclosingNamespaces;
 }
 
 Identifier

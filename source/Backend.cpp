@@ -164,6 +164,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("name", &WrapperFunction::getName, "with_template_postfix"_a = false,
                                             "without_operator_name"_a = false,
                                             "overloaded"_a = false)
+    .def("enclosing_namespaces", &WrapperFunction::getEnclosingNamespaces)
     .def("return_type", &WrapperFunction::getReturnType)
     .def("parameters",
          py::overload_cast<>(&WrapperFunction::getParameters, py::const_),

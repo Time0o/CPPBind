@@ -10,7 +10,6 @@
 #include <string>
 #include <utility>
 #include <variant>
-#include <vector>
 
 #include "clang/AST/Decl.h"
 #include "clang/AST/Expr.h"
@@ -101,6 +100,9 @@ public:
                      bool WithoutOperatorName = false,
                      bool Overloaded = false) const;
 
+  std::deque<Identifier> const &getEnclosingNamespaces() const
+  { return EnclosingNamespaces_; }
+
   std::deque<WrapperParameter> const &getParameters() const
   { return Parameters_; }
 
@@ -151,6 +153,9 @@ private:
   static Identifier
   determineName(clang::FunctionDecl const *Decl);
 
+  static std::deque<Identifier>
+  determineEnclosingNamespaces(clang::FunctionDecl const *Decl);
+
   static WrapperType
   determineReturnType(clang::FunctionDecl const *Decl);
 
@@ -176,6 +181,7 @@ private:
   std::optional<unsigned> Overload_;
 
   Identifier Name_;
+  std::deque<Identifier> EnclosingNamespaces_;
   WrapperType ReturnType_;
   std::deque<WrapperParameter> Parameters_;
 
