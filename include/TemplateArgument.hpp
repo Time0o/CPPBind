@@ -8,6 +8,7 @@
 #include "clang/AST/DeclTemplate.h"
 
 #include "Identifier.hpp"
+#include "String.hpp"
 
 namespace cppbind
 {
@@ -77,8 +78,12 @@ public:
       for (auto const &Arg : Args_)
         SS << "_" << Arg.str();
 
-      return Identifier(SS.str()).format(Identifier::ORIG_CASE,
-                                         Identifier::REPLACE_QUALS);
+      auto Str(SS.str());
+
+      string::replaceAll(Str, " ", "_");
+
+      return Identifier(Str).format(Identifier::ORIG_CASE,
+                                    Identifier::REPLACE_QUALS);
     } else {
       SS << "<" << Args_.front().str();
       for (std::size_t i = 1; i < Args_.size(); ++i)
