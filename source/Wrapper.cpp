@@ -4,7 +4,6 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <iostream> // TODO
 
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
