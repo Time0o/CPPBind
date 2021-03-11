@@ -13,6 +13,7 @@
 
 #include "CompilerState.hpp"
 #include "GenericToolRunner.hpp"
+#include "Include.hpp"
 #include "Logging.hpp"
 #include "Options.hpp"
 #include "String.hpp"
@@ -56,21 +57,22 @@ GenericToolRunner::getSourceFiles(clang::tooling::CommonOptionsParser &Parser)
 
   for (auto &SourcePath_ : SourcePathList) {
     path SourcePath(SourcePath_);
-    auto Filename(SourcePath.filename());
-    auto Stem(SourcePath.stem());
 
-    auto PathIt(SourcePathsByStem.find(Stem.string()));
+    auto Stem(SourcePath.stem().string());
+    auto Extension(SourcePath.extension().string());
+
+    auto PathIt(SourcePathsByStem.find(Stem));
     if (PathIt != SourcePathsByStem.end())
-      throw log::exception("Source path stem '{0}' is not unique", Stem.string());
+      throw log::exception("Source path stem '{0}' is not unique", Stem);
 
-    TmpFile SourceFile((SourceFileDirPath / Filename).string());
+    TmpFile SourceFile((SourceFileDirPath / (Stem + "_tmp" + Extension)).string());
 
-    SourceFile << "#include " << canonical(SourcePath) << '\n';
+    SourceFile << Include(SourcePath.string()).str() << '\n';
 
     auto &SourceFileRef(SourceFiles.emplace_back(std::move(SourceFile)));
 
     SourceFilesByPath.emplace(SourcePath.string(), &SourceFileRef);
-    SourcePathsByStem.emplace(Stem.string(), SourcePath.string());
+    SourcePathsByStem.emplace(Stem, SourcePath.string());
   }
 
   for (auto const &TIPath :

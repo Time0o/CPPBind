@@ -12,6 +12,7 @@ class Backend(metaclass=Generic):
         self._output_files = []
 
         self._wrapper = wrapper
+        self._includes = wrapper.includes()
         self._constants = wrapper.constants()
         self._records = wrapper.records()
         self._functions = wrapper.functions()
@@ -35,6 +36,12 @@ class Backend(metaclass=Generic):
 
     def input_file(self):
         return self._input_file
+
+    def input_includes(self, relative=None):
+        if relative is None:
+            relative = Options.output_relative_includes
+
+        return [inc.str(relative=relative) for inc in self._includes]
 
     def output_file(self, output_path):
         output_dir = os.path.abspath(Options.output_directory)

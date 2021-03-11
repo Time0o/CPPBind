@@ -1,7 +1,7 @@
 import os
 
 from copy import deepcopy
-from cppbind import Options
+from cppbind import Include, Options
 from text import compress
 
 
@@ -33,13 +33,11 @@ class Path:
     def ext(self):
         return self._ext
 
-    def include(self, system=False):
-        header_path = self.path()
+    def include(self, system=False, relative=None):
+        if relative is None:
+            relative = Options.output_relative_includes
 
-        if Options.output_relative_includes and os.path.isabs(header_path):
-            header_path = self.basename()
-
-        return "#include " + (f"<{header_path}>" if system else f'"{header_path}"')
+        return Include(self.path(), system=system).str(relative=relative)
 
     def modified(self, dirname=None, filename=None, ext=None):
         new_path = deepcopy(self)
@@ -84,6 +82,9 @@ class File:
 
     def ext(self):
         return self._path.ext()
+
+    def include(self):
+        return self._path.include()
 
     def include(self, system=False):
         return self._path.include(system)

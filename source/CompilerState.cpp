@@ -11,17 +11,6 @@ namespace cppbind
 {
 
 void
-CompilerStateRegistry::updateFile(std::string const &File)
-{
-  auto Stem(path(File).stem());
-
-  auto It(FilesByStem_.find(Stem.string()));
-  assert(It != FilesByStem_.end());
-
-  File_ = It->second;
-}
-
-void
 CompilerStateRegistry::updateFileEntry(std::string const &File)
 {
   auto Stem(path(File).stem());
@@ -29,12 +18,29 @@ CompilerStateRegistry::updateFileEntry(std::string const &File)
   FilesByStem_.emplace(Stem.string(), canonical(File).string());
 }
 
-std::string
-CompilerStateRegistry::currentFile(bool Relative) const
+void
+CompilerStateRegistry::updateFile(std::string const &File)
 {
-  assert(File_);
+  TmpFile_ = File;
 
-  auto Path(*File_);
+  auto Stem(path(File).stem().string());
+
+  Stem = Stem.substr(0, Stem.rfind("_tmp"));
+
+  auto It(FilesByStem_.find(Stem));
+  assert(It != FilesByStem_.end());
+
+  File_ = It->second;
+}
+
+std::string
+CompilerStateRegistry::currentFile(bool Tmp, bool Relative) const
+{
+  auto File(Tmp ? TmpFile_ : File_);
+
+  assert(File);
+
+  auto Path(*File);
 
   if (Relative)
     Path = path(Path).filename().string();

@@ -47,7 +47,8 @@ CreateWrapperConsumer::addFundamentalTypesHandler()
 void
 CreateWrapperConsumer::addWrapperHandlers()
 {
-  auto InputFile(CompilerState().currentFile(true));
+  auto OrigInputFile(CompilerState().currentFile(false, true));
+  auto TmpInputFile(CompilerState().currentFile(true, true));
 
   for (auto const &MatcherRule : OPT(std::vector<std::string>, "wrap-rule")) {
     auto Tmp(string::splitFirst(MatcherRule, ":"));
@@ -64,8 +65,14 @@ CreateWrapperConsumer::addWrapperHandlers()
 
       return static_cast<std::string>(
         llvm::formatv(
-          "{0}(allOf(isExpansionInFileMatching(\"{1}\"), {2}, {3}))",
-          DeclType, InputFile, MatcherRestrictions, MatcherSource));
+          "{0}(allOf(anyOf(isExpansionInFileMatching(\"{1}\"),"
+                          "isExpansionInFileMatching(\"{2}\")),"
+                     "{3}, {4}))",
+          DeclType,
+          OrigInputFile,
+          TmpInputFile,
+          MatcherRestrictions,
+          MatcherSource));
     };
 
     char const *MatchToplevel =
@@ -156,6 +163,8 @@ CreateWrapperFrontendAction::beforeProcessing()
 void
 CreateWrapperFrontendAction::afterProcessing()
 {
+  Wrapper_->addIncludes(includes().begin(), includes().end());
+
   Wrapper_->finalize();
 
   Backend::run(InputFile_, Wrapper_);

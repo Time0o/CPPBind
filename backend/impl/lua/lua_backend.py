@@ -24,7 +24,7 @@ class LuaBackend(Backend):
               #include "lauxlib.h"
             }}
 
-            {input_include}
+            {input_includes}
 
             {type_info_include}
 
@@ -36,7 +36,7 @@ class LuaBackend(Backend):
 
             {lua_util_createmetatables}
             """,
-            input_include=self.input_file().include(),
+            input_includes='\n'.join(self.input_includes()),
             type_info_include=type_info.path().include(),
             type_info_type_instances=type_info.type_instances(),
             forward_declarations=self._function_forward_declarations(),

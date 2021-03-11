@@ -19,17 +19,14 @@ class TmpFile : private mixin::NotCopyable
 public:
   TmpFile();
 
-  explicit TmpFile(std::string const &Path)
-  : Path_(Path)
-  {}
+  explicit TmpFile(std::string const &Path);
 
   ~TmpFile();
 
   TmpFile(TmpFile &&Other);
   void operator=(TmpFile &&Other);
 
-  std::string path() const
-  { return Path_; }
+  std::string path(bool Relative = false) const;
 
 private:
   std::string Path_;

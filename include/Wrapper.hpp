@@ -10,6 +10,7 @@
 
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
+#include "Include.hpp"
 #include "Logging.hpp"
 #include "Options.hpp"
 #include "TypeIndex.hpp"
@@ -29,6 +30,13 @@ public:
   : II_(II),
     TI_(TI)
   {}
+
+  template<typename IT>
+  void addIncludes(IT First, IT Last)
+  {
+    for (auto It = First; It != Last; ++It)
+      Includes_.push_back(*It);
+  }
 
   template<typename ...ARGS>
   void addWrapperConstant(ARGS &&...Args)
@@ -55,6 +63,9 @@ public:
   }
 
   void finalize();
+
+  std::deque<Include> getIncludes() const
+  { return Includes_; }
 
   std::vector<WrapperConstant const *> getConstants() const;
 
@@ -85,6 +96,8 @@ private:
 
   bool typeWrapped(WrapperType const &Type) const;
   bool checkTypeWrapped(WrapperType const &Type) const;
+
+  std::deque<Include> Includes_;
 
   std::deque<WrapperConstant> Constants_;
   std::deque<WrapperFunction> Functions_;

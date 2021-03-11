@@ -13,6 +13,7 @@
 
 #include "Backend.hpp"
 #include "Identifier.hpp"
+#include "Include.hpp"
 #include "Logging.hpp"
 #include "Options.hpp"
 #include "Wrapper.hpp"
@@ -113,7 +114,14 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
 
   py::implicitly_convertible<std::string, Identifier>();
 
+  py::class_<Include>(m, "Include")
+    .def(py::init<std::string, bool>(), "path"_a, "system"_a = false)
+    .def("__str__", [](Include const &Self){ return Self.str(); })
+    .def("str", &Include::str, "relative"_a = false)
+    .def("path", &Include::path);
+
   py::class_<Wrapper, std::shared_ptr<Wrapper>>(m, "Wrapper")
+    .def("includes", &Wrapper::getIncludes)
     .def("constants", &Wrapper::getConstants,
          py::return_value_policy::reference_internal)
     .def("functions", &Wrapper::getFunctions,

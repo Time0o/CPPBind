@@ -32,7 +32,7 @@ public:
   void updateCompilerInstance(clang::CompilerInstance const &CI)
   { CI_ = CI; }
 
-  std::string currentFile(bool Relative = false) const;
+  std::string currentFile(bool Tmp = false, bool Relative = false) const;
 
   clang::CompilerInstance const &currentCompilerInstance() const
   {
@@ -66,7 +66,8 @@ private:
 
   std::unordered_map<std::string, std::string> FilesByStem_;
 
-  std::optional<std::string> File_;
+  std::optional<std::string> TmpFile_, File_;
+
   std::optional<std::reference_wrapper<clang::CompilerInstance const>> CI_;
 };
 

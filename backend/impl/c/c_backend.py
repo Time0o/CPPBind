@@ -40,7 +40,7 @@ class CBackend(Backend):
             """
             #include <utility>
 
-            {input_header_include}
+            {input_includes}
 
             {type_info_include}
 
@@ -52,7 +52,7 @@ class CBackend(Backend):
 
             {c_util_include}
             """,
-            input_header_include=self.input_file().include(),
+            input_includes='\n'.join(self.input_includes()),
             type_info_include=type_info.path().include(),
             type_info_type_instances=type_info.type_instances(),
             wrapper_header_include=self._wrapper_header.include(),
