@@ -49,14 +49,11 @@ class CBackend(Backend):
             extern "C" {{
 
             {wrapper_header_include}
-
-            {c_util_include}
             """,
             input_includes='\n'.join(self.input_includes()),
             type_info_include=type_info.path().include(),
             type_info_type_instances=type_info.type_instances(),
-            wrapper_header_include=self._wrapper_header.include(),
-            c_util_include=c_util.path(impl=True).include()))
+            wrapper_header_include=self._wrapper_header.include()))
 
     def wrap_after(self):
         self._wrapper_header.append(code(

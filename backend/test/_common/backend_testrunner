@@ -171,43 +171,30 @@ class BackendTestGenerator:
 
         test_bin = self._test_output(test, '_bin')
 
-        self._subprocess([
-            kwargs['clangpp'],
-            *self._clang_args('clangpp', **kwargs),
-            '-c', cpp_src,
-            '-o', cpp_obj,
-            '-I', self._test_input_dir,
-            '-I', self._test_output_dir()
-        ])
+        self._compile(cpp_src,
+                      cpp_obj,
+                      includes=[self._test_input_dir, self._test_output_dir()],
+                      **kwargs)
 
-        self._subprocess([
-            kwargs['clang'],
-            *self._clang_args('clang', **kwargs),
-            '-c', c_src,
-            '-o', c_obj,
-            '-I', self._test_output_dir()
-        ])
+        self._compile(c_src,
+                      c_obj,
+                      includes=[self._test_output_dir()],
+                      compiler='clang',
+                      **kwargs)
 
-        self._subprocess([
-            kwargs['clangpp'],
-            *self._clang_args('clangpp', **kwargs),
-            cpp_obj,
-            c_obj,
-            '-o', test_bin
-        ])
+        extra_objs = self._compile_extra(['cppbind/c/c_util.cpp'], **kwargs)
+
+        self._link([cpp_obj, c_obj] + extra_objs, test_bin, **kwargs)
 
     def _compile_lua_test(self, test, **kwargs):
         mod_src = self._test_wrapper(test, ext='.cpp')
         mod = self._test_output(test, ext='.so')
 
-        self._subprocess([
-            kwargs['clangpp'],
-            *self._clang_args('clangpp', **kwargs),
-            '-shared', '-fPIC', mod_src,
-            '-o', mod,
-            '-I', kwargs['lua_include_dir'],
-            '-I', self._test_input_dir
-        ])
+        self._compile(mod_src,
+                      mod,
+                      includes=[kwargs['lua_include_dir'], self._test_input_dir],
+                      action=['-shared', '-fPIC'],
+                      **kwargs)
 
     def _run_c_test(self, test, **kwargs):
         test_bin = self._test_output(test, ext='_bin')
@@ -252,6 +239,52 @@ class BackendTestGenerator:
     def _test_output(self, test, ext):
         return os.path.join(self._test_output_dir(), f"test_{test}{ext}")
 
+    def _compile(self, src, obj, **kwargs):
+        compiler = kwargs.get('compiler', 'clangpp')
+        action = kwargs.get('action', ['-c'])
+
+        args = [
+            kwargs[compiler],
+            *self._clang_args(compiler, **kwargs),
+            *action, src,
+            '-o', obj
+        ]
+
+        includes = kwargs.get('includes', []) + [kwargs['cppbind_extra_dir']]
+
+        for include in includes:
+            args += ['-I', include]
+
+        self._subprocess(args)
+
+    def _compile_extra(self, extra_srcs, **kwargs):
+        extra_objs = []
+
+        for extra_src in extra_srcs:
+            extra_src = os.path.join(kwargs['cppbind_extra_dir'], extra_src)
+
+            extra_stem = os.path.splitext(os.path.basename(extra_src))[0]
+            extra_obj = self._test_output(extra_stem, ext='.o')
+            extra_objs.append(extra_obj)
+
+            self._compile(extra_src, extra_obj, **kwargs)
+
+        return extra_objs
+
+    @classmethod
+    def _link(cls, objs, out, **kwargs):
+        compiler = kwargs.get('compiler', 'clangpp')
+
+        args = [
+            kwargs[compiler],
+            *cls._clang_args(compiler, **kwargs),
+            '-o', out
+        ]
+
+        args += objs
+
+        cls._subprocess(args)
+
     @staticmethod
     def _clang_args(which, **kwargs):
         args = kwargs.get('clang_common_args', []) + \
@@ -262,8 +295,8 @@ class BackendTestGenerator:
         else:
             return [f"-{arg}" for arg in args]
 
-    @classmethod
-    def _subprocess(cls, args, **kwargs):
+    @staticmethod
+    def _subprocess(args, **kwargs):
         quiet = kwargs.pop('quiet', False)
 
         if not quiet:
@@ -346,6 +379,8 @@ if __name__ == '__main__':
                             help="only run specific test")
     run_parser.add_argument('--cppbind', default='cppbind',
                             help="cppbind executable")
+    run_parser.add_argument('--cppbind-extra-dir', default='.',
+                            help="cppbind extra include/source file directory")
     run_parser.add_argument('--clang', default='clang',
                             help="clang executable (C)")
     run_parser.add_argument('--clangpp', default='clang++',

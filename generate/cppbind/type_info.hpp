@@ -15,14 +15,23 @@ namespace cppbind
 namespace type_info
 {
 
+
 class type
 {
+  using map = std::unordered_map<std::type_index, type const *>;
+
 public:
+  static map &lookup()
+  {
+    static map lookup_instance;
+    return lookup_instance;
+  }
+
   template<typename T>
   static type const *get()
   {
-    auto it(_types.find(typeid(typename std::remove_const<T>::type)));
-    assert(it != _types.end());
+    auto it(lookup().find(typeid(typename std::remove_const<T>::type)));
+    assert(it != lookup().end());
 
     return it->second;
   }
@@ -35,10 +44,7 @@ public:
   virtual void *cast(type const *to, void *obj) const = 0;
 
 protected:
-  static std::unordered_map<std::type_index, type const *> _types;
 };
-
-std::unordered_map<std::type_index, type const *> type::_types;
 
 template<typename T, typename ...BS>
 class type_instance : public type
@@ -100,7 +106,7 @@ private:
   { throw std::runtime_error("not move constructible"); }
 
   void add_type() const
-  { _types.insert(std::make_pair(std::type_index(typeid(T)), this)); }
+  { type::lookup().insert(std::make_pair(std::type_index(typeid(T)), this)); }
 
   template<typename U>
   static void const *cast(void const *obj)
