@@ -23,7 +23,12 @@
 namespace cppbind
 {
 
-class CreateWrapperConsumer : public GenericASTConsumer
+struct CreateWrapperVisitor : public GenericASTVisitor<CreateWrapperVisitor>
+{
+  bool VisitCXXRecordDecl(clang::CXXRecordDecl *Decl);
+};
+
+class CreateWrapperConsumer : public GenericASTConsumer<CreateWrapperVisitor>
 {
 public:
   explicit CreateWrapperConsumer(std::shared_ptr<Wrapper> Wrapper);

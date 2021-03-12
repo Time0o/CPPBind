@@ -95,12 +95,6 @@ WrapperRecord::determinePublicMemberFunctions(
                               .build());
   }
 
-  if (Decl->needsImplicitDefaultConstructor() && !Decl->isAbstract())
-    PublicMethods.push_back(implicitDefaultConstructor(Decl));
-
-  if (Decl->needsImplicitDestructor())
-    PublicMethods.push_back(implicitDestructor(Decl));
-
   // callable member fields
   auto PublicCallableFieldDecls(determinePublicCallableMemberFieldDecls(Decl));
 

@@ -6,6 +6,7 @@
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/Type.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
+#include "clang/Sema/Sema.h"
 
 #include "ClangUtil.hpp"
 #include "FundamentalTypes.hpp"
@@ -24,6 +25,21 @@ using namespace clang::ast_matchers;
 
 namespace cppbind
 {
+
+bool
+CreateWrapperVisitor::VisitCXXRecordDecl(clang::CXXRecordDecl *Decl)
+{
+  if (!inInputFile(Decl))
+    return true;
+
+  auto &Sema(CompilerState()->getSema());
+
+  if (Decl->isThisDeclarationADefinition() &&
+      Decl->needsImplicitDefaultConstructor())
+    Sema.DeclareImplicitDefaultConstructor(Decl);
+
+  return true;
+}
 
 CreateWrapperConsumer::CreateWrapperConsumer(std::shared_ptr<Wrapper> Wrapper)
 : Wrapper_(Wrapper)

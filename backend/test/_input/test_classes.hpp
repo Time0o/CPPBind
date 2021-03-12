@@ -14,6 +14,11 @@ struct NonConstructible
   NonConstructible() = delete;
 };
 
+struct ImplicitlyNonConstructible
+{
+  int &dummy;
+};
+
 class AClass
 {
 public:

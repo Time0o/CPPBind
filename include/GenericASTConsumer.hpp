@@ -10,15 +10,37 @@
 #include <vector>
 
 #include "clang/AST/ASTConsumer.h"
+#include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
+#include "clang/Basic/SourceManager.h"
 
 #include "llvm/ADT/StringRef.h"
+
+#include "CompilerState.hpp"
 
 namespace clang { class ASTContext; }
 
 namespace cppbind
 {
 
+template<typename IMPL>
+class GenericASTVisitor : public clang::RecursiveASTVisitor<IMPL>
+{
+protected:
+  template<typename T>
+  static bool inInputFile(T *Decl)
+  {
+    auto &SM(ASTContext().getSourceManager());
+    auto Filename(SM.getFilename(Decl->getLocation()));
+
+    auto OrigInputFile(CompilerState().currentFile(false));
+    auto TmpInputFile(CompilerState().currentFile(true));
+
+    return Filename == OrigInputFile || Filename == TmpInputFile;
+  }
+};
+
+template<typename VISITOR>
 class GenericASTConsumer : public clang::ASTConsumer
 {
   template<typename T, typename T_MATCHER>
@@ -54,7 +76,12 @@ class GenericASTConsumer : public clang::ASTConsumer
 
 public:
   void HandleTranslationUnit(clang::ASTContext &Context) override
-  { MatchFinder_.matchAST(Context); }
+  {
+    VISITOR Visitor;
+    Visitor.TraverseDecl(Context.getTranslationUnitDecl());
+
+    MatchFinder_.matchAST(Context);
+  }
 
 protected:
   template<typename T, typename T_MATCHER, typename FUNC>

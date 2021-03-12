@@ -3,11 +3,11 @@
 
 #include "test_classes_c.h"
 
-void *test_non_constructible_new()
-{ return NULL; }
+void test_non_constructible_new() {}
 
-void test_a_class_set_state_private(int state)
-{ }
+void test_implicitly_non_constructible_new() {}
+
+void test_a_class_set_state_private() {}
 
 int main()
 {

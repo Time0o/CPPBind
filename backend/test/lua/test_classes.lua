@@ -6,10 +6,10 @@ do
   assert(test.TestTrivial.delete == nil)
 end
 
-do
-  assert(test.TestNonConstructible.new == nil)
-  assert(test.TestNonConstructible.delete == nil)
-end
+assert(test.TestNonConstructible.new == nil)
+assert(test.TestNonConstructible.delete == nil)
+assert(test.TestImplicitlyNonConstructible.new == nil)
+assert(test.TestImplicitlyNonConstructible.delete == nil)
 
 -- member access
 do
