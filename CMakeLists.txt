@@ -257,12 +257,13 @@ if(CMAKE_BUILD_TYPE STREQUAL Debug)
           COMMAND ${BACKEND_TEST_RUNNER} run
                   --single-test ${BACKEND_TEST}
                   --cppbind $<TARGET_FILE:${CPPBIND}>
+                  --cppbind-extra-dir ${GEN_INCLUDE_DIR}
                   --clang ${CMAKE_C_COMPILER}
                   --clangpp ${CMAKE_CXX_COMPILER}
                   --clang-common-args Wall Werror
                   --clang-cppbind-args std=c++17
-                  --clang-clang-args std=c18 I${GEN_INCLUDE_DIR}
-                  --clang-clangpp-args std=c++17 I${GEN_INCLUDE_DIR}
+                  --clang-clang-args std=c18
+                  --clang-clangpp-args std=c++17
                   --run-valgrind ${RUN_VALGRIND}
                   --valgrind ${VALGRIND}
                   --lua ${LUA}
