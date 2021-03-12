@@ -328,7 +328,14 @@ WrapperFunctionBuilder::setParent(WrapperRecord const *Parent)
   Wf_.Name_ = Wf_.Name_.unqualified().qualified(ParentNameTemplated);
 
   if (Wf_.isInstance()) {
-    WrapperParameter Self(Identifier(Identifier::SELF), ParentType.pointerTo());
+    WrapperType SelfType;
+
+    if (Wf_.isConst())
+      SelfType = ParentType.withConst().pointerTo();
+    else
+      SelfType = ParentType.pointerTo();
+
+    WrapperParameter Self(Identifier(Identifier::SELF), SelfType);
 
     if (!Wf_.Parameters_.empty() && Wf_.Parameters_.front().isSelf())
       Wf_.Parameters_.front() = Self;
