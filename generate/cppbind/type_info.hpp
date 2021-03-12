@@ -89,7 +89,7 @@ private:
 
   template<typename U = T>
   typename std::enable_if<!std::is_copy_constructible<U>::value, void *>::type
-  _copy(void const *obj) const
+  _copy(void const *) const
   { throw std::runtime_error("not copy constructible"); }
 
   template<typename U = T>
@@ -102,7 +102,7 @@ private:
 
   template<typename U = T>
   typename std::enable_if<!std::is_move_constructible<U>::value, void *>::type
-  _move(void *obj) const
+  _move(void *) const
   { throw std::runtime_error("not move constructible"); }
 
   void add_type() const
