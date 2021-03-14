@@ -131,3 +131,6 @@ class LuaTypeTranslator(TypeTranslator):
     @output_rule(lambda _: True)
     def output(cls, t, args):
         return f"lua_push{cls._lua_type(t)}(L, {{outp}});"
+
+    def exception(cls, args):
+        return 'return luaL_error(L, {what});'

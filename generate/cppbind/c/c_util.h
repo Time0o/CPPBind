@@ -7,4 +7,6 @@ void *bind_copy(void *ptr);
 void *bind_move(void *ptr);
 void bind_delete(void *ptr);
 
+#define EBIND -1
+
 #endif // GUARD_CPPBIND_C_UTIL_H

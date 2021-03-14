@@ -38,6 +38,8 @@ class CBackend(Backend):
 
         self._wrapper_source.append(code(
             """
+            #include <cerrno>
+            #include <exception>
             #include <utility>
 
             {input_includes}

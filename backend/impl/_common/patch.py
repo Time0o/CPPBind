@@ -129,9 +129,35 @@ def _function_forward_call(self):
         'f': self
     })
 
-    return_value = TT().output(self.return_type(), args).format(outp=outp)
+    call_return = TT().output(self.return_type(), args).format(outp=outp)
 
-    return '\n\n'.join((call, return_value))
+    call = code(
+        """
+        {call}
+        {call_return}
+        """,
+        call=call,
+        call_return=call_return)
+
+    if not self.is_noexcept():
+        call_std_except = TT().exception(args).format(what='__e.what()')
+        call_unknown_except = TT().exception(args).format(what='"exception"')
+
+        call = code(
+            """
+            try {{
+              {call}
+            }} catch (std::exception const &__e) {{
+              {call_std_except}
+            }} catch (...) {{
+              {call_unknown_except}
+            }}
+            """,
+            call=call,
+            call_std_except=call_std_except,
+            call_unknown_except=call_unknown_except)
+
+    return call
 
 
 Function.declare_parameters = _function_declare_parameters

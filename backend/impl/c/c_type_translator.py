@@ -74,3 +74,16 @@ class CTypeTranslator(TypeTranslator):
     @rule(lambda _: True)
     def output(cls, t, args):
         return "return {outp};"
+
+    def exception(cls, args):
+        ex = "errno = EBIND;"
+
+        if not args.f.return_type().is_void():
+            # XXX return some default value
+            ex = code(
+                f"""
+                errno = {ex};
+                return 0;
+                """)
+
+        return ex
