@@ -93,4 +93,4 @@ def pushpointer(arg, owning=False):
 
 
 def setmetatable(t):
-    return f'{SETMETATABLE}(L, "METATABLE_{t.mangled()}");'
+    return f'{SETMETATABLE}(L, "METATABLE_{t.without_const().mangled()}");'
