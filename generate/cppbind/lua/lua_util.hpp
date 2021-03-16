@@ -122,15 +122,13 @@ inline void createmetatable(
   lua_settable(L, LUA_REGISTRYINDEX);
 }
 
-void createmetatables(lua_State *L);
-
 inline void getmetatable(lua_State *L, char const *key)
 {
-  static bool created = false;
+  static bool initialized = false;
 
-  if (!created) {
-    createmetatables(L);
-    created = true;
+  if (!initialized) {
+    createmetatable_generic(L);
+    initialized = true;
   }
 
   lua_pushstring(L, key);

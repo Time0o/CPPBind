@@ -33,15 +33,12 @@ class LuaBackend(Backend):
             {lua_util_include}
 
             {forward_declarations}
-
-            {lua_util_createmetatables}
             """,
             input_includes='\n'.join(self.input_includes()),
             type_info_include=type_info.path().include(),
             type_info_type_instances=type_info.type_instances(),
             forward_declarations=self._function_forward_declarations(),
-            lua_util_include=lua_util.path().include(),
-            lua_util_createmetatables=lua_util.createmetatables()))
+            lua_util_include=lua_util.path().include()))
 
     def wrap_after(self):
         ## XXX support different Lua versions
@@ -52,6 +49,8 @@ class LuaBackend(Backend):
 
             {register_module}
 
+            {create_metatables}
+
             }} // namespace
 
             extern "C"
@@ -60,6 +59,7 @@ class LuaBackend(Backend):
             LUALIB_API int luaopen_{module_name}(lua_State *L)
             {{
               __register(L);
+              __createmetatables(L);
 
               return 1;
             }}
@@ -69,6 +69,7 @@ class LuaBackend(Backend):
             register_module=self._register(constants=self.constants(),
                                            functions=self.functions(),
                                            records=self.records()),
+            create_metatables=self._create_metatables(self.records()),
             module_name=self._module_name()))
 
     def wrap_constant(self, c):
@@ -270,3 +271,22 @@ class LuaBackend(Backend):
                 """)
 
         return '\n\n'.join(map(register_record, records))
+
+    @staticmethod
+    def _create_metatables(records):
+        create = []
+
+        for r in records:
+            if r.is_abstract():
+                continue
+
+            create.append(lua_util.createmetatable(r))
+
+        return code(
+            """
+            void __createmetatables(lua_State *L)
+            {{
+              {create}
+            }}
+            """,
+            create='\n\n'.join(create))

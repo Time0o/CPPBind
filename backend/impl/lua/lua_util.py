@@ -9,44 +9,28 @@ from text import code
 
 _NS = f"{Definitions.gen_namespace}::lua"
 
+BIND_OWN = f"{_NS}::bind_own"
+BIND_DISOWN = f"{_NS}::bind_disown"
+BIND_COPY = f"{_NS}::bind_copy"
+BIND_MOVE = f"{_NS}::bind_move"
+BIND_DELETE = f"{_NS}::bind_delete"
+CREATEMETATABLE = f"{_NS}::createmetatable"
+CREATEMETATABLE_GENERIC = f"{_NS}::createmetatable_generic"
+GETMETATABLE = f"{_NS}::getmetatable"
+SETMETATABLE = f"{_NS}::setmetatable"
 TOINTEGRAL = f"{_NS}::tointegral"
 TOFLOATING = f"{_NS}::tofloating"
 PUSHINTEGRAL = f"{_NS}::pushintegral"
 PUSHINTEGRAL_CONSTEXPR = f"cppbind_lua_pushintegral_constexpr"
 PUSHFLOATING = f"{_NS}::pushfloating"
 PUSHFLOATING_CONSTEXPR = f"cppbind_lua_pushfloating_constexpr"
-CREATEMETATABLE = f"{_NS}::createmetatable"
-CREATEMETATABLE_GENERIC = f"{_NS}::createmetatable_generic"
-SETMETATABLE = f"{_NS}::setmetatable"
 
 
 def path():
     return Path(os.path.join('cppbind', 'lua', 'lua_util.hpp'))
 
 
-def createmetatables():
-    create = [f"{CREATEMETATABLE_GENERIC}(L);"]
-
-    for r in Backend().records():
-        if r.is_abstract():
-            continue
-
-        create.append(_createmetatable(r))
-
-    return code(
-        """
-        namespace {ns} {{
-          void createmetatables(lua_State *L)
-          {{
-            {create}
-          }}
-        }}
-        """,
-        ns=_NS,
-        create='\n\n'.join(create))
-
-
-def _createmetatable(r):
+def createmetatable(r):
     function_entries = []
 
     for f in r.functions():
@@ -59,20 +43,21 @@ def _createmetatable(r):
         function_entries.append(f"{{{entry_name}, {entry}}}")
 
     if r.is_copyable():
-        function_entries.append('{"copy", bind_copy}')
+        function_entries.append(f'{{"copy", {BIND_COPY}}}')
 
     if r.is_moveable():
-        function_entries.append('{"move", bind_move}')
+        function_entries.append(f'{{"move", {BIND_MOVE}}}')
 
     key = f'"METATABLE_{r.type().mangled()}"'
 
     return code(
         """
-        createmetatable(L, {key},
+        {createmetatable}(L, {key},
           {{
             {function_entries}
           }});
         """,
+        createmetatable=CREATEMETATABLE,
         key=key,
         function_entries=',\n'.join(function_entries))
 
