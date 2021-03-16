@@ -54,7 +54,7 @@ class LuaTypeTranslator(TypeTranslator):
 
     input_rule = partial(rule, before=input_before)
 
-    @input_rule(lambda t: t.is_scoped_enum())
+    @input_rule(lambda t: t.is_enum())
     def input(cls, t, args):
         return f"{{interm}} = static_cast<{t}>({lua_util.tointegral(t.underlying_integer_type(), args.i + 1)});"
 
