@@ -1,4 +1,6 @@
+#include <algorithm>
 #include <cassert>
+#include <cctype>
 #include <deque>
 #include <memory>
 #include <optional>
@@ -141,10 +143,8 @@ WrapperFunction::getName(bool WithTemplatePostfix,
     auto NameStr(Name.str());
 
     string::replace(NameStr,
-                    OverloadedOperator_->Spelling,
-                    OverloadedOperator_->Name);
-
-    string::replace(NameStr, "operator", "op");
+                    "operator" + OverloadedOperator_->Spelling,
+                    determineOverloadedOperatorName(*OverloadedOperator_));
 
     Name = Identifier(NameStr);
   }
@@ -302,6 +302,30 @@ WrapperFunction::determineOverloadedOperator(clang::FunctionDecl const *Decl)
   default:
     llvm_unreachable("invalid overloaded operator kind");
   }
+}
+
+std::string
+WrapperFunction::determineOverloadedOperatorName(OverloadedOperator const &OO)
+{
+  // XXX what about conflicts?
+
+  static std::unordered_map<std::string, std::string> OONames {
+    {"Arrow", "access"},
+    {"Star", "deref"}
+  };
+
+  auto Name(OO.Name);
+
+  auto It(OONames.find(Name));
+  if (It != OONames.end())
+    return It->second;
+
+  std::transform(Name.begin(),
+                 Name.end(),
+                 Name.begin(),
+                 [](char c){ return std::tolower(c); });
+
+  return "op_" + Name;
 }
 
 std::optional<TemplateArgumentList>

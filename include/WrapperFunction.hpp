@@ -171,6 +171,9 @@ private:
   static std::optional<OverloadedOperator>
   determineOverloadedOperator(clang::FunctionDecl const *Decl);
 
+  static std::string
+  determineOverloadedOperatorName(OverloadedOperator const &OO);
+
   static std::optional<TemplateArgumentList>
   determineTemplateArgumentList(clang::FunctionDecl const *Decl);
 

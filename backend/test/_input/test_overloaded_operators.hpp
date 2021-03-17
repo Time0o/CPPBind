@@ -28,6 +28,9 @@ public:
   : _pointee(state)
   {}
 
+  Pointee &operator*()
+  { return _pointee; }
+
   Pointee *operator->()
   { return &_pointee; }
 
