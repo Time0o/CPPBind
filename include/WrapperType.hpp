@@ -55,6 +55,7 @@ public:
   bool isScopedEnum() const;
   bool isIntegral() const;
   bool isFloating() const;
+  bool isCString() const;
   bool isReference() const;
   bool isLValueReference() const;
   bool isRValueReference() const;

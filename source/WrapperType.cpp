@@ -64,6 +64,10 @@ WrapperType::isBoolean() const
 { return isFundamental("bool"); }
 
 bool
+WrapperType::isCString() const
+{ return operator==(WrapperType("char").withConst().pointerTo()); }
+
+bool
 WrapperType::isEnum() const
 { return type()->isEnumeralType(); }
 

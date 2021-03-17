@@ -18,6 +18,8 @@ class LuaTypeTranslator(TypeTranslator):
             return 'number'
         elif t.is_boolean():
             return 'boolean'
+        elif t.is_c_string():
+            return 'string'
         elif t.is_record() or t.is_referenced() or t.is_pointer():
             return 'userdata'
         else:
@@ -29,6 +31,8 @@ class LuaTypeTranslator(TypeTranslator):
             return 'LUA_TNUMBER'
         elif t.is_boolean():
             return 'LUA_TBOOLEAN'
+        elif t.is_c_string():
+            return 'LUA_TSTRING'
         elif t.is_record() or t.is_reference() or t.is_pointer():
             return 'LUA_TUSERDATA'
         else:
@@ -65,6 +69,10 @@ class LuaTypeTranslator(TypeTranslator):
     @input_rule(lambda t: t.is_floating())
     def input(cls, t, args):
         return f"{{interm}} = {lua_util.tofloating(t, args.i + 1)};"
+
+    @input_rule(lambda t: t.is_c_string())
+    def input(cls, t, args):
+        return f"{{interm}} = lua_tostring(L, {args.i + 1});"
 
     @input_rule(lambda t: t.is_record())
     def input(cls, t, args):
@@ -104,6 +112,10 @@ class LuaTypeTranslator(TypeTranslator):
     @output_rule(lambda t: t.is_floating())
     def output(cls, t, args):
         return f"{lua_util.pushfloating('{outp}')};"
+
+    @output_rule(lambda t: t.is_c_string())
+    def output(cls, t, args):
+        return "lua_pushstring(L, {outp});"
 
     @output_rule(lambda t: t.is_record())
     def output(cls, t, args):

@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <math.h>
 #include <stddef.h>
+#include <string.h>
 
 #include "test_parameters_c.h"
 
@@ -145,6 +146,9 @@ int main()
 
   /* unused parameters */
   assert(test_add_unused_parameters(1, -1, 2, -1) == 3);
+
+  /* string parameters */
+  assert(strcmp(test_min_str("abdd", "abcd"), "abcd") == 0);
 
   return 0;
 }

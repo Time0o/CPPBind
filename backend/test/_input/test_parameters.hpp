@@ -1,4 +1,5 @@
 #include <cstddef>
+#include <cstring>
 #include <limits>
 
 namespace test
@@ -163,5 +164,9 @@ inline Boolean not_bool_enum_rvalue_ref(Boolean &&a)
 // unused parameters
 inline int add_unused_parameters(int a, int, int b, int)
 { return a + b; }
+
+// string parameters
+char const *min_str(char const *str1, char const *str2)
+{ return std::strcmp(str1, str2) <= 0 ? str1 : str2; }
 
 } // namespace test
