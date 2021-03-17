@@ -161,12 +161,16 @@ inline int add_rvalue_ref(int &&a, int const &&b)
 inline Boolean not_bool_enum_rvalue_ref(Boolean &&a)
 { return not_bool_enum(a); }
 
+// no parameters
+inline int one_no_parameters()
+{ return 1; }
+
 // unused parameters
 inline int add_unused_parameters(int a, int, int b, int)
 { return a + b; }
 
 // string parameters
-char const *min_str(char const *str1, char const *str2)
+char const *min_string_parameters(char const *str1, char const *str2)
 { return std::strcmp(str1, str2) <= 0 ? str1 : str2; }
 
 } // namespace test

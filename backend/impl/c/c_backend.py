@@ -115,8 +115,11 @@ class CBackend(Backend):
 
     def _function_header(self, f):
         #XXX generalize
-        parameters = ', '.join(f"{TT().c(p.type())} {p.name_target()}"
-                               for p in f.parameters())
+        if not f.parameters():
+            parameters = "void"
+        else:
+            parameters = ', '.join(f"{TT().c(p.type())} {p.name_target()}"
+                                   for p in f.parameters())
 
         return f"{TT().c(f.return_type())} {f.name_target()}({parameters})"
 

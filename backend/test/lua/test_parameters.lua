@@ -114,8 +114,11 @@ assert(test.test_not_bool_enum_rvalue_ref(test.TEST_BOOLEAN_TRUE)
 assert(test.test_not_bool_enum_rvalue_ref(test.TEST_BOOLEAN_FALSE)
        == test.TEST_BOOLEAN_TRUE)
 
+-- no parameters
+assert(test.test_one_no_parameters() == 1)
+
 -- unused parameters
 assert(test.test_add_unused_parameters(1, -1, 2, -1) == 3)
 
 -- string parameters
-assert(test.test_min_str("abdd", "abcd") == "abcd")
+assert(test.test_min_string_parameters("abdd", "abcd") == "abcd")

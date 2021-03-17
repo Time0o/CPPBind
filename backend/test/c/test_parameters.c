@@ -144,11 +144,14 @@ int main()
     bind_delete(b_true);
   }
 
+  /* no parameters */
+  assert(test_one_no_parameters() == 1);
+
   /* unused parameters */
   assert(test_add_unused_parameters(1, -1, 2, -1) == 3);
 
   /* string parameters */
-  assert(strcmp(test_min_str("abdd", "abcd"), "abcd") == 0);
+  assert(strcmp(test_min_string_parameters("abdd", "abcd"), "abcd") == 0);
 
   return 0;
 }
