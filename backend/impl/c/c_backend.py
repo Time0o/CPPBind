@@ -29,8 +29,6 @@ class CBackend(Backend):
             extern "C" {{
             #endif
 
-            #include <stdbool.h>
-
             {c_util_include}
             """,
             header_guard=self._header_guard(),

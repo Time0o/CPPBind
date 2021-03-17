@@ -27,8 +27,8 @@ int main()
   assert(fabs(test_add_double(0.1, 0.2) - 0.3) < TEST_EPSILON_DOUBLE);
 
   /* boolean parameters */
-  assert(test_not_bool(true) == false);
-  assert(test_not_bool(false) == true);
+  assert(test_not_bool(1) == 0);
+  assert(test_not_bool(0) == 1);
 
   /* enum parameters */
   assert(test_not_bool_enum(TEST_BOOLEAN_TRUE) == TEST_BOOLEAN_FALSE);

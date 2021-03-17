@@ -85,13 +85,13 @@ int main()
     void *a = test_class_parameter_new(1);
     void *b = test_class_parameter_new(2);
 
-    test_class_parameter_set_copyable(true);
+    test_class_parameter_set_copyable(1);
 
     void *c = test_add_class(a, b);
     assert(test_class_parameter_get_state(a) == 1);
     assert(test_class_parameter_get_state(c) == 3);
 
-    test_class_parameter_set_copyable(false);
+    test_class_parameter_set_copyable(0);
 
     bind_delete(a);
     bind_delete(b);
@@ -130,12 +130,12 @@ int main()
   {
     void *a = test_class_parameter_new(1);
 
-    test_class_parameter_set_moveable(true);
+    test_class_parameter_set_moveable(1);
 
     test_noop_class_rvalue_ref(a);
     assert(test_class_parameter_was_moved(a));
 
-    test_class_parameter_set_moveable(false);
+    test_class_parameter_set_moveable(0);
 
     bind_delete(a);
   }

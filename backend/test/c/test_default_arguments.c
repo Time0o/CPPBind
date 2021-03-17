@@ -5,7 +5,7 @@
 
 int main()
 {
-  assert(test_pow_default_arguments(TEST_E, 2, true, TEST_ROUND_UPWARD) == 8.0);
+  assert(test_pow_default_arguments(TEST_E, 2, 1, TEST_ROUND_UPWARD) == 8.0);
 
   assert(test_default_large_signed(LLONG_MAX) == LLONG_MAX);
   assert(test_default_large_unsigned(UINT_MAX) == UINT_MAX);

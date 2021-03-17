@@ -9,6 +9,10 @@ from type_translator import TypeTranslator
 class CTypeTranslator(TypeTranslator):
     rule = TypeTranslator.rule
 
+    @rule(lambda t: t.is_boolean())
+    def c(cls, t, args):
+        return 'int'
+
     @rule(lambda t: t.is_enum())
     def c(cls, t, args):
         return str(t.underlying_integer_type())

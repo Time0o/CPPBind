@@ -18,8 +18,8 @@ int main()
     assert(test_derived_func_2(derived) == 3);
     assert(test_base_2_func_2(derived) == 3);
 
-    assert(test_derived_func_abstract(derived) == true);
-    assert(test_base_abstract_func_abstract(derived) == true);
+    assert(test_derived_func_abstract(derived) == 1);
+    assert(test_base_abstract_func_abstract(derived) == 1);
 
     bind_delete(derived);
   }
@@ -34,11 +34,11 @@ int main()
     bind_delete(base_2);
 
     void *base_protected = test_base_protected_new();
-    assert(test_base_protected_func_protected(base_protected) == true);
+    assert(test_base_protected_func_protected(base_protected) == 1);
     bind_delete(base_protected);
 
     void *base_private = test_base_private_new();
-    assert(test_base_private_func_private(base_private) == true);
+    assert(test_base_private_func_private(base_private) == 1);
     bind_delete(base_private);
   }
 
