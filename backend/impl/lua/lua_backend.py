@@ -171,7 +171,7 @@ class LuaBackend(Backend):
 
     @staticmethod
     def _function_check_num_parameters(f):
-        num_min = sum(1 for p in f.parameters() if not p.default_argument)
+        num_min = sum(1 for p in f.parameters() if p.default_argument() is None)
         num_max = len(f.parameters())
 
         if num_min == num_max:
