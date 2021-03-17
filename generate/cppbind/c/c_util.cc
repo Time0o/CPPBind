@@ -1,4 +1,4 @@
-#include "cppbind/type_info.hpp"
+#include "cppbind/type_info.h"
 
 extern "C" {
 

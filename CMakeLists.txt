@@ -26,8 +26,7 @@ set(DEPS_DIR ${PROJECT_SOURCE_DIR}/deps)
 set(PYBIND11_DIR ${DEPS_DIR}/pybind11)
 set(COVERAGE_DIR ${PROJECT_BINARY_DIR}/coverage)
 
-set(GEN_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/generate/)
-set(GEN_NAMESPACE "cppbind")
+set(EXTRA_DIR ${PROJECT_SOURCE_DIR}/generate/)
 
 set(BACKEND_DIR ${PROJECT_SOURCE_DIR}/backend)
 set(BACKEND_IMPL_DIR ${BACKEND_DIR}/impl)
@@ -178,8 +177,7 @@ function(target_pybind11_config TARGET)
   # definitions
   target_compile_definitions(
     ${TARGET} PRIVATE
-      -DGEN_INCLUDE_DIR="${GEN_INCLUDE_DIR}"
-      -DGEN_NAMESPACE="${GEN_NAMESPACE}"
+      -DEXTRA_DIR="${EXTRA_DIR}"
       -DBACKEND_IMPL_DIR="${BACKEND_IMPL_DIR}"
       -DBACKEND_IMPL_COMMON_DIR="${BACKEND_IMPL_COMMON_DIR}"
       -DBACKEND_IMPL_BACKEND_MOD_POSTFIX="${BACKEND_IMPL_BACKEND_MOD_POSTFIX}"
@@ -257,7 +255,7 @@ if(CMAKE_BUILD_TYPE STREQUAL Debug)
           COMMAND ${BACKEND_TEST_RUNNER} run
                   --single-test ${BACKEND_TEST}
                   --cppbind $<TARGET_FILE:${CPPBIND}>
-                  --cppbind-extra-dir ${GEN_INCLUDE_DIR}
+                  --cppbind-extra-dir ${EXTRA_DIR}
                   --clang ${CMAKE_C_COMPILER}
                   --clangpp ${CMAKE_CXX_COMPILER}
                   --clang-common-args Wall Werror

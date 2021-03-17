@@ -11,7 +11,7 @@ extern "C" {
   #include "lauxlib.h"
 }
 
-#include "cppbind/type_info.hpp"
+#include "cppbind/type_info.h"
 
 namespace cppbind
 {

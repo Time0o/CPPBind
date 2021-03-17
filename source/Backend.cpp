@@ -219,10 +219,4 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     RO_PROP("output_cpp_header_extension", OPT("output-cpp-header-extension"))
     RO_PROP("output_cpp_source_extension", OPT("output-cpp-source-extension"))
     RO_PROP("output_relative_includes", OPT(bool, "output-relative-includes"));
-
-  struct Definitions_ {};
-
-  py::class_<Definitions_>(m, "Definitions")
-    RO_PROP("gen_include_dir", GEN_INCLUDE_DIR)
-    RO_PROP("gen_namespace", GEN_NAMESPACE);
 }

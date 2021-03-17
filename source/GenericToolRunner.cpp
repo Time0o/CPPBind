@@ -125,7 +125,7 @@ GenericToolRunner::getTool() const
   insertArguments({"-xc++-header"}, BEGIN);
 
   auto FundamentalTypesInclude(
-    (path(GEN_INCLUDE_DIR) / "cppbind" / "fundamental_types.hpp").string());
+    (path(EXTRA_DIR) / "cppbind" / "fundamental_types.h").string());
 
   insertArguments({"-include", FundamentalTypesInclude}, END);
 

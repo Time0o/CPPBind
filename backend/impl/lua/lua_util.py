@@ -2,12 +2,11 @@ import os
 import type_info as ti
 
 from backend import Backend
-from cppbind import Definitions
 from file import Path
 from text import code
 
 
-_NS = f"{Definitions.gen_namespace}::lua"
+_NS = f"cppbind::lua"
 
 BIND_OWN = f"{_NS}::bind_own"
 BIND_DISOWN = f"{_NS}::bind_disown"
@@ -27,7 +26,7 @@ PUSHFLOATING_CONSTEXPR = f"cppbind_lua_pushfloating_constexpr"
 
 
 def path():
-    return Path(os.path.join('cppbind', 'lua', 'lua_util.hpp'))
+    return Path(os.path.join('cppbind', 'lua', 'lua_util.h'))
 
 
 def createmetatable(r):

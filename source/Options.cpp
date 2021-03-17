@@ -72,12 +72,12 @@ void OptionsRegistry::init()
 
   Options().add<std::string>("output-cpp-header-extension")
     .setDescription("Output C++ header file extension")
-    .setDefault(".hpp")
+    .setDefault(".h")
     .done();
 
   Options().add<std::string>("output-cpp-source-extension")
     .setDescription("Output C++ source file extension")
-    .setDefault(".cpp")
+    .setDefault(".cc")
     .done();
 
   Options().add<bool>("output-relative-includes")
