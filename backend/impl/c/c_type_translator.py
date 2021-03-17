@@ -82,7 +82,7 @@ class CTypeTranslator(TypeTranslator):
             # XXX return some default value
             ex = code(
                 f"""
-                errno = {ex};
+                errno = EBIND;
                 return 0;
                 """)
 

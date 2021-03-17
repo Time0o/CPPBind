@@ -120,7 +120,6 @@ class LuaTypeTranslator(TypeTranslator):
         _interm = f"{t.pointee().without_const()} _{{interm}}"
         _input = cls.input(t.pointee(), args).format(interm="_{interm}")
 
-        # TODO: interm goes out of scope!!!
         return code(
             """
             {_interm};

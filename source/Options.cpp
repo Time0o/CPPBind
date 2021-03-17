@@ -30,6 +30,11 @@ void OptionsRegistry::init()
     .setDefault(false)
     .done();
 
+  Options().add<bool>("wrap-noexcept")
+    .setDescription("Don't catch and propagate exceptions in wrapped code")
+    .setDefault(false)
+    .done();
+
   auto validPostfix = [](char const *Pat){
     return [=](std::string Postfix){
       if (string::replaceAll(Postfix, Pat, "x") == 0)

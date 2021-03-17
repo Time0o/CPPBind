@@ -213,6 +213,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
   struct Options_ {};
 
   py::class_<Options_>(m, "Options")
+    RO_PROP("wrap_noexcept", OPT(bool, "wrap-noexcept"))
     RO_PROP("output_directory", OPT("output-directory"))
     RO_PROP("output_c_header_extension", OPT("output-c-header-extension"))
     RO_PROP("output_c_source_extension", OPT("output-c-source-extension"))

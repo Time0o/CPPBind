@@ -1,4 +1,4 @@
-from cppbind import Constant, Function, Parameter, Record, Identifier as Id
+from cppbind import Constant, Function, Identifier as Id, Options, Parameter, Record
 from text import code
 from type_translator import TypeTranslator as TT
 from util import dotdict
@@ -46,6 +46,9 @@ def _function_declare_parameters(self):
 
 
 def _function_forward_parameters(self):
+    if not self.parameters():
+        return
+
     def translate(p, i):
         args = dotdict({
             'f': self,
@@ -68,15 +71,18 @@ def _function_forward_parameters(self):
     translate_parameters = '\n\n'.join(translate_parameters)
 
     if has_default_parameters:
-        return code(
+        translate_parameters = code(
             """
             do {{
               {translate_parameters}
             }} while(false);
             """,
             translate_parameters=translate_parameters)
-    else:
-        return translate_parameters
+
+    if not Options.wrap_noexcept:
+        translate_parameters = self.try_catch(translate_parameters)
+
+    return translate_parameters
 
 
 def _function_forward_call(self):
@@ -139,30 +145,39 @@ def _function_forward_call(self):
         call=call,
         call_return=call_return)
 
-    if not self.is_noexcept():
-        call_std_except = TT().exception(args).format(what='__e.what()')
-        call_unknown_except = TT().exception(args).format(what='"exception"')
-
-        call = code(
-            """
-            try {{
-              {call}
-            }} catch (std::exception const &__e) {{
-              {call_std_except}
-            }} catch (...) {{
-              {call_unknown_except}
-            }}
-            """,
-            call=call,
-            call_std_except=call_std_except,
-            call_unknown_except=call_unknown_except)
+    if not Options.wrap_noexcept and not self.is_noexcept():
+        call = self.try_catch(call)
 
     return call
+
+
+def _function_try_catch(self, what):
+    args = dotdict({
+        'f': self
+    })
+
+    std_except = TT().exception(args).format(what='__e.what()')
+    unknown_except = TT().exception(args).format(what='"exception"')
+
+    return code(
+        """
+        try {{
+          {what}
+        }} catch (std::exception const &__e) {{
+          {std_except}
+        }} catch (...) {{
+          {unknown_except}
+        }}
+        """,
+        what=what,
+        std_except=std_except,
+        unknown_except=unknown_except)
 
 
 Function.declare_parameters = _function_declare_parameters
 Function.forward_parameters = _function_forward_parameters
 Function.forward_call = _function_forward_call
+Function.try_catch = _function_try_catch
 
 
 def name(get=lambda self: self.name(),
