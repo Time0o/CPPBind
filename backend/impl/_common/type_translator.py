@@ -23,11 +23,17 @@ class TypeTranslator(metaclass=Generic):
         def execute(self, *args, **kwargs):
             output = []
 
-            output += self._execute(self._action_before, *args, **kwargs)
-            output += self._execute(self._action, *args, **kwargs)
-            output += self._execute(self._action_after, *args, **kwargs)
+            bare = kwargs.pop('bare')
 
-            return '\n\n'.join(output)
+            if not bare:
+                output += self._execute(self._action_before, *args, **kwargs)
+
+            output += self._execute(self._action, *args, **kwargs)
+
+            if not bare:
+                output += self._execute(self._action_after, *args, **kwargs)
+
+            return '\n'.join(output)
 
         @staticmethod
         def _execute(actions, *args, **kwargs):
@@ -81,11 +87,11 @@ class TypeTranslator(metaclass=Generic):
 
             @classmethod
             @wraps(action)
-            def rule_wrapper(derived_cls, type_instance, args=None):
+            def rule_wrapper(derived_cls, type_instance, args=None, bare=False):
                 rule = cls._rule_lookup.find_rule(type_instance=type_instance,
                                                   action=action)
 
-                return rule.execute(derived_cls, type_instance, args)
+                return rule.execute(derived_cls, type_instance, args, bare=bare)
 
             return rule_wrapper
 

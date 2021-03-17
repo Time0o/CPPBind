@@ -53,7 +53,7 @@ def _function_forward_parameters(self):
             'i': i
         })
 
-        return TT().input(p.type(), args).format(inp=p.name(),
+        return TT().input(p.type(), args).format(inp=p.name_target(),
                                                  interm=p.name_interm())
 
     translate_parameters = []
@@ -65,7 +65,7 @@ def _function_forward_parameters(self):
         if p.default_argument() is not None:
             has_default_parameters = True
 
-    translate_parameters = '\n'.join(translate_parameters)
+    translate_parameters = '\n\n'.join(translate_parameters)
 
     if has_default_parameters:
         return code(
