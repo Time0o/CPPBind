@@ -2,11 +2,9 @@
 #define GUARD_CPPBIND_TYPE_INFO_H
 
 #include <cassert>
-#include <stdexcept>
 #include <type_traits>
 #include <typeindex>
 #include <typeinfo>
-#include <unordered_map>
 #include <utility>
 
 namespace cppbind
@@ -15,26 +13,82 @@ namespace cppbind
 namespace type_info
 {
 
+template<typename T_KEY, typename T_VAL>
+class simple_map
+{
+  enum : std::size_t { TABLE_SIZE = 100 };
+
+  struct node
+  {
+    node(T_KEY key, T_VAL val)
+    : key(key),
+      val(val),
+      next(nullptr)
+    {}
+
+    T_KEY key;
+    T_VAL val;
+
+    node *next;
+  };
+
+public:
+  simple_map()
+  : table()
+  {}
+
+  ~simple_map()
+  {
+    for (std::size_t offs = 0; offs < TABLE_SIZE; ++offs) {
+      node *head = table[offs];
+      while (head) {
+        node *next = head->next;
+        delete head;
+        head = next;
+      }
+    }
+  }
+
+  void insert(T_KEY const &key, T_VAL const &val)
+  {
+    std::size_t offs = table_offs(key);
+
+    node *next = table[offs];
+    node *head = new node(key, val);
+    head->next = next;
+    table[offs] = head;
+  }
+
+  T_VAL const *find(T_KEY const &key) const
+  {
+    std::size_t offs = table_offs(key);
+
+    node *head = table[offs];
+    while (head) {
+      if (head->key == key)
+        return &head->val;
+    }
+
+    return nullptr;
+  }
+
+private:
+  static std::size_t table_offs(T_KEY const &key)
+  { return reinterpret_cast<std::size_t>(key) % TABLE_SIZE; }
+
+  node *table[TABLE_SIZE];
+};
 
 class type
 {
-  using map = std::unordered_map<std::type_index, type const *>;
-
 public:
-  static map &lookup()
-  {
-    static map lookup_instance;
-    return lookup_instance;
-  }
+  template<typename T>
+  static void add(type const *obj)
+  { lookup().insert(hash<T>(), obj); }
 
   template<typename T>
   static type const *get()
-  {
-    auto it(lookup().find(typeid(typename std::remove_const<T>::type)));
-    assert(it != lookup().end());
-
-    return it->second;
-  }
+  { return *lookup().find(hash<T>()); }
 
   virtual void *copy(void const *obj) const = 0;
   virtual void *move(void *obj) const = 0;
@@ -43,7 +97,18 @@ public:
   virtual void const *cast(type const *to, void const *obj) const = 0;
   virtual void *cast(type const *to, void *obj) const = 0;
 
-protected:
+private:
+  using map = simple_map<std::size_t, type const *>;
+
+  static map &lookup()
+  {
+    static map lookup_instance;
+    return lookup_instance;
+  }
+
+  template<typename T>
+  static std::size_t hash()
+  { return typeid(typename std::remove_const<T>::type).hash_code(); }
 };
 
 template<typename T, typename ...BS>
@@ -52,7 +117,8 @@ class type_instance : public type
 public:
   type_instance()
   {
-    add_type();
+    type::add<T>(this);
+
     add_cast<T>();
     add_base_casts();
   }
@@ -68,11 +134,11 @@ public:
 
   void const *cast(type const *to, void const *obj) const override
   {
-    auto it(_casts.find(to));
-    if (it == _casts.end())
+    auto const *cast = _casts.find(to);
+    if (!cast)
         throw std::bad_cast();
 
-    return it->second(obj);
+    return (*cast)(obj);
   }
 
   void *cast(type const *to, void *obj) const override
@@ -90,7 +156,7 @@ private:
   template<typename U = T>
   typename std::enable_if<!std::is_copy_constructible<U>::value, void *>::type
   _copy(void const *) const
-  { throw std::runtime_error("not copy constructible"); }
+  { throw std::bad_cast(); }
 
   template<typename U = T>
   typename std::enable_if<std::is_move_constructible<U>::value, void *>::type
@@ -103,10 +169,7 @@ private:
   template<typename U = T>
   typename std::enable_if<!std::is_move_constructible<U>::value, void *>::type
   _move(void *) const
-  { throw std::runtime_error("not move constructible"); }
-
-  void add_type() const
-  { type::lookup().insert(std::make_pair(std::type_index(typeid(T)), this)); }
+  { throw std::bad_cast(); }
 
   template<typename U>
   static void const *cast(void const *obj)
@@ -119,12 +182,12 @@ private:
 
   template<typename B>
   void add_cast()
-  { _casts.insert(std::make_pair(type::get<B>(), cast<B>)); }
+  { _casts.insert(type::get<B>(), cast<B>); }
 
   void add_base_casts()
   { [](...){}((add_cast<BS>(), 0)...); }
 
-  std::unordered_map<type const *, void const *(*)(void const *)> _casts;
+  simple_map<type const *, void const *(*)(void const *)> _casts;
 };
 
 class typed_ptr
