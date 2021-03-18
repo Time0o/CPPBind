@@ -1,4 +1,4 @@
-from cppbind import Constant, Function, Identifier as Id, Options, Parameter, Record
+from cppbind import Constant, Function, Identifier as Id, Options, Parameter, Record, Type
 from text import code
 from type_translator import TypeTranslator as TT
 from util import dotdict
@@ -180,10 +180,20 @@ Function.forward_call = _function_forward_call
 Function.try_catch = _function_try_catch
 
 
-def name(get=lambda self: self.name(),
-         default_case=Id.SNAKE_CASE,
-         default_prefix=None,
-         default_postfix=None):
+def _constant_assign(self):
+    args = dotdict({
+        'c': self
+    })
+
+    return TT().constant(self.type(), args).format(const=self.name())
+
+Constant.assign = _constant_assign
+
+
+def _name(get=lambda self: self.name(),
+          default_case=Id.SNAKE_CASE,
+          default_prefix=None,
+          default_postfix=None):
 
     def _name_closure(self,
                       case=default_case,
@@ -206,14 +216,20 @@ def name(get=lambda self: self.name(),
     return _name_closure
 
 
-Constant.name_target = name(default_case=Id.SNAKE_CASE_CAP_ALL)
+Constant.name_target = _name(default_case=Id.SNAKE_CASE_CAP_ALL)
 
-Function.name_target = name(get=lambda f: f.name(overloaded=True,
-                                                 without_operator_name=True,
-                                                 with_template_postfix=True))
+Function.name_target = _name(get=lambda f: f.name(overloaded=True,
+                                                  without_operator_name=True,
+                                                  with_template_postfix=True))
 
-Parameter.name_target = name()
-Parameter.name_interm = name(default_prefix='_')
+Parameter.name_target = _name()
+Parameter.name_interm = _name(default_prefix='_')
 
-Record.name_target = name(get=lambda r: r.name(with_template_postfix=True),
-                          default_case=Id.PASCAL_CASE)
+Record.name_target = _name(get=lambda r: r.name(with_template_postfix=True),
+                           default_case=Id.PASCAL_CASE)
+
+
+def _type_target(self):
+    return TT().target(self)
+
+Type.target = _type_target

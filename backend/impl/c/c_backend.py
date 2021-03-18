@@ -2,7 +2,6 @@ import c_util
 import type_info
 from backend import Backend
 from cppbind import Options
-from type_translator import TypeTranslator as TT
 from text import code
 from util import dotdict
 
@@ -71,17 +70,9 @@ class CBackend(Backend):
             } // extern "C"
             """))
 
-    def wrap_constant(self, v):
-        #XXX generalize
-        self._wrapper_header.append(f"extern {TT().c(v.type())} {v.name_target()};")
-
-        args = dotdict({
-            'v': v
-        })
-
-        self._wrapper_source.append(
-            TT().constant(v.type(), args).format(
-                varin=v.name(), varout=f"{TT().c(v.type())} {v.name_target()}"))
+    def wrap_constant(self, c):
+        self._wrapper_header.append(f"extern {c.type().target()} {c.name_target()};")
+        self._wrapper_source.append(c.assign())
 
     def wrap_record(self, r):
         for f in r.functions():
@@ -114,14 +105,13 @@ class CBackend(Backend):
             body=self._function_body(f))
 
     def _function_header(self, f):
-        #XXX generalize
         if not f.parameters():
             parameters = "void"
         else:
-            parameters = ', '.join(f"{TT().c(p.type())} {p.name_target()}"
+            parameters = ', '.join(f"{p.type().target()} {p.name_target()}"
                                    for p in f.parameters())
 
-        return f"{TT().c(f.return_type())} {f.name_target()}({parameters})"
+        return f"{f.return_type().target()} {f.name_target()}({parameters})"
 
     def _function_body(self, f):
         return code(

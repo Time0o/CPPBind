@@ -10,36 +10,36 @@ class CTypeTranslator(TypeTranslator):
     rule = TypeTranslator.rule
 
     @rule(lambda t: t.is_boolean())
-    def c(cls, t, args):
+    def target(cls, t, args):
         return 'int'
 
     @rule(lambda t: t.is_enum())
-    def c(cls, t, args):
+    def target(cls, t, args):
         return str(t.underlying_integer_type())
 
     @rule(lambda t: t.is_pointer() and t.pointee(recursive=True).is_fundamental())
-    def c(cls, t, args):
+    def target(cls, t, args):
         return str(t)
 
     @rule(lambda t: t.is_reference() and t.referenced().is_fundamental())
-    def c(cls, t, args):
+    def target(cls, t, args):
         return str(t.referenced().pointer_to())
 
     @rule(lambda t: t.is_record() or t.is_pointer() or t.is_reference())
-    def c(cls, t, args):
+    def target(cls, t, args):
         return str(Type('void').pointer_to())
 
     @rule(lambda _: True)
-    def c(cls, t, args):
+    def target(cls, t, args):
         return str(t)
 
     @rule(lambda t: t.is_enum())
     def constant(cls, t, args):
-        return f"{{varout}} = static_cast<{t.underlying_integer_type()}>({{varin}});"
+        return f"{t.target()} {args.c.name_target()} = static_cast<{t.underlying_integer_type()}>({{const}});"
 
     @rule(lambda _: True)
     def constant(cls, t, args):
-        return f"{{varout}} = static_cast<{t}>({{varin}});"
+        return f"{t.target()} {args.c.name_target()} = {{const}};"
 
     @rule(lambda t: t.is_enum())
     def input(cls, t, args):

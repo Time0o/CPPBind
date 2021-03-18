@@ -39,6 +39,14 @@ class LuaTypeTranslator(TypeTranslator):
             raise ValueError(f"no lua type encoding specified for type '{t}'")
 
     @classmethod
+    def _lua_constant_name(cls, t, args):
+        return f'lua_pushstring(L, "{args.c.name_target()}");';
+
+    @classmethod
+    def _lua_constant_register(cls, t, args):
+        return "lua_settable(L, -3);"
+
+    @classmethod
     def _lua_input_skip_defaulted(cls, t, args):
         if args.p.default_argument() is not None:
             return f"if (lua_gettop(L) < {args.i+1}) break;"
@@ -81,6 +89,23 @@ class LuaTypeTranslator(TypeTranslator):
             """,
             num_returns=1 + len(ref_returns),
             ref_returns='\n'.join(ref_returns))
+
+    constant_before = _lua_constant_name.__func__
+    constant_after = _lua_constant_register.__func__
+
+    constant_rule = partial(rule, before=constant_before, after=constant_after)
+
+    @constant_rule(lambda t: t.is_enum())
+    def constant(cls, t, args):
+        return f"{lua_util.pushintegral(f'static_cast<{t.underlying_integer_type()}>({{const}})', constexpr=True)};"
+
+    @constant_rule(lambda t: t.is_integral())
+    def constant(cls, t, args):
+        return f"{lua_util.pushintegral('{const}', constexpr=True)};"
+
+    @constant_rule(lambda t: t.is_floating())
+    def constant(cls, t, args):
+        return f"{lua_util.pushfloating('{const}', constexpr=True)};"
 
     input_before = [
         _lua_input_skip_defaulted.__func__,

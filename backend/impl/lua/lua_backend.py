@@ -214,25 +214,7 @@ class LuaBackend(Backend):
         if not constants:
             return "// no constants"
 
-        def register_constant(v):
-            # XXX generalize
-            if v.type().is_enum():
-                arg = f"static_cast<{v.type().underlying_integer_type()}>({v.name()})"
-                push = f"{lua_util.pushintegral(arg, constexpr=True)}"
-            elif v.type().is_integral():
-                push = f"{lua_util.pushintegral(v.name(), constexpr=True)}"
-            elif v.type().is_floating():
-                push = f"{lua_util.pushfloating(v.name(), constexpr=True)}"
-
-            return code(
-                f"""
-                lua_pushstring(L, "{v.name_target()}");
-                {{push}};
-                lua_settable(L, -3);
-                """,
-                push=push)
-
-        return '\n\n'.join(map(register_constant, constants))
+        return '\n\n'.join(c.assign() for c in constants)
 
     @staticmethod
     def _register_functions(functions):
