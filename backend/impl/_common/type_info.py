@@ -3,6 +3,7 @@ import os
 from backend import Backend
 from collections import OrderedDict
 from file import Path
+from itertools import chain
 from text import code
 
 
@@ -41,7 +42,7 @@ def type_instances():
         if v.type().is_pointer() and not v.pointee().is_record():
             add_type(v.type().pointee())
 
-    for f in Backend().functions():
+    for f in chain(Backend().functions(), *(r.functions() for r in Backend().records())):
         for t in [f.return_type()] + [p.type() for p in f.parameters()]:
             if t.is_pointer() and not t.pointee().is_record():
                 add_type(t.pointee())
