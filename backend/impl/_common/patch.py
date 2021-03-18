@@ -79,9 +79,6 @@ def _function_forward_parameters(self):
             """,
             translate_parameters=translate_parameters)
 
-    if not Options.wrap_noexcept:
-        translate_parameters = self.try_catch(translate_parameters)
-
     return translate_parameters
 
 
@@ -145,10 +142,26 @@ def _function_forward_call(self):
         call=call,
         call_return=call_return)
 
-    if not Options.wrap_noexcept and not self.is_noexcept():
-        call = self.try_catch(call)
-
     return call
+
+
+def _function_forward(self):
+    forward = code(
+        """
+        {declare_parameters}
+
+        {forward_parameters}
+
+        {forward_call}
+        """,
+        declare_parameters=self.declare_parameters(),
+        forward_parameters=self.forward_parameters(),
+        forward_call=self.forward_call())
+
+    if not Options.wrap_noexcept and not self.is_noexcept():
+        forward = self.try_catch(forward)
+
+    return forward
 
 
 def _function_try_catch(self, what):
@@ -177,6 +190,7 @@ def _function_try_catch(self, what):
 Function.declare_parameters = _function_declare_parameters
 Function.forward_parameters = _function_forward_parameters
 Function.forward_call = _function_forward_call
+Function.forward = _function_forward
 Function.try_catch = _function_try_catch
 
 

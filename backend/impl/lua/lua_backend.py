@@ -32,6 +32,9 @@ class LuaBackend(Backend):
 
             {lua_util_include}
 
+            namespace
+            {{
+
             {forward_declarations}
             """,
             input_includes='\n'.join(self.input_includes()),
@@ -44,14 +47,9 @@ class LuaBackend(Backend):
         ## XXX support different Lua versions
         self._wrapper_module.append(code(
             """
-            namespace
-            {{
-
             {register_module}
 
             {create_metatables}
-
-            }} // namespace
 
             extern "C"
             {{
@@ -65,6 +63,8 @@ class LuaBackend(Backend):
             }}
 
             }} // extern "C"
+
+            }} // namespace
             """,
             register_module=self._register(constants=self.constants(),
                                            functions=self.functions(),
@@ -111,6 +111,9 @@ class LuaBackend(Backend):
         forward_declarations = []
 
         for r in self.records():
+            if r.is_abstract():
+                continue
+
             forward_declarations.append(code(
                 f"""
                 namespace __{r.name_target()}
@@ -120,7 +123,8 @@ class LuaBackend(Backend):
 
                 }}}} // namespace __{r.name_target()}
                 """,
-                function_declarations=self._function_declarations(r.functions())))
+                function_declarations=self._function_declarations(
+                    [f for f in r.functions() if not f.is_destructor()])))
 
         return '\n\n'.join(forward_declarations)
 
@@ -158,16 +162,10 @@ class LuaBackend(Backend):
             """
             {check_num_parameters}
 
-            {declare_parameters}
-
-            {forward_parameters}
-
-            {forward_call}
+            {forward}
             """,
             check_num_parameters=cls._function_check_num_parameters(f),
-            declare_parameters=f.declare_parameters(),
-            forward_parameters=f.forward_parameters(),
-            forward_call=f.forward_call())
+            forward=f.forward())
 
     @staticmethod
     def _function_check_num_parameters(f):

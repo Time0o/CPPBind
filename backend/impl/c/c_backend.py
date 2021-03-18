@@ -114,14 +114,4 @@ class CBackend(Backend):
         return f"{f.return_type().target()} {f.name_target()}({parameters})"
 
     def _function_body(self, f):
-        return code(
-            f"""
-            {{declare_parameters}}
-
-            {{forward_parameters}}
-
-            {{forward_call}}
-            """,
-            declare_parameters=f.declare_parameters(),
-            forward_parameters=f.forward_parameters(),
-            forward_call=f.forward_call())
+        return f.forward()

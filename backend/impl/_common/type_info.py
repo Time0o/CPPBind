@@ -30,6 +30,9 @@ def type_instances():
     types = OrderedDict()
 
     def add_type(t, t_bases=None):
+        if t.is_void():
+            return
+
         if t_bases is not None:
             t_bases = tuple(t_bases)
 
