@@ -134,8 +134,8 @@ WrapperFunction::overload(std::shared_ptr<IdentifierIndex> II)
 
 Identifier
 WrapperFunction::getName(bool WithTemplatePostfix,
-                         bool WithoutOperatorName,
-                         bool Overloaded) const
+                         bool WithOverloadPostfix,
+                         bool WithoutOperatorName) const
 {
   Identifier Name(Name_);
 
@@ -149,12 +149,10 @@ WrapperFunction::getName(bool WithTemplatePostfix,
     Name = Identifier(NameStr);
   }
 
-  if (WithTemplatePostfix) {
-    if (isTemplateInstantiation())
-      Name = Identifier(Name.str() + TemplateArgumentList_->str(true));
-  }
+  if (WithTemplatePostfix &&isTemplateInstantiation())
+    Name = Identifier(Name.str() + TemplateArgumentList_->str(true));
 
-  if (Overloaded && isOverloaded()) {
+  if (WithOverloadPostfix && isOverloaded()) {
     auto Postfix = OPT("wrapper-func-overload-postfix");
 
     string::replaceAll(Postfix, "%o", std::to_string(*Overload_));
@@ -163,6 +161,19 @@ WrapperFunction::getName(bool WithTemplatePostfix,
   }
 
   return Name;
+}
+
+WrapperType
+WrapperFunction::getReturnType() const
+{ return ReturnType_; }
+
+std::optional<WrapperType>
+WrapperFunction::getOutType() const
+{
+  if (Parameters_.empty() || !Parameters_.back().isOut())
+    return std::nullopt;
+
+  return Parameters_.back().getType();
 }
 
 std::optional<std::string>
@@ -205,11 +216,20 @@ WrapperFunction::determineEnclosingNamespaces(clang::FunctionDecl const *Decl)
 Identifier
 WrapperFunction::determineName(clang::FunctionDecl const *Decl)
 {
-  if (llvm::isa<clang::CXXConstructorDecl>(Decl))
-    return Identifier(Identifier::NEW);
+  if (llvm::isa<clang::CXXMethodDecl>(Decl)) {
+    if (llvm::isa<clang::CXXConstructorDecl>(Decl)) {
+      auto const *ConstructorDecl = llvm::dyn_cast<clang::CXXConstructorDecl>(Decl);
 
-  if (llvm::isa<clang::CXXDestructorDecl>(Decl))
-    return Identifier(Identifier::DELETE);
+      if (ConstructorDecl->isCopyConstructor())
+        return Identifier(Identifier::COPY);
+      else if (ConstructorDecl->isMoveConstructor())
+        return Identifier(Identifier::MOVE);
+      else
+        return Identifier(Identifier::NEW);
+    } else if (llvm::isa<clang::CXXDestructorDecl>(Decl)) {
+      return Identifier(Identifier::DELETE);
+    }
+  }
 
   return Identifier(Decl);
 }
@@ -295,9 +315,25 @@ WrapperFunction::determineOverloadedOperator(clang::FunctionDecl const *Decl)
   if (!Decl->isOverloadedOperator())
     return std::nullopt;
 
+  bool IsCopyAssignment = false;
+  bool IsMoveAssignment = false;
+
+  if (llvm::isa<clang::CXXMethodDecl>(Decl)) {
+    auto const *MethodDecl = llvm::dyn_cast<clang::CXXMethodDecl>(Decl);
+
+    IsCopyAssignment = MethodDecl->isCopyAssignmentOperator();
+    IsMoveAssignment = MethodDecl->isMoveAssignmentOperator();
+  }
+
   switch (Decl->getOverloadedOperator()) {
 #define OVERLOADED_OPERATOR(Name,Spelling,Token,Unary,Binary,MemberOnly) \
-  case OO_##Name: return OverloadedOperator{#Name, Spelling};
+  case OO_##Name: \
+    { \
+      OverloadedOperator OO(#Name, Spelling); \
+      OO.IsCopyAssignment = IsCopyAssignment; \
+      OO.IsMoveAssignment = IsMoveAssignment; \
+      return OO; \
+    }
 #include "clang/Basic/OperatorKinds.def"
   default:
     llvm_unreachable("invalid overloaded operator kind");
@@ -308,6 +344,12 @@ std::string
 WrapperFunction::determineOverloadedOperatorName(OverloadedOperator const &OO)
 {
   // XXX what about conflicts?
+
+  if (OO.IsCopyAssignment)
+    return "copy_assign";
+
+  if (OO.IsMoveAssignment)
+    return "move_assign";
 
   static std::unordered_map<std::string, std::string> OONames {
     {"Arrow", "access"},
@@ -347,6 +389,7 @@ WrapperFunctionBuilder::setParent(WrapperRecord const *Parent)
   auto ParentNameTemplated(Parent->getName(true));
   auto ParentType(Parent->getType());
 
+  Wf_.Parent_ = Parent;
   Wf_.IsMember_ = true;
 
   Wf_.Name_ = Wf_.Name_.unqualified().qualified(ParentNameTemplated);
@@ -359,7 +402,7 @@ WrapperFunctionBuilder::setParent(WrapperRecord const *Parent)
     else
       SelfType = ParentType.pointerTo();
 
-    WrapperParameter Self(Identifier(Identifier::SELF), SelfType);
+    WrapperParameter Self(WrapperParameter::self(SelfType));
 
     if (!Wf_.Parameters_.empty() && Wf_.Parameters_.front().isSelf())
       Wf_.Parameters_.front() = Self;
@@ -384,18 +427,6 @@ WrapperFunctionBuilder &
 WrapperFunctionBuilder::setReturnType(WrapperType const &ReturnType)
 {
   Wf_.ReturnType_ = ReturnType;
-  return *this;
-}
-
-WrapperFunctionBuilder &
-WrapperFunctionBuilder::addParameter(WrapperParameter const &Param)
-{
-#ifndef NDEBUG
-  if (!Param.getDefaultArgument() && !Wf_.Parameters_.empty())
-      assert(!Wf_.Parameters_.back().getDefaultArgument());
-#endif
-
-  Wf_.Parameters_.emplace_back(Param);
   return *this;
 }
 

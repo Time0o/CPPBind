@@ -1,9 +1,9 @@
+import c_patch
+import c_type_translator
 import c_util
-import type_info
 from backend import Backend
-from cppbind import Options
+from cppbind import Identifier as Id, Options
 from text import code
-from util import dotdict
 
 
 class CBackend(Backend):
@@ -35,23 +35,38 @@ class CBackend(Backend):
 
         self._wrapper_source.append(code(
             """
+            #include <cassert>
             #include <cerrno>
             #include <exception>
             #include <utility>
 
             {input_includes}
 
-            {type_info_include}
+            namespace {{
 
-            {type_info_type_instances}
+            template<typename T, typename S>
+            T *__struct_cast(S *s) {{
+              if (s->is_owning)
+                return reinterpret_cast<T *>(&s->obj.mem);
+              else
+                return static_cast<T *>(s->obj.ptr);
+            }}
+
+            template<typename S, typename T>
+            T const *__struct_cast(S const *s) {{
+              if (s->is_owning)
+                return reinterpret_cast<T const *>(&s->obj.mem);
+              else
+                return static_cast<T const *>(s->obj.ptr);
+            }}
+
+            }} // namespace
 
             extern "C" {{
 
             {wrapper_header_include}
             """,
             input_includes='\n'.join(self.input_includes()),
-            type_info_include=type_info.path().include(),
-            type_info_type_instances=type_info.type_instances(),
             wrapper_header_include=self._wrapper_header.include()))
 
     def wrap_after(self):
@@ -75,9 +90,10 @@ class CBackend(Backend):
         self._wrapper_source.append(c.assign())
 
     def wrap_record(self, r):
+        self._wrapper_header.append(self._record_definition(r))
+
         for f in r.functions():
-            if not f.is_destructor():
-                self.wrap_function(f)
+            self.wrap_function(f)
 
     def wrap_function(self, f):
         self._wrapper_header.append(self._function_declaration(f))
@@ -87,6 +103,22 @@ class CBackend(Backend):
         guard_id = self.input_file().filename().upper()
 
         return f"GUARD_{guard_id}_C_H"
+
+    def _record_definition(self, r):
+        return code(
+            f"""
+            {r.type().c_struct()}
+            {{
+              union {{
+                char mem[{r.type().size()}];
+                void *ptr;
+              }} obj;
+
+              int is_initialized;
+              int is_const;
+              int is_owning;
+            }};
+            """)
 
     def _function_declaration(self, f):
         header = self._function_header(f)
@@ -105,13 +137,36 @@ class CBackend(Backend):
             body=self._function_body(f))
 
     def _function_header(self, f):
-        if not f.parameters():
+        name = f.name_target()
+
+        return_type = f.return_type().target()
+
+        parameters = [
+            f"{p.type().target()} {p.name_target()}"
+            for p in f.parameters()
+        ]
+
+        out_type = None
+
+        if f.return_type().is_record():
+            out_type = f.return_type()
+        elif f.return_type().is_pointer() and f.return_type().pointee().is_record():
+            out_type = f.return_type().pointee()
+        elif f.return_type().is_reference() and f.return_type().referenced().is_record():
+            out_type = f.return_type().referenced()
+
+        f.out_type = lambda: out_type
+
+        if f.out_type() is not None:
+            return_type = "void"
+            parameters.append(f"{out_type.without_const().pointer_to().target()} {Id.OUT}")
+
+        if not parameters:
             parameters = "void"
         else:
-            parameters = ', '.join(f"{p.type().target()} {p.name_target()}"
-                                   for p in f.parameters())
+            parameters = ', '.join(parameters)
 
-        return f"{f.return_type().target()} {f.name_target()}({parameters})"
+        return f"{return_type} {name}({parameters})"
 
     def _function_body(self, f):
         return f.forward()

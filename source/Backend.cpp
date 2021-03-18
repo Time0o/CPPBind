@@ -47,7 +47,6 @@ void Backend::run(std::string const &InputFile,
 
     addModuleSearchPath(Sys, (path(BACKEND_IMPL_DIR) / BE).string());
 
-    auto TypetransModule(importModule(BE + BACKEND_IMPL_TYPETRANS_MOD_POSTFIX));
     auto BackendModule(importModule(BE + BACKEND_IMPL_BACKEND_MOD_POSTFIX));
 
     auto RunModule(importModule(BACKEND_IMPL_RUN_MOD));
@@ -94,8 +93,13 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
   PyIdentifier
     .def_readonly_static("SELF", &Identifier::SELF)
     .def_readonly_static("RET", &Identifier::RET)
+    .def_readonly_static("OUT", &Identifier::OUT)
     .def_readonly_static("NEW", &Identifier::NEW)
     .def_readonly_static("DELETE", &Identifier::DELETE)
+    .def_readonly_static("COPY", &Identifier::COPY)
+    .def_readonly_static("MOVE", &Identifier::MOVE)
+    .def_readonly_static("COPY_ASSIGN", &Identifier::COPY_ASSIGN)
+    .def_readonly_static("MOVE_ASSIGN", &Identifier::MOVE_ASSIGN)
     .def(py::init<std::string>())
     .def(py::self == py::self)
     .def(py::self != py::self)
@@ -134,8 +138,15 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def(py::self == py::self)
     .def(py::self != py::self)
     .def(hash(py::self))
-    .def("__str__", &WrapperType::str)
-    .def("str", &WrapperType::str)
+    .def("__str__", [](WrapperType const &Self){ return Self.str(); })
+    .def("str", &WrapperType::str,
+         "with_template_postfix"_a = false)
+    .def("format", &WrapperType::format,
+         "with_template_postfix"_a = false,
+         "with_prefix"_a = "",
+         "with_postfix"_a = "",
+         "case"_a = Identifier::ORIG_CASE,
+         "quals"_a = Identifier::KEEP_QUALS)
     .def("mangled", &WrapperType::mangled)
     .def("is_const", &WrapperType::isConst)
     .def("is_fundamental", &WrapperType::isFundamental, "which"_a = nullptr)
@@ -163,7 +174,10 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("qualified", &WrapperType::qualified, "qualifiers"_a = 0u)
     .def("unqualified", &WrapperType::unqualified)
     .def("with_const", &WrapperType::withConst)
-    .def("without_const", &WrapperType::withoutConst);
+    .def("without_const", &WrapperType::withoutConst)
+    .def("size", &WrapperType::size);
+
+  py::implicitly_convertible<std::string, Type>();
 
   py::class_<Constant>(m, "Constant", py::dynamic_attr())
     .def("name", &WrapperConstant::getName)
@@ -171,13 +185,15 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
 
   py::class_<Function>(m, "Function", py::dynamic_attr())
     .def("name", &WrapperFunction::getName, "with_template_postfix"_a = false,
-                                            "without_operator_name"_a = false,
-                                            "overloaded"_a = false)
+                                            "with_overload_postfix"_a = false,
+                                            "without_operator_name"_a = false)
     .def("enclosing_namespaces", &WrapperFunction::getEnclosingNamespaces)
-    .def("return_type", &WrapperFunction::getReturnType)
+    .def("return_type", &Function::getReturnType)
+    .def("out_type", &Function::getOutType)
     .def("parameters",
          py::overload_cast<>(&WrapperFunction::getParameters, py::const_),
          py::return_value_policy::reference_internal)
+    .def("parent", &WrapperFunction::getParent)
     .def("overloaded_operator", &WrapperFunction::getOverloadedOperator)
     .def("template_argument_list", &WrapperFunction::getTemplateArgumentList)
     .def("is_member", &WrapperFunction::isMember)
@@ -194,7 +210,8 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("name", &WrapperParameter::getName)
     .def("type", &WrapperParameter::getType)
     .def("default_argument", &WrapperParameter::getDefaultArgument)
-    .def("is_self", &WrapperParameter::isSelf);
+    .def("is_self", &WrapperParameter::isSelf)
+    .def("is_out", &WrapperParameter::isOut);
 
   auto PyRecord = py::class_<Record>(m, "Record", py::dynamic_attr())
     .def("name", &WrapperRecord::getName, "with_template_postfix"_a = false)

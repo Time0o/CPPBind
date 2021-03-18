@@ -29,17 +29,19 @@ int main()
 
   /* record templates */
   {
-    void *any_stack = test_any_stack_int_new();
+    struct test_any_stack_int any_stack;
+    test_any_stack_int_new(&any_stack);
 
-    test_any_stack_int_push_int(any_stack, 1);
-    test_any_stack_int_push_double(any_stack, 3.14);
+    test_any_stack_int_push_int(&any_stack, 1);
+    test_any_stack_int_push_double(&any_stack, 3.14);
 
-    assert(test_any_stack_int_pop_double(any_stack) == 3.14);
-    assert(test_any_stack_int_pop_int(any_stack) == 1);
+    assert(test_any_stack_int_pop_double(&any_stack) == 3.14);
+    assert(test_any_stack_int_pop_int(&any_stack) == 1);
 
-    assert(test_any_stack_int_empty(any_stack));
+    assert(test_any_stack_int_empty(&any_stack));
 
-    bind_delete(any_stack);
+    test_any_stack_int_delete(&any_stack);
   }
+
   return 0;
 }

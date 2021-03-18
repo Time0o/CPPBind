@@ -1,4 +1,5 @@
 #include <cassert>
+#include <optional>
 #include <stack>
 #include <string>
 #include <vector>
@@ -10,6 +11,7 @@
 #include "Identifier.hpp"
 #include "Print.hpp"
 #include "String.hpp"
+#include "TemplateArgument.hpp"
 #include "WrapperType.hpp"
 
 namespace cppbind
@@ -20,7 +22,8 @@ WrapperType::WrapperType()
 {}
 
 WrapperType::WrapperType(clang::QualType const &Type)
-: Type_(Type.getDesugaredType(ASTContext()))
+: Type_(determineDesugaredType(Type)),
+  TemplateArgumentList_(determineTemplateArgumentList(Type))
 {}
 
 WrapperType::WrapperType(clang::Type const *Type)
@@ -42,6 +45,10 @@ WrapperType::operator==(WrapperType const &Other) const
 bool
 WrapperType::operator<(WrapperType const &Other) const
 { return mangled() < Other.mangled(); }
+
+bool
+WrapperType::isTemplateInstantiation() const
+{ return static_cast<bool>(TemplateArgumentList_); }
 
 bool
 WrapperType::isFundamental(char const *Which) const
@@ -240,13 +247,69 @@ WrapperType::setBase(WrapperType const &NewBase)
   *this = NewType;
 }
 
+std::size_t
+WrapperType::size() const
+{ return ASTContext().getTypeInfo(type()).Width; }
+
 std::string
-WrapperType::str() const
-{ return print::qualType(type()); }
+WrapperType::str(bool WithTemplatePostfix) const
+{ return format(WithTemplatePostfix); }
+
+std::string
+WrapperType::format(bool WithTemplatePostfix,
+                    std::string const &WithPrefix,
+                    std::string const &WithPostfix,
+                    Identifier::Case Case,
+                    Identifier::Quals Quals) const
+{
+  auto Base(getBase());
+
+  if (Base.isRecord()) {
+    auto Str(print::qualType(type()));
+
+    auto StrBase(print::qualType(requalifyType(Base.type(), 0u)));
+
+    auto StrReplace = StrBase;
+
+    if (WithTemplatePostfix && Base.isTemplateInstantiation()) {
+      StrReplace = TemplateArgumentList::strip(StrReplace)
+                 + Base.TemplateArgumentList_->str(true);
+    }
+
+    StrReplace = Identifier(StrReplace).format(Case, Quals);
+
+    StrReplace = WithPrefix + StrReplace + WithPostfix;
+
+    string::replace(Str, StrBase, StrReplace);
+
+    return Str;
+
+  } else {
+    return print::qualType(type());
+  }
+}
 
 std::string
 WrapperType::mangled() const
 { return print::mangledQualType(type()); }
+
+clang::QualType
+WrapperType::determineDesugaredType(clang::QualType const &Type)
+{ return Type.getDesugaredType(ASTContext()); }
+
+std::optional<TemplateArgumentList>
+WrapperType::determineTemplateArgumentList(clang::QualType const &Type)
+{
+  auto CXXRecordDecl = Type->getAsCXXRecordDecl();
+  if (!CXXRecordDecl)
+    return std::nullopt;
+
+  if (!llvm::isa<clang::ClassTemplateSpecializationDecl>(CXXRecordDecl))
+    return std::nullopt;
+
+  return TemplateArgumentList(
+    llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(CXXRecordDecl)->getTemplateArgs());
+}
 
 clang::QualType const &
 WrapperType::type() const

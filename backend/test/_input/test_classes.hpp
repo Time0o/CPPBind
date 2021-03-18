@@ -12,10 +12,13 @@ struct Trivial
 struct NonConstructible
 {
   NonConstructible() = delete;
+  ~NonConstructible() = delete;
 };
 
 struct ImplicitlyNonConstructible
 {
+  ~ImplicitlyNonConstructible() = delete;
+
   int &dummy;
 };
 
@@ -197,24 +200,20 @@ inline ClassParameter add_class(ClassParameter a,
 }
 
 // pointer parameters
-inline ClassParameter *add_class_pointer(ClassParameter *a,
-                                         ClassParameter const *b)
+inline ClassParameter const *add_class_pointer(ClassParameter *a,
+                                               ClassParameter const *b)
 {
   a->set_state(a->get_state() + b->get_state());
   return a;
 }
 
-// XXX pointer to pointer
-
 // lvalue reference parameters
-inline ClassParameter &add_class_lvalue_ref(ClassParameter &a,
-                                            ClassParameter const &b)
+inline ClassParameter const &add_class_lvalue_ref(ClassParameter &a,
+                                                  ClassParameter const &b)
 {
   a.set_state(a.get_state() + b.get_state());
   return a;
 }
-
-// XXX lvalue reference to pointer
 
 // rvalue reference parameters
 inline void noop_class_rvalue_ref(ClassParameter &&a)

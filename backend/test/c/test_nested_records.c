@@ -13,9 +13,23 @@ void test_func_local()
 
 int main()
 {
-  bind_delete(test_toplevel_new());
-  bind_delete(test_toplevel_nested_public_new());
-  bind_delete(test_toplevel_nested_public_nested_nested_public_new());
+  {
+    struct test_toplevel obj;
+    test_toplevel_new(&obj);
+    test_toplevel_delete(&obj);
+  }
+
+  {
+    struct test_toplevel_nested_public obj;
+    test_toplevel_nested_public_new(&obj);
+    test_toplevel_nested_public_delete(&obj);
+  }
+
+  {
+    struct test_toplevel_nested_public_nested_nested_public obj;
+    test_toplevel_nested_public_nested_nested_public_new(&obj);
+    test_toplevel_nested_public_nested_nested_public_delete(&obj);
+  }
 
   return 0;
 }

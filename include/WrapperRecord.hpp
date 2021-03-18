@@ -13,6 +13,7 @@
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
 #include "LLVMFormat.hpp"
+#include "Mixin.hpp"
 #include "TemplateArgument.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperObject.hpp"
@@ -22,7 +23,8 @@
 namespace cppbind
 {
 
-class WrapperRecord : public WrapperObject<clang::CXXRecordDecl>
+class WrapperRecord : public WrapperObject<clang::CXXRecordDecl>,
+                      public mixin::NotCopyOrMoveable
 {
 public:
   explicit WrapperRecord(clang::CXXRecordDecl const *Decl);

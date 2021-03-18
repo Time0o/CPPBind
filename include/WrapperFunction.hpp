@@ -54,6 +54,9 @@ public:
   static WrapperParameter self(WrapperType const &Type)
   { return WrapperParameter(Identifier(Identifier::SELF), Type); }
 
+  static WrapperParameter out(WrapperType const &Type)
+  { return WrapperParameter(Identifier(Identifier::OUT), Type); }
+
   Identifier getName() const
   { return Name_; }
 
@@ -65,6 +68,9 @@ public:
 
   bool isSelf() const
   { return Name_ == Identifier(Identifier::SELF); }
+
+  bool isOut() const
+  { return Name_ == Identifier(Identifier::OUT); }
 
 private:
   static std::optional<std::string> determineDefaultArgument(
@@ -80,7 +86,18 @@ class WrapperFunction : public WrapperObject<clang::FunctionDecl>
 {
   friend class WrapperFunctionBuilder;
 
-  struct OverloadedOperator { std::string Name; std::string Spelling; };
+  struct OverloadedOperator {
+    OverloadedOperator(std::string const &Name, std::string const &Spelling)
+    : Name(Name),
+      Spelling(Spelling)
+    {}
+
+    std::string Name;
+    std::string Spelling;
+
+    bool IsCopyAssignment = false;
+    bool IsMoveAssignment = false;
+  };
 
 public:
   WrapperFunction(Identifier const &Name);
@@ -97,8 +114,8 @@ public:
   void overload(std::shared_ptr<IdentifierIndex> II);
 
   Identifier getName(bool WithTemplatePostfix = false,
-                     bool WithoutOperatorName = false,
-                     bool Overloaded = false) const;
+                     bool WithOverloadPostfix = false,
+                     bool WithoutOperatorName = false) const;
 
   std::deque<Identifier> const &getEnclosingNamespaces() const
   { return EnclosingNamespaces_; }
@@ -109,8 +126,12 @@ public:
   std::deque<WrapperParameter> &getParameters()
   { return Parameters_; }
 
-  WrapperType getReturnType() const
-  { return ReturnType_; }
+  WrapperType getReturnType() const;
+
+  std::optional<WrapperType> getOutType() const;
+
+  WrapperRecord const *getParent() const
+  { return Parent_; }
 
   std::optional<std::string> getOverloadedOperator() const;
 
@@ -183,6 +204,8 @@ private:
 
   std::optional<unsigned> Overload_;
 
+  WrapperRecord const *Parent_ = nullptr;
+
   Identifier Name_;
   std::deque<Identifier> EnclosingNamespaces_;
   WrapperType ReturnType_;
@@ -208,12 +231,30 @@ public:
   WrapperFunctionBuilder &setName(Identifier const &Name);
   WrapperFunctionBuilder &setParent(WrapperRecord const *Parent);
   WrapperFunctionBuilder &setReturnType(WrapperType const &ReturnType);
-  WrapperFunctionBuilder &addParameter(WrapperParameter const &Param);
   WrapperFunctionBuilder &setIsConstructor(bool Val = true);
   WrapperFunctionBuilder &setIsDestructor(bool Val = true);
   WrapperFunctionBuilder &setIsStatic(bool Val = true);
   WrapperFunctionBuilder &setIsConst(bool Val = true);
   WrapperFunctionBuilder &setIsNoexcept(bool Val = true);
+
+  template<typename ...ARGS>
+  WrapperFunctionBuilder &pushParameter(ARGS const & ...Args)
+  {
+    WrapperParameter Param(Args...);
+#ifndef NDEBUG
+    if (!Param.getDefaultArgument() && !Wf_.Parameters_.empty())
+        assert(!Wf_.Parameters_.back().getDefaultArgument());
+#endif
+
+    Wf_.Parameters_.emplace_back(Param);
+    return *this;
+  }
+
+  WrapperFunctionBuilder &popParameter()
+  {
+    Wf_.Parameters_.pop_back();
+    return *this;
+  }
 
   WrapperFunction build() const
   { return Wf_; }

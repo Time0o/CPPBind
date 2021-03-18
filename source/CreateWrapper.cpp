@@ -34,9 +34,12 @@ CreateWrapperVisitor::VisitCXXRecordDecl(clang::CXXRecordDecl *Decl)
 
   auto &Sema(CompilerState()->getSema());
 
-  if (Decl->isThisDeclarationADefinition() &&
-      Decl->needsImplicitDefaultConstructor())
-    Sema.DeclareImplicitDefaultConstructor(Decl);
+  if (Decl->isThisDeclarationADefinition()) {
+    if (Decl->needsImplicitDefaultConstructor())
+      Sema.DeclareImplicitDefaultConstructor(Decl);
+    if (Decl->needsImplicitDestructor())
+      Sema.DeclareImplicitDestructor(Decl);
+  }
 
   return true;
 }

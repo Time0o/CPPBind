@@ -1,7 +1,4 @@
-import type_info as ti
-
-from cppbind import Type
-from functools import partial
+from cppbind import Identifier as Id
 from text import code
 from type_translator import TypeTranslator
 
@@ -25,9 +22,18 @@ class CTypeTranslator(TypeTranslator):
     def target(cls, t, args):
         return str(t.referenced().pointer_to())
 
-    @rule(lambda t: t.is_record() or t.is_pointer() or t.is_reference())
+    @rule(lambda t: t.is_record())
     def target(cls, t, args):
-        return str(Type('void').pointer_to())
+        return t.pointer_to().c_struct()
+
+    @rule(lambda t: t.is_pointer() and t.pointee().is_record() or \
+                    t.is_reference() and t.referenced().is_record())
+    def target(cls, t, args):
+        return t.pointee().pointer_to().c_struct()
+
+    @rule(lambda t: t.is_pointer() or t.is_reference())
+    def target(cls, t, args):
+        raise ValueError("unsupported target pointer/reference type {}".format(t))
 
     @rule(lambda _: True)
     def target(cls, t, args):
@@ -45,14 +51,37 @@ class CTypeTranslator(TypeTranslator):
     def input(cls, t, args):
         return f"{{interm}} = static_cast<{t}>({{inp}});"
 
+    @rule(lambda t: t.is_pointer() and t.pointee(recursive=True).is_fundamental() or \
+                    t.is_reference() and t.referenced().is_fundamental())
+    def input(cls, t, args):
+        return "{interm} = {inp};"
+
     @rule(lambda t: t.is_record())
     def input(cls, t, args):
-        return f"{{interm}} = {ti.typed_pointer_cast(t, '{inp}')};"
+        return code(
+            f"""
+            assert({{inp}}->is_initialized);
+            {{interm}} = __struct_cast<{t}>({{inp}});
+            """)
 
-    @rule(lambda t: t.is_pointer() and not t.pointee(recursive=True).is_fundamental() or \
-                    t.is_reference() and not t.referenced().is_fundamental())
+    @rule(lambda t: (t.is_pointer() or t.is_reference()) and t.pointee().is_record())
     def input(cls, t, args):
-        return f"{{interm}} = {ti.typed_pointer_cast(t.pointee(), '{inp}')};"
+        assertions = ["assert({inp}->is_initialized);"]
+
+        if not t.pointee().is_const() and not args.f.is_destructor():
+            assertions.append("assert(!{inp}->is_const);")
+
+        return code(
+            """
+            {assertions}
+            {{interm}} = __struct_cast<{t}>({{inp}});
+            """,
+            assertions='\n'.join(assertions),
+            t=t.pointee())
+
+    @rule(lambda t: t.is_pointer() or t.is_reference())
+    def input(cls, t, args):
+        raise ValueError("unsupported input pointer/reference type {}".format(t))
 
     @rule(lambda _: True)
     def input(cls, t, args):
@@ -66,14 +95,49 @@ class CTypeTranslator(TypeTranslator):
     def output(cls, t, args):
         return f"return static_cast<{t.underlying_integer_type()}>({{outp}});"
 
+    @rule(lambda t: t.is_pointer() and t.pointee(recursive=True).is_fundamental() or \
+                    t.is_reference() and t.referenced().is_fundamental())
+    def output(cls, t, args):
+        return "return {outp};"
+
     @rule(lambda t: t.is_record())
     def output(cls, t, args):
-        return f"return {ti.make_typed(f'new {t}({{outp}})', owning=True)};"
+        return code(
+            f"""
+            new ({Id.OUT}->obj.mem) {t}({{outp}});
+            {Id.OUT}->is_initialized = 1;
+            {Id.OUT}->is_const = 0;
+            {Id.OUT}->is_owning = 1;
+            """)
 
-    @rule(lambda t: t.is_pointer() and not t.pointee(recursive=True).is_fundamental() or \
-                    t.is_lvalue_reference() and not t.referenced().is_fundamental())
+    @rule(lambda t: (t.is_pointer() or t.is_reference()) and \
+                    t.pointee().is_record() and t.pointee().is_const())
     def output(cls, t, args):
-        return f"return {ti.make_typed('{outp}', owning=args.f.is_constructor())};"
+        return code(
+            f"""
+            {Id.OUT}->obj.ptr = const_cast<void *>(static_cast<void const *>({{outp}}));
+            {Id.OUT}->is_initialized = 1;
+            {Id.OUT}->is_const = 1;
+            {Id.OUT}->is_owning = 0;
+            """)
+
+    @rule(lambda t: (t.is_pointer() or t.is_reference()) and \
+                    t.pointee().is_record())
+    def output(cls, t, args):
+        if args.f.is_constructor():
+            return "static_cast<void>({outp});"
+
+        return code(
+            f"""
+            {Id.OUT}->obj.ptr = static_cast<void *>({{outp}});
+            {Id.OUT}->is_initialized = 1;
+            {Id.OUT}->is_const = 0;
+            {Id.OUT}->is_owning = 0;
+            """)
+
+    @rule(lambda t: t.is_pointer() or t.is_reference())
+    def output(cls, t, args):
+        raise ValueError("unsupported output pointer/reference type {}".format(t))
 
     @rule(lambda _: True)
     def output(cls, t, args):
@@ -82,7 +146,7 @@ class CTypeTranslator(TypeTranslator):
     def exception(cls, args):
         ex = "errno = EBIND;"
 
-        if not args.f.return_type().is_void():
+        if args.f.out_type() is None and not args.f.return_type().is_void():
             # XXX return some default value
             ex = code(
                 f"""

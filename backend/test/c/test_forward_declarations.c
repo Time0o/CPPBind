@@ -7,11 +7,12 @@ int main()
   assert(test_add(1, 2) == 3);
 
   {
-    void *adder = test_adder_new();
+    struct test_adder adder;
+    test_adder_new(&adder);
 
-    assert(test_adder_add(adder, 1, 2) == 3);
+    assert(test_adder_add(&adder, 1, 2) == 3);
 
-    bind_delete(adder);
+    test_adder_delete(&adder);
   }
 
   return 0;

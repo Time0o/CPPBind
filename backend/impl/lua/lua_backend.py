@@ -1,6 +1,6 @@
-import type_info
 import lua_util
-
+import lua_type_translator
+import type_info
 from backend import Backend
 from cppbind import Options
 from text import code

@@ -17,6 +17,7 @@
 #include "FundamentalTypes.hpp"
 #include "Identifier.hpp"
 #include "LLVMFormat.hpp"
+#include "TemplateArgument.hpp"
 
 namespace cppbind
 {
@@ -48,6 +49,7 @@ public:
   bool operator>=(WrapperType const &Other) const
   { return !operator<(Other); }
 
+  bool isTemplateInstantiation() const;
   bool isFundamental(char const *Which = nullptr) const;
   bool isVoid() const;
   bool isBoolean() const;
@@ -81,11 +83,25 @@ public:
   WrapperType withConst() const;
   WrapperType withoutConst() const;
 
-  std::string str() const;
+  std::size_t size() const;
+
+  std::string str(bool WithTemplatePostfix = false) const;
+
+  std::string format(bool WithTemplatePostfix = false,
+                     std::string const &WithPrefix = "",
+                     std::string const &WithPostfix = "",
+                     Identifier::Case Case = Identifier::ORIG_CASE,
+                     Identifier::Quals Quals = Identifier::KEEP_QUALS) const;
 
   std::string mangled() const;
 
 private:
+  static clang::QualType
+  determineDesugaredType(clang::QualType const &Type);
+
+  static std::optional<TemplateArgumentList>
+  determineTemplateArgumentList(clang::QualType const &Type);
+
   clang::QualType const &type() const;
   clang::Type const *typePtr() const;
   clang::QualType baseType() const;
@@ -98,6 +114,8 @@ private:
                                        unsigned Qualifiers);
 
   clang::QualType Type_;
+
+  std::optional<TemplateArgumentList> TemplateArgumentList_;
 };
 
 inline std::size_t hash_value(WrapperType const &Wt)

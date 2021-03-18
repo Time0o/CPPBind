@@ -200,13 +200,6 @@ WrapperRecord::prunePublicMemberFunctionDecls(
     if (llvm::isa<clang::CXXConstructorDecl>(MethodDecl)) {
       if (Decl->isAbstract())
         continue;
-
-      auto const *ConstructorDecl =
-        llvm::dyn_cast<clang::CXXConstructorDecl>(MethodDecl);
-
-      if (ConstructorDecl->isCopyConstructor() ||
-          ConstructorDecl->isMoveConstructor())
-        continue;
     }
 
     if (llvm::isa<clang::CXXDestructorDecl>(MethodDecl)) {

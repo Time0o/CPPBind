@@ -182,9 +182,7 @@ class BackendTestGenerator:
                       compiler='clang',
                       **kwargs)
 
-        extra_objs = self._compile_extra(['cppbind/c/c_util.cc'], **kwargs)
-
-        self._link([cpp_obj, c_obj] + extra_objs, test_bin, **kwargs)
+        self._link([cpp_obj, c_obj], test_bin, **kwargs)
 
     def _compile_lua_test(self, test, **kwargs):
         mod_src = self._test_wrapper(test, ext='.cc')

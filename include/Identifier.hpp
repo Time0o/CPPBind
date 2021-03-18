@@ -19,8 +19,13 @@ class Identifier
 public:
   static constexpr char const *SELF = "__self";
   static constexpr char const *RET = "__ret";
+  static constexpr char const *OUT = "__out";
   static constexpr char const *NEW = "new";
   static constexpr char const *DELETE = "delete";
+  static constexpr char const *COPY = "copy";
+  static constexpr char const *MOVE = "move";
+  static constexpr char const *COPY_ASSIGN = "copy_assign";
+  static constexpr char const *MOVE_ASSIGN = "move_assign";
 
   enum Case
   {

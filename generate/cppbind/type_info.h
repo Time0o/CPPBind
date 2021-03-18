@@ -130,7 +130,7 @@ public:
   { return _move(obj); }
 
   void destroy(void const *obj) const override
-  { delete static_cast<T const *>(obj); }
+  { _destroy(obj); }
 
   void const *cast(type const *to, void const *obj) const override
   {
@@ -170,6 +170,16 @@ private:
   typename std::enable_if<!std::is_move_constructible<U>::value, void *>::type
   _move(void *) const
   { throw std::bad_cast(); }
+
+  template<typename U = T>
+  typename std::enable_if<std::is_destructible<U>::value>::type
+  _destroy(void const *obj) const
+  { delete static_cast<T const *>(obj); }
+
+  template<typename U = T>
+  typename std::enable_if<!std::is_destructible<U>::value>::type
+  _destroy(void const *) const
+  {}
 
   template<typename U>
   static void const *cast(void const *obj)

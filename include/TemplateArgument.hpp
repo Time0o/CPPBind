@@ -55,6 +55,9 @@ public:
     }
   }
 
+  static std::string strip(std::string const &What)
+  { return What.substr(0, What.find('<')); }
+
   bool operator==(TemplateArgumentList const &Other) const
   { return Args_ == Other.Args_; }
 
