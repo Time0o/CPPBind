@@ -30,7 +30,7 @@ void OptionsRegistry::init()
     .setDefault(false)
     .done();
 
-  Options().add<bool>("wrap-noexcept")
+  Options().add<bool>("output-noexcept")
     .setDescription("Don't catch and propagate exceptions in wrapped code")
     .setDefault(false)
     .done();
@@ -87,6 +87,18 @@ void OptionsRegistry::init()
 
   Options().add<bool>("output-relative-includes")
     .setDescription("Use relative include paths in generated files")
+    .setDefault(false)
+    .done();
+
+  // XXX backend options should not be implemented in C++
+  Options().add<std::string>("lua-include-dir")
+    .setDescription("Directory containing lua.h etc.")
+    .setDefault("")
+    .done();
+
+  // XXX backend options should not be implemented in C++
+  Options().add<bool>("lua-include-cpp")
+    .setDescription("Treat lua.h etc. as C++ headers")
     .setDefault(false)
     .done();
 

@@ -18,11 +18,7 @@ class LuaBackend(Backend):
             """
             #define LUA_LIB
 
-            extern "C"
-            {{
-              #include "lua.h"
-              #include "lauxlib.h"
-            }}
+            {lua_includes}
 
             {input_includes}
 
@@ -37,6 +33,7 @@ class LuaBackend(Backend):
 
             {forward_declarations}
             """,
+            lua_includes=self._lua_includes(),
             input_includes='\n'.join(self.input_includes()),
             type_info_include=type_info.path().include(),
             type_info_type_instances=type_info.type_instances(),
@@ -106,6 +103,30 @@ class LuaBackend(Backend):
             }} // namespace
             """,
             function_definition=self._function_definition(f)))
+
+    @staticmethod
+    def _lua_includes():
+        lua_includes = ['lua.h', 'lauxlib.h']
+
+        if Options.lua_include_dir:
+            lua_includes = [
+                os.path.join(Options.lua_include_dir, inc)
+                for inc in lua_includes
+            ]
+
+        lua_includes = '\n'.join(f'#include "{inc}"' for inc in lua_includes)
+
+        if not Options.lua_include_cpp:
+            lua_includes = code(
+                """
+                extern "C"
+                {{
+                  {lua_includes}
+                }}
+                """,
+                lua_includes=lua_includes)
+
+        return lua_includes
 
     def _function_forward_declarations(self):
         forward_declarations = []

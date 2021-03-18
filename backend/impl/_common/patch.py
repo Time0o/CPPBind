@@ -158,7 +158,7 @@ def _function_forward(self):
         forward_parameters=self.forward_parameters(),
         forward_call=self.forward_call())
 
-    if not Options.wrap_noexcept and not self.is_noexcept():
+    if not Options.output_noexcept and not self.is_noexcept():
         forward = self.try_catch(forward)
 
     return forward

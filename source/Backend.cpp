@@ -213,11 +213,13 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
   struct Options_ {};
 
   py::class_<Options_>(m, "Options")
-    RO_PROP("wrap_noexcept", OPT(bool, "wrap-noexcept"))
+    RO_PROP("output_noexcept", OPT(bool, "output-noexcept"))
     RO_PROP("output_directory", OPT("output-directory"))
     RO_PROP("output_c_header_extension", OPT("output-c-header-extension"))
     RO_PROP("output_c_source_extension", OPT("output-c-source-extension"))
     RO_PROP("output_cpp_header_extension", OPT("output-cpp-header-extension"))
     RO_PROP("output_cpp_source_extension", OPT("output-cpp-source-extension"))
-    RO_PROP("output_relative_includes", OPT(bool, "output-relative-includes"));
+    RO_PROP("output_relative_includes", OPT(bool, "output-relative-includes"))
+    RO_PROP("lua_include_dir", OPT("lua-include-dir"))
+    RO_PROP("lua_include_cpp", OPT(bool, "lua-include-cpp"));
 }
