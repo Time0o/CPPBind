@@ -97,10 +97,9 @@ public:
 
   std::string mangled() const;
 
-private:
-  static clang::QualType
-  determineDesugaredType(clang::QualType const &Type);
+  std::optional<std::string> alias() const;
 
+private:
   static std::vector<WrapperType>
   determineBaseTypes(clang::QualType const &Type);
 
@@ -109,15 +108,13 @@ private:
 
   clang::QualType const &type() const;
   clang::Type const *typePtr() const;
-  clang::QualType baseType() const;
-  clang::Type const *baseTypePtr() const;
 
-  WrapperType getBase() const;
-  void setBase(WrapperType const &NewBase);
+  static clang::QualType fullyDerefType(clang::QualType const &Type);
 
   static clang::QualType requalifyType(clang::QualType const &Type,
                                        unsigned Qualifiers);
 
+  clang::QualType SugaredType_;
   clang::QualType Type_;
 
   std::vector<WrapperType> BaseTypes_;

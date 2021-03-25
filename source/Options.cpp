@@ -25,6 +25,11 @@ void OptionsRegistry::init()
     .setDescription("File containing extra template instantiations", "path")
     .done();
 
+  Options().add<std::string>("wrap-extra-type-aliases")
+    .setDescription("File containing extra (global) type aliases", "path")
+    .setDefault("")
+    .done();
+
   Options().add<bool>("wrap-skip-unwrappable")
     .setDescription("Skip unwrappable objects instead of failing")
     .setDefault(false)

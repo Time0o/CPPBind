@@ -93,7 +93,23 @@ GenericToolRunner::getSourceFiles(clang::tooling::CommonOptionsParser &Parser)
     auto *SourceFile(FileIt->second);
 
     std::ifstream TIStream(TIPath);
+    if (!TIStream)
+      throw log::exception("Failed to open '{0}'", TIPath);
+
     (*SourceFile) << TIStream.rdbuf() << '\n';
+  }
+
+  auto TAPath(OPT("wrap-extra-type-aliases"));
+  if (!TAPath.empty()) {
+    std::ifstream TAStream(TAPath);
+    if (!TAStream)
+      throw log::exception("Failed to open '{0}'", TAPath);
+
+   std::string TA((std::istreambuf_iterator<char>(TAStream)),
+                  (std::istreambuf_iterator<char>()));
+
+    for (auto &SourceFile : SourceFiles)
+      SourceFile << TA << '\n';
   }
 
   CompilerState().updateFileList(SourcePathList.begin(), SourcePathList.end());

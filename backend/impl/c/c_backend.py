@@ -29,9 +29,18 @@ class CBackend(Backend):
             #endif
 
             {c_util_include}
+
+            {typedefs}
+
+            {record_declarations}
+
+            {record_definitions}
             """,
             header_guard=self._header_guard(),
-            c_util_include=c_util.path_c().include()))
+            c_util_include=c_util.path_c().include(),
+            typedefs='\n'.join(self._typedefs()),
+            record_declarations='\n'.join(self._record_declarations()),
+            record_definitions='\n\n'.join(self._record_definitions('header'))))
 
         self._wrapper_source.append(code(
             """
@@ -47,10 +56,13 @@ class CBackend(Backend):
             extern "C" {{
 
             {wrapper_header_include}
+
+            {record_definitions}
             """,
             input_includes='\n'.join(self.input_includes()),
             c_util_include=c_util.path_cc().include(),
-            wrapper_header_include=self._wrapper_header.include()))
+            wrapper_header_include=self._wrapper_header.include(),
+            record_definitions='\n\n'.join(self._record_definitions('source'))))
 
     def wrap_after(self):
         self._wrapper_header.append(code(
@@ -73,8 +85,6 @@ class CBackend(Backend):
         self._wrapper_source.append(c.assign())
 
     def wrap_record(self, r):
-        self._wrapper_header.append(self._record_definition(r))
-
         for f in r.functions():
             self.wrap_function(f)
 
@@ -87,13 +97,37 @@ class CBackend(Backend):
 
         return f"GUARD_{guard_id}_C_H"
 
-    def _record_definition(self, r):
+    def _typedefs(self):
+        alias_types = set()
+
+        for t in self.types():
+            while True:
+                if t.alias() is not None:
+                    alias_types.add(t)
+
+                if not (t.is_reference() or t.is_pointer()):
+                    break
+
+                t = t.pointee()
+
+        return [f"typedef {t} {t.alias()};" for t in alias_types]
+
+    def _record_declarations(self):
+        return [self._record_declaration(t) for t in self._record_types()]
+
+    def _record_definitions(self, which):
+        return [self._record_definition(t) for t in self._record_types(which)]
+
+    def _record_declaration(self, t):
+        return f"{t.c_struct()};"
+
+    def _record_definition(self, t):
         return code(
             f"""
-            {r.type().c_struct()}
+            {t.c_struct()}
             {{
               union {{
-                char mem[{r.type().size()}];
+                char mem[{t.size()}];
                 void *ptr;
               }} obj;
 
@@ -102,6 +136,28 @@ class CBackend(Backend):
               int is_owning;
             }};
             """)
+
+    def _record_types(self, which='all'):
+        types_all = set()
+
+        for t in self._types:
+            if t.is_record():
+                types_all.add(t.without_const())
+            elif t.is_record_ref():
+                types_all.add(t.pointee().without_const())
+
+        types = types_all
+        types_header = set(r.type() for r in self.records())
+        types_source = types_all - types_header
+
+        if which == 'all':
+            types = types_all
+        elif which == 'header':
+            types = types_header
+        elif which == 'source':
+            types = types_source
+
+        return list(sorted(types, key=lambda t: t.str()))
 
     def _function_declaration(self, f):
         header = self._function_header(f)
@@ -133,16 +189,16 @@ class CBackend(Backend):
 
         if f.return_type().is_record():
             out_type = f.return_type()
-        elif f.return_type().is_pointer() and f.return_type().pointee().is_record():
+        elif f.return_type().is_record_ref():
             out_type = f.return_type().pointee()
-        elif f.return_type().is_reference() and f.return_type().referenced().is_record():
-            out_type = f.return_type().referenced()
 
         f.out_type = lambda: out_type
 
         if f.out_type() is not None:
             return_type = "void"
             parameters.append(f"{out_type.without_const().pointer_to().target()} {Id.OUT}")
+            if f.is_constructor():
+                f.noreturn = lambda: True
 
         if not parameters:
             parameters = "void"

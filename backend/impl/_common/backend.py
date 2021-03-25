@@ -30,6 +30,8 @@ class Backend(metaclass=Generic):
             for t in [f.return_type()] + [p.type() for p in f.parameters()]:
                 self._types.add(t)
 
+        self._types = list(sorted(self._types, key=lambda t: t.str()))
+
     def run(self):
         self.wrap_before()
 

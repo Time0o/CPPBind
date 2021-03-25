@@ -22,7 +22,8 @@ WrapperType::WrapperType()
 {}
 
 WrapperType::WrapperType(clang::QualType const &Type)
-: Type_(determineDesugaredType(Type)),
+: SugaredType_(Type),
+  Type_(Type.getCanonicalType()),
   BaseTypes_(determineBaseTypes(Type)),
   TemplateArgumentList_(determineTemplateArgumentList(Type))
 {}
@@ -203,58 +204,6 @@ WrapperType::withoutConst() const
   return WrapperType(TypeCopy);
 }
 
-WrapperType
-WrapperType::getBase() const
-{ return referenced().pointee(true); }
-
-void
-WrapperType::setBase(WrapperType const &NewBase)
-{
-  enum Indirection
-  {
-    POINTER,
-    LVALUE_REFERENCE,
-    RVALUE_REFERENCE
-  };
-
-  std::stack<Indirection> Indirections;
-
-  WrapperType NewType(*this);
-
-  if (NewType.isLValueReference()) {
-    Indirections.push(LVALUE_REFERENCE);
-    NewType = NewType.referenced();
-  } else if (NewType.isRValueReference()) {
-    Indirections.push(RVALUE_REFERENCE);
-    NewType = NewType.referenced();
-  }
-
-  while (NewType.isPointer()) {
-    Indirections.push(POINTER);
-    NewType = NewType.pointee();
-  }
-
-  NewType = NewBase;
-
-  while (!Indirections.empty()) {
-    switch (Indirections.top()) {
-    case POINTER:
-      NewType = NewType.pointerTo();
-      break;
-    case LVALUE_REFERENCE:
-      NewType = NewType.lvalueReferenceTo();
-      break;
-    case RVALUE_REFERENCE:
-      NewType = NewType.rvalueReferenceTo();
-      break;
-    }
-
-    Indirections.pop();
-  }
-
-  *this = NewType;
-}
-
 std::size_t
 WrapperType::size() const
 { return ASTContext().getTypeInfo(type()).Width; }
@@ -270,18 +219,18 @@ WrapperType::format(bool WithTemplatePostfix,
                     Identifier::Case Case,
                     Identifier::Quals Quals) const
 {
-  auto Base(getBase());
+  WrapperType BaseType(fullyDerefType(Type_));
 
-  if (Base.isRecord()) {
+  if (BaseType.isRecord()) {
     auto Str(print::qualType(type()));
 
-    auto StrBase(print::qualType(requalifyType(Base.type(), 0u)));
+    auto StrBase(print::qualType(requalifyType(BaseType.type(), 0u)));
 
     auto StrReplace = StrBase;
 
-    if (WithTemplatePostfix && Base.isTemplateInstantiation()) {
+    if (WithTemplatePostfix && BaseType.isTemplateInstantiation()) {
       StrReplace = TemplateArgumentList::strip(StrReplace)
-                 + Base.TemplateArgumentList_->str(true);
+                 + BaseType.TemplateArgumentList_->str(true);
     }
 
     StrReplace = Identifier(StrReplace).format(Case, Quals);
@@ -301,9 +250,17 @@ std::string
 WrapperType::mangled() const
 { return print::mangledQualType(type()); }
 
-clang::QualType
-WrapperType::determineDesugaredType(clang::QualType const &Type)
-{ return Type.getDesugaredType(ASTContext()); }
+std::optional<std::string>
+WrapperType::alias() const
+{
+  auto TypedefType = SugaredType_->getAs<clang::TypedefType>();
+  if (!TypedefType)
+    return std::nullopt;
+
+  auto Decl = TypedefType->getDecl();
+
+  return Decl->getNameAsString();
+}
 
 std::vector<WrapperType>
 WrapperType::determineBaseTypes(clang::QualType const &Type)
@@ -345,12 +302,14 @@ WrapperType::typePtr() const
 { return type().getTypePtr(); }
 
 clang::QualType
-WrapperType::baseType() const
-{ return getBase().type(); }
+WrapperType::fullyDerefType(clang::QualType const &Type)
+{
+  auto BaseType = Type.getNonReferenceType();
+  while (BaseType->isPointerType())
+    BaseType = BaseType->getPointeeType();
 
-clang::Type const *
-WrapperType::baseTypePtr() const
-{ return baseType().getTypePtr(); }
+  return BaseType;
+}
 
 clang::QualType
 WrapperType::requalifyType(clang::QualType const &Type, unsigned Qualifiers)

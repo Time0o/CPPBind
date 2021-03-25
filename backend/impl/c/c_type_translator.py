@@ -27,8 +27,7 @@ class CTypeTranslator(TypeTranslator):
     def target(cls, t, args):
         return t.pointer_to().c_struct()
 
-    @rule(lambda t: t.is_pointer() and t.pointee().is_record() or \
-                    t.is_reference() and t.referenced().is_record())
+    @rule(lambda t: t.is_record_ref())
     def target(cls, t, args):
         return t.pointee().pointer_to().c_struct()
 
@@ -57,8 +56,7 @@ class CTypeTranslator(TypeTranslator):
     def input(cls, t, args):
         return "{interm} = {inp};"
 
-    @rule(lambda t: t.is_record() or \
-                    (t.is_pointer() or t.is_reference()) and t.pointee().is_record())
+    @rule(lambda t: t.is_record() or t.is_record_ref())
     def input(cls, t, args):
         if t.is_record():
             t_cast = t
@@ -103,38 +101,16 @@ class CTypeTranslator(TypeTranslator):
 
     @rule(lambda t: t.is_record())
     def output(cls, t, args):
-        return code(
-            f"""
-            new ({Id.OUT}->obj.mem) {t}({{outp}});
-            {Id.OUT}->is_initialized = 1;
-            {Id.OUT}->is_const = 0;
-            {Id.OUT}->is_owning = 1;
-            """)
+        return f"{c_util.init_owning_struct(Id.OUT, t, '{outp}')};"
 
-    @rule(lambda t: (t.is_pointer() or t.is_reference()) and \
-                    t.pointee().is_record() and t.pointee().is_const())
+    @rule(lambda t: t.is_record_ref() and t.pointee().is_const())
     def output(cls, t, args):
-        return code(
-            f"""
-            {Id.OUT}->obj.ptr = const_cast<void *>(static_cast<void const *>({{outp}}));
-            {Id.OUT}->is_initialized = 1;
-            {Id.OUT}->is_const = 1;
-            {Id.OUT}->is_owning = 0;
-            """)
+        return f"{c_util.init_non_owning_struct(Id.OUT, '{outp}')};"
 
-    @rule(lambda t: (t.is_pointer() or t.is_reference()) and \
-                    t.pointee().is_record())
+    @rule(lambda t: t.is_record_ref())
     def output(cls, t, args):
-        if args.f.is_constructor():
-            return "static_cast<void>({outp});"
-
-        return code(
-            f"""
-            {Id.OUT}->obj.ptr = static_cast<void *>({{outp}});
-            {Id.OUT}->is_initialized = 1;
-            {Id.OUT}->is_const = 0;
-            {Id.OUT}->is_owning = 0;
-            """)
+        if not args.f.is_constructor():
+            return f"{c_util.init_non_owning_struct(Id.OUT, '{outp}')};"
 
     @rule(lambda t: t.is_pointer() or t.is_reference())
     def output(cls, t, args):

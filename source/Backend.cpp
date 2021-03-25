@@ -148,6 +148,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
          "case"_a = Identifier::ORIG_CASE,
          "quals"_a = Identifier::KEEP_QUALS)
     .def("mangled", &WrapperType::mangled)
+    .def("alias", &WrapperType::alias)
     .def("is_const", &WrapperType::isConst)
     .def("is_fundamental", &WrapperType::isFundamental, "which"_a = nullptr)
     .def("is_void", &WrapperType::isVoid)

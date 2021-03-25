@@ -1,5 +1,10 @@
+import c_util
 from cppbind import Function, Identifier as Id, Type
 from text import code
+
+
+def _type_is_record_ref(self):
+    return (self.is_pointer() or self.is_reference()) and self.pointee().is_record()
 
 
 def _type_c_struct(self):
@@ -10,15 +15,7 @@ def _type_c_struct(self):
 
 
 def _function_construct(self, parameters):
-    cons = self.parent().type()
-
-    return code(
-        f"""
-        new ({Id.OUT}->obj.mem) {cons}({parameters});
-        {Id.OUT}->is_initialized = 1;
-        {Id.OUT}->is_const = 0;
-        {Id.OUT}->is_owning = 1;
-        """)
+    return f"{c_util.init_owning_struct(Id.OUT, self.parent().type(), parameters)};"
 
 
 def _function_destruct(self, this):
@@ -27,6 +24,7 @@ def _function_destruct(self, this):
     return f"{this}->~{des}();"
 
 
+Type.is_record_ref = _type_is_record_ref
 Type.c_struct = _type_c_struct
 
 Function.construct = _function_construct
