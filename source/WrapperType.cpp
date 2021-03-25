@@ -23,6 +23,7 @@ WrapperType::WrapperType()
 
 WrapperType::WrapperType(clang::QualType const &Type)
 : Type_(determineDesugaredType(Type)),
+  BaseTypes_(determineBaseTypes(Type)),
   TemplateArgumentList_(determineTemplateArgumentList(Type))
 {}
 
@@ -126,6 +127,13 @@ WrapperType::isClass() const
 bool
 WrapperType::isConst() const
 { return type().isConstQualified(); }
+
+std::vector<WrapperType>
+WrapperType::baseTypes() const
+{
+  assert(isRecord());
+  return BaseTypes_;
+}
 
 WrapperType
 WrapperType::lvalueReferenceTo() const
@@ -296,6 +304,23 @@ WrapperType::mangled() const
 clang::QualType
 WrapperType::determineDesugaredType(clang::QualType const &Type)
 { return Type.getDesugaredType(ASTContext()); }
+
+std::vector<WrapperType>
+WrapperType::determineBaseTypes(clang::QualType const &Type)
+{
+  auto CXXRecordDecl = Type->getAsCXXRecordDecl();
+  if (!CXXRecordDecl || !CXXRecordDecl->hasDefinition())
+    return {};
+
+  std::vector<WrapperType> BaseTypes;
+
+  for (auto const &Base : CXXRecordDecl->bases()) {
+    if (Base.getAccessSpecifier() == clang::AS_public)
+      BaseTypes.emplace_back(Base.getType());
+  }
+
+  return BaseTypes;
+}
 
 std::optional<TemplateArgumentList>
 WrapperType::determineTemplateArgumentList(clang::QualType const &Type)

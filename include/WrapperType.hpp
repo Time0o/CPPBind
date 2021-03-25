@@ -67,6 +67,8 @@ public:
   bool isClass() const;
   bool isConst() const;
 
+  std::vector<WrapperType> baseTypes() const;
+
   WrapperType lvalueReferenceTo() const;
   WrapperType rvalueReferenceTo() const;
   WrapperType referenced() const;
@@ -99,6 +101,9 @@ private:
   static clang::QualType
   determineDesugaredType(clang::QualType const &Type);
 
+  static std::vector<WrapperType>
+  determineBaseTypes(clang::QualType const &Type);
+
   static std::optional<TemplateArgumentList>
   determineTemplateArgumentList(clang::QualType const &Type);
 
@@ -114,6 +119,8 @@ private:
                                        unsigned Qualifiers);
 
   clang::QualType Type_;
+
+  std::vector<WrapperType> BaseTypes_;
 
   std::optional<TemplateArgumentList> TemplateArgumentList_;
 };

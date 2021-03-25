@@ -29,7 +29,6 @@ WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl)
   TemplateArgumentList_(determineTemplateArgumentList(Decl)),
   Name_(Decl),
   Type_(Decl->getTypeForDecl()),
-  BaseTypes_(determinePublicBaseTypes(Decl)),
   Functions_(determinePublicMemberFunctions(Decl)),
   IsDefinition_(Decl->isThisDeclarationADefinition()),
   IsAbstract_(determineIfAbstract(Decl)),
@@ -62,20 +61,6 @@ WrapperRecord::getTemplateArgumentList() const
     return std::nullopt;
 
   return TemplateArgumentList_->str();
-}
-
-std::deque<WrapperType>
-WrapperRecord::determinePublicBaseTypes(
-  clang::CXXRecordDecl const *Decl) const
-{
-  std::deque<WrapperType> BaseTypes;
-
-  for (auto const &Base : Decl->bases()) {
-    if (Base.getAccessSpecifier() == clang::AS_public)
-      BaseTypes.emplace_back(Base.getType());
-  }
-
-  return BaseTypes;
 }
 
 std::deque<WrapperFunction>

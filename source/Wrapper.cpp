@@ -158,7 +158,7 @@ Wrapper::_addWrapperRecord(WrapperRecord *Record)
   std::string RecordType(Record->getType().mangled());
 
   std::deque<std::string> BaseTypes;
-  for (auto const &BaseType : Record->getBaseTypes())
+  for (auto const &BaseType : Record->getType().baseTypes())
     BaseTypes.push_back(BaseType.mangled());
 
   TI_->add(RecordType, BaseTypes.begin(), BaseTypes.end());
