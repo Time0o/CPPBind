@@ -38,17 +38,12 @@ def type_instances():
 
         types[(t.without_const(), t_bases)] = True
 
-    for r, bases in Backend().records(with_bases=True):
-        add_type(r.type(), (b.type() for b in bases))
+    for r in Backend().records():
+        add_type(r.type(), (b.type() for b in r.bases()))
 
-    for v in Backend().constants():
-        if v.type().is_pointer() and not v.pointee().is_record():
-            add_type(v.type().pointee())
-
-    for f in chain(Backend().functions(), *(r.functions() for r in Backend().records())):
-        for t in [f.return_type()] + [p.type() for p in f.parameters()]:
-            if t.is_pointer() and not t.pointee().is_record():
-                add_type(t.pointee())
+    for t in Backend().types():
+        if (t.is_pointer() or t.is_reference()) and not t.pointee().is_record():
+            add_type(t.pointee())
 
     tis = []
     for t, t_bases in types.keys():

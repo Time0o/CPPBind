@@ -42,6 +42,12 @@ public:
   WrapperType getType() const
   { return Type_; }
 
+  std::deque<WrapperRecord const *> const &getBases() const
+  { return Bases_; }
+
+  std::deque<WrapperRecord const *> &getBases()
+  { return Bases_; }
+
   std::deque<WrapperFunction> const &getFunctions() const
   { return Functions_; }
 
@@ -103,6 +109,8 @@ private:
 
   Identifier Name_;
   WrapperType Type_;
+
+  std::deque<WrapperRecord const *> Bases_;
 
   std::deque<WrapperFunction> Functions_;
 

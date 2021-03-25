@@ -71,8 +71,7 @@ public:
 
   std::vector<WrapperFunction const *> getFunctions() const;
 
-  std::vector<std::pair<WrapperRecord const *,
-              std::vector<WrapperRecord const *>>> getRecords() const;
+  std::vector<WrapperRecord const *> getRecords() const;
 
 private:
   template<typename T, typename ...ARGS>
@@ -100,8 +99,11 @@ private:
   std::deque<Include> Includes_;
 
   std::deque<WrapperConstant> Constants_;
+
   std::deque<WrapperFunction> Functions_;
+
   std::deque<WrapperRecord> Records_;
+  std::unordered_map<std::string, WrapperRecord const *> RecordTypesMangled_;
 
   std::shared_ptr<IdentifierIndex> II_;
   std::shared_ptr<TypeIndex> TI_;

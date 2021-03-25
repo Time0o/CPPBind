@@ -48,40 +48,22 @@ Wrapper::getFunctions() const
   return Funcs;
 }
 
-std::vector<std::pair<WrapperRecord const *,
-            std::vector<WrapperRecord const *>>>
+std::vector<WrapperRecord const *>
 Wrapper::getRecords() const
 {
-  std::vector<std::pair<WrapperRecord const *,
-              std::vector<WrapperRecord const *>>> RecordsAndBases;
-
-  std::unordered_map<std::string, WrapperRecord const *> RecordTypesMangled;
-
-  for (auto const &Record : Records_) {
-    auto Type(Record.getType().mangled());
-
-    RecordTypesMangled[Type] = &Record;
-  }
+  std::vector<WrapperRecord const *> Records;
 
   for (auto Type : TI_->basesFirstOrdering()) {
-    auto It(RecordTypesMangled.find(Type));
-    if (It == RecordTypesMangled.end())
+    auto It(RecordTypesMangled_.find(Type));
+    if (It == RecordTypesMangled_.end())
       continue;
 
     auto const *Record(It->second);
 
-    std::vector<WrapperRecord const *> Bases;
-    for (auto const &BaseType : TI_->bases(Type, true)) {
-      auto It(RecordTypesMangled.find(BaseType));
-      assert(It != RecordTypesMangled.end());
-
-      Bases.push_back(It->second);
-    }
-
-    RecordsAndBases.push_back(std::make_pair(Record, Bases));
+    Records.push_back(Record);
   }
 
-  return RecordsAndBases;
+  return Records;
 }
 
 bool
@@ -155,13 +137,20 @@ Wrapper::_addWrapperRecord(WrapperRecord *Record)
 
   II_->addDefinition(RecordNameTemplated, IdentifierIndex::RECORD);
 
-  std::string RecordType(Record->getType().mangled());
+  auto RecordTypeMangled(Record->getType().mangled());
+  RecordTypesMangled_[RecordTypeMangled] = Record;
 
-  std::deque<std::string> BaseTypes;
-  for (auto const &BaseType : Record->getType().baseTypes())
-    BaseTypes.push_back(BaseType.mangled());
+  std::deque<std::string> BaseTypesMangled;
+  for (auto const &BaseType : Record->getType().baseTypes()) {
+    auto BaseTypeMangled(BaseType.mangled());
+    BaseTypesMangled.push_back(BaseTypeMangled);
 
-  TI_->add(RecordType, BaseTypes.begin(), BaseTypes.end());
+    auto It(RecordTypesMangled_.find(BaseTypeMangled));
+    if (It != RecordTypesMangled_.end())
+      Record->getBases().push_back(It->second);
+  }
+
+  TI_->add(RecordTypeMangled, BaseTypesMangled.begin(), BaseTypesMangled.end());
 
   auto &Functions(Record->getFunctions());
 

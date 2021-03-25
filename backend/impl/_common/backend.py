@@ -3,6 +3,7 @@ import os
 from abc import abstractmethod
 from cppbind import Options
 from file import File, Path
+from itertools import chain
 from util import Generic
 
 
@@ -17,13 +18,25 @@ class Backend(metaclass=Generic):
         self._records = wrapper.records()
         self._functions = wrapper.functions()
 
+        self._types = set()
+
+        for r in self._records:
+            self._types.add(r.type())
+
+        for v in self._constants:
+            self._types.add(v.type())
+
+        for f in chain(self._functions, *(r.functions() for r in self._records)):
+            for t in [f.return_type()] + [p.type() for p in f.parameters()]:
+                self._types.add(t)
+
     def run(self):
         self.wrap_before()
 
         for v in self._constants:
             self.wrap_constant(v)
 
-        for r, _ in self._records:
+        for r in self._records:
             self.wrap_record(r)
 
         for f in self._functions:
@@ -58,14 +71,14 @@ class Backend(metaclass=Generic):
     def constants(self):
         return self._constants
 
-    def records(self, with_bases=False):
-        if with_bases:
-            return self._records
-
-        return [r for r, _ in self._records]
+    def records(self):
+        return self._records
 
     def functions(self):
         return self._functions
+
+    def types(self):
+        return self._types
 
     @abstractmethod
     def wrap_before(self):
