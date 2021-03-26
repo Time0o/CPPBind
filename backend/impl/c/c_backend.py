@@ -31,7 +31,7 @@ class CBackend(Backend):
             {c_util_include}
             """,
             header_guard=self._header_guard(),
-            c_util_include=c_util.path().include()))
+            c_util_include=c_util.path_c().include()))
 
         self._wrapper_source.append(code(
             """
@@ -42,31 +42,14 @@ class CBackend(Backend):
 
             {input_includes}
 
-            namespace {{
-
-            template<typename T, typename S>
-            T *__struct_cast(S *s) {{
-              if (s->is_owning)
-                return reinterpret_cast<T *>(&s->obj.mem);
-              else
-                return static_cast<T *>(s->obj.ptr);
-            }}
-
-            template<typename S, typename T>
-            T const *__struct_cast(S const *s) {{
-              if (s->is_owning)
-                return reinterpret_cast<T const *>(&s->obj.mem);
-              else
-                return static_cast<T const *>(s->obj.ptr);
-            }}
-
-            }} // namespace
+            {c_util_include}
 
             extern "C" {{
 
             {wrapper_header_include}
             """,
             input_includes='\n'.join(self.input_includes()),
+            c_util_include=c_util.path_cc().include(),
             wrapper_header_include=self._wrapper_header.include()))
 
     def wrap_after(self):

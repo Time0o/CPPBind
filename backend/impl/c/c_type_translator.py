@@ -1,3 +1,4 @@
+import c_util
 from cppbind import Identifier as Id
 from text import code
 from type_translator import TypeTranslator
@@ -56,28 +57,28 @@ class CTypeTranslator(TypeTranslator):
     def input(cls, t, args):
         return "{interm} = {inp};"
 
-    @rule(lambda t: t.is_record())
+    @rule(lambda t: t.is_record() or \
+                    (t.is_pointer() or t.is_reference()) and t.pointee().is_record())
     def input(cls, t, args):
-        return code(
-            f"""
-            assert({{inp}}->is_initialized);
-            {{interm}} = __struct_cast<{t}>({{inp}});
-            """)
+        if t.is_record():
+            t_cast = t
+            t_is_const = True
+        else:
+            t_cast = t.pointee()
+            t_is_const = t.pointee().is_const()
 
-    @rule(lambda t: (t.is_pointer() or t.is_reference()) and t.pointee().is_record())
-    def input(cls, t, args):
         assertions = ["assert({inp}->is_initialized);"]
 
-        if not t.pointee().is_const() and not args.f.is_destructor():
+        if not t_is_const and not args.f.is_destructor():
             assertions.append("assert(!{inp}->is_const);")
 
         return code(
             """
             {assertions}
-            {{interm}} = __struct_cast<{t}>({{inp}});
+            {{interm}} = {inp};
             """,
             assertions='\n'.join(assertions),
-            t=t.pointee())
+            inp=c_util.struct_cast(t_cast, '{inp}'))
 
     @rule(lambda t: t.is_pointer() or t.is_reference())
     def input(cls, t, args):
