@@ -65,7 +65,12 @@ class CTypeTranslator(TypeTranslator):
             t_cast = t.pointee()
             t_is_const = t.pointee().is_const()
 
-        assertions = ["assert({inp}->is_initialized);"]
+        assertions = []
+
+        if args.f.is_destructor():
+            assertions.append("if (!{inp}->is_initialized) return;")
+        else:
+            assertions.append("assert({inp}->is_initialized);")
 
         if not t_is_const and not args.f.is_destructor():
             assertions.append("assert(!{inp}->is_const);")
