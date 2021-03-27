@@ -150,7 +150,10 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("mangled", &WrapperType::mangled)
     .def("alias", &WrapperType::alias)
     .def("is_const", &WrapperType::isConst)
-    .def("is_fundamental", &WrapperType::isFundamental, "which"_a = nullptr)
+    .def("is_template_instantiation", &WrapperType::isTemplateInstantiation,
+         "which"_a = nullptr)
+    .def("is_fundamental", &WrapperType::isFundamental,
+         "which"_a = nullptr)
     .def("is_void", &WrapperType::isVoid)
     .def("is_boolean", &WrapperType::isBoolean)
     .def("is_enum", &WrapperType::isEnum)

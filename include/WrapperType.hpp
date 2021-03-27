@@ -49,7 +49,7 @@ public:
   bool operator>=(WrapperType const &Other) const
   { return !operator<(Other); }
 
-  bool isTemplateInstantiation() const;
+  bool isTemplateInstantiation(char const *Which = nullptr) const;
   bool isFundamental(char const *Which = nullptr) const;
   bool isVoid() const;
   bool isBoolean() const;
@@ -103,6 +103,12 @@ private:
   static std::vector<WrapperType>
   determineBaseTypes(clang::QualType const &Type);
 
+  static bool
+  _isTemplateInstantiation(clang::QualType const &Type);
+
+  static std::optional<std::string>
+  determineTemplate(clang::QualType const &Type);
+
   static std::optional<TemplateArgumentList>
   determineTemplateArgumentList(clang::QualType const &Type);
 
@@ -119,6 +125,7 @@ private:
 
   std::vector<WrapperType> BaseTypes_;
 
+  std::optional<std::string> Template_;
   std::optional<TemplateArgumentList> TemplateArgumentList_;
 };
 

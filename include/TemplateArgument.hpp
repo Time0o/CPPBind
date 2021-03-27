@@ -55,6 +55,10 @@ public:
     }
   }
 
+  TemplateArgumentList(clang::ClassTemplateSpecializationDecl const *Decl)
+  : TemplateArgumentList(Decl->getTemplateArgs())
+  {}
+
   static std::string strip(std::string const &What)
   { return What.substr(0, What.find('<')); }
 

@@ -25,6 +25,7 @@ WrapperType::WrapperType(clang::QualType const &Type)
 : SugaredType_(Type),
   Type_(Type.getCanonicalType()),
   BaseTypes_(determineBaseTypes(Type)),
+  Template_(determineTemplate(Type)),
   TemplateArgumentList_(determineTemplateArgumentList(Type))
 {}
 
@@ -49,8 +50,13 @@ WrapperType::operator<(WrapperType const &Other) const
 { return mangled() < Other.mangled(); }
 
 bool
-WrapperType::isTemplateInstantiation() const
-{ return static_cast<bool>(TemplateArgumentList_); }
+WrapperType::isTemplateInstantiation(char const *Which) const
+{
+  if (!Template_)
+    return false;
+
+  return !Which || (*Template_ == Which);
+}
 
 bool
 WrapperType::isFundamental(char const *Which) const
@@ -279,18 +285,37 @@ WrapperType::determineBaseTypes(clang::QualType const &Type)
   return BaseTypes;
 }
 
-std::optional<TemplateArgumentList>
-WrapperType::determineTemplateArgumentList(clang::QualType const &Type)
+bool
+WrapperType::_isTemplateInstantiation(clang::QualType const &Type)
 {
   auto CXXRecordDecl = Type->getAsCXXRecordDecl();
   if (!CXXRecordDecl)
+    return false; // XXX does that cover all cases?
+
+  return llvm::isa<clang::ClassTemplateSpecializationDecl>(CXXRecordDecl);
+}
+
+std::optional<std::string>
+WrapperType::determineTemplate(clang::QualType const &Type)
+{
+  if (!_isTemplateInstantiation(Type))
     return std::nullopt;
 
-  if (!llvm::isa<clang::ClassTemplateSpecializationDecl>(CXXRecordDecl))
+  auto RD = Type->getAsCXXRecordDecl();
+
+  return RD->getQualifiedNameAsString();
+}
+
+std::optional<TemplateArgumentList>
+WrapperType::determineTemplateArgumentList(clang::QualType const &Type)
+{
+  if (!_isTemplateInstantiation(Type))
     return std::nullopt;
+
+  auto RD = Type->getAsCXXRecordDecl();
 
   return TemplateArgumentList(
-    llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(CXXRecordDecl)->getTemplateArgs());
+    llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(RD));
 }
 
 clang::QualType const &
