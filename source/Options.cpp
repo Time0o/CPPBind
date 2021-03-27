@@ -35,6 +35,11 @@ void OptionsRegistry::init()
     .setDefault(false)
     .done();
 
+  Options().add<std::string>("output-custom-type-translation-rules")
+    .setDescription("Python script containing extra type translation rules", "path")
+    .setDefault("")
+    .done();
+
   Options().add<bool>("output-noexcept")
     .setDescription("Don't catch and propagate exceptions in wrapped code")
     .setDefault(false)

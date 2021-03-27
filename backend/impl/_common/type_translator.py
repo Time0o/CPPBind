@@ -1,3 +1,6 @@
+import os
+from collections import deque
+from cppbind import Options
 from functools import wraps
 from util import Generic, is_iterable
 
@@ -54,13 +57,23 @@ class TypeTranslator(metaclass=Generic):
     class RuleLookup:
         def __init__(self):
             self._lookup = {}
+            self._prepend = False
+
+        def add_custom_rules(self):
+            self._prepend = True
 
         def add_rule(self, type_matcher, action, **kwargs):
             rule = TypeTranslator.Rule(type_matcher=type_matcher,
                                            action=action,
                                            **kwargs)
 
-            self._lookup.setdefault(action.__name__, []).append(rule)
+            if action.__name__ not in self._lookup:
+                self._lookup[action.__name__] = deque()
+
+            if self._prepend:
+                self._lookup[action.__name__].appendleft(rule)
+            else:
+                self._lookup[action.__name__].append(rule)
 
         def find_rule(self, type_instance, action):
             if action.__name__ not in self._lookup:
@@ -96,3 +109,22 @@ class TypeTranslator(metaclass=Generic):
             return rule_wrapper
 
         return rule_decorator
+
+    @classmethod
+    def add_custom_rules(cls):
+        custom_rules_file = Options.output_custom_type_translation_rules
+        if not custom_rules_file:
+            return
+
+        cls._rule_lookup.add_custom_rules()
+
+        custom_rules_mod, _ = os.path.splitext(custom_rules_file)
+
+        from importlib import import_module
+        custom_rules = import_module(custom_rules_mod)
+
+        custom_cls = getattr(custom_rules, cls.__name__, None)
+        if custom_cls is None:
+            return
+
+        return type(cls.__name__, (cls, custom_cls, TypeTranslator), {})

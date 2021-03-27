@@ -1,5 +1,5 @@
 import c_util
-from cppbind import Identifier as Id
+from cppbind import Identifier as Id, Options
 from text import code
 from type_translator import TypeTranslator
 
@@ -142,3 +142,6 @@ class CTypeTranslator(TypeTranslator):
                 """)
 
         return ex
+
+
+CTypeTranslator.add_custom_rules()

@@ -5,7 +5,7 @@ class Generic(ABCMeta):
     def __init__(cls, name, bases, clsdict):
         mro = cls.mro()
 
-        if len(mro) == 3:
+        if len(mro) >= 3:
             cls.__impl = None
 
             sup = mro[-2]

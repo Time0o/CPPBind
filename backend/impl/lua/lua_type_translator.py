@@ -235,3 +235,6 @@ class LuaTypeTranslator(TypeTranslator):
 
     def exception(cls, args):
         return 'return luaL_error(L, {what});'
+
+
+LuaTypeTranslator.add_custom_rules()
