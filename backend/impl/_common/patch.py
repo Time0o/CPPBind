@@ -181,14 +181,28 @@ def _function_forward_call(self):
 
     call = code(
         """
+        {call_before}
+
         {call}
+
+        {call_after}
 
         {call_return}
         """,
+        call_before=self.before_call(),
         call=call,
+        call_after=self.after_call(),
         call_return=call_return)
 
     return call
+
+
+def _function_before_call(self):
+    return
+
+
+def _function_after_call(self):
+    return
 
 
 def _function_construct(self, parameters):
@@ -253,6 +267,8 @@ _patch(Constant, 'assign', _constant_assign)
 
 _patch(Function, 'declare_parameters', _function_declare_parameters)
 _patch(Function, 'forward_parameters', _function_forward_parameters)
+_patch(Function, 'before_call', _function_before_call)
+_patch(Function, 'after_call', _function_after_call)
 _patch(Function, 'construct', _function_construct)
 _patch(Function, 'destruct', _function_destruct)
 _patch(Function, 'forward_call', _function_forward_call)

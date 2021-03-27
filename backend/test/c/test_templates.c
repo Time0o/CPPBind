@@ -29,8 +29,7 @@ int main()
 
   /* record templates */
   {
-    struct test_any_stack_int any_stack;
-    test_any_stack_int_new(&any_stack);
+    struct test_any_stack_int any_stack = test_any_stack_int_new();
 
     test_any_stack_int_push_int(&any_stack, 1);
     test_any_stack_int_push_double(&any_stack, 3.14);

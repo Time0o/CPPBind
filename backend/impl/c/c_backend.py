@@ -176,35 +176,33 @@ class CBackend(Backend):
             body=self._function_body(f))
 
     def _function_header(self, f):
+        # name
         name = f.name_target()
 
-        return_type = f.return_type().target()
+        # return type
+        return_type = f.return_type()
 
-        parameters = [
-            f"{p.type().target()} {p.name_target()}"
-            for p in f.parameters()
-        ]
+        if return_type.is_record_ref():
+            return_type = return_type.pointee()
 
-        out_type = None
+        return_type = return_type.without_const().target()
 
-        if f.return_type().is_record():
-            out_type = f.return_type()
-        elif f.return_type().is_record_ref():
-            out_type = f.return_type().pointee()
+        # parameters
+        parameters = []
 
-        f.out_type = lambda: out_type
+        for p in f.parameters():
+            t = p.type()
+            if t.is_record():
+                t = t.pointer_to()
 
-        if f.out_type() is not None:
-            return_type = "void"
-            parameters.append(f"{out_type.without_const().pointer_to().target()} {Id.OUT}")
-            if f.is_constructor():
-                f.noreturn = lambda: True
+            parameters.append(f"{t.target()} {p.name_target()}")
 
         if not parameters:
             parameters = "void"
         else:
             parameters = ', '.join(parameters)
 
+        # assemble
         return f"{return_type} {name}({parameters})"
 
     def _function_body(self, f):

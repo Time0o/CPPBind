@@ -14,18 +14,38 @@ def _type_c_struct(self):
                        quals=Id.REPLACE_QUALS)
 
 
+def _function_before_call(self):
+    rt = self.return_type()
+    if rt.is_record() or rt.is_record_ref():
+        if rt.is_record():
+            t = rt
+        elif rt.is_record_ref():
+            t = rt.pointee()
+
+        t = t.without_const()
+
+        return f"{t.c_struct()} {Id.OUT};"
+
+
 def _function_construct(self, parameters):
-    return f"{c_util.init_owning_struct(Id.OUT, self.parent().type(), parameters)};"
+    t = self.parent().type()
+
+    return code(
+        f"""
+        {Id.OUT};
+        {c_util.init_owning_struct(f'&{Id.RET}', t, parameters)};
+        """)
 
 
 def _function_destruct(self, this):
-    des = self.parent().type().format(quals=Id.REMOVE_QUALS)
+    t = self.parent().type()
 
-    return f"{this}->~{des}();"
+    return f"{this}->~{t.format(quals=Id.REMOVE_QUALS)}();"
 
 
 Type.is_record_ref = _type_is_record_ref
 Type.c_struct = _type_c_struct
 
+Function.before_call = _function_before_call
 Function.construct = _function_construct
 Function.destruct = _function_destruct

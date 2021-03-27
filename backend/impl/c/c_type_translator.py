@@ -25,7 +25,7 @@ class CTypeTranslator(TypeTranslator):
 
     @rule(lambda t: t.is_record())
     def target(cls, t, args):
-        return t.pointer_to().c_struct()
+        return t.c_struct()
 
     @rule(lambda t: t.is_record_ref())
     def target(cls, t, args):
@@ -106,16 +106,22 @@ class CTypeTranslator(TypeTranslator):
 
     @rule(lambda t: t.is_record())
     def output(cls, t, args):
-        return f"{c_util.init_owning_struct(Id.OUT, t, '{outp}')};"
-
-    @rule(lambda t: t.is_record_ref() and t.pointee().is_const())
-    def output(cls, t, args):
-        return f"{c_util.init_non_owning_struct(Id.OUT, '{outp}')};"
+        return code(
+            f"""
+            {c_util.init_owning_struct(f'&{Id.OUT}', t, '{outp}')};
+            return {Id.OUT};
+            """)
 
     @rule(lambda t: t.is_record_ref())
     def output(cls, t, args):
-        if not args.f.is_constructor():
-            return f"{c_util.init_non_owning_struct(Id.OUT, '{outp}')};"
+        if args.f.is_constructor():
+            return "return {outp};"
+        else:
+            return code(
+                f"""
+                {c_util.init_non_owning_struct(f'&{Id.OUT}', '{outp}')};
+                return {Id.OUT};
+                """)
 
     @rule(lambda t: t.is_pointer() or t.is_reference())
     def output(cls, t, args):
@@ -129,11 +135,10 @@ class CTypeTranslator(TypeTranslator):
         ex = "errno = EBIND;"
 
         if args.f.out_type() is None and not args.f.return_type().is_void():
-            # XXX return some default value
             ex = code(
-                f"""
+                """
                 errno = EBIND;
-                return 0;
+                return {{}};
                 """)
 
         return ex

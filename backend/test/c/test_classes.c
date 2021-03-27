@@ -15,15 +15,13 @@ int main()
 {
   /* construction and deletion */
   {
-    struct test_trivial trivial;
-    test_trivial_new(&trivial);
+    struct test_trivial trivial = test_trivial_new();
     test_trivial_delete(&trivial);
   }
 
   /* member access */
   {
-    struct test_a_class a_class;
-    test_a_class_new_1(&a_class);
+    struct test_a_class a_class = test_a_class_new_1();
 
     assert(test_a_class_get_state(&a_class) == 0);
 
@@ -32,8 +30,7 @@ int main()
   }
 
   {
-    struct test_a_class a_class;
-    test_a_class_new_2(1, &a_class);
+    struct test_a_class a_class = test_a_class_new_2(1);
 
     assert(test_a_class_get_state(&a_class) == 1);
 
@@ -49,14 +46,13 @@ int main()
 
   /* copying and moving */
   {
-    struct test_copyable_class copyable_class;
-    test_copyable_class_new(1, &copyable_class);
+    struct test_copyable_class copyable_class = test_copyable_class_new(1);
     assert(test_copyable_class_get_state(&copyable_class) == 1);
 
     assert(test_copyable_class_get_num_copied() == 0);
 
-    struct test_copyable_class copyable_class_copy;
-    test_copyable_class_copy(&copyable_class, &copyable_class_copy);
+    struct test_copyable_class copyable_class_copy =
+      test_copyable_class_copy(&copyable_class);
     assert(test_copyable_class_get_state(&copyable_class_copy) == 1);
 
     assert(test_copyable_class_get_num_copied() == 1);
@@ -65,13 +61,11 @@ int main()
     assert(test_copyable_class_get_state(&copyable_class) == 1);
     assert(test_copyable_class_get_state(&copyable_class_copy) == 2);
 
-    struct test_copyable_class copyable_class_copy_assigned;
-    test_copyable_class_new(0, &copyable_class_copy_assigned);
+    struct test_copyable_class copyable_class_copy_assigned =
+      test_copyable_class_new(0);
 
-    struct test_copyable_class copyable_class_dummy;
     test_copyable_class_copy_assign(&copyable_class_copy_assigned,
-                                    &copyable_class,
-                                    &copyable_class_dummy);
+                                    &copyable_class);
     assert(test_copyable_class_get_state(&copyable_class_copy_assigned) == 1);
 
     assert(test_copyable_class_get_num_copied() == 2);
@@ -86,20 +80,20 @@ int main()
   }
 
   {
-    struct test_moveable_class moveable_class;
-    test_moveable_class_new(1, &moveable_class);
+    struct test_moveable_class moveable_class =
+      test_moveable_class_new(1);
     assert(test_moveable_class_get_state(&moveable_class) == 1);
 
     assert(test_moveable_class_get_num_moved() == 0);
 
-    struct test_moveable_class moveable_class_moved;
-    test_moveable_class_move(&moveable_class, &moveable_class_moved);
+    struct test_moveable_class moveable_class_moved =
+      test_moveable_class_move(&moveable_class);
     assert(test_moveable_class_get_state(&moveable_class_moved) == 1);
 
     assert(test_moveable_class_get_num_moved() == 1);
 
-    struct test_moveable_class moveable_class_move_assigned;
-    test_moveable_class_new(0, &moveable_class_move_assigned);
+    struct test_moveable_class moveable_class_move_assigned =
+      test_moveable_class_new(0);
 
     test_moveable_class_move_assign(&moveable_class_move_assigned,
                                     &moveable_class_moved);
@@ -116,13 +110,12 @@ int main()
 
   /* value parameters */
   {
-    struct test_class_parameter a, b, c;
-    test_class_parameter_new(1, &a);
-    test_class_parameter_new(2, &b);
+    struct test_class_parameter a = test_class_parameter_new(1);
+    struct test_class_parameter b = test_class_parameter_new(2);
 
     test_class_parameter_set_copyable(1);
 
-    test_add_class(&a, &b, &c);
+    struct test_class_parameter c = test_add_class(&a, &b);
     assert(test_class_parameter_get_state(&a) == 1);
     assert(test_class_parameter_get_state(&c) == 3);
 
@@ -135,11 +128,10 @@ int main()
 
   /* pointer parameters */
   {
-    struct test_class_parameter a, b, c;
-    test_class_parameter_new(1, &a);
-    test_class_parameter_new(2, &b);
+    struct test_class_parameter a = test_class_parameter_new(1);
+    struct test_class_parameter b = test_class_parameter_new(2);
 
-    test_add_class_pointer(&a, &b, &c);
+    struct test_class_parameter c = test_add_class_pointer(&a, &b);
     assert(test_class_parameter_get_state(&a) == 3);
     assert(test_class_parameter_get_state(&c) == 3);
 
@@ -150,11 +142,10 @@ int main()
 
   /* lvalue reference parameters */
   {
-    struct test_class_parameter a, b, c;
-    test_class_parameter_new(1, &a);
-    test_class_parameter_new(2, &b);
+    struct test_class_parameter a = test_class_parameter_new(1);
+    struct test_class_parameter b = test_class_parameter_new(2);
 
-    test_add_class_lvalue_ref(&a, &b, &c);
+    struct test_class_parameter c = test_add_class_lvalue_ref(&a, &b);
     assert(test_class_parameter_get_state(&a) == 3);
     assert(test_class_parameter_get_state(&c) == 3);
 
@@ -163,11 +154,9 @@ int main()
     test_class_parameter_delete(&c);
   }
 
-
   /* rvalue reference parameters */
   {
-    struct test_class_parameter a;
-    test_class_parameter_new(1, &a);
+    struct test_class_parameter a = test_class_parameter_new(1);
 
     test_class_parameter_set_moveable(1);
 
