@@ -125,6 +125,6 @@ class TypeTranslator(metaclass=Generic):
 
         custom_cls = getattr(custom_rules, cls.__name__, None)
         if custom_cls is None:
-            return
+            raise ValueError(f"no '{cls.__name__}' object found in '{custom_rules_file}'")
 
         return type(cls.__name__, (cls, custom_cls, TypeTranslator), {})
