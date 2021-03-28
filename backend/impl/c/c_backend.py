@@ -143,7 +143,7 @@ class CBackend(Backend):
         for t in self._types:
             if t.is_record():
                 types_all.add(t.without_const())
-            elif t.is_record_ref():
+            elif t.is_record_indirection():
                 types_all.add(t.pointee().without_const())
 
         types = types_all
@@ -182,7 +182,7 @@ class CBackend(Backend):
         # return type
         return_type = f.return_type()
 
-        if return_type.is_record_ref():
+        if return_type.is_record_indirection():
             return_type = return_type.pointee().without_const()
 
         return_type = return_type.target()

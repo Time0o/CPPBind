@@ -62,9 +62,11 @@ public:
   bool isLValueReference() const;
   bool isRValueReference() const;
   bool isPointer() const;
+  bool isIndirection() const;
   bool isRecord() const;
   bool isStruct() const;
   bool isClass() const;
+  bool isRecordIndirection() const;
   bool isConst() const;
 
   std::vector<WrapperType> baseTypes() const;

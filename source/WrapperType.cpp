@@ -120,6 +120,10 @@ WrapperType::isPointer() const
 { return type()->isPointerType(); }
 
 bool
+WrapperType::isIndirection() const
+{ return isPointer() || isReference(); }
+
+bool
 WrapperType::isRecord() const
 { return type()->isRecordType(); }
 
@@ -130,6 +134,10 @@ WrapperType::isStruct() const
 bool
 WrapperType::isClass() const
 { return type()->isClassType(); }
+
+bool
+WrapperType::isRecordIndirection() const
+{ return isIndirection() && pointee().isRecord(); }
 
 bool
 WrapperType::isConst() const

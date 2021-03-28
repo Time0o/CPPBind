@@ -3,10 +3,6 @@ from cppbind import Function, Identifier as Id, Type
 from text import code
 
 
-def _type_is_record_ref(self):
-    return (self.is_pointer() or self.is_reference()) and self.pointee().is_record()
-
-
 def _type_c_struct(self):
     return self.format(with_template_postfix=True,
                        with_prefix="struct ",
@@ -33,7 +29,6 @@ def _function_destruct(self, this):
     return f"{this}->~{t.format(quals=Id.REMOVE_QUALS)}();"
 
 
-Type.is_record_ref = _type_is_record_ref
 Type.c_struct = _type_c_struct
 
 Function.before_call = _function_before_call

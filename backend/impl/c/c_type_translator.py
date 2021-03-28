@@ -27,7 +27,7 @@ class CTypeTranslator(TypeTranslator):
     def target(cls, t, args):
         return t.c_struct()
 
-    @rule(lambda t: t.is_record_ref())
+    @rule(lambda t: t.is_record_indirection())
     def target(cls, t, args):
         return t.pointee().pointer_to().c_struct()
 
@@ -56,7 +56,7 @@ class CTypeTranslator(TypeTranslator):
     def input(cls, t, args):
         return "{interm} = {inp};"
 
-    @rule(lambda t: t.is_record() or t.is_record_ref())
+    @rule(lambda t: t.is_record() or t.is_record_indirection())
     def input(cls, t, args):
         if t.is_record():
             t_cast = t
@@ -113,7 +113,7 @@ class CTypeTranslator(TypeTranslator):
             return {Id.OUT};
             """)
 
-    @rule(lambda t: t.is_record_ref())
+    @rule(lambda t: t.is_record_indirection())
     def output(cls, t, args):
         if args.f.is_constructor():
             return code(
