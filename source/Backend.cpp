@@ -120,9 +120,12 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
   py::implicitly_convertible<std::string, Identifier>();
 
   py::class_<Include>(m, "Include")
-    .def(py::init<std::string, bool>(), "path"_a, "system"_a = false)
+    .def(py::init<std::string, bool>(),
+         "path"_a,
+         "system"_a = false)
     .def("__str__", [](Include const &Self){ return Self.str(); })
-    .def("str", &Include::str, "relative"_a = false)
+    .def("str", &Include::str,
+         "relative"_a = false)
     .def("path", &Include::path);
 
   py::class_<Wrapper, std::shared_ptr<Wrapper>>(m, "Wrapper")
@@ -135,105 +138,108 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
          py::return_value_policy::reference_internal);
 
   py::class_<Type>(m, "Type", py::dynamic_attr())
-    .def(py::init<std::string>(), "which"_a = "void")
+    .def(py::init<std::string>(),
+         "which"_a = "void")
     .def(py::self == py::self)
     .def(py::self != py::self)
     .def(hash(py::self))
-    .def("__str__", [](WrapperType const &Self){ return Self.str(); })
-    .def("str", &WrapperType::str,
+    .def("__str__", [](Type const &Self){ return Self.str(); })
+    .def("str", &Type::str,
          "with_template_postfix"_a = false)
-    .def("format", &WrapperType::format,
+    .def("format", &Type::format,
          "with_template_postfix"_a = false,
          "with_prefix"_a = "",
          "with_postfix"_a = "",
          "case"_a = Identifier::ORIG_CASE,
          "quals"_a = Identifier::KEEP_QUALS)
-    .def("mangled", &WrapperType::mangled)
-    .def("alias", &WrapperType::alias)
-    .def("is_const", &WrapperType::isConst)
-    .def("is_template_instantiation", &WrapperType::isTemplateInstantiation,
+    .def("mangled", &Type::mangled)
+    .def("alias", &Type::alias)
+    .def("is_const", &Type::isConst)
+    .def("is_template_instantiation", &Type::isTemplateInstantiation,
          "which"_a = nullptr)
-    .def("is_fundamental", &WrapperType::isFundamental,
+    .def("is_fundamental", &Type::isFundamental,
          "which"_a = nullptr)
-    .def("is_void", &WrapperType::isVoid)
-    .def("is_boolean", &WrapperType::isBoolean)
-    .def("is_enum", &WrapperType::isEnum)
-    .def("is_scoped_enum", &WrapperType::isScopedEnum)
-    .def("is_integral", &WrapperType::isIntegral)
-    .def("is_floating", &WrapperType::isFloating)
-    .def("is_c_string", &WrapperType::isCString)
-    .def("is_reference", &WrapperType::isReference)
-    .def("is_lvalue_reference", &WrapperType::isLValueReference)
-    .def("is_rvalue_reference", &WrapperType::isRValueReference)
-    .def("is_pointer", &WrapperType::isPointer)
-    .def("is_indirection", &WrapperType::isIndirection)
-    .def("is_record", &WrapperType::isRecord)
-    .def("is_class", &WrapperType::isClass)
-    .def("is_struct", &WrapperType::isStruct)
-    .def("is_record_indirection", &WrapperType::isRecordIndirection)
-    .def("base_types", &WrapperType::baseTypes)
-    .def("lvalue_reference_to", &WrapperType::lvalueReferenceTo)
-    .def("rvalue_reference_to", &WrapperType::rvalueReferenceTo)
-    .def("referenced", &WrapperType::referenced)
-    .def("pointer_to", &WrapperType::pointerTo, "repeat"_a = 0u)
-    .def("pointee", &WrapperType::pointee, "recursive"_a = false)
-    .def("underlying_integer_type", &WrapperType::underlyingIntegerType)
-    .def("qualifiers", &WrapperType::qualifiers)
-    .def("qualified", &WrapperType::qualified, "qualifiers"_a = 0u)
-    .def("unqualified", &WrapperType::unqualified)
-    .def("with_const", &WrapperType::withConst)
-    .def("without_const", &WrapperType::withoutConst)
-    .def("size", &WrapperType::size);
+    .def("is_void", &Type::isVoid)
+    .def("is_boolean", &Type::isBoolean)
+    .def("is_enum", &Type::isEnum)
+    .def("is_scoped_enum", &Type::isScopedEnum)
+    .def("is_integral", &Type::isIntegral)
+    .def("is_floating", &Type::isFloating)
+    .def("is_c_string", &Type::isCString)
+    .def("is_reference", &Type::isReference)
+    .def("is_lvalue_reference", &Type::isLValueReference)
+    .def("is_rvalue_reference", &Type::isRValueReference)
+    .def("is_pointer", &Type::isPointer)
+    .def("is_indirection", &Type::isIndirection)
+    .def("is_record", &Type::isRecord)
+    .def("is_class", &Type::isClass)
+    .def("is_struct", &Type::isStruct)
+    .def("is_record_indirection", &Type::isRecordIndirection)
+    .def("base_types", &Type::baseTypes)
+    .def("lvalue_reference_to", &Type::lvalueReferenceTo)
+    .def("rvalue_reference_to", &Type::rvalueReferenceTo)
+    .def("referenced", &Type::referenced)
+    .def("pointer_to", &Type::pointerTo, "repeat"_a = 0u)
+    .def("pointee", &Type::pointee, "recursive"_a = false)
+    .def("underlying_integer_type", &Type::underlyingIntegerType)
+    .def("qualifiers", &Type::qualifiers)
+    .def("qualified", &Type::qualified, "qualifiers"_a = 0u)
+    .def("unqualified", &Type::unqualified)
+    .def("with_const", &Type::withConst)
+    .def("without_const", &Type::withoutConst)
+    .def("size", &Type::size);
 
   py::implicitly_convertible<std::string, Type>();
 
   py::class_<Constant>(m, "Constant", py::dynamic_attr())
-    .def("name", &WrapperConstant::getName)
-    .def("type", &WrapperConstant::getType);
+    .def("name", &Constant::getName)
+    .def("type", &Constant::getType);
 
   py::class_<Function>(m, "Function", py::dynamic_attr())
-    .def("name", &WrapperFunction::getName, "with_template_postfix"_a = false,
-                                            "with_overload_postfix"_a = false,
-                                            "without_operator_name"_a = false)
-    .def("enclosing_namespaces", &WrapperFunction::getEnclosingNamespaces)
+    .def("name", &Function::getName,
+         "with_template_postfix"_a = false,
+         "with_overload_postfix"_a = false,
+         "without_operator_name"_a = false)
+    .def("enclosing_namespaces", &Function::getEnclosingNamespaces)
     .def("return_type", &Function::getReturnType)
     .def("out_type", &Function::getOutType)
     .def("parameters",
-         py::overload_cast<>(&WrapperFunction::getParameters, py::const_),
+         py::overload_cast<>(&Function::getParameters, py::const_),
          py::return_value_policy::reference_internal)
-    .def("parent", &WrapperFunction::getParent)
-    .def("overloaded_operator", &WrapperFunction::getOverloadedOperator)
-    .def("template_argument_list", &WrapperFunction::getTemplateArgumentList)
-    .def("is_member", &WrapperFunction::isMember)
-    .def("is_instance", &WrapperFunction::isInstance)
-    .def("is_constructor", &WrapperFunction::isConstructor)
-    .def("is_destructor", &WrapperFunction::isDestructor)
-    .def("is_static", &WrapperFunction::isStatic)
-    .def("is_const", &WrapperFunction::isConst)
-    .def("is_noexcept", &WrapperFunction::isNoexcept)
-    .def("is_overloaded_operator", &WrapperFunction::isOverloadedOperator)
-    .def("is_template_instantiation", &WrapperFunction::isTemplateInstantiation);
+    .def("parent", &Function::getParent)
+    .def("overloaded_operator", &Function::getOverloadedOperator)
+    .def("template_argument_list", &Function::getTemplateArgumentList)
+    .def("is_member", &Function::isMember)
+    .def("is_instance", &Function::isInstance)
+    .def("is_constructor", &Function::isConstructor)
+    .def("is_destructor", &Function::isDestructor)
+    .def("is_static", &Function::isStatic)
+    .def("is_const", &Function::isConst)
+    .def("is_noexcept", &Function::isNoexcept)
+    .def("is_overloaded_operator", &Function::isOverloadedOperator)
+    .def("is_template_instantiation", &Function::isTemplateInstantiation);
 
   py::class_<Parameter>(m, "Parameter")
-    .def("name", &WrapperParameter::getName)
-    .def("type", &WrapperParameter::getType)
-    .def("default_argument", &WrapperParameter::getDefaultArgument)
-    .def("is_self", &WrapperParameter::isSelf)
-    .def("is_out", &WrapperParameter::isOut);
+    .def("name", &Parameter::getName)
+    .def("type", &Parameter::getType)
+    .def("default_argument", &Parameter::getDefaultArgument)
+    .def("is_self", &Parameter::isSelf)
+    .def("is_out", &Parameter::isOut);
 
   auto PyRecord = py::class_<Record>(m, "Record", py::dynamic_attr())
-    .def("name", &WrapperRecord::getName, "with_template_postfix"_a = false)
-    .def("type", &WrapperRecord::getType)
+    .def("name", &Record::getName,
+         "with_template_postfix"_a = false)
+    .def("type", &Record::getType)
     .def("bases",
-         py::overload_cast<>(&WrapperRecord::getBases, py::const_),
+         py::overload_cast<>(&Record::getBases, py::const_),
          py::return_value_policy::reference_internal)
     .def("functions",
-         py::overload_cast<>(&WrapperRecord::getFunctions, py::const_),
+         py::overload_cast<>(&Record::getFunctions, py::const_),
          py::return_value_policy::reference_internal)
-    .def("template_argument_list", &WrapperRecord::getTemplateArgumentList)
-    .def("is_abstract", &WrapperRecord::isAbstract)
-    .def("is_copyable", &WrapperRecord::isCopyable)
-    .def("is_moveable", &WrapperRecord::isMoveable);
+    .def("template_argument_list", &Record::getTemplateArgumentList)
+    .def("is_abstract", &Record::isAbstract)
+    .def("is_copyable", &Record::isCopyable)
+    .def("is_moveable", &Record::isMoveable);
 
   #define RO_PROP(NAME, VALUE) \
     .def_property_readonly_static(NAME, [](py::object const &){ return VALUE; })
