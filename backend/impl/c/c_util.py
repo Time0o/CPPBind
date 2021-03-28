@@ -5,8 +5,9 @@ from file import Path
 
 _NS = f"cppbind::c"
 
-INIT_OWNING_STRUCT = f"{_NS}::init_owning_struct"
-INIT_NON_OWNING_STRUCT = f"{_NS}::init_non_owning_struct"
+MAKE_OWNING_STRUCT_MEM = f"{_NS}::make_owning_struct_mem"
+MAKE_OWNING_STRUCT_ARGS = f"{_NS}::make_owning_struct_args"
+MAKE_NON_OWNING_STRUCT = f"{_NS}::make_non_owning_struct"
 STRUCT_CAST = f"{_NS}::struct_cast"
 
 
@@ -18,15 +19,19 @@ def path_cc():
     return Path(os.path.join('cppbind', 'c', 'c_util_cc.h'))
 
 
-def init_owning_struct(s, t, args):
+def make_owning_struct_mem(s, t, mem):
+    return f"{MAKE_OWNING_STRUCT_MEM}<{t}>({s}, {mem})"
+
+
+def make_owning_struct_args(s, t, args):
     if args:
-        return f"{INIT_OWNING_STRUCT}<{t}>({s}, {args})"
+        return f"{MAKE_OWNING_STRUCT_ARGS}<{t}>({s}, {args})"
     else:
-       return f"{INIT_OWNING_STRUCT}<{t}>({s})"
+       return f"{MAKE_OWNING_STRUCT_ARGS}<{t}>({s})"
 
 
-def init_non_owning_struct(s, ptr):
-    return f"{INIT_NON_OWNING_STRUCT}({s}, {ptr})"
+def make_non_owning_struct(s, ptr):
+    return f"{MAKE_NON_OWNING_STRUCT}({s}, {ptr})"
 
 
 def struct_cast(t, what):

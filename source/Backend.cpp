@@ -91,6 +91,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .export_values();
 
   PyIdentifier
+    .def_readonly_static("TMP", &Identifier::TMP)
     .def_readonly_static("SELF", &Identifier::SELF)
     .def_readonly_static("RET", &Identifier::RET)
     .def_readonly_static("OUT", &Identifier::OUT)

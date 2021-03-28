@@ -108,18 +108,27 @@ class CTypeTranslator(TypeTranslator):
     def output(cls, t, args):
         return code(
             f"""
-            {c_util.init_owning_struct(f'&{Id.OUT}', t, '{outp}')};
+            {t.c_struct()} {Id.OUT};
+            {c_util.make_owning_struct_args(f'&{Id.OUT}', t, '{outp}')};
             return {Id.OUT};
             """)
 
     @rule(lambda t: t.is_record_ref())
     def output(cls, t, args):
         if args.f.is_constructor():
-            return "return {outp};"
+            return code(
+                f"""
+                static_cast<void>({{outp}});
+
+                {t.pointee().c_struct()} {Id.OUT};
+                {c_util.make_owning_struct_mem(f'&{Id.OUT}', t.pointee(), Id.TMP)};
+                return {Id.OUT};
+                """)
         else:
             return code(
                 f"""
-                {c_util.init_non_owning_struct(f'&{Id.OUT}', '{outp}')};
+                {t.pointee().without_const().c_struct()} {Id.OUT};
+                {c_util.make_non_owning_struct(f'&{Id.OUT}', '{outp}')};
                 return {Id.OUT};
                 """)
 

@@ -166,7 +166,7 @@ def _function_forward_call(self):
     if self.return_type().is_lvalue_reference():
         call = f"&{call}"
 
-    if  self.return_type().is_void() or self.noreturn():
+    if self.return_type().is_void():
         call = f"{call}";
         outp = None
     else:
@@ -206,9 +206,9 @@ def _function_after_call(self):
 
 
 def _function_construct(self, parameters):
-    cons = self.parent().type()
+    t = self.parent().type()
 
-    return f"new {cons}({parameters});"
+    return f"new {t}({parameters});"
 
 
 def _function_destruct(self, this):
@@ -257,10 +257,6 @@ def _function_try_catch(self, what):
         unknown_except=unknown_except)
 
 
-def _function_noreturn(self):
-    return False
-
-
 _patch(Type, 'target', _type_target)
 
 _patch(Constant, 'assign', _constant_assign)
@@ -274,7 +270,6 @@ _patch(Function, 'destruct', _function_destruct)
 _patch(Function, 'forward_call', _function_forward_call)
 _patch(Function, 'forward', _function_forward)
 _patch(Function, 'try_catch', _function_try_catch)
-_patch(Function, 'noreturn', _function_noreturn)
 
 _patch(Constant, 'name_target', _name(default_case=Id.SNAKE_CASE_CAP_ALL))
 

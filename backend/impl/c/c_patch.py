@@ -15,26 +15,16 @@ def _type_c_struct(self):
 
 
 def _function_before_call(self):
-    rt = self.return_type()
-    if rt.is_record() or rt.is_record_ref():
-        if rt.is_record():
-            t = rt
-        elif rt.is_record_ref():
-            t = rt.pointee()
+    if self.is_constructor():
+        t = self.parent().type()
 
-        t = t.without_const()
-
-        return f"{t.c_struct()} {Id.OUT};"
+        return f"char {Id.TMP}[{t.size()}];"
 
 
 def _function_construct(self, parameters):
     t = self.parent().type()
 
-    return code(
-        f"""
-        {Id.OUT};
-        {c_util.init_owning_struct(f'&{Id.RET}', t, parameters)};
-        """)
+    return f"new ({Id.TMP}) {t}({parameters});"
 
 
 def _function_destruct(self, this):

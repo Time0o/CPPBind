@@ -1,11 +1,23 @@
+#include <cstring>
+
 namespace cppbind
 {
 
 namespace c
 {
 
+template<typename T, typename S>
+S *make_owning_struct_mem(S *s, char *mem)
+{
+  std::memcpy(s->obj.mem, mem, sizeof(T));
+  s->is_initialized = 1;
+  s->is_const = 0;
+  s->is_owning = 1;
+  return s;
+}
+
 template<typename T, typename S, typename ...ARGS>
-S *init_owning_struct(S *s, ARGS &&...args)
+S *make_owning_struct_args(S *s, ARGS &&...args)
 {
   new (s->obj.mem) T(std::forward<ARGS>(args)...);
   s->is_initialized = 1;
@@ -15,7 +27,7 @@ S *init_owning_struct(S *s, ARGS &&...args)
 }
 
 template<typename T, typename S>
-S *init_non_owning_struct(S *s, T *obj)
+S *make_non_owning_struct(S *s, T *obj)
 {
   s->obj.ptr = static_cast<void *>(obj);
   s->is_initialized = 1;
@@ -25,7 +37,7 @@ S *init_non_owning_struct(S *s, T *obj)
 }
 
 template<typename T, typename S>
-S *init_non_owning_struct(S *s, T const *obj)
+S *make_non_owning_struct(S *s, T const *obj)
 {
   s->obj.ptr = const_cast<void *>(static_cast<void const *>(obj));
   s->is_initialized = 1;

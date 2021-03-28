@@ -183,9 +183,9 @@ class CBackend(Backend):
         return_type = f.return_type()
 
         if return_type.is_record_ref():
-            return_type = return_type.pointee()
+            return_type = return_type.pointee().without_const()
 
-        return_type = return_type.without_const().target()
+        return_type = return_type.target()
 
         # parameters
         parameters = []
