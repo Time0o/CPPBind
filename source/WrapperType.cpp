@@ -24,12 +24,11 @@ WrapperType::WrapperType()
 {}
 
 WrapperType::WrapperType(clang::QualType const &Type)
-: SugaredType_(Type),
-  Type_(Type.getCanonicalType()),
-  BaseTypes_(determineBaseTypes(Type)),
-  Size_(determineSize(Type)),
-  Template_(determineTemplate(Type)),
-  TemplateArgumentList_(determineTemplateArgumentList(Type))
+: Type_(determineType(Type)),
+  BaseTypes_(determineBaseTypes(Type_)),
+  Size_(determineSize(Type_)),
+  Template_(determineTemplate(Type_)),
+  TemplateArgumentList_(determineTemplateArgumentList(Type_))
 {}
 
 WrapperType::WrapperType(clang::Type const *Type)
@@ -46,11 +45,11 @@ WrapperType::WrapperType(clang::TypeDecl const *Decl)
 
 bool
 WrapperType::operator==(WrapperType const &Other) const
-{ return Other.mangled() == mangled(); }
+{ return Other.str() == str(); }
 
 bool
 WrapperType::operator<(WrapperType const &Other) const
-{ return mangled() < Other.mangled(); }
+{ return str() < Other.str(); }
 
 bool
 WrapperType::isTemplateInstantiation(char const *Which) const
@@ -146,11 +145,22 @@ bool
 WrapperType::isConst() const
 { return type().isConstQualified(); }
 
+WrapperType
+WrapperType::canonical() const
+{ return WrapperType(Type_.getCanonicalType()); }
+
 std::vector<WrapperType>
 WrapperType::baseTypes() const
 {
   assert(isRecord());
-  return BaseTypes_;
+
+  std::vector<WrapperType> BaseTypes;
+  BaseTypes.reserve(BaseTypes_.size());
+
+  for (auto const &Type : BaseTypes_)
+    BaseTypes.emplace_back(Type);
+
+  return BaseTypes;
 }
 
 WrapperType
@@ -238,55 +248,47 @@ WrapperType::format(bool WithTemplatePostfix,
 {
   WrapperType BaseType(fullyDerefType(Type_));
 
-  if (BaseType.isRecord()) {
-    auto Str(print::qualType(type()));
+  auto Str(print::qualType(type()));
 
-    auto StrBase(print::qualType(requalifyType(BaseType.type(), 0u)));
+  auto StrBase(print::qualType(requalifyType(BaseType.type(), 0u)));
 
-    auto StrReplace = StrBase;
+  auto StrReplace = StrBase;
 
-    if (WithTemplatePostfix && BaseType.isTemplateInstantiation()) {
-      StrReplace = TemplateArgumentList::strip(StrReplace)
-                 + BaseType.TemplateArgumentList_->str(true);
-    }
-
-    StrReplace = Identifier(StrReplace).format(Case, Quals);
-
-    StrReplace = WithPrefix + StrReplace + WithPostfix;
-
-    string::replace(Str, StrBase, StrReplace);
-
-    return Str;
-
-  } else {
-    return print::qualType(type());
+  if (WithTemplatePostfix && BaseType.isTemplateInstantiation()) {
+    StrReplace = TemplateArgumentList::strip(StrReplace)
+               + BaseType.TemplateArgumentList_->str(true);
   }
+
+  StrReplace = Identifier(StrReplace).format(Case, Quals);
+
+  StrReplace = WithPrefix + StrReplace + WithPostfix;
+
+  string::replace(Str, StrBase, StrReplace);
+
+  return Str;
 }
 
 std::string
 WrapperType::mangled() const
 { return print::mangledQualType(type()); }
 
-std::optional<std::string>
-WrapperType::alias() const
+clang::QualType
+WrapperType::determineType(clang::QualType const &Type)
 {
-  auto TypedefType = SugaredType_->getAs<clang::TypedefType>();
-  if (!TypedefType)
-    return std::nullopt;
+  if (TemplateArgumentList::contains(Type.getAsString()))
+    return Type.getCanonicalType();
 
-  auto Decl = TypedefType->getDecl();
-
-  return Decl->getNameAsString();
+  return Type;
 }
 
-std::vector<WrapperType>
+std::vector<clang::QualType>
 WrapperType::determineBaseTypes(clang::QualType const &Type)
 {
   auto CXXRecordDecl = Type->getAsCXXRecordDecl();
   if (!CXXRecordDecl || !CXXRecordDecl->hasDefinition())
     return {};
 
-  std::vector<WrapperType> BaseTypes;
+  std::vector<clang::QualType> BaseTypes;
 
   for (auto const &Base : CXXRecordDecl->bases()) {
     if (Base.getAccessSpecifier() == clang::AS_public)

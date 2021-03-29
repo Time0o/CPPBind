@@ -98,19 +98,8 @@ class CBackend(Backend):
         return f"GUARD_{guard_id}_C_H"
 
     def _typedefs(self):
-        alias_types = set()
-
-        for t in self.types():
-            while True:
-                if t.alias() is not None:
-                    alias_types.add(t)
-
-                if not (t.is_reference() or t.is_pointer()):
-                    break
-
-                t = t.pointee()
-
-        return [f"typedef {t} {t.alias()};" for t in alias_types]
+        return [f"typedef {t.target()} {a.target()};"
+                for a, t in self.type_aliases()]
 
     def _record_declarations(self):
         return [self._record_declaration(t) for t in self._record_types()]
@@ -119,12 +108,12 @@ class CBackend(Backend):
         return [self._record_definition(t) for t in self._record_types(which)]
 
     def _record_declaration(self, t):
-        return f"{t.c_struct()};"
+        return f"{t.target()};"
 
     def _record_definition(self, t):
         return code(
             f"""
-            {t.c_struct()}
+            {t.target()}
             {{
               union {{
                 char mem[{t.size()}];

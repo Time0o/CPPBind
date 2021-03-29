@@ -3,13 +3,6 @@ from cppbind import Function, Identifier as Id, Type
 from text import code
 
 
-def _type_c_struct(self):
-    return self.format(with_template_postfix=True,
-                       with_prefix="struct ",
-                       case=Id.SNAKE_CASE,
-                       quals=Id.REPLACE_QUALS)
-
-
 def _function_before_call(self):
     if self.is_constructor():
         t = self.parent().type()
@@ -28,8 +21,6 @@ def _function_destruct(self, this):
 
     return f"{this}->~{t.format(quals=Id.REMOVE_QUALS)}();"
 
-
-Type.c_struct = _type_c_struct
 
 Function.before_call = _function_before_call
 Function.construct = _function_construct

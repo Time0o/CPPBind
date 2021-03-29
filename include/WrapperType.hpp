@@ -69,6 +69,8 @@ public:
   bool isRecordIndirection() const;
   bool isConst() const;
 
+  WrapperType canonical() const;
+
   std::vector<WrapperType> baseTypes() const;
 
   WrapperType lvalueReferenceTo() const;
@@ -99,10 +101,11 @@ public:
 
   std::string mangled() const;
 
-  std::optional<std::string> alias() const;
-
 private:
-  static std::vector<WrapperType>
+  static clang::QualType
+  determineType(clang::QualType const &Type);
+
+  static std::vector<clang::QualType>
   determineBaseTypes(clang::QualType const &Type);
 
   static std::size_t
@@ -125,11 +128,8 @@ private:
   static clang::QualType requalifyType(clang::QualType const &Type,
                                        unsigned Qualifiers);
 
-  clang::QualType SugaredType_;
   clang::QualType Type_;
-
-  std::vector<WrapperType> BaseTypes_;
-
+  std::vector<clang::QualType> BaseTypes_;
   std::size_t Size_;
 
   std::optional<std::string> Template_;
@@ -137,7 +137,7 @@ private:
 };
 
 inline std::size_t hash_value(WrapperType const &Wt)
-{ return std::hash<std::string>()(Wt.mangled()); }
+{ return std::hash<std::string>()(Wt.str()); }
 
 } // namespace cppbind
 

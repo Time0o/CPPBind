@@ -1,5 +1,6 @@
 import c_util
 from cppbind import Identifier as Id, Options
+from functools import partial
 from text import code
 from type_translator import TypeTranslator
 
@@ -7,29 +8,41 @@ from type_translator import TypeTranslator
 class CTypeTranslator(TypeTranslator):
     rule = TypeTranslator.rule
 
+    @classmethod
+    def _c_type(cls, t):
+        fmt = partial(t.format,
+                      with_template_postfix=True,
+                      case=Id.SNAKE_CASE,
+                      quals=Id.REPLACE_QUALS)
+
+        if t.is_record() or t.is_record_indirection():
+            return fmt(with_prefix='struct ')
+
+        return fmt()
+
     @rule(lambda t: t.is_boolean())
     def target(cls, t, args):
         return 'int'
 
     @rule(lambda t: t.is_enum())
     def target(cls, t, args):
-        return str(t.underlying_integer_type())
+        return cls._c_type(t.underlying_integer_type())
 
     @rule(lambda t: t.is_pointer() and t.pointee(recursive=True).is_fundamental())
     def target(cls, t, args):
-        return str(t)
+        return cls._c_type(t)
 
     @rule(lambda t: t.is_reference() and t.referenced().is_fundamental())
     def target(cls, t, args):
-        return str(t.referenced().pointer_to())
+        return cls._c_type(t.referenced().pointer_to())
 
     @rule(lambda t: t.is_record())
     def target(cls, t, args):
-        return t.c_struct()
+        return cls._c_type(t)
 
     @rule(lambda t: t.is_record_indirection())
     def target(cls, t, args):
-        return t.pointee().pointer_to().c_struct()
+        return cls._c_type(t.pointee().pointer_to())
 
     @rule(lambda t: t.is_pointer() or t.is_reference())
     def target(cls, t, args):
@@ -37,7 +50,7 @@ class CTypeTranslator(TypeTranslator):
 
     @rule(lambda _: True)
     def target(cls, t, args):
-        return str(t)
+        return cls._c_type(t)
 
     @rule(lambda t: t.is_enum())
     def constant(cls, t, args):
@@ -108,7 +121,7 @@ class CTypeTranslator(TypeTranslator):
     def output(cls, t, args):
         return code(
             f"""
-            {t.c_struct()} {Id.OUT};
+            {cls._c_type(t)} {Id.OUT};
             {c_util.make_owning_struct_args(f'&{Id.OUT}', t, '{outp}')};
             return {Id.OUT};
             """)
@@ -120,14 +133,14 @@ class CTypeTranslator(TypeTranslator):
                 f"""
                 static_cast<void>({{outp}});
 
-                {t.pointee().c_struct()} {Id.OUT};
+                {cls._c_type(t.pointee())} {Id.OUT};
                 {c_util.make_owning_struct_mem(f'&{Id.OUT}', t.pointee(), Id.TMP)};
                 return {Id.OUT};
                 """)
         else:
             return code(
                 f"""
-                {t.pointee().without_const().c_struct()} {Id.OUT};
+                {cls._c_type(t.pointee().without_const())} {Id.OUT};
                 {c_util.make_non_owning_struct(f'&{Id.OUT}', '{outp}')};
                 return {Id.OUT};
                 """)

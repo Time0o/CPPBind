@@ -57,7 +57,11 @@ public:
 
   TemplateArgumentList(clang::ClassTemplateSpecializationDecl const *Decl)
   : TemplateArgumentList(Decl->getTemplateArgs())
+
   {}
+
+  static bool contains(std::string const &What)
+  { return What.find('<') != std::string::npos; }
 
   static std::string strip(std::string const &What)
   { return What.substr(0, What.find('<')); }

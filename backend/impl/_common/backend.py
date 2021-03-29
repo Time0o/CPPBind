@@ -19,18 +19,23 @@ class Backend(metaclass=Generic):
         self._functions = wrapper.functions()
 
         self._types = set()
+        self._type_aliases = set()
+
+        def add_type(t):
+            self._types.add(t)
+
+            if t.canonical() != t:
+                self._type_aliases.add((t, t.canonical()))
 
         for r in self._records:
-            self._types.add(r.type())
+            add_type(r.type())
 
         for v in self._constants:
-            self._types.add(v.type())
+            add_type(v.type())
 
         for f in chain(self._functions, *(r.functions() for r in self._records)):
             for t in [f.return_type()] + [p.type() for p in f.parameters()]:
-                self._types.add(t)
-
-        self._types = list(sorted(self._types, key=lambda t: t.str()))
+                add_type(t)
 
     def run(self):
         self.wrap_before()
@@ -80,7 +85,10 @@ class Backend(metaclass=Generic):
         return self._functions
 
     def types(self):
-        return self._types
+        return sorted(self._types)
+
+    def type_aliases(self):
+        return sorted(self._type_aliases)
 
     @abstractmethod
     def wrap_before(self):
