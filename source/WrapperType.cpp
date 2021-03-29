@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include "clang/AST/RecordLayout.h"
+
 #include "llvm/ADT/StringRef.h"
 
 #include "CompilerState.hpp"
@@ -25,6 +27,7 @@ WrapperType::WrapperType(clang::QualType const &Type)
 : SugaredType_(Type),
   Type_(Type.getCanonicalType()),
   BaseTypes_(determineBaseTypes(Type)),
+  Size_(determineSize(Type)),
   Template_(determineTemplate(Type)),
   TemplateArgumentList_(determineTemplateArgumentList(Type))
 {}
@@ -220,7 +223,7 @@ WrapperType::withoutConst() const
 
 std::size_t
 WrapperType::size() const
-{ return ASTContext().getTypeInfo(type()).Width; }
+{ return Size_; }
 
 std::string
 WrapperType::str(bool WithTemplatePostfix) const
@@ -291,6 +294,25 @@ WrapperType::determineBaseTypes(clang::QualType const &Type)
   }
 
   return BaseTypes;
+}
+
+std::size_t
+WrapperType::determineSize(clang::QualType const &Type)
+{
+  auto RecordDecl = Type->getAsRecordDecl();
+
+  if (RecordDecl) {
+    RecordDecl = RecordDecl->getDefinition();
+    if (!RecordDecl)
+      return 0;
+
+    auto const &Layout = ASTContext().getASTRecordLayout(RecordDecl);
+
+    return static_cast<std::size_t>(Layout.getSize().getQuantity());
+
+  }
+
+  return ASTContext().getTypeInfo(Type).Width;
 }
 
 bool

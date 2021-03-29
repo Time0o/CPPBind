@@ -105,6 +105,9 @@ private:
   static std::vector<WrapperType>
   determineBaseTypes(clang::QualType const &Type);
 
+  static std::size_t
+  determineSize(clang::QualType const &Type);
+
   static bool
   _isTemplateInstantiation(clang::QualType const &Type);
 
@@ -126,6 +129,8 @@ private:
   clang::QualType Type_;
 
   std::vector<WrapperType> BaseTypes_;
+
+  std::size_t Size_;
 
   std::optional<std::string> Template_;
   std::optional<TemplateArgumentList> TemplateArgumentList_;
