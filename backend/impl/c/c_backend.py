@@ -131,9 +131,9 @@ class CBackend(Backend):
                 void *ptr;
               }} obj;
 
-              int is_initialized;
-              int is_const;
-              int is_owning;
+              char is_initialized;
+              char is_const;
+              char is_owning;
             }};
             """)
 
