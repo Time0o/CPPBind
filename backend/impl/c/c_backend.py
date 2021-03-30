@@ -128,15 +128,24 @@ class CBackend(Backend):
 
     def _record_types(self, which='all'):
         types_all = set()
+        types_header = set()
+
+        def add_record_type(t, which):
+            if t.target().startswith('struct'):
+                if which == 'all':
+                    types_all.add(t)
+                elif which == 'header':
+                    types_header.add(t)
 
         for t in self._types:
             if t.is_record():
-                types_all.add(t.without_const())
+                add_record_type(t.without_const(), 'all')
             elif t.is_record_indirection():
-                types_all.add(t.pointee().without_const())
+                add_record_type(t.pointee().without_const(), 'all')
 
-        types = types_all
-        types_header = set(r.type() for r in self.records())
+        for r in self.records():
+            add_record_type(r.type(), 'header')
+
         types_source = types_all - types_header
 
         if which == 'all':
