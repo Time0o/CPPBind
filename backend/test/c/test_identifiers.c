@@ -16,6 +16,7 @@ int main()
   test_l4();
   test_l4_re();
   test_l4_virtio();
+  test_l4_func();
 
   return 0;
 }

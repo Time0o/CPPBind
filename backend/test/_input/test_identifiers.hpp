@@ -13,6 +13,7 @@ void BARFoo() {}
 void L4() {}
 void L4Re() {}
 void L4virtio() {}
+void l4_func() {}
 
 // XXX mixed snake and pascal case
 

@@ -131,6 +131,9 @@ Identifier::Component::stripUnderscores(std::string const &Name,
 std::vector<std::string>
 Identifier::Component::splitNamePascalCase(std::string const &Name)
 {
+  if (Name.size() <= 2)
+    return {Name};
+
   static boost::regex R(
     "(?<=[A-Z0-9])(?=[A-Z][a-z])"
     "|(?<=[0-9])(?=[a-z])"
