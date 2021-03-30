@@ -1,8 +1,11 @@
 #ifndef GUARD_CREATE_WRAPPER_H
 #define GUARD_CREATE_WRAPPER_H
 
+#include <cstdint>
 #include <memory>
 #include <string>
+#include <type_traits>
+#include <unordered_set>
 #include <vector>
 
 #include "clang/AST/Decl.h"
@@ -48,11 +51,35 @@ private:
 
   void addWrapperHandlers();
 
-  void handleFundamentalTypeDecl(clang::ValueDecl const *Decl);
+  void handleFundamentalType(clang::ValueDecl const *Decl);
   void handleEnumConst(clang::EnumDecl const *Decl);
   void handleVarConst(clang::VarDecl const *Decl);
   void handleFunction(clang::FunctionDecl const *Decl);
   void handleRecord(clang::CXXRecordDecl const *Decl);
+
+  template<typename T_>
+  struct HandlerDeclType;
+
+  template<typename T_, typename HANDLER_>
+  struct HandlerDeclType<void (HANDLER_::*)(T_ const*)> { using type = T_; };
+
+  template<auto HANDLER>
+  void handleDecl(clang::Decl const *Decl)
+  {
+    static_assert(std::is_member_function_pointer_v<decltype(HANDLER)>);
+
+    using T = typename HandlerDeclType<decltype(HANDLER)>::type;
+
+    if (DeclIDCache_.insert(Decl->getID()).second) {
+      (this->*HANDLER)(llvm::dyn_cast<T>(Decl));
+    }
+  }
+
+  template<auto HANDLER>
+  auto declHandler()
+  { return &CreateWrapperConsumer::handleDecl<HANDLER>; }
+
+  std::unordered_set<std::int64_t> DeclIDCache_;
 
   std::shared_ptr<Wrapper> Wrapper_;
 };

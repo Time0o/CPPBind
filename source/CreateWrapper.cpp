@@ -58,9 +58,9 @@ CreateWrapperConsumer::addFundamentalTypesHandler()
     valueDecl(hasParent(namespaceDecl(hasName("cppbind::fundamental_types")))));
 
   addHandler<clang::ValueDecl>(
-    "fundamentalTypeDecl",
-    FundamentalTypeMatcher.bind("fundamentalTypeDecl"),
-    &CreateWrapperConsumer::handleFundamentalTypeDecl);
+    "fundamentalType",
+    FundamentalTypeMatcher.bind("fundamentalType"),
+    &CreateWrapperConsumer::handleFundamentalType);
 }
 
 void
@@ -106,13 +106,13 @@ CreateWrapperConsumer::addWrapperHandlers()
     if (MatcherID == "const") {
       addWrapperHandler<clang::EnumDecl>(
         "enumConst",
-        match("enumDecl", MatchToplevel),
-        &CreateWrapperConsumer::handleEnumConst);
+        match("enumDecl", MatchToplevelOrNested),
+        declHandler<&CreateWrapperConsumer::handleEnumConst>());
 
       addWrapperHandler<clang::VarDecl>(
         "VarConst",
-        match("varDecl", "allOf(isConstexpr(), {0})", MatchToplevel),
-        &CreateWrapperConsumer::handleVarConst);
+        match("varDecl", "allOf(isConstexpr(), {0})", MatchToplevelOrNested),
+        declHandler<&CreateWrapperConsumer::handleVarConst>());
 
     } else if (MatcherID == "function") {
       addWrapperHandler<clang::FunctionDecl>(
@@ -123,7 +123,7 @@ CreateWrapperConsumer::addWrapperHandlers()
                           "allOf(isTemplateInstantiation(),"
                                 "hasParent(functionTemplateDecl({0})))))",
               MatchToplevel),
-        &CreateWrapperConsumer::handleFunction);
+        declHandler<&CreateWrapperConsumer::handleFunction>());
 
     } else if (MatcherID == "record") {
       addWrapperHandler<clang::CXXRecordDecl>(
@@ -133,7 +133,7 @@ CreateWrapperConsumer::addWrapperHandlers()
                     "allOf(isTemplateInstantiation(),"
                           "hasParent(classTemplateDecl({0}))))",
               MatchToplevelOrNested),
-        &CreateWrapperConsumer::handleRecord);
+        declHandler<&CreateWrapperConsumer::handleRecord>());
 
     } else {
       throw log::exception("invalid matcher: '{0}'", MatcherID);
@@ -142,7 +142,7 @@ CreateWrapperConsumer::addWrapperHandlers()
 }
 
 void
-CreateWrapperConsumer::handleFundamentalTypeDecl(clang::ValueDecl const *Decl)
+CreateWrapperConsumer::handleFundamentalType(clang::ValueDecl const *Decl)
 {
   auto const *Type = Decl->getType().getTypePtr();
 
