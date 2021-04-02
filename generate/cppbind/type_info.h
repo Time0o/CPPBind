@@ -2,8 +2,8 @@
 #define GUARD_CPPBIND_TYPE_INFO_H
 
 #include <cassert>
+#include <cstdint>
 #include <type_traits>
-#include <typeindex>
 #include <typeinfo>
 #include <utility>
 
@@ -84,11 +84,11 @@ class type
 public:
   template<typename T>
   static void add(type const *obj)
-  { lookup().insert(hash<T>(), obj); }
+  { lookup().insert(id<T>(), obj); }
 
   template<typename T>
   static type const *get()
-  { return *lookup().find(hash<T>()); }
+  { return *lookup().find(id<T>()); }
 
   virtual void *copy(void const *obj) const = 0;
   virtual void *move(void *obj) const = 0;
@@ -98,17 +98,24 @@ public:
   virtual void *cast(type const *to, void *obj) const = 0;
 
 private:
-  using map = simple_map<std::size_t, type const *>;
+  template<typename T>
+  static std::uintptr_t id()
+  { return id_cv<typename std::remove_cv<T>::type>(); }
+
+  template<typename T>
+  static std::uintptr_t id_cv()
+  {
+    static int id;
+    return reinterpret_cast<std::uintptr_t>(&id);
+  }
+
+  using map = simple_map<std::uintptr_t, type const *>;
 
   static map &lookup()
   {
     static map lookup_instance;
     return lookup_instance;
   }
-
-  template<typename T>
-  static std::size_t hash()
-  { return typeid(typename std::remove_const<T>::type).hash_code(); }
 };
 
 template<typename T, typename ...BS>
