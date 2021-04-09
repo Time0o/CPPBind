@@ -101,6 +101,7 @@ private:
   std::deque<WrapperConstant> Constants_;
 
   std::deque<WrapperFunction> Functions_;
+  std::unordered_map<Identifier, std::deque<WrapperFunction const *>> FunctionNames_;
 
   std::deque<WrapperRecord> Records_;
   std::unordered_map<std::string, WrapperRecord const *> RecordTypesMangled_;

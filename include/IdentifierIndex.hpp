@@ -62,7 +62,17 @@ public:
   { return add(Id, Type, false); }
 
   Identifier addDefinition(Identifier Id, Type Type)
-  { return add(Id, Type, true); }
+  {
+    if (hasDeclaration(Id, Type)) {
+      auto P(props(Id));
+      assert(P->Type == Type);
+      P->IsDefinition = true;
+
+      return Id;
+    }
+
+    return add(Id, Type, true);
+  }
 
   bool hasDeclaration(Identifier const &Id, Type Type) const
   { return has(Id, Type, false); }
@@ -101,7 +111,6 @@ private:
   Identifier add(Identifier Id, Type Type, bool Definition)
   {
     // XXX conflict resolution
-
     std::shared_ptr<Props> P;
 
     switch (Type) {
@@ -130,18 +139,19 @@ private:
     return Props->Type == Type && (!Definition || Props->IsDefinition);
   }
 
-  template<typename T>
-  std::shared_ptr<T> props(Identifier const &Id) const
+  std::shared_ptr<Props> props(Identifier const &Id) const
   {
     auto It(Index_.find(Id));
 
     if (It == Index_.end())
       return nullptr;
 
-    auto Props(It->second);
-
-    return std::static_pointer_cast<T>(Props);
+    return It->second;
   }
+
+  template<typename T>
+  std::shared_ptr<T> props(Identifier const &Id) const
+  { return std::static_pointer_cast<T>(props(Id)); }
 
   std::map<Identifier, std::shared_ptr<Props>> Index_;
 };

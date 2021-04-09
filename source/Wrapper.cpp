@@ -104,23 +104,35 @@ Wrapper::_addWrapperFunction(WrapperFunction *Function)
 
   auto FunctionNameTemplated(Function->getName(true));
 
-  if (II_->hasDefinition(FunctionNameTemplated, IdentifierIndex::FUNC)) {
-    II_->pushOverload(FunctionNameTemplated);
+  auto It(FunctionNames_.find(FunctionNameTemplated));
+  if (It == FunctionNames_.end()) {
+    FunctionNames_[FunctionNameTemplated].push_back(Function);
 
-  } else if (II_->hasDeclaration(FunctionNameTemplated, IdentifierIndex::FUNC)) {
-    if (Function->isDefinition()) {
-      II_->addDefinition(FunctionNameTemplated, IdentifierIndex::FUNC);
-      return false;
-    }
-
-    II_->pushOverload(FunctionNameTemplated);
-
-  } else {
     if (Function->isDefinition())
       II_->addDefinition(FunctionNameTemplated, IdentifierIndex::FUNC);
     else
       II_->addDeclaration(FunctionNameTemplated, IdentifierIndex::FUNC);
+
+    return true;
   }
+  for (auto &Prev : It->second) {
+    if (*Prev == *Function) {
+      assert(!Prev->isDefinition() && Function->isDefinition());
+
+      II_->addDefinition(FunctionNameTemplated, IdentifierIndex::FUNC);
+
+      return false;
+    }
+  }
+
+  FunctionNames_[FunctionNameTemplated].push_back(Function);
+
+  if (Function->isDefinition())
+    II_->addDefinition(FunctionNameTemplated, IdentifierIndex::FUNC);
+  else
+    II_->addDeclaration(FunctionNameTemplated, IdentifierIndex::FUNC);
+
+  II_->pushOverload(FunctionNameTemplated);
 
   return true;
 }
