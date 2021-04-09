@@ -109,7 +109,7 @@ if (NOT ${CLANG_INCLUDE_PATHS_ERROR} EQUAL 0)
 endif()
 
 # find llvm
-find_package(LLVM ${CLANG_VERSION_MAJOR} REQUIRED CONFIG)
+find_package(LLVM ${CLANG_VERSION_MAJOR}.${CLANG_VERSION_MINOR} REQUIRED CONFIG)
 
 # find boost
 find_package(Boost 1.40 REQUIRED COMPONENTS filesystem graph regex)
