@@ -84,6 +84,10 @@ public:
   }
 
 protected:
+  template<typename T>
+  void matchDecl(T const *Decl)
+  { MatchFinder_.match(*Decl, ASTContext()); }
+
   template<typename T, typename T_MATCHER, typename FUNC>
   void addHandler(std::string const &ID, T_MATCHER const &Matcher, FUNC &&Action)
   {

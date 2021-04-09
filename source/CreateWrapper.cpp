@@ -169,7 +169,13 @@ CreateWrapperConsumer::handleFunction(clang::FunctionDecl const *Decl)
 
 void
 CreateWrapperConsumer::handleRecord(clang::CXXRecordDecl const *Decl)
-{ Wrapper_->addWrapperRecord(Decl); }
+{
+  auto DeclContext = static_cast<clang::DeclContext const *>(Decl);
+  for (auto const *InnerDecl : DeclContext->decls())
+    matchDecl(InnerDecl);
+
+  Wrapper_->addWrapperRecord(Decl);
+}
 
 void
 CreateWrapperFrontendAction::beforeProcessing()
