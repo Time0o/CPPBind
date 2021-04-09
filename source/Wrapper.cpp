@@ -102,7 +102,7 @@ Wrapper::_addWrapperFunction(WrapperFunction *Function)
     }
   }
 
-  auto FunctionNameTemplated(Function->getName(true));
+  auto FunctionNameTemplated(Function->getName(true, true));
 
   auto It(FunctionNames_.find(FunctionNameTemplated));
   if (It == FunctionNames_.end()) {

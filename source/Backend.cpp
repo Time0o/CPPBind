@@ -203,8 +203,8 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
   py::class_<Function>(m, "Function", py::dynamic_attr())
     .def("name", &Function::getName,
          "with_template_postfix"_a = false,
-         "with_overload_postfix"_a = false,
-         "without_operator_name"_a = false)
+         "without_operator_name"_a = false,
+         "with_overload_postfix"_a = false)
     .def("enclosing_namespaces", &Function::getEnclosingNamespaces)
     .def("return_type", &Function::getReturnType)
     .def("out_type", &Function::getOutType)
@@ -221,7 +221,9 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_static", &Function::isStatic)
     .def("is_const", &Function::isConst)
     .def("is_noexcept", &Function::isNoexcept)
-    .def("is_overloaded_operator", &Function::isOverloadedOperator)
+    .def("is_overloaded_operator", &Function::isOverloadedOperator,
+         "which"_a = nullptr,
+         "num_parameters"_a = -1)
     .def("is_template_instantiation", &Function::isTemplateInstantiation);
 
   py::class_<Parameter>(m, "Parameter")

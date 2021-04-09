@@ -95,8 +95,8 @@ class WrapperFunction : public WrapperObject<clang::FunctionDecl>
     std::string Name;
     std::string Spelling;
 
-    bool IsCopyAssignment = false;
-    bool IsMoveAssignment = false;
+    bool IsPrefix = false;
+    bool IsPostfix = false;
   };
 
 public:
@@ -114,8 +114,8 @@ public:
   void overload(std::shared_ptr<IdentifierIndex> II);
 
   Identifier getName(bool WithTemplatePostfix = false,
-                     bool WithOverloadPostfix = false,
-                     bool WithoutOperatorName = false) const;
+                     bool WithoutOperatorName = false,
+                     bool WithOverloadPostfix = false) const;
 
   std::deque<Identifier> const &getEnclosingNamespaces() const
   { return EnclosingNamespaces_; }
@@ -164,8 +164,8 @@ public:
   bool isOverloaded() const
   { return static_cast<bool>(Overload_); }
 
-  bool isOverloadedOperator() const
-  { return static_cast<bool>(OverloadedOperator_); }
+  bool isOverloadedOperator(char const *Which = nullptr,
+                            int numParameters = -1) const;
 
   bool isTemplateInstantiation() const
   { return static_cast<bool>(TemplateArgumentList_); }
@@ -189,20 +189,11 @@ private:
   static bool
   determineIfNoexcept(clang::FunctionDecl const *Decl);
 
-  static std::optional<OverloadedOperator>
-  determineOverloadedOperator(clang::FunctionDecl const *Decl);
-
-  static std::string
-  determineOverloadedOperatorName(OverloadedOperator const &OO);
-
   static std::optional<TemplateArgumentList>
   determineTemplateArgumentList(clang::FunctionDecl const *Decl);
 
-  std::optional<TemplateArgumentList> TemplateArgumentList_;
-
-  std::optional<OverloadedOperator> OverloadedOperator_;
-
-  std::optional<unsigned> Overload_;
+  std::optional<OverloadedOperator>
+  determineOverloadedOperator(clang::FunctionDecl const *Decl);
 
   WrapperRecord const *Parent_ = nullptr;
 
@@ -218,6 +209,12 @@ private:
   bool IsStatic_ = false;
   bool IsConst_ = false;
   bool IsNoexcept_ = false;
+
+  std::optional<TemplateArgumentList> TemplateArgumentList_;
+
+  std::optional<OverloadedOperator> OverloadedOperator_;
+
+  std::optional<unsigned> Overload_;
 };
 
 class WrapperFunctionBuilder

@@ -127,6 +127,9 @@ def _function_forward_parameters(self):
 
 def _function_forward_call(self):
     def forward_parameter(p):
+        if isinstance(p, str):
+            return p
+
         fwd = f"{p.name_interm()}"
 
         if p.type().is_record() or p.type().is_lvalue_reference():
@@ -143,6 +146,9 @@ def _function_forward_call(self):
             this = p.name_interm()
         else:
             parameters.append(p)
+
+    if self.is_overloaded_operator('++', 1):
+        parameters.append('{}')
 
     parameters = ', '.join(map(forward_parameter, parameters))
 

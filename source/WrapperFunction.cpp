@@ -71,20 +71,18 @@ WrapperFunction::WrapperFunction(Identifier const &Name)
 
 WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
 : WrapperObject<clang::FunctionDecl>(Decl),
-  TemplateArgumentList_(determineTemplateArgumentList(Decl)),
-  OverloadedOperator_(determineOverloadedOperator(Decl)),
   Name_(determineName(Decl)),
   EnclosingNamespaces_(determineEnclosingNamespaces(Decl)),
   ReturnType_(determineReturnType(Decl)),
   Parameters_(determineParameters(Decl)),
   IsDefinition_(Decl->isThisDeclarationADefinition()),
-  IsNoexcept_(determineIfNoexcept(Decl))
+  IsNoexcept_(determineIfNoexcept(Decl)),
+  TemplateArgumentList_(determineTemplateArgumentList(Decl)),
+  OverloadedOperator_(determineOverloadedOperator(Decl))
 {}
 
 WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
 : WrapperObject<clang::FunctionDecl>(Decl),
-  TemplateArgumentList_(determineTemplateArgumentList(Decl)),
-  OverloadedOperator_(determineOverloadedOperator(Decl)),
   Name_(determineName(Decl)),
   EnclosingNamespaces_(determineEnclosingNamespaces(Decl)),
   ReturnType_(determineReturnType(Decl)),
@@ -95,7 +93,9 @@ WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
   IsDestructor_(llvm::isa<clang::CXXDestructorDecl>(Decl)),
   IsStatic_(Decl->isStatic()),
   IsConst_(Decl->isConst()),
-  IsNoexcept_(determineIfNoexcept(Decl))
+  IsNoexcept_(determineIfNoexcept(Decl)),
+  TemplateArgumentList_(determineTemplateArgumentList(Decl)),
+  OverloadedOperator_(determineOverloadedOperator(Decl))
 {}
 
 bool
@@ -124,7 +124,7 @@ WrapperFunction::operator==(WrapperFunction const &Other) const
 void
 WrapperFunction::overload(std::shared_ptr<IdentifierIndex> II)
 {
-  auto NameTemplated(getName(true));
+  auto NameTemplated(getName(true, true));
 
   if (!II->hasOverload(NameTemplated))
     return;
@@ -134,8 +134,8 @@ WrapperFunction::overload(std::shared_ptr<IdentifierIndex> II)
 
 Identifier
 WrapperFunction::getName(bool WithTemplatePostfix,
-                         bool WithOverloadPostfix,
-                         bool WithoutOperatorName) const
+                         bool WithoutOperatorName,
+                         bool WithOverloadPostfix) const
 {
   Identifier Name(Name_);
 
@@ -144,7 +144,7 @@ WrapperFunction::getName(bool WithTemplatePostfix,
 
     string::replace(NameStr,
                     "operator" + OverloadedOperator_->Spelling,
-                    determineOverloadedOperatorName(*OverloadedOperator_));
+                    OverloadedOperator_->Name);
 
     Name = Identifier(NameStr);
   }
@@ -211,6 +211,24 @@ WrapperFunction::determineEnclosingNamespaces(clang::FunctionDecl const *Decl)
   }
 
   return EnclosingNamespaces;
+}
+
+bool
+WrapperFunction::isOverloadedOperator(char const *Which,
+                                      int numParameters) const
+{
+  if (!OverloadedOperator_)
+    return false;
+
+  int numParametersActual = Parameters_.size();
+  if (numParametersActual > 0 && Parameters_[0].isSelf())
+    --numParametersActual;
+
+  if (OverloadedOperator_->IsPostfix)
+    ++numParametersActual;
+
+  return (!Which || OverloadedOperator_->Spelling == Which) &&
+         (numParameters == -1 || numParameters == numParametersActual);
 }
 
 Identifier
@@ -325,49 +343,90 @@ WrapperFunction::determineOverloadedOperator(clang::FunctionDecl const *Decl)
     IsMoveAssignment = MethodDecl->isMoveAssignmentOperator();
   }
 
+  std::unique_ptr<OverloadedOperator> OO;
+  bool OOUnary = Parameters_.empty();
+
   switch (Decl->getOverloadedOperator()) {
 #define OVERLOADED_OPERATOR(Name,Spelling,Token,Unary,Binary,MemberOnly) \
   case OO_##Name: \
-    { \
-      OverloadedOperator OO(#Name, Spelling); \
-      OO.IsCopyAssignment = IsCopyAssignment; \
-      OO.IsMoveAssignment = IsMoveAssignment; \
-      return OO; \
-    }
+    OO = std::make_unique<OverloadedOperator>(#Name, Spelling); \
+    break;
 #include "clang/Basic/OperatorKinds.def"
   default:
     llvm_unreachable("invalid overloaded operator kind");
+    break;
   }
-}
 
-std::string
-WrapperFunction::determineOverloadedOperatorName(OverloadedOperator const &OO)
-{
-  // XXX what about conflicts?
+  if (IsCopyAssignment) {
+    OO->Name = "copy_assign";
+  } else if (IsMoveAssignment) {
+    OO->Name = "move_assign";
+  } else {
+    if (OO->Name == "Star") {
+      OO->Name = OOUnary ? "deref" : "mult";
+    } else if (OO->Name == "PlusPlus") {
+      if (OOUnary) {
+        OO->Name = "inc_pre";
+        OO->IsPrefix = true;
+      } else {
+        OO->Name = "inc_post";
+        OO->IsPostfix = true;
+        Parameters_.pop_back();
+      }
+    } else if (OO->Name == "MinusMinus") {
+      if (OOUnary) {
+        OO->Name = "dec_pre";
+        OO->IsPrefix = true;
+      } else {
+        OO->Name = "dec_post";
+        OO->IsPostfix = true;
+        Parameters_.pop_back();
+      }
+    } else {
+      static std::unordered_map<std::string, std::string> OONames {
+        {"Amp",                 "bw_and"},
+        {"AmpAmp",              "and"},
+        {"AmpEqual",            "bw_and_assign"},
+        {"Arrow",               "access"},
+        {"Call",                "call"},
+        {"Caret",               "xor"},
+        {"CaretEqual",          "xor_assign"},
+        {"EqualEqual",          "eq"},
+        {"Exclaim",             "not"},
+        {"ExclaimEqual",        "ne"},
+        {"Greater",             "gt"},
+        {"GreaterEqual",        "ge"},
+        {"GreaterGreater",      "sr"},
+        {"GreaterGreaterEqual", "sr_assign"},
+        {"Less",                "lt"},
+        {"LessEqual",           "le"},
+        {"LessLess",            "sl"},
+        {"LessLessEqual",       "sl_assign"},
+        {"Minus",               "minus"},
+        {"MinusEqual",          "minus_assign"},
+        {"Percent",             "mod"},
+        {"PercentEqual",        "mod_assign"},
+        {"Pipe",                "bw_or"},
+        {"PipeEqual",           "bw_or_assign"},
+        {"PipePipe",            "or"},
+        {"Plus",                "plus"},
+        {"PlusEqual",           "plus_assign"},
+        {"Slash",               "div"},
+        {"SlashEqual",          "div_assign"},
+        {"StarEqual",           "mult_assign"},
+        {"Subscript",           "idx"},
+        {"Tilde",               "bw_not"}
+      };
 
-  if (OO.IsCopyAssignment)
-    return "copy_assign";
+      auto It(OONames.find(OO->Name));
+      if (It == OONames.end())
+        throw log::exception("failed to resolve operator name '{0}'", OO->Name);
 
-  if (OO.IsMoveAssignment)
-    return "move_assign";
+      OO->Name = It->second;
+    }
+  }
 
-  static std::unordered_map<std::string, std::string> OONames {
-    {"Arrow", "access"},
-    {"Star", "deref"}
-  };
-
-  auto Name(OO.Name);
-
-  auto It(OONames.find(Name));
-  if (It != OONames.end())
-    return It->second;
-
-  std::transform(Name.begin(),
-                 Name.end(),
-                 Name.begin(),
-                 [](char c){ return std::tolower(c); });
-
-  return "op_" + Name;
+  return *OO;
 }
 
 std::optional<TemplateArgumentList>

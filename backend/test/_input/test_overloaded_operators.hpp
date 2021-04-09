@@ -4,6 +4,36 @@
 namespace test
 {
 
+class Integer
+{
+public:
+  Integer(int value)
+  : _value(value)
+  {}
+
+  int operator*() const
+  { return _value; }
+
+  Integer operator++()
+  {
+    ++_value;
+    return *this;
+  }
+
+  Integer operator++(int)
+  {
+    auto tmp(*this);
+    ++_value;
+    return tmp;
+  }
+
+private:
+  int _value;
+};
+
+inline Integer operator*(Integer const &i1, Integer const &i2)
+{ return *i1 * *i2; }
+
 class Pointee
 {
 public:
@@ -46,7 +76,5 @@ struct ClassWithCallableMember
     { return a + b; }
   } sum;
 };
-
-// XXX test more operators (e.g. class Number)
 
 } // namespace test
