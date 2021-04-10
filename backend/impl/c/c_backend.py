@@ -98,8 +98,15 @@ class CBackend(Backend):
         return f"GUARD_{guard_id}_C_H"
 
     def _typedefs(self):
-        return [f"typedef {t.target()} {a.target()};"
-                for a, t in self.type_aliases()]
+        typedefs = []
+        for a, t in self.type_aliases():
+            a_target = a.target()
+            t_target = t.target()
+
+            if a_target != t_target:
+                typedefs.append(f"typedef {t_target} {a_target};")
+
+        return typedefs
 
     def _record_declarations(self):
         return [self._record_declaration(t) for t in self._record_types()]
