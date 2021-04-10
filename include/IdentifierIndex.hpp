@@ -59,19 +59,23 @@ private:
 
 public:
   Identifier addDeclaration(Identifier Id, Type Type)
-  { return add(Id, Type, false); }
+  {
+    if (!has(Id, Type))
+      add(Id, Type, false);
+
+    return Id;
+  }
 
   Identifier addDefinition(Identifier Id, Type Type)
   {
-    if (hasDeclaration(Id, Type)) {
-      auto P(props(Id));
-      assert(P->Type == Type);
-      P->IsDefinition = true;
-
-      return Id;
+    if (!hasDefinition(Id, Type)) {
+      if (hasDeclaration(Id, Type))
+        get(Id)->IsDefinition = true;
+      else
+        add(Id, Type, true);
     }
 
-    return add(Id, Type, true);
+    return Id;
   }
 
   bool hasDeclaration(Identifier const &Id, Type Type) const
@@ -81,34 +85,21 @@ public:
   { return has(Id, Type, true); }
 
   bool hasOverload(Identifier const &Id) const
-  {
-    auto P(props<FuncProps>(Id));
-    assert(P);
-
-    return P->MaxOverload > 1u;
-  }
+  { return get<FuncProps>(Id)->MaxOverload > 1u; }
 
   void pushOverload(Identifier const &Id)
-  {
-    auto P(props<FuncProps>(Id));
-    assert(P);
-
-    ++P->MaxOverload;
-  }
+  { ++get<FuncProps>(Id)->MaxOverload; }
 
   unsigned popOverload(Identifier const &Id) const
   {
-    auto P(props<FuncProps>(Id));
-    assert(P);
+    auto P(get<FuncProps>(Id));
     assert(P->MaxOverload > 1u);
-
     assert(P->CurrentOverload <= P->MaxOverload);
-
     return P->CurrentOverload++;
   }
 
 private:
-  Identifier add(Identifier Id, Type Type, bool Definition)
+  void add(Identifier Id, Type Type, bool Definition)
   {
     // XXX conflict resolution
     std::shared_ptr<Props> P;
@@ -126,18 +117,26 @@ private:
     }
 
     Index_[Id] = P;
-
-    return Id;
   }
+
+  bool has(Identifier const &Id, Type Type) const
+  { return static_cast<bool>(get(Id)); }
 
   bool has(Identifier const &Id, Type Type, bool Definition) const
   {
-    auto Props(props<Props>(Id));
-    if (!Props)
+    auto P(get(Id));
+    if (!P)
       return false;
 
-    return Props->Type == Type && (!Definition || Props->IsDefinition);
+    return P->Type == Type && (!Definition || P->IsDefinition);
   }
+
+  std::shared_ptr<Props> get(Identifier const &Id) const
+  { return props(Id); }
+
+  template<typename T>
+  std::shared_ptr<T> get(Identifier const &Id) const
+  { return std::static_pointer_cast<T>(get(Id)); }
 
   std::shared_ptr<Props> props(Identifier const &Id) const
   {
@@ -148,10 +147,6 @@ private:
 
     return It->second;
   }
-
-  template<typename T>
-  std::shared_ptr<T> props(Identifier const &Id) const
-  { return std::static_pointer_cast<T>(props(Id)); }
 
   std::map<Identifier, std::shared_ptr<Props>> Index_;
 };
