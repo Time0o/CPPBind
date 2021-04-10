@@ -17,6 +17,10 @@ do
   local i2_inc = i2:inc_post()
   assert(i2_inc:deref() == 3)
   assert(i2:deref() == 4)
+
+  local i0 = test.TestInteger.new(0)
+  assert(i0:cast_bool() == false)
+  assert(i1:cast_bool() == true)
 end
 
 do

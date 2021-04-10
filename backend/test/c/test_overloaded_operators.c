@@ -22,11 +22,16 @@ int main()
     assert(test_integer_deref(&i2_inc) == 3);
     assert(test_integer_deref(&i2) == 4);
 
+    struct test_integer i0 = test_integer_new(0);
+    assert(!test_integer_cast_bool(&i0));
+    assert(test_integer_cast_bool(&i1));
+
     test_integer_delete(&i1);
     test_integer_delete(&i2);
     test_integer_delete(&i3);
     test_integer_delete(&i1_inc);
     test_integer_delete(&i2_inc);
+    test_integer_delete(&i0);
   }
 
   {

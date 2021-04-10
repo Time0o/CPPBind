@@ -142,9 +142,15 @@ WrapperFunction::getName(bool WithTemplatePostfix,
   if (WithoutOperatorName && isOverloadedOperator()) {
     auto NameStr(Name.str());
 
-    string::replace(NameStr,
-                    "operator" + OverloadedOperator_->Spelling,
-                    OverloadedOperator_->Name);
+    auto OOName(OverloadedOperator_->Name);
+
+    auto OOSpelling(OverloadedOperator_->Spelling);
+    if (OverloadedOperator_->IsCast)
+      OOSpelling = "operator " + OOSpelling;
+    else
+      OOSpelling = "operator" + OOSpelling;
+
+    string::replace(NameStr, OOSpelling, OOName);
 
     Name = Identifier(NameStr);
   }
@@ -229,6 +235,15 @@ WrapperFunction::isOverloadedOperator(char const *Which,
 
   return (!Which || OverloadedOperator_->Spelling == Which) &&
          (numParameters == -1 || numParameters == numParametersActual);
+}
+
+bool
+WrapperFunction::isCustomCast(char const *Which) const
+{
+  if (!OverloadedOperator_ || !OverloadedOperator_->IsCast)
+    return false;
+
+  return !Which || OverloadedOperator_->Spelling.substr(1) == Which;
 }
 
 Identifier
@@ -330,8 +345,26 @@ WrapperFunction::determineOverloadedOperator(clang::FunctionDecl const *Decl)
 {
   using namespace clang;
 
-  if (!Decl->isOverloadedOperator())
+  std::unique_ptr<OverloadedOperator> OO;
+
+  if (!Decl->isOverloadedOperator()) {
+    if (llvm::isa<clang::CXXConversionDecl>(Decl)) {
+      auto ConversionDecl = llvm::dyn_cast<clang::CXXConversionDecl>(Decl);
+
+      auto TypePostfix(print::qualType(ConversionDecl->getConversionType()));
+      string::replaceAll(TypePostfix, " ", "_");
+
+      auto Name("cast_" + TypePostfix);
+      auto Spelling(Decl->getNameAsString().substr(sizeof("operator")));
+
+      OO = std::make_unique<OverloadedOperator>(Name, Spelling);
+      OO->IsCast = true;
+
+      return *OO;
+    }
+
     return std::nullopt;
+  }
 
   bool IsCopyAssignment = false;
   bool IsMoveAssignment = false;
@@ -343,7 +376,6 @@ WrapperFunction::determineOverloadedOperator(clang::FunctionDecl const *Decl)
     IsMoveAssignment = MethodDecl->isMoveAssignmentOperator();
   }
 
-  std::unique_ptr<OverloadedOperator> OO;
   bool OOUnary = Parameters_.empty();
 
   switch (Decl->getOverloadedOperator()) {

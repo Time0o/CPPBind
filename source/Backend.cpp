@@ -224,6 +224,8 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_overloaded_operator", &Function::isOverloadedOperator,
          "which"_a = nullptr,
          "num_parameters"_a = -1)
+    .def("is_custom_cast", &Function::isCustomCast,
+         "which"_a = nullptr)
     .def("is_template_instantiation", &Function::isTemplateInstantiation);
 
   py::class_<Parameter>(m, "Parameter")

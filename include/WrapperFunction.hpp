@@ -95,6 +95,7 @@ class WrapperFunction : public WrapperObject<clang::FunctionDecl>
     std::string Name;
     std::string Spelling;
 
+    bool IsCast = false;
     bool IsPrefix = false;
     bool IsPostfix = false;
   };
@@ -166,6 +167,8 @@ public:
 
   bool isOverloadedOperator(char const *Which = nullptr,
                             int numParameters = -1) const;
+
+  bool isCustomCast(char const *Which = nullptr) const;
 
   bool isTemplateInstantiation() const
   { return static_cast<bool>(TemplateArgumentList_); }

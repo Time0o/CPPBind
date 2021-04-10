@@ -27,6 +27,9 @@ public:
     return tmp;
   }
 
+  explicit operator bool() const
+  { return _value != 0; }
+
 private:
   int _value;
 };
