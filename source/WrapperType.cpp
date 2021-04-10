@@ -252,9 +252,11 @@ WrapperType::format(bool WithTemplatePostfix,
 {
   WrapperType BaseType(fullyDerefType(Type_));
 
-  auto Str(print::qualType(type()));
+  auto Str(print::qualType(type(),
+                           print::QUALIFIED_POLICY));
 
-  auto StrBase(print::qualType(requalifyType(BaseType.type(), 0u)));
+  auto StrBase(print::qualType(requalifyType(BaseType.type(), 0u),
+                               print::QUALIFIED_POLICY));
 
   auto StrReplace = StrBase;
 

@@ -31,8 +31,6 @@ clang::PrintingPolicy makePrintingPolicy(Policy P)
     return PP;
   case QUALIFIED_POLICY:
     PP.FullyQualifiedName = 1u;
-    PP.SuppressScope = 0u;
-    PP.PrintCanonicalTypes = 1;
     return PP;
   }
 }
@@ -52,13 +50,26 @@ std::string stmt(clang::Stmt const *Stmt, Policy P)
   return Str;
 }
 
-std::string qualType(clang::QualType const &Type, Policy P)
+std::string qualType(clang::QualType Type, Policy P)
 {
   switch (P) {
   case NO_POLICY:
     return Type.getAsString();
-  default:
+  case DEFAULT_POLICY:
     return Type.getAsString(makePrintingPolicy(P));
+  case QUALIFIED_POLICY:
+    {
+      if (llvm::isa<clang::ElaboratedType>(Type.getTypePtr())) {
+        auto ElaboratedType(
+          llvm::dyn_cast<clang::ElaboratedType>(Type.getTypePtr()));
+
+        Type = clang::QualType(
+          ElaboratedType->desugar().getTypePtr(),
+          Type.getQualifiers().getAsOpaqueValue()); // TODO: do we need this? try it out
+      }
+
+      return Type.getAsString(makePrintingPolicy(P));
+    }
   }
 }
 

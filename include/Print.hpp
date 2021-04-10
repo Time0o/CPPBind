@@ -26,7 +26,7 @@ std::string sourceRange(clang::SourceRange const &SR);
 
 std::string stmt(clang::Stmt const *Stmt, Policy P = DEFAULT_POLICY);
 
-std::string qualType(clang::QualType const &Type, Policy P = DEFAULT_POLICY);
+std::string qualType(clang::QualType Type, Policy P = DEFAULT_POLICY);
 
 std::string mangledQualType(clang::QualType const &Type);
 
