@@ -98,7 +98,7 @@ CreateWrapperConsumer::addWrapperHandlers()
       "hasParent(anyOf(namespaceDecl(), translationUnitDecl()))";
 
     char const *MatchNested =
-      "allOf(isPublic(), unless(isImplicit()))";
+      "allOf(hasParent(cxxRecordDecl()), isPublic(), unless(isImplicit()))";
 
     std::string MatchToplevelOrNested(
       llvm::formatv("anyOf({0}, {1})", MatchToplevel, MatchNested));
@@ -129,9 +129,10 @@ CreateWrapperConsumer::addWrapperHandlers()
       addWrapperHandler<clang::CXXRecordDecl>(
         "record",
         match("cxxRecordDecl",
-              "anyOf({0},"
-                    "allOf(isTemplateInstantiation(),"
-                          "hasParent(classTemplateDecl({0}))))",
+              "allOf(isDefinition(),"
+                    "anyOf({0},"
+                          "allOf(isTemplateInstantiation(),"
+                                "hasParent(classTemplateDecl({0})))))",
               MatchToplevelOrNested),
         declHandler<&CreateWrapperConsumer::handleRecord>());
 
