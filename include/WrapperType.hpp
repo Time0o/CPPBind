@@ -49,6 +49,7 @@ public:
   bool operator>=(WrapperType const &Other) const
   { return !operator<(Other); }
 
+  bool isAlias() const;
   bool isTemplateInstantiation(char const *Which = nullptr) const;
   bool isFundamental(char const *Which = nullptr) const;
   bool isVoid() const;

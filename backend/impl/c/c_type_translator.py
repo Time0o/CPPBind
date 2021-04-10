@@ -12,6 +12,7 @@ class CTypeTranslator(TypeTranslator):
     def _c_type(cls, t):
         fmt = partial(t.format,
                       with_template_postfix=True,
+                      with_postfix='_t' if t.is_alias() else '',
                       case=Id.SNAKE_CASE,
                       quals=Id.REPLACE_QUALS)
 

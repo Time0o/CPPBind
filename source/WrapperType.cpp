@@ -52,6 +52,10 @@ WrapperType::operator<(WrapperType const &Other) const
 { return str() < Other.str(); }
 
 bool
+WrapperType::isAlias() const
+{ return type().getCanonicalType().getAsString() != Type_.getAsString(); }
+
+bool
 WrapperType::isTemplateInstantiation(char const *Which) const
 {
   if (!Template_)
