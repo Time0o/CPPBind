@@ -105,8 +105,6 @@ private:
   WrapperFunction implicitDestructor(
     clang::CXXRecordDecl const *Decl) const;
 
-  std::optional<TemplateArgumentList> TemplateArgumentList_;
-
   Identifier Name_;
   WrapperType Type_;
 
@@ -118,6 +116,8 @@ private:
   bool IsAbstract_;
   bool IsCopyable_;
   bool IsMoveable_;
+
+  std::optional<TemplateArgumentList> TemplateArgumentList_;
 };
 
 } // namespace cppbind

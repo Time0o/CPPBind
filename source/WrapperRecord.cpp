@@ -26,15 +26,21 @@ namespace cppbind
 
 WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl)
 : WrapperObject(Decl),
-  TemplateArgumentList_(determineTemplateArgumentList(Decl)),
   Name_(Decl),
   Type_(Decl->getTypeForDecl()),
   Functions_(determinePublicMemberFunctions(Decl)),
   IsDefinition_(Decl->isThisDeclarationADefinition()),
   IsAbstract_(determineIfAbstract(Decl)),
   IsCopyable_(determineIfCopyable(Decl)),
-  IsMoveable_(determineIfMoveable(Decl))
-{}
+  IsMoveable_(determineIfMoveable(Decl)),
+  TemplateArgumentList_(determineTemplateArgumentList(Decl))
+{
+  for (auto &F : Functions_) {
+    F = WrapperFunctionBuilder(F)
+        .setParent(this)
+        .build();
+  }
+}
 
 void
 WrapperRecord::overload(std::shared_ptr<IdentifierIndex> II)
@@ -77,11 +83,8 @@ WrapperRecord::determinePublicMemberFunctions(
 
   PublicMethodDecls = prunePublicMemberFunctionDecls(Decl, PublicMethodDecls);
 
-  for (auto const *MethodDecl : PublicMethodDecls) {
-    PublicMethods.emplace_back(WrapperFunctionBuilder(MethodDecl)
-                              .setParent(this)
-                              .build());
-  }
+  for (auto const *MethodDecl : PublicMethodDecls)
+    PublicMethods.emplace_back(MethodDecl);
 
   // callable member fields
   auto PublicCallableFieldDecls(determinePublicCallableMemberFieldDecls(Decl));
@@ -89,7 +92,6 @@ WrapperRecord::determinePublicMemberFunctions(
   for (auto const &[FieldDecl, MethodDecl] : PublicCallableFieldDecls) {
     PublicMethods.emplace_back(WrapperFunctionBuilder(MethodDecl)
                                .setName(Identifier(FieldDecl))
-                               .setParent(this)
                                .build());
   }
 
