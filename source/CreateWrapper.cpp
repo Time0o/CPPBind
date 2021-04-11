@@ -29,16 +29,17 @@ namespace cppbind
 bool
 CreateWrapperVisitor::VisitCXXRecordDecl(clang::CXXRecordDecl *Decl)
 {
-  if (!inInputFile(Decl))
-    return true;
+  if (inInputFile(Decl)) {
+    auto &Sema(CompilerState()->getSema());
 
-  auto &Sema(CompilerState()->getSema());
-
-  if (Decl->isThisDeclarationADefinition()) {
-    if (Decl->needsImplicitDefaultConstructor())
-      Sema.DeclareImplicitDefaultConstructor(Decl);
-    if (Decl->needsImplicitDestructor())
-      Sema.DeclareImplicitDestructor(Decl);
+    if (Decl->isThisDeclarationADefinition()) {
+      if (Decl->needsImplicitDefaultConstructor())
+        Sema.DeclareImplicitDefaultConstructor(Decl);
+      if (Decl->needsImplicitDestructor())
+        Sema.DeclareImplicitDestructor(Decl);
+    }
+  } else {
+    Decl->setCompleteDefinition(false);
   }
 
   return true;
@@ -75,23 +76,39 @@ CreateWrapperConsumer::addWrapperHandlers()
     auto MatcherID(Tmp.first);
     auto MatcherSource(Tmp.second);
 
-    auto match = [&](std::string const &DeclType,
-                     std::string const &RestrictionsFmt,
-                     auto ...RestrictionsFmtArgs)
+    auto matchAnywhere = [&](std::string const &DeclType,
+                             std::string const &RestrictionsFmt,
+                             auto ...RestrictionsFmtArgs)
     {
       auto MatcherRestrictions(
         llvm::formatv(RestrictionsFmt.c_str(), RestrictionsFmtArgs...));
 
       return static_cast<std::string>(
-        llvm::formatv(
-          "{0}(allOf(anyOf(isExpansionInFileMatching(\"{1}\"),"
-                          "isExpansionInFileMatching(\"{2}\")),"
-                     "{3}, {4}))",
-          DeclType,
-          OrigInputFile,
-          TmpInputFile,
-          MatcherRestrictions,
-          MatcherSource));
+        llvm::formatv("{0}(allOf({1}, {2}))",
+                      DeclType,
+                      MatcherRestrictions,
+                      MatcherSource));
+    };
+
+    auto matchInSource = [&](std::string const &DeclType,
+                             std::string const &RestrictionsFmt,
+                             auto ...RestrictionsFmtArgs)
+    {
+      auto MatcherRestrictions(
+        llvm::formatv(RestrictionsFmt.c_str(), RestrictionsFmtArgs...));
+
+      std::string InSource(
+        llvm::formatv("anyOf(isExpansionInFileMatching(\"{0}\"),"
+                            "isExpansionInFileMatching(\"{1}\"))",
+                      OrigInputFile,
+                      TmpInputFile));
+
+      return static_cast<std::string>(
+        llvm::formatv("{0}(allOf({1}, {2}, {3}))",
+                      DeclType,
+                      InSource,
+                      MatcherRestrictions,
+                      MatcherSource));
     };
 
     char const *MatchToplevel =
@@ -106,35 +123,45 @@ CreateWrapperConsumer::addWrapperHandlers()
     if (MatcherID == "const") {
       addWrapperHandler<clang::EnumDecl>(
         "enumConst",
-        match("enumDecl", MatchToplevelOrNested),
+        matchInSource("enumDecl", MatchToplevelOrNested),
         declHandler<&CreateWrapperConsumer::handleEnumConst>());
 
       addWrapperHandler<clang::VarDecl>(
         "VarConst",
-        match("varDecl", "allOf(isConstexpr(), {0})", MatchToplevelOrNested),
+        matchInSource("varDecl", "allOf(isConstexpr(), {0})", MatchToplevelOrNested),
         declHandler<&CreateWrapperConsumer::handleVarConst>());
 
     } else if (MatcherID == "function") {
       addWrapperHandler<clang::FunctionDecl>(
         "function",
-        match("functionDecl",
-              "allOf(unless(cxxMethodDecl()),"
-                    "anyOf({0},"
-                          "allOf(isTemplateInstantiation(),"
-                                "hasParent(functionTemplateDecl({0})))))",
-              MatchToplevel),
+        matchInSource("functionDecl",
+                      "allOf(unless(cxxMethodDecl()),"
+                            "anyOf({0},"
+                                  "allOf(isTemplateInstantiation(),"
+                                        "hasParent(functionTemplateDecl({0})))))",
+                      MatchToplevel),
         declHandler<&CreateWrapperConsumer::handleFunction>());
 
     } else if (MatcherID == "record") {
       addWrapperHandler<clang::CXXRecordDecl>(
-        "record",
-        match("cxxRecordDecl",
-              "allOf(isDefinition(),"
-                    "anyOf({0},"
-                          "allOf(isTemplateInstantiation(),"
-                                "hasParent(classTemplateDecl({0})))))",
-              MatchToplevelOrNested),
-        declHandler<&CreateWrapperConsumer::handleRecord>());
+        "recordDeclaration",
+        matchAnywhere("cxxRecordDecl",
+                      "allOf(unless(isDefinition()),"
+                            "anyOf({0},"
+                                  "allOf(isTemplateInstantiation(),"
+                                        "hasParent(classTemplateDecl({0})))))",
+                      MatchToplevelOrNested),
+        declHandler<&CreateWrapperConsumer::handleRecordDeclaration>());
+
+      addWrapperHandler<clang::CXXRecordDecl>(
+        "recordDefinition",
+        matchInSource("cxxRecordDecl",
+                      "allOf(isDefinition(),"
+                            "anyOf({0},"
+                                  "allOf(isTemplateInstantiation(),"
+                                        "hasParent(classTemplateDecl({0})))))",
+                      MatchToplevelOrNested),
+        declHandler<&CreateWrapperConsumer::handleRecordDefinition>());
 
     } else {
       throw log::exception("invalid matcher: '{0}'", MatcherID);
@@ -169,7 +196,11 @@ CreateWrapperConsumer::handleFunction(clang::FunctionDecl const *Decl)
 { Wrapper_->addWrapperFunction(Decl); }
 
 void
-CreateWrapperConsumer::handleRecord(clang::CXXRecordDecl const *Decl)
+CreateWrapperConsumer::handleRecordDeclaration(clang::CXXRecordDecl const *Decl)
+{ Wrapper_->addWrapperRecord(Decl); }
+
+void
+CreateWrapperConsumer::handleRecordDefinition(clang::CXXRecordDecl const *Decl)
 {
   auto DeclContext = static_cast<clang::DeclContext const *>(Decl);
   for (auto const *InnerDecl : DeclContext->decls())

@@ -67,6 +67,9 @@ std::deque<WrapperFunction>
 WrapperRecord::determinePublicMemberFunctions(
   clang::CXXRecordDecl const *Decl) const
 {
+  if (!Decl->isThisDeclarationADefinition())
+    return {};
+
   std::deque<WrapperFunction> PublicMethods;
 
   // member functions
@@ -228,11 +231,14 @@ WrapperRecord::determinePublicCallableMemberFieldDecls(
 
 bool
 WrapperRecord::determineIfAbstract(clang::CXXRecordDecl const *Decl)
-{ return Decl->isAbstract(); }
+{ return Decl->isThisDeclarationADefinition() && Decl->isAbstract(); }
 
 bool
 WrapperRecord::determineIfCopyable(clang::CXXRecordDecl const *Decl)
 {
+  if (!Decl->isThisDeclarationADefinition())
+    return false;
+
   // XXX likely not always correct
   // XXX can there be more than one 'copy constructor'?
 
@@ -247,6 +253,9 @@ WrapperRecord::determineIfCopyable(clang::CXXRecordDecl const *Decl)
 bool
 WrapperRecord::determineIfMoveable(clang::CXXRecordDecl const *Decl)
 {
+  if (!Decl->isThisDeclarationADefinition())
+    return false;
+
   // XXX likely not always correct
   // XXX can there be more than one 'move constructor'?
 

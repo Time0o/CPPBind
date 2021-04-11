@@ -14,12 +14,13 @@ namespace cppbind
 class TypeIndex
 {
 public:
+  void add(std::string const &Type)
+  { S_.insert(Type); }
+
   template<typename IT>
   void add(std::string const &Type, IT BasesFirst, IT BasesLast)
   {
-    auto [_, New] = S_.insert(Type);
-    if (!New)
-      return;
+    S_.insert(Type);
 
     addVertex(Type);
 

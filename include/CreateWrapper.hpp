@@ -55,7 +55,8 @@ private:
   void handleEnumConst(clang::EnumDecl const *Decl);
   void handleVarConst(clang::VarDecl const *Decl);
   void handleFunction(clang::FunctionDecl const *Decl);
-  void handleRecord(clang::CXXRecordDecl const *Decl);
+  void handleRecordDeclaration(clang::CXXRecordDecl const *Decl);
+  void handleRecordDefinition(clang::CXXRecordDecl const *Decl);
 
   template<typename T_>
   struct HandlerDeclType;

@@ -142,15 +142,16 @@ Wrapper::_addWrapperRecord(WrapperRecord *Record)
 {
   auto RecordNameTemplated(Record->getName(true));
 
+  auto RecordTypeMangled(Record->getType().mangled());
+  RecordTypesMangled_[RecordTypeMangled] = Record;
+
   if (!Record->isDefinition()) {
     II_->addDeclaration(RecordNameTemplated, IdentifierIndex::RECORD);
+    TI_->add(RecordTypeMangled);
     return false;
   }
 
   II_->addDefinition(RecordNameTemplated, IdentifierIndex::RECORD);
-
-  auto RecordTypeMangled(Record->getType().mangled());
-  RecordTypesMangled_[RecordTypeMangled] = Record;
 
   std::deque<std::string> BaseTypesMangled;
   for (auto const &BaseType : Record->getType().baseTypes()) {
