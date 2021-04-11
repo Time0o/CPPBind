@@ -245,8 +245,8 @@ WrapperType::str(bool WithTemplatePostfix) const
 
 std::string
 WrapperType::format(bool WithTemplatePostfix,
-                    std::string const &WithPrefix,
-                    std::string const &WithPostfix,
+                    std::string const &WithExtraPrefix,
+                    std::string const &WithExtraPostfix,
                     Identifier::Case Case,
                     Identifier::Quals Quals) const
 {
@@ -270,7 +270,16 @@ WrapperType::format(bool WithTemplatePostfix,
 
   StrReplace = Identifier(StrReplace).format(Case, Quals);
 
-  StrReplace = WithPrefix + StrReplace + WithPostfix;
+  if (!WithExtraPrefix.empty())
+    StrReplace = WithExtraPrefix + StrReplace;
+
+  if (!WithExtraPostfix.empty() &&
+      StrReplace.compare(StrReplace.size() - WithExtraPostfix.size(),
+                         WithExtraPostfix.size(),
+                         WithExtraPostfix)) {
+
+    StrReplace += WithExtraPostfix;
+  }
 
   string::replace(Str, StrBase, StrReplace);
 

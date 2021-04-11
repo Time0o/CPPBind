@@ -153,8 +153,8 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
          "with_template_postfix"_a = false)
     .def("format", &Type::format,
          "with_template_postfix"_a = false,
-         "with_prefix"_a = "",
-         "with_postfix"_a = "",
+         "with_extra_prefix"_a = "",
+         "with_extra_postfix"_a = "",
          "case"_a = Identifier::ORIG_CASE,
          "quals"_a = Identifier::KEEP_QUALS)
     .def("mangled", &Type::mangled)

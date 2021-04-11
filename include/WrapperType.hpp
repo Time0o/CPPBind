@@ -95,8 +95,8 @@ public:
   std::string str(bool WithTemplatePostfix = false) const;
 
   std::string format(bool WithTemplatePostfix = false,
-                     std::string const &WithPrefix = "",
-                     std::string const &WithPostfix = "",
+                     std::string const &WithExtraPrefix = "",
+                     std::string const &WithExtraPostfix = "",
                      Identifier::Case Case = Identifier::ORIG_CASE,
                      Identifier::Quals Quals = Identifier::KEEP_QUALS) const;
 

@@ -12,12 +12,14 @@ class CTypeTranslator(TypeTranslator):
     def _c_type(cls, t):
         fmt = partial(t.format,
                       with_template_postfix=True,
-                      with_postfix='_t' if t.is_alias() else '',
                       case=Id.SNAKE_CASE,
                       quals=Id.REPLACE_QUALS)
 
         if t.is_record() or t.is_record_indirection():
-            return fmt(with_prefix='struct ')
+            fmt = partial(fmt, with_extra_prefix='struct ')
+
+        if t.is_alias():
+            fmt = partial(fmt, with_extra_postfix='_t')
 
         return fmt()
 
