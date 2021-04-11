@@ -258,11 +258,14 @@ WrapperType::format(bool WithTemplatePostfix,
   auto StrBase(print::qualType(requalifyType(BaseType.type(), 0u),
                                print::QUALIFIED_POLICY));
 
-  auto StrReplace = StrBase;
+  std::string StrReplace;
 
   if (WithTemplatePostfix && BaseType.isTemplateInstantiation()) {
-    StrReplace = TemplateArgumentList::strip(StrReplace)
+    StrReplace = TemplateArgumentList::strip(StrBase)
                + BaseType.TemplateArgumentList_->str(true);
+  } else {
+    StrBase = TemplateArgumentList::strip(StrBase);
+    StrReplace = StrBase;
   }
 
   StrReplace = Identifier(StrReplace).format(Case, Quals);
