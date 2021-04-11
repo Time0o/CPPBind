@@ -38,8 +38,6 @@ CreateWrapperVisitor::VisitCXXRecordDecl(clang::CXXRecordDecl *Decl)
       if (Decl->needsImplicitDestructor())
         Sema.DeclareImplicitDestructor(Decl);
     }
-  } else {
-    Decl->setCompleteDefinition(false);
   }
 
   return true;
@@ -197,7 +195,7 @@ CreateWrapperConsumer::handleFunction(clang::FunctionDecl const *Decl)
 
 void
 CreateWrapperConsumer::handleRecordDeclaration(clang::CXXRecordDecl const *Decl)
-{ Wrapper_->addWrapperRecord(Decl); }
+{ Wrapper_->addWrapperRecord(Decl, true); }
 
 void
 CreateWrapperConsumer::handleRecordDefinition(clang::CXXRecordDecl const *Decl)

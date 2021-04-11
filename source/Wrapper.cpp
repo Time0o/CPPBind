@@ -144,8 +144,11 @@ Wrapper::_addWrapperRecord(WrapperRecord *Record)
   auto RecordTypeMangled(Record->getType().mangled());
 
   if (!Record->isDefinition()) {
+    log::debug("not a definition");
+
     II_->addDeclaration(RecordNameTemplated, IdentifierIndex::RECORD);
     TI_->addProto(RecordTypeMangled);
+
     return false;
   }
 
