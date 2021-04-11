@@ -4,6 +4,7 @@
 #include <deque>
 #include <set>
 #include <string>
+#include <unordered_set>
 
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/graph/labeled_graph.hpp"
@@ -14,13 +15,16 @@ namespace cppbind
 class TypeIndex
 {
 public:
-  void add(std::string const &Type)
-  { S_.insert(Type); }
+  void addProto(std::string const &Type);
 
   template<typename IT>
   void add(std::string const &Type, IT BasesFirst, IT BasesLast)
   {
-    S_.insert(Type);
+    addProto(Type);
+
+    auto [_, New] = S_.insert(Type);
+    if (!New)
+      return;
 
     addVertex(Type);
 
@@ -31,6 +35,8 @@ public:
         addEdge(Type, *It);
     }
   }
+
+  bool hasProto(std::string const &Type) const;
 
   bool has(std::string const &Type) const;
 
@@ -49,7 +55,9 @@ private:
   void addVertex(std::string const &Type);
   void addEdge(std::string const &SourceType, std::string const &TargetType);
 
+  std::unordered_set<std::string> SProto_;
   std::set<std::string> S_;
+
   LabeledGraph G_;
 };
 

@@ -11,6 +11,14 @@
 namespace cppbind
 {
 
+void
+TypeIndex::addProto(std::string const &Type)
+{ SProto_.insert(Type); }
+
+bool
+TypeIndex::hasProto(std::string const &Type) const
+{ return SProto_.find(Type) != SProto_.end(); }
+
 bool
 TypeIndex::has(std::string const &Type) const
 { return S_.find(Type) != S_.end(); }
