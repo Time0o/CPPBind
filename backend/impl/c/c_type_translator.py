@@ -23,6 +23,16 @@ class CTypeTranslator(TypeTranslator):
 
         return fmt()
 
+    @classmethod
+    def _c_input_assert(cls, inp, assertions):
+        return code(
+            """
+            {assertions}
+            {{interm}} = {inp};
+            """,
+            assertions='\n'.join(assertions),
+            inp=inp)
+
     @rule(lambda t: t.is_boolean())
     def target(cls, t, args):
         return 'int'
@@ -46,6 +56,11 @@ class CTypeTranslator(TypeTranslator):
     @rule(lambda t: t.is_record_indirection())
     def target(cls, t, args):
         return cls._c_type(t.pointee().pointer_to())
+
+    @rule(lambda t: t.is_pointer() or t.is_reference() and \
+                    t.pointee().is_record_indirection())
+    def target(cls, t, args):
+        return cls._c_type(t.pointee().pointee().pointer_to())
 
     @rule(lambda t: t.is_pointer() or t.is_reference())
     def target(cls, t, args):
@@ -72,15 +87,13 @@ class CTypeTranslator(TypeTranslator):
     def input(cls, t, args):
         return "{interm} = {inp};"
 
-    @rule(lambda t: t.is_record() or t.is_record_indirection())
+    @rule(lambda t: t.is_record())
     def input(cls, t, args):
-        if t.is_record():
-            t_cast = t
-            t_is_const = True
-        else:
-            t_cast = t.pointee()
-            t_is_const = t.pointee().is_const()
+        return cls._c_input_assert(c_util.struct_cast(t, '{inp}'),
+                                   ["assert({inp}->is_initialized);"])
 
+    @rule(lambda t: t.is_record_indirection())
+    def input(cls, t, args):
         assertions = []
 
         if args.f.is_destructor():
@@ -88,16 +101,16 @@ class CTypeTranslator(TypeTranslator):
         else:
             assertions.append("assert({inp}->is_initialized);")
 
-        if not t_is_const and not args.f.is_destructor():
+        if not t.pointee().is_const() and not args.f.is_destructor():
             assertions.append("assert(!{inp}->is_const);")
 
-        return code(
-            """
-            {assertions}
-            {{interm}} = {inp};
-            """,
-            assertions='\n'.join(assertions),
-            inp=c_util.struct_cast(t_cast, '{inp}'))
+        return cls._c_input_assert(c_util.struct_cast(t.pointee(), '{inp}'),
+                                   assertions)
+
+    @rule(lambda t: t.is_pointer() or t.is_reference() and \
+                    t.pointee().is_record_indirection())
+    def input(cls, t, args):
+        return f"{{interm}} = &{c_util.struct_cast(t, '{inp}')};"
 
     @rule(lambda t: t.is_pointer() or t.is_reference())
     def input(cls, t, args):
