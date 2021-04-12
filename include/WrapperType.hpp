@@ -49,6 +49,7 @@ public:
   bool operator>=(WrapperType const &Other) const
   { return !operator<(Other); }
 
+  bool isBasic() const;
   bool isAlias() const;
   bool isTemplateInstantiation(char const *Which = nullptr) const;
   bool isFundamental(char const *Which = nullptr) const;
@@ -124,10 +125,10 @@ private:
   clang::QualType const &type() const;
   clang::Type const *typePtr() const;
 
-  static clang::QualType fullyDerefType(clang::QualType const &Type);
-
   static clang::QualType requalifyType(clang::QualType const &Type,
                                        unsigned Qualifiers);
+
+  std::string templatePostfix() const;
 
   clang::QualType Type_;
   std::vector<clang::QualType> BaseTypes_;

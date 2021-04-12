@@ -159,6 +159,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
          "quals"_a = Identifier::KEEP_QUALS)
     .def("mangled", &Type::mangled)
     .def("is_const", &Type::isConst)
+    .def("is_basic", &Type::isBasic)
     .def("is_alias", &Type::isAlias)
     .def("is_template_instantiation", &Type::isTemplateInstantiation,
          "which"_a = nullptr)

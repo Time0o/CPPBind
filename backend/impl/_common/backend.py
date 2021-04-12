@@ -24,8 +24,17 @@ class Backend(metaclass=Generic):
         def add_type(t):
             self._types.add(t)
 
-            if t.canonical() != t:
-                self._type_aliases.add((t, t.canonical()))
+            while t.is_alias():
+                if t.is_basic():
+                    self._type_aliases.add((t, t.canonical()))
+                    break
+                elif t.is_const():
+                    t = t.without_const()
+                elif t.is_pointer() or t.is_reference():
+                    t = t.pointee()
+
+            if t.is_enum():
+                add_type(t.underlying_integer_type())
 
         for r in self._records:
             add_type(r.type())

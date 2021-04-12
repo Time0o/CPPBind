@@ -15,11 +15,10 @@ class CTypeTranslator(TypeTranslator):
                       case=Id.SNAKE_CASE,
                       quals=Id.REPLACE_QUALS)
 
-        if t.is_record() or t.is_record_indirection():
-            fmt = partial(fmt, with_extra_prefix='struct ')
-
         if t.is_alias():
             fmt = partial(fmt, with_extra_postfix='_t')
+        elif t.is_record() or t.is_record_indirection():
+            fmt = partial(fmt, with_extra_prefix='struct ')
 
         return fmt()
 
@@ -32,6 +31,10 @@ class CTypeTranslator(TypeTranslator):
             """,
             assertions='\n'.join(assertions),
             inp=inp)
+
+    @rule(lambda t: t.is_alias() and t.is_basic())
+    def target(cls, t, args):
+        return cls._c_type(t)
 
     @rule(lambda t: t.is_boolean())
     def target(cls, t, args):

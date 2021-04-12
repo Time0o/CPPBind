@@ -52,6 +52,13 @@ WrapperType::operator<(WrapperType const &Other) const
 { return str() < Other.str(); }
 
 bool
+WrapperType::isBasic() const
+{
+  auto Str(print::qualType(type()));
+  return Str.find(' ') == std::string::npos;
+}
+
+bool
 WrapperType::isAlias() const
 { return type().getCanonicalType().getAsString() != Type_.getAsString(); }
 
@@ -250,22 +257,27 @@ WrapperType::format(bool WithTemplatePostfix,
                     Identifier::Case Case,
                     Identifier::Quals Quals) const
 {
-  WrapperType BaseType(fullyDerefType(Type_));
-
-  auto Str(print::qualType(type(),
-                           print::QUALIFIED_POLICY));
-
-  auto StrBase(print::qualType(requalifyType(BaseType.type(), 0u),
-                               print::QUALIFIED_POLICY));
-
+  std::string Str(print::qualType(type(), print::QUALIFIED_POLICY));
+  std::string StrBase;
   std::string StrReplace;
 
-  if (WithTemplatePostfix && BaseType.isTemplateInstantiation()) {
-    StrReplace = TemplateArgumentList::strip(StrBase)
-               + BaseType.TemplateArgumentList_->str(true);
+  if (isAlias() && isBasic()) {
+    StrBase = Str;
+    StrReplace = Str;
+
   } else {
-    StrBase = TemplateArgumentList::strip(StrBase);
-    StrReplace = StrBase;
+    WrapperType BaseType(pointee(true));
+
+    StrBase = print::qualType(BaseType.unqualified().type(),
+                              print::QUALIFIED_POLICY);
+
+    if (WithTemplatePostfix && BaseType.isTemplateInstantiation()) {
+      StrReplace = TemplateArgumentList::strip(StrBase)
+                 + BaseType.templatePostfix();
+    } else {
+      StrBase = TemplateArgumentList::strip(StrBase);
+      StrReplace = StrBase;
+    }
   }
 
   StrReplace = Identifier(StrReplace).format(Case, Quals);
@@ -377,17 +389,11 @@ WrapperType::typePtr() const
 { return type().getTypePtr(); }
 
 clang::QualType
-WrapperType::fullyDerefType(clang::QualType const &Type)
-{
-  auto BaseType = Type.getNonReferenceType();
-  while (BaseType->isPointerType())
-    BaseType = BaseType->getPointeeType();
-
-  return BaseType;
-}
-
-clang::QualType
 WrapperType::requalifyType(clang::QualType const &Type, unsigned Qualifiers)
 { return clang::QualType(Type.getTypePtr(), Qualifiers); }
+
+std::string
+WrapperType::templatePostfix() const
+{ return TemplateArgumentList_->str(true); }
 
 } // namespace cppbind

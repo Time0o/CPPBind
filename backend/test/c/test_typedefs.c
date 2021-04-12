@@ -17,5 +17,13 @@ int main()
     assert(c == 3);
   }
 
+  {
+    test_s_t s = test_s_new();
+    test_s_t s_copy = test_copy(&s);
+
+    test_s_delete(&s);
+    test_s_delete(&s_copy);
+  }
+
   return 0;
 }
