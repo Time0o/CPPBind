@@ -15,7 +15,7 @@ namespace cppbind
 {
 
 void
-Wrapper::finalize()
+Wrapper::overload()
 {
   for (auto &Wr : Records_)
     Wr.overload(II_);

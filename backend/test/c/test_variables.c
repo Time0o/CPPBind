@@ -16,5 +16,8 @@ int main()
   assert(TEST_UNSIGNED_CONSTEXPR_1 == 1u);
   assert(TEST_DOUBLE_CONSTEXPR_1 == 1.0);
 
+  assert(M_MACRO_CONST == 1);
+  assert(M_MACRO_EXPR == ~(1 << 3));
+
   return 0;
 }

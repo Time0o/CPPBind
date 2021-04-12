@@ -8,12 +8,20 @@
 #include <unordered_map>
 
 #include "clang/AST/ASTContext.h"
+#include "clang/Basic/SourceLocation.h"
 #include "clang/Frontend/CompilerInstance.h"
 
 #include "Mixin.hpp"
 
 namespace cppbind
 {
+
+enum InputFile
+{
+  ORIG_INPUT_FILE,
+  TMP_INPUT_FILE,
+  COMPLETE_INPUT_FILE
+};
 
 class CompilerStateRegistry : private mixin::NotCopyOrMoveable
 {
@@ -32,13 +40,9 @@ public:
   void updateCompilerInstance(clang::CompilerInstance const &CI)
   { CI_ = CI; }
 
-  std::string currentFile(bool Tmp = false, bool Relative = false) const;
+  std::string currentFile(InputFile IF, bool Relative = false) const;
 
-  clang::CompilerInstance const &currentCompilerInstance() const
-  {
-    assert(CI_);
-    return CI_->get();
-  }
+  bool inCurrentFile(InputFile IF, clang::SourceLocation const &Loc) const;
 
   clang::CompilerInstance const &operator*() const
   {

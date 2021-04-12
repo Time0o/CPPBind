@@ -25,20 +25,7 @@ namespace cppbind
 
 template<typename IMPL>
 class GenericASTVisitor : public clang::RecursiveASTVisitor<IMPL>
-{
-protected:
-  template<typename T>
-  static bool inInputFile(T *Decl)
-  {
-    auto &SM(ASTContext().getSourceManager());
-    auto Filename(SM.getFilename(Decl->getLocation()));
-
-    auto OrigInputFile(CompilerState().currentFile(false));
-    auto TmpInputFile(CompilerState().currentFile(true));
-
-    return Filename == OrigInputFile || Filename == TmpInputFile;
-  }
-};
+{};
 
 template<typename VISITOR>
 class GenericASTConsumer : public clang::ASTConsumer

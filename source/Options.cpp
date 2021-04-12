@@ -18,7 +18,11 @@ void OptionsRegistry::init()
 
   Options().add<std::vector<std::string>>("wrap-rule")
     .setDescription("Matcher rule for declarations to be wrapped")
-    .setOptional(false)
+    .done();
+
+  Options().add<bool>("wrap-macro-constants")
+    .setDescription("Create constants from simple macros")
+    .setDefault(false)
     .done();
 
   Options().add<std::vector<std::string>>("wrap-template-instantiations")

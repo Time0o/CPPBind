@@ -22,7 +22,12 @@ enum Policy
   QUALIFIED_POLICY
 };
 
-std::string sourceRange(clang::SourceRange const &SR);
+std::string sourceLocation(clang::SourceLocation const &SL);
+
+std::string sourceContent(clang::SourceLocation const &SLBegin,
+                          clang::SourceLocation const &SLEnd);
+
+std::string sourceContent(clang::SourceRange const &SR);
 
 std::string stmt(clang::Stmt const *Stmt, Policy P = DEFAULT_POLICY);
 

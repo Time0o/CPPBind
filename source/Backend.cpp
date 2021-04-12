@@ -199,7 +199,8 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
 
   py::class_<Constant>(m, "Constant", py::dynamic_attr())
     .def("name", &Constant::getName)
-    .def("type", &Constant::getType);
+    .def("type", &Constant::getType)
+    .def("is_macro", &Constant::isMacro);
 
   py::class_<Function>(m, "Function", py::dynamic_attr())
     .def("name", &Function::getName,

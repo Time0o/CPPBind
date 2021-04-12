@@ -38,6 +38,13 @@ public:
       Includes_.push_back(*It);
   }
 
+  template<typename IT>
+  void addDefinitions(IT First, IT Last)
+  {
+    for (auto It = First; It != Last; ++It)
+      Constants_.emplace_back(Identifier(It->name()));
+  }
+
   template<typename ...ARGS>
   void addWrapperConstant(ARGS &&...Args)
   {
@@ -62,7 +69,7 @@ public:
                      std::forward<ARGS>(Args)...);
   }
 
-  void finalize();
+  void overload();
 
   std::deque<Include> getIncludes() const
   { return Includes_; }

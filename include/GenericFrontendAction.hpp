@@ -15,8 +15,10 @@
 #include "llvm/ADT/StringRef.h"
 
 #include "CompilerState.hpp"
-#include "Logging.hpp"
+#include "Definition.hpp"
 #include "Include.hpp"
+#include "Logging.hpp"
+#include "Print.hpp"
 
 namespace clang
 {
@@ -30,11 +32,13 @@ namespace cppbind
 template<typename CONSUMER>
 class GenericFrontendAction : public clang::ASTFrontendAction
 {
-  class MatchIncludesCallback : public clang::PPCallbacks
+  class PPCallback : public clang::PPCallbacks
   {
   public:
-    MatchIncludesCallback(std::deque<Include> *Includes)
-    : Includes_(Includes)
+    PPCallback(std::deque<Include> *Includes,
+                          std::deque<Definition> *Definitions)
+    : Includes_(Includes),
+      Definitions_(Definitions)
     {}
 
     void InclusionDirective(
@@ -49,21 +53,43 @@ class GenericFrontendAction : public clang::ASTFrontendAction
       clang::Module const *,
       clang::SrcMgr::CharacteristicKind) override
     {
-      auto TmpFile(CompilerState().currentFile(true));
-
-      auto const &SM(ASTContext().getSourceManager());
-      if (SM.getFilename(Loc) != TmpFile)
+      if (!CompilerState().inCurrentFile(TMP_INPUT_FILE, Loc))
         return;
 
       auto IncludePath(FileEntry->getName().str());
-      if (IncludePath == TmpFile)
+      if (IncludePath == CompilerState().currentFile(TMP_INPUT_FILE))
         return;
 
       Includes_->emplace_back(IncludePath, IsAngled);
     }
 
+    void MacroDefined(
+      clang::Token const &MT,
+      clang::MacroDirective const *MD) override
+    {
+      auto Loc = MT.getLocation();
+      auto EndLoc = MT.getEndLoc();
+      auto Name(print::sourceContent(Loc, EndLoc));
+
+      if (!CompilerState().inCurrentFile(ORIG_INPUT_FILE, Loc))
+        return;
+
+      auto MI = MD->getMacroInfo();
+
+      if (!MI->isObjectLike() || MI->tokens_empty())
+        return;
+
+      auto ArgLoc = MI->tokens().front().getLocation();
+      auto ArgEndLoc = MI->tokens().back().getEndLoc();
+      auto Arg(print::sourceContent(ArgLoc, ArgEndLoc));
+
+      if (Arg.find_first_not_of("0123456789()+-*/%<>~&|^!= ") == std::string::npos)
+        Definitions_->emplace_back(Name, Arg);
+    }
+
   private:
     std::deque<Include> *Includes_;
+    std::deque<Definition> *Definitions_;
   };
 
 public:
@@ -90,7 +116,8 @@ private:
     CompilerState().updateCompilerInstance(CI);
     CompilerState().updateFile(File.str());
 
-    log::info("processing input file '{0}'", CompilerState().currentFile());
+    log::info("processing input file '{0}'",
+              CompilerState().currentFile(ORIG_INPUT_FILE));
   }
 
   virtual std::unique_ptr<CONSUMER> makeConsumer() = 0;
@@ -102,16 +129,21 @@ protected:
   std::deque<Include> const &includes() const
   { return Includes_; }
 
+  std::deque<Definition> const &definitions() const
+  { return Definitions_; }
+
 private:
   void createIncludeMatcher(clang::CompilerInstance &CI)
   {
     Includes_.clear();
 
     clang::Preprocessor &PP = CI.getPreprocessor();
-    PP.addPPCallbacks(std::make_unique<MatchIncludesCallback>(&Includes_));
+
+    PP.addPPCallbacks(std::make_unique<PPCallback>(&Includes_, &Definitions_));
   }
 
   std::deque<Include> Includes_;
+  std::deque<Definition> Definitions_;
 };
 
 } // namespace cppbind

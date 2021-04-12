@@ -29,7 +29,7 @@ namespace cppbind
 bool
 CreateWrapperVisitor::VisitCXXRecordDecl(clang::CXXRecordDecl *Decl)
 {
-  if (inInputFile(Decl)) {
+  if (CompilerState().inCurrentFile(COMPLETE_INPUT_FILE, Decl->getLocation())) {
     auto &Sema(CompilerState()->getSema());
 
     if (Decl->isThisDeclarationADefinition()) {
@@ -65,8 +65,8 @@ CreateWrapperConsumer::addFundamentalTypesHandler()
 void
 CreateWrapperConsumer::addWrapperHandlers()
 {
-  auto OrigInputFile(CompilerState().currentFile(false, true));
-  auto TmpInputFile(CompilerState().currentFile(true, true));
+  auto OrigInputFile(CompilerState().currentFile(ORIG_INPUT_FILE, true));
+  auto TmpInputFile(CompilerState().currentFile(TMP_INPUT_FILE, true));
 
   for (auto const &MatcherRule : OPT(std::vector<std::string>, "wrap-rule")) {
     auto Tmp(string::splitFirst(MatcherRule, ":"));
@@ -210,7 +210,7 @@ CreateWrapperConsumer::handleRecordDefinition(clang::CXXRecordDecl const *Decl)
 void
 CreateWrapperFrontendAction::beforeProcessing()
 {
-  InputFile_ = CompilerState().currentFile();
+  InputFile_ = CompilerState().currentFile(ORIG_INPUT_FILE);
 
   Wrapper_ = std::make_shared<Wrapper>(II_, TI_);
 }
@@ -220,7 +220,10 @@ CreateWrapperFrontendAction::afterProcessing()
 {
   Wrapper_->addIncludes(includes().begin(), includes().end());
 
-  Wrapper_->finalize();
+  if (OPT(bool, "wrap-macro-constants"))
+    Wrapper_->addDefinitions(definitions().begin(), definitions().end());
+
+  Wrapper_->overload();
 
   Backend::run(InputFile_, Wrapper_);
 }

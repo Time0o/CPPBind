@@ -16,9 +16,9 @@ def _name(get=lambda self: self.name(),
 
     def name_closure(self,
                      case=default_case,
-                     qualified=True,
                      prefix=default_prefix,
-                     postfix=default_postfix):
+                     postfix=default_postfix,
+                     qualified=True):
 
         quals = Id.REPLACE_QUALS if qualified else Id.REMOVE_QUALS
 
@@ -277,14 +277,17 @@ _patch(Function, 'forward_call', _function_forward_call)
 _patch(Function, 'forward', _function_forward)
 _patch(Function, 'try_catch', _function_try_catch)
 
-_patch(Constant, 'name_target', _name(default_case=Id.SNAKE_CASE_CAP_ALL))
+_patch(Constant, 'name_target',
+       _name(default_case=Id.SNAKE_CASE_CAP_ALL))
 
-_patch(Function, 'name_target', _name(get=lambda f: f.name(with_template_postfix=True,
-                                                           with_overload_postfix=True,
-                                                           without_operator_name=True)))
+_patch(Function, 'name_target',
+       _name(get=lambda f: f.name(with_template_postfix=True,
+                                  with_overload_postfix=True,
+                                  without_operator_name=True)))
 
 _patch(Parameter, 'name_target', _name())
 _patch(Parameter, 'name_interm', _name(default_prefix='_'))
 
-_patch(Record, 'name_target', _name(get=lambda r: r.name(with_template_postfix=True),
-                                    default_case=Id.PASCAL_CASE))
+_patch(Record, 'name_target',
+       _name(get=lambda r: r.name(with_template_postfix=True),
+             default_case=Id.PASCAL_CASE))

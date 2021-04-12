@@ -35,12 +35,26 @@ clang::PrintingPolicy makePrintingPolicy(Policy P)
   }
 }
 
-std::string sourceRange(clang::SourceRange const &SR)
+std::string sourceLocation(clang::SourceLocation const &SL)
 {
   auto const &SM(ASTContext().getSourceManager());
 
-  return string::splitFirst(SR.printToString(SM), ",").first;
+  return SL.printToString(SM);
 }
+
+std::string sourceContent(clang::SourceLocation const &SLBegin,
+                         clang::SourceLocation const &SLEnd)
+{
+  auto const &SM(ASTContext().getSourceManager());
+
+  auto Begin = SM.getCharacterData(SLBegin);
+  auto End = SM.getCharacterData(SLEnd);
+
+  return std::string(Begin, End - Begin);
+}
+
+std::string sourceContent(clang::SourceRange const &SR)
+{ return sourceContent(SR.getBegin(), SR.getEnd()); }
 
 std::string stmt(clang::Stmt const *Stmt, Policy P)
 {

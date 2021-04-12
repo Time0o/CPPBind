@@ -3,6 +3,8 @@
 
 #include "boost/filesystem.hpp"
 
+#include "clang/Basic/SourceLocation.h"
+
 #include "CompilerState.hpp"
 
 using namespace boost::filesystem;
@@ -34,9 +36,20 @@ CompilerStateRegistry::updateFile(std::string const &File)
 }
 
 std::string
-CompilerStateRegistry::currentFile(bool Tmp, bool Relative) const
+CompilerStateRegistry::currentFile(InputFile IF, bool Relative) const
 {
-  auto File(Tmp ? TmpFile_ : File_);
+  std::optional<std::string> File;
+
+  switch (IF) {
+  case ORIG_INPUT_FILE:
+    File = File_;
+    break;
+  case TMP_INPUT_FILE:
+    File = TmpFile_;
+    break;
+  default:
+    break;
+  }
 
   assert(File);
 
@@ -46,6 +59,26 @@ CompilerStateRegistry::currentFile(bool Tmp, bool Relative) const
     Path = path(Path).filename().string();
 
   return Path;
+}
+
+bool
+CompilerStateRegistry::inCurrentFile(InputFile IF,
+                                     clang::SourceLocation const &Loc) const
+{
+  auto &SM(ASTContext().getSourceManager());
+  auto Filename(SM.getFilename(Loc));
+
+  if (IF == ORIG_INPUT_FILE || IF == COMPLETE_INPUT_FILE) {
+    if (Filename == currentFile(ORIG_INPUT_FILE))
+      return true;
+  }
+
+  if (IF == TMP_INPUT_FILE || IF == COMPLETE_INPUT_FILE) {
+    if (Filename == currentFile(TMP_INPUT_FILE))
+      return true;
+  }
+
+  return false;
 }
 
 } // namespace cppbind

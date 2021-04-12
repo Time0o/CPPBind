@@ -64,7 +64,7 @@ private:
     if (!Decl)
       return "???";
 
-    return print::sourceRange(Decl->getSourceRange());
+    return print::sourceLocation(Decl->getLocation());
   }
 
   T_DECL const *Decl_ = nullptr;

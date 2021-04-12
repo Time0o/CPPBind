@@ -81,6 +81,7 @@ class BackendTestGenerator:
                 '--wrap-rule', 'const:hasAncestor(namespaceDecl(hasName("test")))',
                 '--wrap-rule','function:hasAncestor(namespaceDecl(hasName("test")))',
                 '--wrap-rule','record:hasAncestor(namespaceDecl(hasName("test")))',
+                '--wrap-macro-constants',
                 '--output-directory', f'{output_dir}',
                 '--'
             ])
