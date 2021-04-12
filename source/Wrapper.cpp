@@ -188,10 +188,8 @@ Wrapper::typeWrapped(WrapperType const &Type) const
 
   if (Type.isRecord())
     RecordType = Type;
-  else if (Type.isPointer() && Type.pointee().isRecord())
-    RecordType = Type.pointee();
-  else if (Type.isReference() && Type.referenced().isRecord())
-    RecordType = Type.referenced();
+  else if (Type.isRecordIndirection(true))
+    RecordType = Type.pointee(true);
   else
     return true;
 

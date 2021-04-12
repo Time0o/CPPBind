@@ -149,8 +149,8 @@ WrapperType::isClass() const
 { return type()->isClassType(); }
 
 bool
-WrapperType::isRecordIndirection() const
-{ return isIndirection() && pointee().isRecord(); }
+WrapperType::isRecordIndirection(bool Recursive) const
+{ return isIndirection() && pointee(Recursive).isRecord(); }
 
 bool
 WrapperType::isConst() const

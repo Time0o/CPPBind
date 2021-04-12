@@ -68,7 +68,7 @@ public:
   bool isRecord() const;
   bool isStruct() const;
   bool isClass() const;
-  bool isRecordIndirection() const;
+  bool isRecordIndirection(bool Recursive = false) const;
   bool isConst() const;
 
   WrapperType canonical() const;
