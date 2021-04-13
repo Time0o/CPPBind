@@ -24,15 +24,20 @@
 namespace cppbind
 {
 
-WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl, bool Dummy)
+WrapperRecord::WrapperRecord(Identifier const &Name, WrapperType const &Type)
+: Name_(Name),
+  Type_(Type)
+{}
+
+WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl)
 : WrapperObject(Decl),
   Name_(Decl),
   Type_(Decl->getTypeForDecl()),
-  Functions_(determinePublicMemberFunctions(Decl, Dummy)),
-  IsDefinition_(determineIfDefinition(Decl, Dummy)),
-  IsAbstract_(determineIfAbstract(Decl, Dummy)),
-  IsCopyable_(determineIfCopyable(Decl, Dummy)),
-  IsMoveable_(determineIfMoveable(Decl, Dummy)),
+  Functions_(determinePublicMemberFunctions(Decl)),
+  IsDefinition_(determineIfDefinition(Decl)),
+  IsAbstract_(determineIfAbstract(Decl)),
+  IsCopyable_(determineIfCopyable(Decl)),
+  IsMoveable_(determineIfMoveable(Decl)),
   TemplateArgumentList_(determineTemplateArgumentList(Decl))
 {
   for (auto &F : Functions_) {
@@ -71,9 +76,9 @@ WrapperRecord::getTemplateArgumentList() const
 
 std::deque<WrapperFunction>
 WrapperRecord::determinePublicMemberFunctions(
-  clang::CXXRecordDecl const *Decl, bool Dummy) const
+  clang::CXXRecordDecl const *Decl) const
 {
-  if (Dummy || !Decl->isThisDeclarationADefinition())
+  if (!Decl->isThisDeclarationADefinition())
     return {};
 
   std::deque<WrapperFunction> PublicMethods;
@@ -232,22 +237,22 @@ WrapperRecord::determinePublicCallableMemberFieldDecls(
 }
 
 bool
-WrapperRecord::determineIfDefinition(clang::CXXRecordDecl const *Decl, bool Dummy)
-{ return !Dummy && Decl->isThisDeclarationADefinition(); }
+WrapperRecord::determineIfDefinition(clang::CXXRecordDecl const *Decl)
+{ return Decl->isThisDeclarationADefinition(); }
 
 bool
-WrapperRecord::determineIfAbstract(clang::CXXRecordDecl const *Decl, bool Dummy)
+WrapperRecord::determineIfAbstract(clang::CXXRecordDecl const *Decl)
 {
-  if (Dummy || !Decl->isThisDeclarationADefinition())
+  if (!Decl->isThisDeclarationADefinition())
     return false;
 
  return Decl->isAbstract();
 }
 
 bool
-WrapperRecord::determineIfCopyable(clang::CXXRecordDecl const *Decl, bool Dummy)
+WrapperRecord::determineIfCopyable(clang::CXXRecordDecl const *Decl)
 {
-  if (Dummy || !Decl->isThisDeclarationADefinition())
+  if (!Decl->isThisDeclarationADefinition())
     return false;
 
   // XXX likely not always correct
@@ -262,9 +267,9 @@ WrapperRecord::determineIfCopyable(clang::CXXRecordDecl const *Decl, bool Dummy)
 }
 
 bool
-WrapperRecord::determineIfMoveable(clang::CXXRecordDecl const *Decl, bool Dummy)
+WrapperRecord::determineIfMoveable(clang::CXXRecordDecl const *Decl)
 {
-  if (Dummy || !Decl->isThisDeclarationADefinition())
+  if (!Decl->isThisDeclarationADefinition())
     return false;
 
   // XXX likely not always correct

@@ -27,7 +27,11 @@ class WrapperRecord : public WrapperObject<clang::CXXRecordDecl>,
                       public mixin::NotCopyOrMoveable
 {
 public:
-  explicit WrapperRecord(clang::CXXRecordDecl const *Decl, bool Dummy = false);
+  WrapperRecord(Identifier const &Name, WrapperType const &Type);
+
+  explicit WrapperRecord(clang::CXXRecordDecl const *Decl);
+
+  static WrapperRecord declaration(clang::CXXRecordDecl const *Decl);
 
   bool operator==(WrapperRecord const &Other) const
   { return getType() != Other.getType(); }
@@ -73,7 +77,7 @@ public:
 
 private:
   std::deque<WrapperFunction> determinePublicMemberFunctions(
-    clang::CXXRecordDecl const *Decl, bool Dummy) const;
+    clang::CXXRecordDecl const *Decl) const;
 
   std::deque<clang::CXXMethodDecl const *>
   determinePublicMemberFunctionDecls(
@@ -92,10 +96,10 @@ private:
   determinePublicCallableMemberFieldDecls(
     clang::CXXRecordDecl const *Decl) const;
 
-  static bool determineIfDefinition(clang::CXXRecordDecl const *Decl, bool Dummy);
-  static bool determineIfAbstract(clang::CXXRecordDecl const *Decl, bool Dummy);
-  static bool determineIfCopyable(clang::CXXRecordDecl const *Decl, bool Dummy);
-  static bool determineIfMoveable(clang::CXXRecordDecl const *Decl, bool Dummy);
+  static bool determineIfDefinition(clang::CXXRecordDecl const *Decl);
+  static bool determineIfAbstract(clang::CXXRecordDecl const *Decl);
+  static bool determineIfCopyable(clang::CXXRecordDecl const *Decl);
+  static bool determineIfMoveable(clang::CXXRecordDecl const *Decl);
 
   static std::optional<TemplateArgumentList>
   determineTemplateArgumentList(clang::CXXRecordDecl const *Decl);
@@ -113,10 +117,10 @@ private:
 
   std::deque<WrapperFunction> Functions_;
 
-  bool IsDefinition_;
-  bool IsAbstract_;
-  bool IsCopyable_;
-  bool IsMoveable_;
+  bool IsDefinition_ = false;
+  bool IsAbstract_ = false;
+  bool IsCopyable_ = false;
+  bool IsMoveable_ = false;
 
   std::optional<TemplateArgumentList> TemplateArgumentList_;
 };
