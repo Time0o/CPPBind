@@ -160,6 +160,18 @@ WrapperType
 WrapperType::canonical() const
 { return WrapperType(Type_.getCanonicalType()); }
 
+std::vector<std::string>
+WrapperType::templateArguments() const
+{
+  std::vector<std::string> TArgs;
+  TArgs.reserve(TemplateArgumentList_->size());
+
+  for (auto const &TA : *TemplateArgumentList_)
+    TArgs.push_back(TA.str());
+
+  return TArgs;
+}
+
 std::vector<WrapperType>
 WrapperType::baseTypes() const
 {

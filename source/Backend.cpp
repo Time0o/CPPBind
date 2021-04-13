@@ -183,6 +183,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_record_indirection", &Type::isRecordIndirection,
          "recursive"_a = false)
     .def("canonical", &Type::canonical)
+    .def("template_arguments", &Type::templateArguments)
     .def("base_types", &Type::baseTypes)
     .def("lvalue_reference_to", &Type::lvalueReferenceTo)
     .def("rvalue_reference_to", &Type::rvalueReferenceTo)

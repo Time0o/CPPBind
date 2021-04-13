@@ -73,6 +73,8 @@ public:
 
   WrapperType canonical() const;
 
+  std::vector<std::string> templateArguments() const;
+
   std::vector<WrapperType> baseTypes() const;
 
   WrapperType lvalueReferenceTo() const;
