@@ -39,23 +39,23 @@ namespace cppbind
 {
 
 WrapperParameter::WrapperParameter(Identifier const &Name,
-                                   WrapperType const &Type)
+                                   WrapperType const &Type,
+                                   clang::Expr const *DefaultArgument)
 : Name_(Name),
-  Type_(Type)
+  Type_(Type),
+  DefaultArgument_(determineDefaultArgument(DefaultArgument))
 {}
 
-WrapperParameter::WrapperParameter(Identifier const &Name,
-                                   clang::ParmVarDecl const *Decl)
+WrapperParameter::WrapperParameter(clang::ParmVarDecl const *Decl)
 : WrapperObject<clang::ParmVarDecl>(Decl),
-  Name_(Name),
+  Name_(Decl),
   Type_(Decl->getType()),
-  DefaultArgument_(determineDefaultArgument(Decl))
+  DefaultArgument_(determineDefaultArgument(Decl->getUninstantiatedDefaultArg()))
 {}
 
 std::optional<std::string>
-WrapperParameter::determineDefaultArgument(clang::ParmVarDecl const *Decl)
+WrapperParameter::determineDefaultArgument(clang::Expr const *DefaultExpr)
 {
-  auto const *DefaultExpr = Decl->getUninstantiatedDefaultArg();
   if (!DefaultExpr)
     return std::nullopt;
 
@@ -311,8 +311,11 @@ WrapperFunction::determineParameters(clang::FunctionDecl const *Decl)
   // construct parameter list
   std::deque<WrapperParameter> ParamList;
 
-  for (unsigned i = 0u; i < Params.size(); ++i)
-    ParamList.emplace_back(Identifier(ParamNames[i]), Params[i]);
+  for (unsigned i = 0u; i < Params.size(); ++i) {
+    ParamList.emplace_back(Identifier(ParamNames[i]),
+                           WrapperType(Params[i]->getType()),
+                           Params[i]->getUninstantiatedDefaultArg());
+  }
 
   return ParamList;
 }

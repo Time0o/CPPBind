@@ -47,9 +47,11 @@ class WrapperRecord;
 class WrapperParameter : public WrapperObject<clang::ParmVarDecl>
 {
 public:
-  WrapperParameter(Identifier const &Name, WrapperType const &Type);
+  WrapperParameter(Identifier const &Name,
+                   WrapperType const &Type,
+                   clang::Expr const *DefaultArgument = nullptr);
 
-  WrapperParameter(Identifier const &Name, clang::ParmVarDecl const *Decl);
+  explicit WrapperParameter(clang::ParmVarDecl const *Decl);
 
   static WrapperParameter self(WrapperType const &Type)
   { return WrapperParameter(Identifier(Identifier::SELF), Type); }
@@ -74,7 +76,7 @@ public:
 
 private:
   static std::optional<std::string> determineDefaultArgument(
-    clang::ParmVarDecl const *Decl);
+    clang::Expr const *DefaultExpr);
 
   Identifier Name_;
   WrapperType Type_;
@@ -101,7 +103,7 @@ class WrapperFunction : public WrapperObject<clang::FunctionDecl>
   };
 
 public:
-  WrapperFunction(Identifier const &Name);
+  explicit WrapperFunction(Identifier const &Name);
 
   explicit WrapperFunction(clang::FunctionDecl const *Decl);
 
