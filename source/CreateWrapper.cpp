@@ -96,8 +96,8 @@ CreateWrapperConsumer::addWrapperHandlers()
                      std::string const &RestrictionsFmt,
                      auto ...RestrictionsFmtArgs)
     {
-      auto MatcherRestrictions(
-        llvm::formatv(RestrictionsFmt.c_str(), RestrictionsFmtArgs...));
+      auto MatcherRestrictions(llvm::formatv(RestrictionsFmt.c_str(),
+                                             RestrictionsFmtArgs...));
 
       switch (Where) {
       case ANYWHERE:
@@ -123,68 +123,92 @@ CreateWrapperConsumer::addWrapperHandlers()
       }
     };
 
-    char const *MatchToplevel =
-      "hasParent(anyOf(namespaceDecl(), translationUnitDecl()))";
-
-    char const *MatchNested =
-      "allOf(hasParent(cxxRecordDecl()), isPublic(), unless(isImplicit()))";
-
-    std::string MatchToplevelOrNested(
-      llvm::formatv("anyOf({0}, {1})", MatchToplevel, MatchNested));
-
     if (MatcherID == "const") {
       addWrapperHandler<clang::EnumDecl>(
         "enumConst",
-        match(INSIDE_SOURCE,
-              "enumDecl",
-              MatchToplevelOrNested),
+        match(INSIDE_SOURCE, "enumDecl", matchEnumConst()),
         declHandler<&CreateWrapperConsumer::handleEnumConst>());
 
       addWrapperHandler<clang::VarDecl>(
         "VarConst",
-        match(INSIDE_SOURCE,
-              "varDecl",
-              "allOf(isConstexpr(), {0})",
-              MatchToplevelOrNested),
+        match(INSIDE_SOURCE, "varDecl", matchVarConst()),
         declHandler<&CreateWrapperConsumer::handleVarConst>());
 
     } else if (MatcherID == "function") {
       addWrapperHandler<clang::FunctionDecl>(
         "function",
-        match(INSIDE_SOURCE,
-              "functionDecl",
-              "allOf(unless(cxxMethodDecl()),"
-                    "anyOf({0},"
-                          "allOf(isTemplateInstantiation(),"
-                                "hasParent(functionTemplateDecl({0})))))",
-              MatchToplevel),
+        match(INSIDE_SOURCE, "functionDecl", matchFunction()),
         declHandler<&CreateWrapperConsumer::handleFunction>());
 
     } else if (MatcherID == "record") {
       addWrapperHandler<clang::CXXRecordDecl>(
         "recordDeclaration",
-        match(OUTSIDE_SOURCE,
-              "cxxRecordDecl",
-              "anyOf({0},"
-                    "allOf(isTemplateInstantiation(),"
-                          "hasParent(classTemplateDecl({0}))))",
-              MatchToplevelOrNested),
+        match(OUTSIDE_SOURCE, "cxxRecordDecl", matchRecordDeclaration()),
         declHandler<&CreateWrapperConsumer::handleRecordDeclaration>());
 
       addWrapperHandler<clang::CXXRecordDecl>(
         "recordDefinition",
-        match(INSIDE_SOURCE,
-              "cxxRecordDecl",
-              "anyOf({0},"
-                    "allOf(isTemplateInstantiation(),"
-                          "hasParent(classTemplateDecl({0}))))",
-              MatchToplevelOrNested),
+        match(INSIDE_SOURCE, "cxxRecordDecl", matchRecordDefinition()),
         declHandler<&CreateWrapperConsumer::handleRecordDefinition>());
 
     } else {
       throw log::exception("invalid matcher: '{0}'", MatcherID);
     }
   }
+}
+
+std::string
+CreateWrapperConsumer::matchToplevel()
+{ return "hasParent(anyOf(namespaceDecl(), translationUnitDecl()))"; }
+
+std::string
+CreateWrapperConsumer::matchNested()
+{ return "allOf(hasParent(cxxRecordDecl()), isPublic(), unless(isImplicit()))"; }
+
+std::string
+CreateWrapperConsumer::matchToplevelOrNested()
+{ return llvm::formatv("anyOf({0}, {1})", matchToplevel(), matchNested()); }
+
+std::string
+CreateWrapperConsumer::matchEnumConst()
+{ return llvm::formatv("{0}", matchToplevelOrNested()); }
+
+std::string
+CreateWrapperConsumer::matchVarConst()
+{
+  return llvm::formatv("allOf(hasType(isConstQualified()), {0})",
+                       matchToplevelOrNested());
+}
+
+std::string
+CreateWrapperConsumer::matchFunction()
+{
+  return llvm::formatv(
+           "allOf(unless(cxxMethodDecl()),"
+                 "anyOf({0},"
+                       "allOf(isTemplateInstantiation(),"
+                             "hasParent(functionTemplateDecl({0})))))",
+           matchToplevel());
+}
+
+std::string
+CreateWrapperConsumer::matchRecordDeclaration()
+{
+  return llvm::formatv(
+           "anyOf({0},"
+                 "allOf(isTemplateInstantiation(),"
+                       "hasParent(classTemplateDecl({0}))))",
+           matchToplevelOrNested());
+}
+
+std::string
+CreateWrapperConsumer::matchRecordDefinition()
+{
+  return llvm::formatv(
+           "anyOf({0},"
+                 "allOf(isTemplateInstantiation(),"
+                       "hasParent(classTemplateDecl({0}))))",
+           matchToplevelOrNested());
 }
 
 void

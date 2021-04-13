@@ -51,6 +51,15 @@ private:
 
   void addWrapperHandlers();
 
+  static std::string matchToplevel();
+  static std::string matchNested();
+  static std::string matchToplevelOrNested();
+  static std::string matchEnumConst();
+  static std::string matchVarConst();
+  static std::string matchFunction();
+  static std::string matchRecordDeclaration();
+  static std::string matchRecordDefinition();
+
   void handleFundamentalType(clang::ValueDecl const *Decl);
   void handleEnumConst(clang::EnumDecl const *Decl);
   void handleVarConst(clang::VarDecl const *Decl);
