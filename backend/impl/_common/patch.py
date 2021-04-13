@@ -54,6 +54,7 @@ def _function_declare_parameters(self):
     using_directives = [f"using namespace {ns};" for ns in self.enclosing_namespaces()]
 
     def declare_parameter(p):
+        decl_name = p.name_interm()
         decl_type = p.type()
 
         if decl_type.is_record():
@@ -64,15 +65,23 @@ def _function_declare_parameters(self):
         if decl_type.is_const():
             decl_type = decl_type.without_const()
 
-        decl = f"{decl_type} {p.name_interm()}"
+        decl = f"{decl_type} {decl_name}"
 
         if p.default_argument() is not None:
             default = f"{p.default_argument()}"
 
-            if p.type().is_scoped_enum():
-                default = f"static_cast<{p.type()}>({default})"
+            if p.type().is_record() or \
+               p.type().is_reference() and p.type().referenced().is_record():
+                decl = code(
+                    f"""
+                    {decl_type.pointee()} {decl_name}_default = {default};
+                    {decl} = &{decl_name}_default;
+                    """)
+            else:
+                if p.type().is_scoped_enum():
+                    default = f"static_cast<{p.type()}>({default})"
 
-            decl = f"{decl} = {default}"
+                decl = f"{decl} = {default}"
 
         return f"{decl};"
 
