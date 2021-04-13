@@ -49,7 +49,7 @@ class LuaTypeTranslator(TypeTranslator):
     @classmethod
     def _lua_input_skip_defaulted(cls, t, args):
         if args.p.default_argument() is not None:
-            return f"if (lua_gettop(L) < {args.i+1}) break;"
+            return f"if (lua_gettop(L) < {args.i+1}) goto function_call;"
 
     @rule(lambda _: True)
     def _lua_input_check_type(cls, t, args):
@@ -60,34 +60,39 @@ class LuaTypeTranslator(TypeTranslator):
         ref_returns = []
 
         for p in args.f.parameters():
-            t = p.type()
+            pt = p.type()
 
-            if t.is_pointer():
-                t = t.pointee()
-            elif t.is_reference():
-                t = t.referenced()
+            if pt.is_pointer():
+                pt = pt.pointee()
+            elif pt.is_reference():
+                pt = pt.referenced()
             else:
                 continue
 
-            if not (t.is_fundamental() or t.is_enum()):
+            if not (pt.is_fundamental() or pt.is_enum()):
                 continue
 
-            if t.is_const():
+            if pt.is_const():
                 continue
 
-            fmt = cls.output(t, args, bare=True)
+            fmt = cls.output(pt, args, bare=True)
 
             ref_returns.append(fmt.format(outp=f"*{p.name_interm()}"))
 
+        num_returns = len(ref_returns)
+        if not t.is_void():
+            num_returns += 1
+
         if not ref_returns:
-            return "return 1;"
+            return f"return {num_returns};"
 
         return code(
             """
             {ref_returns}
+
             return {num_returns};
             """,
-            num_returns=1 + len(ref_returns),
+            num_returns=num_returns,
             ref_returns='\n'.join(ref_returns))
 
     constant_before = _lua_constant_name.__func__
@@ -186,9 +191,9 @@ class LuaTypeTranslator(TypeTranslator):
 
     output_rule = partial(rule, after=output_after)
 
-    @rule(lambda t: t.is_void())
+    @output_rule(lambda t: t.is_void())
     def output(cls, t, args):
-        return "return 0;"
+        pass
 
     @output_rule(lambda t: t.is_scoped_enum())
     def output(cls, t, args):

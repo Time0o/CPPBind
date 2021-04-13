@@ -112,26 +112,10 @@ def _function_forward_parameters(self):
                                                  interm=p.name_interm())
 
     translate_parameters = []
-    has_default_parameters = False
-
     for i, p in enumerate(self.parameters()):
         translate_parameters.append(translate(p, i))
 
-        if p.default_argument() is not None:
-            has_default_parameters = True
-
-    translate_parameters = '\n\n'.join(translate_parameters)
-
-    if has_default_parameters:
-        translate_parameters = code(
-            """
-            do {{
-              {translate_parameters}
-            }} while(false);
-            """,
-            translate_parameters=translate_parameters)
-
-    return translate_parameters
+    return '\n\n'.join(translate_parameters)
 
 
 def _function_forward_call(self):

@@ -68,6 +68,26 @@ inline int func()
 int default_function_call(int i = func())
 { return i; }
 
+inline void default_ref(int &a, int b = 42)
+{ a = b; }
+
+class AClass
+{
+public:
+  AClass(int value)
+  : _value(value)
+  {}
+
+  int get_value() const
+  { return _value; }
+
+private:
+  int _value;
+};
+
+inline AClass default_record(AClass b = AClass(42))
+{ return b; }
+
 template<typename T>
 T default_template(T n = 1)
 { return n; }

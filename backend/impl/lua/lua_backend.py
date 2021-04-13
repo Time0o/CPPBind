@@ -1,3 +1,4 @@
+import lua_patch
 import lua_util
 import lua_type_translator
 import type_info
