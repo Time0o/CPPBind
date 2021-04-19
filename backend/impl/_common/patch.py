@@ -1,12 +1,8 @@
+from abc import abstractmethod
+from backend import backend
 from cppbind import Constant, Function, Identifier as Id, Options, Parameter, Record, Type
 from text import code
-from type_translator import TypeTranslator as TT
 from util import dotdict
-
-
-def _patch(obj, attr, func):
-    if not hasattr(obj, attr):
-        setattr(obj, attr, func)
 
 
 def _name(get=lambda self: self.name(),
@@ -35,8 +31,19 @@ def _name(get=lambda self: self.name(),
     return name_closure
 
 
-def _type_target(self):
-    return TT().target(self)
+def _type_target(self, args=None):
+    return backend().type_translator().target(self, args)
+
+
+# XXX constant
+
+
+def _type_output(self, outp, args=None):
+    return backend().type_translator().output(self, args).format(outp=outp)
+
+
+def _type_input(self, inp, interm, args=None):
+    return backend().type_translator().input(self, args).format(inp=inp, interm=interm)
 
 
 def _constant_assign(self):
@@ -44,7 +51,7 @@ def _constant_assign(self):
         'c': self
     })
 
-    return TT().constant(self.type(), args).format(const=self.name())
+    return backend().type_translator().constant(self.type(), args).format(const=self.name())
 
 
 def _function_declare_parameters(self):
@@ -108,8 +115,7 @@ def _function_forward_parameters(self):
             'i': i
         })
 
-        return TT().input(p.type(), args).format(inp=p.name_target(),
-                                                 interm=p.name_interm())
+        return p.type().input(inp=p.name_target(), interm=p.name_interm(), args=args)
 
     translate_parameters = []
     for i, p in enumerate(self.parameters()):
@@ -176,7 +182,7 @@ def _function_forward_call(self):
         'f': self
     })
 
-    call_return = TT().output(self.return_type(), args).format(outp=outp)
+    call_return = self.return_type().output(outp=outp, args=args)
 
     call = code(
         """
@@ -238,8 +244,9 @@ def _function_try_catch(self, what):
         'f': self
     })
 
-    std_except = TT().exception(args).format(what='__e.what()')
-    unknown_except = TT().exception(args).format(what='"exception"')
+    fmt = backend().type_translator().exception(args)
+    std_except = fmt.format(what='__e.what()')
+    unknown_except = fmt.format(what='"exception"')
 
     return code(
         """
@@ -256,31 +263,49 @@ def _function_try_catch(self, what):
         unknown_except=unknown_except)
 
 
-_patch(Type, 'target', _type_target)
+class Patcher:
+    _init = False
 
-_patch(Constant, 'assign', _constant_assign)
+    def __init__(self):
+        if Patcher._init:
+            return
 
-_patch(Function, 'declare_parameters', _function_declare_parameters)
-_patch(Function, 'forward_parameters', _function_forward_parameters)
-_patch(Function, 'before_call', _function_before_call)
-_patch(Function, 'after_call', _function_after_call)
-_patch(Function, 'construct', _function_construct)
-_patch(Function, 'destruct', _function_destruct)
-_patch(Function, 'forward_call', _function_forward_call)
-_patch(Function, 'forward', _function_forward)
-_patch(Function, 'try_catch', _function_try_catch)
+        Type.target = _type_target
+        Type.input = _type_input
+        Type.output = _type_output
 
-_patch(Constant, 'name_target',
-       _name(default_case=Id.SNAKE_CASE_CAP_ALL))
+        Constant.assign = _constant_assign
 
-_patch(Function, 'name_target',
-       _name(get=lambda f: f.name(with_template_postfix=True,
-                                  with_overload_postfix=True,
-                                  without_operator_name=True)))
+        Function.declare_parameters = _function_declare_parameters
+        Function.forward_parameters = _function_forward_parameters
+        Function.before_call = _function_before_call
+        Function.after_call = _function_after_call
+        Function.construct = _function_construct
+        Function.destruct = _function_destruct
+        Function.forward_call = _function_forward_call
+        Function.forward = _function_forward
+        Function.try_catch = _function_try_catch
 
-_patch(Parameter, 'name_target', _name())
-_patch(Parameter, 'name_interm', _name(default_prefix='_'))
+        Constant.name_target = _name(default_case=Id.SNAKE_CASE_CAP_ALL)
 
-_patch(Record, 'name_target',
-       _name(get=lambda r: r.name(with_template_postfix=True),
-             default_case=Id.PASCAL_CASE))
+        Function.name_target = \
+            _name(get=lambda f: f.name(with_template_postfix=True,
+                                       with_overload_postfix=True,
+                                       without_operator_name=True))
+
+        Parameter.name_target = _name()
+        Parameter.name_interm = _name(default_prefix='_')
+
+        Record.name_target = \
+          _name(get=lambda r: r.name(with_template_postfix=True),
+                default_case=Id.PASCAL_CASE)
+
+        Patcher._init = True
+
+    @abstractmethod
+    def patch(self):
+        pass
+
+    @abstractmethod
+    def unpatch(self):
+        pass

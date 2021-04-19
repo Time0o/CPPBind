@@ -1,11 +1,7 @@
-import patch
-
-from backend import Backend
-from type_translator import TypeTranslator
+from backend import backend, use_backend
 
 
-def run(*args, **kwargs):
-    Backend(*args, *kwargs)
-    TypeTranslator()
+def run(be):
+    use_backend(be)
 
-    return Backend().run()
+    return backend().run()

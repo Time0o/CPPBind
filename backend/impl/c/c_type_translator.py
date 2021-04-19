@@ -5,8 +5,8 @@ from text import code
 from type_translator import TypeTranslator
 
 
-class CTypeTranslator(TypeTranslator):
-    rule = TypeTranslator.rule
+class CTypeTranslator(TypeTranslator('c')):
+    rule = TypeTranslator('c').rule
 
     @classmethod
     def _c_type(cls, t):
@@ -183,6 +183,3 @@ class CTypeTranslator(TypeTranslator):
                 """)
 
         return ex
-
-
-CTypeTranslator.add_custom_rules()

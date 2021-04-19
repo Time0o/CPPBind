@@ -1,20 +1,29 @@
-import lua_patch
 import lua_util
-import lua_type_translator
 import type_info
 from backend import Backend
 from cppbind import Options
+from lua_patch import LuaPatcher
+from lua_type_translator import LuaTypeTranslator
 from text import code
 
 
-class LuaBackend(Backend):
-    def __init__(self, *args):
-        super().__init__(*args)
+class LuaBackend(Backend('lua')):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
+        self._patcher = LuaPatcher()
+        self._type_translator = LuaTypeTranslator()
+
+    def patcher(self):
+        return self._patcher
+
+    def type_translator(self):
+        return self._type_translator
+
+    def wrap_before(self):
         self._wrapper_module = self.output_file(
             self.input_file().modified(filename='{filename}_lua', ext='cpp-source'))
 
-    def wrap_before(self):
         self._wrapper_module.append(code(
             """
             #define LUA_LIB

@@ -7,8 +7,8 @@ from text import code
 from type_translator import TypeTranslator
 
 
-class LuaTypeTranslator(TypeTranslator):
-    rule = TypeTranslator.rule
+class LuaTypeTranslator(TypeTranslator('lua')):
+    rule = TypeTranslator('lua').rule
 
     @classmethod
     def _lua_type(cls, t):
@@ -240,6 +240,3 @@ class LuaTypeTranslator(TypeTranslator):
 
     def exception(cls, args):
         return 'return luaL_error(L, {what});'
-
-
-LuaTypeTranslator.add_custom_rules()

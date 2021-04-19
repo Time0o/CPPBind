@@ -1,6 +1,5 @@
-import c_util
 from cppbind import Constant, Function, Identifier as Id, Type
-from text import code
+from patch import Patcher
 
 
 def _constant_name_target(self):
@@ -30,8 +29,20 @@ def _function_destruct(self, this):
     return f"{this}->~{t.format(quals=Id.REMOVE_QUALS)}();"
 
 
-Constant.name_target = _constant_name_target
+class CPatcher(Patcher):
+    def patch(self):
+        self._constant_name_target_orig = Constant.name_target
+        self._function_before_call_orig = Function.before_call
+        self._function_construct_orig = Function.construct
+        self._function_destruct_orig = Function.destruct
 
-Function.before_call = _function_before_call
-Function.construct = _function_construct
-Function.destruct = _function_destruct
+        Constant.name_target = _constant_name_target
+        Function.before_call = _function_before_call
+        Function.construct = _function_construct
+        Function.destruct = _function_destruct
+
+    def unpatch(self):
+        Constant.name_target = self._constant_name_target_orig
+        Function.before_call = self._function_before_call_orig
+        Function.construct = self._function_construct_orig
+        Function.destruct = self._function_destruct_orig

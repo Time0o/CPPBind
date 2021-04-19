@@ -1,6 +1,6 @@
 import os
 
-from backend import Backend
+from backend import backend
 from collections import OrderedDict
 from file import Path
 from itertools import chain
@@ -38,10 +38,10 @@ def type_instances():
 
         types[(t.without_const(), t_bases)] = True
 
-    for r in Backend().records():
+    for r in backend().records():
         add_type(r.type(), (b.type() for b in r.bases()))
 
-    for t in Backend().types():
+    for t in backend().types():
         if (t.is_pointer() or t.is_reference()) and not t.pointee().is_record():
             add_type(t.pointee())
 

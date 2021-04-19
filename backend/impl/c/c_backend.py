@@ -1,24 +1,31 @@
-import c_patch
-import c_type_translator
 import c_util
 from backend import Backend
+from c_patch import CPatcher
+from c_type_translator import CTypeTranslator
 from cppbind import Identifier as Id, Options
 from text import code
 
 
-class CBackend(Backend):
+class CBackend(Backend('c')):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        input_file = self.input_file()
+        self._patcher = CPatcher()
+        self._type_translator = CTypeTranslator()
 
-        self._wrapper_header = self.output_file(
-            input_file.modified(filename='{filename}_c', ext='c-header'))
+    def patcher(self):
+        return self._patcher
 
-        self._wrapper_source = self.output_file(
-            input_file.modified(filename='{filename}_c', ext='cpp-source'))
+    def type_translator(self):
+        return self._type_translator
 
     def wrap_before(self):
+        self._wrapper_header = self.output_file(
+            self.input_file().modified(filename='{filename}_c', ext='c-header'))
+
+        self._wrapper_source = self.output_file(
+            self.input_file().modified(filename='{filename}_c', ext='cpp-source'))
+
         self._wrapper_header.append(code(
             """
             #ifndef {header_guard}

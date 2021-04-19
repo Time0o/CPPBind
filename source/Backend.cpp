@@ -37,20 +37,26 @@ void Backend::run(std::string const &InputFile,
 {
   using namespace boost::filesystem;
 
-  auto BE = OPT("backend");
-
   pybind11::scoped_interpreter Guard;
 
   try {
     auto Sys(importModule("sys"));
     addModuleSearchPath(Sys, BACKEND_IMPL_COMMON_DIR);
 
-    addModuleSearchPath(Sys, (path(BACKEND_IMPL_DIR) / BE).string());
+    std::vector<std::string> BEs{"c"};
 
-    auto BackendModule(importModule(BE + BACKEND_IMPL_BACKEND_MOD_POSTFIX));
+    if (OPT("backend") != "c")
+      BEs.push_back(OPT("backend"));
 
-    auto RunModule(importModule(BACKEND_IMPL_RUN_MOD));
-    RunModule.attr("run")(InputFile, Wrapper);
+    for (auto const &BE : BEs) {
+      addModuleSearchPath(Sys, (path(BACKEND_IMPL_DIR) / BE).string());
+
+      importModule(BE + "_backend");
+
+      importModule("init").attr("init")(BE, InputFile, Wrapper);
+    }
+
+    importModule("run").attr("run")(OPT("backend"));
 
   } catch (std::runtime_error const &e) {
     throw log::exception("in backend:\n{0}", e.what());
