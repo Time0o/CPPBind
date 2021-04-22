@@ -41,6 +41,10 @@ class RustTypeTranslator(TypeTranslator('rust')):
     def target_rust(cls, t, args):
         return "&'static str"
 
+    @rule(lambda t: t.is_fundamental())
+    def target_rust(cls, t, args):
+        return cls._rust_c_type(t) # XXX
+
     @rule(lambda t: t.is_c_string())
     def output(cls, t, args):
         return code(
@@ -48,3 +52,7 @@ class RustTypeTranslator(TypeTranslator('rust')):
             use std::ffi::CStr;
             CStr::from_ptr({outp}).to_str().unwrap()
             """)
+
+    @rule(lambda _: True)
+    def output(cls, t, args):
+        return "{outp}"
