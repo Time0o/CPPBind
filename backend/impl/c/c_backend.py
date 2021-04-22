@@ -54,6 +54,7 @@ class CBackend(Backend('c')):
             #include <cassert>
             #include <cerrno>
             #include <exception>
+            #include <stdexcept>
             #include <utility>
 
             {input_includes}

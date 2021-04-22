@@ -240,14 +240,6 @@ def _function_forward(self):
 
 
 def _function_try_catch(self, what):
-    args = dotdict({
-        'f': self
-    })
-
-    fmt = backend().type_translator().exception(args)
-    std_except = fmt.format(what='__e.what()')
-    unknown_except = fmt.format(what='"exception"')
-
     return code(
         """
         try {{
@@ -259,8 +251,13 @@ def _function_try_catch(self, what):
         }}
         """,
         what=what,
-        std_except=std_except,
-        unknown_except=unknown_except)
+        std_except=self.handle_exception("__e.what()"),
+        unknown_except=self.handle_exception('"exception"'))
+
+
+
+def _function_handle_exception(self, what):
+    return f"throw std::runtime_error({what});"
 
 
 class Patcher:
@@ -285,6 +282,7 @@ class Patcher:
         Function.forward_call = _function_forward_call
         Function.forward = _function_forward
         Function.try_catch = _function_try_catch
+        Function.handle_exception = _function_handle_exception
 
         Constant.name_target = _name(default_case=Id.SNAKE_CASE_CAP_ALL)
 

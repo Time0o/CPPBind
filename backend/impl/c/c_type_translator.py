@@ -171,15 +171,3 @@ class CTypeTranslator(TypeTranslator('c')):
     @rule(lambda _: True)
     def output(cls, t, args):
         return "return {outp};"
-
-    def exception(cls, args):
-        ex = "errno = EBIND;"
-
-        if args.f.out_type() is None and not args.f.return_type().is_void():
-            ex = code(
-                """
-                errno = EBIND;
-                return {{}};
-                """)
-
-        return ex
