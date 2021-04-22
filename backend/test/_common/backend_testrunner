@@ -200,6 +200,7 @@ class BackendTestGenerator:
         self._compile(cpp_src,
                       cpp_obj,
                       includes=[self._test_input_dir, self._test_output_dir()],
+                      action=['-c', '-fPIC'],
                       **kwargs)
 
         self._subprocess(['ar', 'rcs', cpp_lib, cpp_obj])
