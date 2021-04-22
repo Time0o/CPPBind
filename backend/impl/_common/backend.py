@@ -22,8 +22,6 @@ class Backend(metaclass=Generic):
         self._type_aliases = set()
 
         def add_type(t):
-            self._types.add(t)
-
             while t.is_alias():
                 if t.is_basic():
                     self._type_aliases.add((t, t.canonical()))
@@ -33,8 +31,15 @@ class Backend(metaclass=Generic):
                 elif t.is_pointer() or t.is_reference():
                     t = t.pointee()
 
+            self._types.add(t.unqualified())
+
             if t.is_enum():
                 add_type(t.underlying_integer_type())
+            elif t.is_pointer() or t.is_reference():
+                while t.is_pointer() or t.is_reference():
+                    t = t.pointee()
+
+                    self._types.add(t.unqualified())
 
         for r in self._records:
             add_type(r.type())
