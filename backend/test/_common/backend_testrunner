@@ -91,6 +91,8 @@ class BackendTestGenerator:
 
         if self._test_lang == 'c':
             compile_cmd = self._compile_c_test
+        elif self._test_lang == 'rust':
+            compile_cmd = self._compile_rust_test
         elif self._test_lang == 'lua':
             compile_cmd = self._compile_lua_test
 
@@ -107,6 +109,8 @@ class BackendTestGenerator:
 
         if self._test_lang == 'c':
             run_test = self._run_c_test
+        elif self._test_lang == 'rust':
+            run_test = self._run_rust_test
         elif self._test_lang == 'lua':
             run_test = self._run_lua_test
 
@@ -185,6 +189,32 @@ class BackendTestGenerator:
 
         self._link([cpp_obj, c_obj], test_bin, **kwargs)
 
+    def _compile_rust_test(self, test, **kwargs):
+        cpp_src = self._test_wrapper(test, ext='.cc', postfix='_c')
+        cpp_obj = self._test_output(test, ext='.o', postfix='_c')
+        cpp_lib = self._test_output(test, ext='.a', prefix='lib', postfix='_c')
+
+        rust_wrap_src = self._test_wrapper(test, ext='.rs')
+        rust_test_src = self._test_source(test, ext='.rs')
+
+        self._compile(cpp_src,
+                      cpp_obj,
+                      includes=[self._test_input_dir, self._test_output_dir()],
+                      **kwargs)
+
+        self._subprocess(['ar', 'rcs', cpp_lib, cpp_obj])
+
+        self._subprocess(['ln', '-sf', rust_wrap_src, self._test_source_dir()])
+
+        self._subprocess(['rustc', rust_test_src,
+                          '--deny', 'warnings',
+                          '-lstdc++',
+                          '-L', self._test_output_dir(),
+                          '--out-dir', self._test_output_dir()])
+
+        self._subprocess(['rm', os.path.join(self._test_source_dir(),
+                                             os.path.basename(rust_wrap_src))])
+
     def _compile_lua_test(self, test, **kwargs):
         mod_src = self._test_wrapper(test, ext='.cc')
         mod = self._test_output(test, ext='.so')
@@ -197,6 +227,16 @@ class BackendTestGenerator:
 
     def _run_c_test(self, test, **kwargs):
         test_bin = self._test_output(test, ext='_bin')
+
+        if kwargs.get('run_valgrind') == 'yes':
+            run = self._valgrind_subprocess
+        else:
+            run = self._subprocess
+
+        run([test_bin], quiet=True)
+
+    def _run_rust_test(self, test, **kwargs):
+        test_bin = self._test_output(test, ext='')
 
         if kwargs.get('run_valgrind') == 'yes':
             run = self._valgrind_subprocess
@@ -229,14 +269,17 @@ class BackendTestGenerator:
     def _test_source(self, test, ext):
         return os.path.join(self._test_source_dir(), f"test_{test}{ext}")
 
-    def _test_wrapper(self, test, ext):
-        return os.path.join(self._test_output_dir(), f"test_{test}_{self._test_lang}{ext}")
+    def _test_wrapper(self, test, ext, prefix='', postfix=None):
+        if postfix is None:
+            postfix = '_' + self._test_lang
+
+        return os.path.join(self._test_output_dir(), f"{prefix}test_{test}{postfix}{ext}")
 
     def _test_input(self, test):
         return os.path.join(self._test_input_dir, f"test_{test}.hpp")
 
-    def _test_output(self, test, ext):
-        return os.path.join(self._test_output_dir(), f"test_{test}{ext}")
+    def _test_output(self, test, ext, prefix='', postfix=''):
+        return os.path.join(self._test_output_dir(), f"{prefix}test_{test}{postfix}{ext}")
 
     def _compile(self, src, obj, **kwargs):
         compiler = kwargs.get('compiler', 'clangpp')
@@ -369,7 +412,7 @@ if __name__ == '__main__':
 
     parser.add_argument('test_root_dir', metavar='TEST_ROOT_DIR',
                         help="test root directory")
-    parser.add_argument('test_language', choices=['c', 'lua'],
+    parser.add_argument('test_language', choices=['c', 'rust', 'lua'],
                         help="backend languages for which to run tests")
     parser.add_argument('-v', '--verbosity', type=int, default=0,
                         help="more verbose output")
