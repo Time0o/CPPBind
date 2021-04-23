@@ -1,5 +1,5 @@
 from backend import Backend, backend, switch_backend
-from rust_patch import RustPatcher
+from rust_patcher import RustPatcher
 from rust_type_translator import RustTypeTranslator
 from text import code
 

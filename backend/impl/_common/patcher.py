@@ -281,6 +281,13 @@ class Patcher:
     _init = False
 
     def __init__(self):
+        if not Patcher._init:
+            Patcher._patch_global()
+
+        self._orig = {}
+
+    @staticmethod
+    def _patch_global():
         if Patcher._init:
             return
 
@@ -321,10 +328,18 @@ class Patcher:
 
         Patcher._init = True
 
+    def _patch(self, cls, attr, fn):
+        self._orig[fn.__name__] = (cls, attr, getattr(cls, attr, None))
+
+        setattr(cls, attr, fn)
+
     @abstractmethod
     def patch(self):
         pass
 
-    @abstractmethod
     def unpatch(self):
-        pass
+        for cls, attr, fn in self._orig.values():
+            if fn is None:
+                delattr(cls, attr)
+            else:
+                setattr(cls, attr, fn)

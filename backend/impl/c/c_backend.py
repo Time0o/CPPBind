@@ -1,6 +1,6 @@
 import c_util
 from backend import Backend
-from c_patch import CPatcher
+from c_patcher import CPatcher
 from c_type_translator import CTypeTranslator
 from cppbind import Identifier as Id, Options
 from text import code

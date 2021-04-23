@@ -1,5 +1,5 @@
 from cppbind import Constant, Function
-from patch import Patcher
+from patcher import Patcher
 from text import code
 from util import dotdict
 
@@ -69,21 +69,8 @@ def _function_handle_exception(self, what):
 
 class LuaPatcher(Patcher):
     def patch(self):
-        self._constant_assign_orig = Constant.assign
-        self._function_before_call_orig = Function.before_call
-        self._function_declare_return_value_orig = Function.declare_return_value
-        self._function_perform_return_orig = Function.perform_return
-        self._function_handle_exception_orig = Function.handle_exception
-
-        Constant.assign = _constant_assign
-        Function.before_call = _function_before_call
-        Function.declare_return_value = _function_declare_return_value
-        Function.perform_return = _function_perform_return
-        Function.handle_exception = _function_handle_exception
-
-    def unpatch(self):
-        Constant.assign = self._constant_assign_orig
-        Function.before_call = self._function_before_call_orig
-        Function.declare_return_value = self._function_declare_return_value_orig
-        Function.perform_return = self_function_perform_return_orig
-        Function.handle_exception = self._function_handle_exception_orig
+        self._patch(Constant, 'assign', _constant_assign)
+        self._patch(Function, 'before_call', _function_before_call)
+        self._patch(Function, 'declare_return_value', _function_declare_return_value)
+        self._patch(Function, 'perform_return', _function_perform_return)
+        self._patch(Function, 'handle_exception', _function_handle_exception)

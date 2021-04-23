@@ -2,7 +2,7 @@ import lua_util
 import type_info
 from backend import Backend
 from cppbind import Options
-from lua_patch import LuaPatcher
+from lua_patcher import LuaPatcher
 from lua_type_translator import LuaTypeTranslator
 from text import code
 
