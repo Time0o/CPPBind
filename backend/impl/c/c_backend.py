@@ -94,7 +94,7 @@ class CBackend(Backend('c')):
     # XXX wrap_enum
 
     def wrap_constant(self, c):
-        self._wrapper_header.append(f"extern {c.type().target()} {c.name_target()};")
+        self._wrapper_header.append(c.declare())
         self._wrapper_source.append(c.assign())
 
     def wrap_record(self, r):

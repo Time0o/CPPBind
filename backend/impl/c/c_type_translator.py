@@ -74,14 +74,6 @@ class CTypeTranslator(TypeTranslator('c')):
         return cls._c_type(t)
 
     @rule(lambda t: t.is_enum())
-    def constant(cls, t, args):
-        return f"{t.target()} {args.c.name_target()} = static_cast<{t.underlying_integer_type()}>({{const}});"
-
-    @rule(lambda _: True)
-    def constant(cls, t, args):
-        return f"{t.target()} {args.c.name_target()} = {{const}};"
-
-    @rule(lambda t: t.is_enum())
     def input(cls, t, args):
         return f"{{interm}} = static_cast<{t}>({{inp}});"
 
@@ -123,26 +115,22 @@ class CTypeTranslator(TypeTranslator('c')):
     def input(cls, t, args):
         return "{interm} = {inp};"
 
-    @rule(lambda t: t.is_void())
-    def output(cls, t, args):
-        return
-
     @rule(lambda t: t.is_enum())
     def output(cls, t, args):
-        return f"return static_cast<{t.underlying_integer_type()}>({{outp}});"
+        return f"{{interm}} = static_cast<{t.underlying_integer_type()}>({{outp}});"
 
     @rule(lambda t: t.is_pointer() and t.pointee(recursive=True).is_fundamental() or \
                     t.is_reference() and t.referenced().is_fundamental())
     def output(cls, t, args):
-        return "return {outp};"
+        return "{interm} = {outp};"
 
     @rule(lambda t: t.is_record())
     def output(cls, t, args):
         return code(
             f"""
-            {cls._c_type(t)} {Id.OUT};
-            {c_util.make_owning_struct_args(f'&{Id.OUT}', t, '{outp}')};
-            return {Id.OUT};
+            {cls._c_type(t)} {Id.TMP};
+            {c_util.make_owning_struct_args(f'&{Id.TMP}', t, '{outp}')};
+            {{interm}} = {Id.TMP};
             """)
 
     @rule(lambda t: t.is_record_indirection())
@@ -152,16 +140,16 @@ class CTypeTranslator(TypeTranslator('c')):
                 f"""
                 static_cast<void>({{outp}});
 
-                {cls._c_type(t.pointee())} {Id.OUT};
-                {c_util.make_owning_struct_mem(f'&{Id.OUT}', t.pointee(), Id.TMP)};
-                return {Id.OUT};
+                {cls._c_type(t.pointee())} {Id.TMP};
+                {c_util.make_owning_struct_mem(f'&{Id.TMP}', t.pointee(), Id.BUF)};
+                {{interm}} = {Id.TMP};
                 """)
         else:
             return code(
                 f"""
-                {cls._c_type(t.pointee().without_const())} {Id.OUT};
-                {c_util.make_non_owning_struct(f'&{Id.OUT}', '{outp}')};
-                return {Id.OUT};
+                {cls._c_type(t.pointee().without_const())} {Id.TMP};
+                {c_util.make_non_owning_struct(f'&{Id.TMP}', '{outp}')};
+                {{interm}} = {Id.TMP};
                 """)
 
     @rule(lambda t: t.is_pointer() or t.is_reference())
@@ -170,4 +158,4 @@ class CTypeTranslator(TypeTranslator('c')):
 
     @rule(lambda _: True)
     def output(cls, t, args):
-        return "return {outp};"
+        return "{interm} = {outp};"

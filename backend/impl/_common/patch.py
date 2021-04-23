@@ -35,23 +35,22 @@ def _type_target(self, args=None):
     return backend().type_translator().target(self, args)
 
 
-# XXX constant
-
-
-def _type_output(self, outp, args=None):
-    return backend().type_translator().output(self, args).format(outp=outp)
-
-
-def _type_input(self, inp, interm, args=None):
+def _type_input(self, inp, interm=None, args=None):
     return backend().type_translator().input(self, args).format(inp=inp, interm=interm)
 
 
-def _constant_assign(self):
-    args = dotdict({
-        'c': self
-    })
+def _type_output(self, outp, interm=None, args=None):
+    return backend().type_translator().output(self, args).format(outp=outp, interm=interm)
 
-    return backend().type_translator().constant(self.type(), args).format(const=self.name())
+
+def _constant_declare(self):
+    return f"{self.type().target()} {self.name_target()}"
+
+
+def _constant_assign(self):
+    args = dotdict({ 'c': self })
+
+    return self.type().output(args=args).format(outp=self.name(), interm=self.name_target())
 
 
 def _function_declare_parameters(self):
@@ -173,16 +172,8 @@ def _function_forward_call(self):
 
     if self.return_type().is_void():
         call = f"{call}";
-        outp = None
     else:
-        call = f"auto {Id.RET} = {call}";
-        outp = f"{Id.RET}"
-
-    args = dotdict({
-        'f': self
-    })
-
-    call_return = self.return_type().output(outp=outp, args=args)
+        call = f"auto {Id.OUT} = {call}";
 
     call = code(
         """
@@ -191,13 +182,10 @@ def _function_forward_call(self):
         {call}
 
         {call_after}
-
-        {call_return}
         """,
         call_before=self.before_call(),
         call=call,
-        call_after=self.after_call(),
-        call_return=call_return)
+        call_after=self.after_call())
 
     return call
 
@@ -210,14 +198,24 @@ def _function_after_call(self):
     return
 
 
-def _function_construct(self, parameters):
-    t = self.parent().type()
+def _function_declare_return_value(self):
+    if self.return_type().is_void():
+        return
 
-    return f"new {t}({parameters});"
+    return f"{self.return_type().target()} {Id.RET};"
 
 
-def _function_destruct(self, this):
-    return f"delete {this};"
+def _function_forward_return_value(self):
+    if self.return_type().is_void():
+        return
+
+    args = dotdict({ 'f': self })
+
+    return self.return_type().output(outp=str(Id.OUT), interm=str(Id.RET), args=args)
+
+
+def _function_perform_return(self):
+    return
 
 
 def _function_forward(self):
@@ -228,15 +226,34 @@ def _function_forward(self):
         {forward_parameters}
 
         {forward_call}
+
+        {declare_return_value}
+
+        {forward_return_value}
+
+        {perform_return}
         """,
         declare_parameters=self.declare_parameters(),
         forward_parameters=self.forward_parameters(),
-        forward_call=self.forward_call())
+        forward_call=self.forward_call(),
+        declare_return_value=self.declare_return_value(),
+        forward_return_value=self.forward_return_value(),
+        perform_return=self.perform_return())
 
     if not Options.output_noexcept and not self.is_noexcept():
         forward = self.try_catch(forward)
 
     return forward
+
+
+def _function_construct(self, parameters):
+    t = self.parent().type()
+
+    return f"new {t}({parameters});"
+
+
+def _function_destruct(self, this):
+    return f"delete {this};"
 
 
 def _function_try_catch(self, what):
@@ -271,16 +288,20 @@ class Patcher:
         Type.input = _type_input
         Type.output = _type_output
 
+        Constant.declare = _constant_declare
         Constant.assign = _constant_assign
 
         Function.declare_parameters = _function_declare_parameters
         Function.forward_parameters = _function_forward_parameters
         Function.before_call = _function_before_call
         Function.after_call = _function_after_call
+        Function.forward_call = _function_forward_call
+        Function.declare_return_value = _function_declare_return_value
+        Function.forward_return_value = _function_forward_return_value
+        Function.perform_return = _function_perform_return
+        Function.forward = _function_forward
         Function.construct = _function_construct
         Function.destruct = _function_destruct
-        Function.forward_call = _function_forward_call
-        Function.forward = _function_forward
         Function.try_catch = _function_try_catch
         Function.handle_exception = _function_handle_exception
 

@@ -18,6 +18,7 @@ class Identifier
 {
 public:
   static constexpr char const *TMP = "__tmp";
+  static constexpr char const *BUF = "__buf";
   static constexpr char const *SELF = "__self";
   static constexpr char const *RET = "__ret";
   static constexpr char const *OUT = "__out";
