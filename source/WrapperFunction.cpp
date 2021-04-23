@@ -159,7 +159,7 @@ WrapperFunction::getName(bool WithTemplatePostfix,
     Name = Identifier(Name.str() + TemplateArgumentList_->str(true));
 
   if (WithOverloadPostfix && isOverloaded()) {
-    auto Postfix = OPT("wrapper-func-overload-postfix");
+    auto Postfix = OPT("wrap-func-overload-postfix");
 
     string::replaceAll(Postfix, "%o", std::to_string(*Overload_));
 
@@ -323,7 +323,7 @@ WrapperFunction::determineParameters(clang::FunctionDecl const *Decl)
 void
 WrapperFunction::postfixParameterName(std::string &ParamName, unsigned p)
 {
-  auto Postfix(OPT("wrapper-func-numbered-param-postfix"));
+  auto Postfix(OPT("wrap-func-numbered-param-postfix"));
 
   string::replaceAll(Postfix, "%p", std::to_string(p));
 

@@ -16,6 +16,10 @@ void OptionsRegistry::init()
     .setOptional(false)
     .done();
 
+  Options().add<std::vector<std::string>>("template-instantiations")
+    .setDescription("File containing extra template instantiations", "path")
+    .done();
+
   Options().add<std::vector<std::string>>("wrap-rule")
     .setDescription("Matcher rule for declarations to be wrapped")
     .done();
@@ -25,27 +29,8 @@ void OptionsRegistry::init()
     .setDefault(false)
     .done();
 
-  Options().add<std::vector<std::string>>("wrap-template-instantiations")
-    .setDescription("File containing extra template instantiations", "path")
-    .done();
-
-  Options().add<std::string>("wrap-extra-type-aliases")
-    .setDescription("File containing extra (global) type aliases", "path")
-    .setDefault("")
-    .done();
-
   Options().add<bool>("wrap-skip-unwrappable")
     .setDescription("Skip unwrappable objects instead of failing")
-    .setDefault(false)
-    .done();
-
-  Options().add<std::string>("output-custom-type-translation-rules")
-    .setDescription("Python script containing extra type translation rules", "path")
-    .setDefault("")
-    .done();
-
-  Options().add<bool>("output-noexcept")
-    .setDescription("Don't catch and propagate exceptions in wrapped code")
     .setDefault(false)
     .done();
 
@@ -58,7 +43,7 @@ void OptionsRegistry::init()
     };
   };
 
-  Options().add<std::string>("wrapper-func-overload-postfix")
+  Options().add<std::string>("wrap-func-overload-postfix")
     .setDescription("Wrapper function overload postfix, "
                     "use %o to denote #overload", "postfix")
     .setDefault("_%o")
@@ -66,12 +51,22 @@ void OptionsRegistry::init()
                   "postfix must create valid identifiers")
     .done();
 
-  Options().add<std::string>("wrapper-func-numbered-param-postfix")
+  Options().add<std::string>("wrap-func-numbered-param-postfix")
     .setDescription("Wrapper function numbered parameter postfix, "
                     "use %p to denote parameter number", "postfix")
     .setDefault("_%p")
     .addAssertion(validPostfix("%p"),
                   "postfix must create valid identifiers")
+    .done();
+
+  Options().add<std::string>("output-custom-type-translation-rules")
+    .setDescription("Python script containing extra type translation rules", "path")
+    .setDefault("")
+    .done();
+
+  Options().add<bool>("output-noexcept")
+    .setDescription("Don't catch and propagate exceptions in wrapped code")
+    .setDefault(false)
     .done();
 
   Options().add<std::string>("output-directory")

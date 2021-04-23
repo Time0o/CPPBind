@@ -75,7 +75,7 @@ GenericToolRunner::getSourceFiles(clang::tooling::CommonOptionsParser &Parser)
   }
 
   for (auto const &TIPath :
-       OPT(std::vector<std::string>, "wrap-template-instantiations")) {
+       OPT(std::vector<std::string>, "template-instantiations")) {
 
     auto Stem(fs::path(TIPath).stem());
 
@@ -96,19 +96,6 @@ GenericToolRunner::getSourceFiles(clang::tooling::CommonOptionsParser &Parser)
       throw log::exception("Failed to open '{0}'", TIPath);
 
     (*SourceFile) << TIStream.rdbuf() << '\n';
-  }
-
-  auto TAPath(OPT("wrap-extra-type-aliases"));
-  if (!TAPath.empty()) {
-    std::ifstream TAStream(TAPath);
-    if (!TAStream)
-      throw log::exception("Failed to open '{0}'", TAPath);
-
-   std::string TA((std::istreambuf_iterator<char>(TAStream)),
-                  (std::istreambuf_iterator<char>()));
-
-    for (auto &SourceFile : SourceFiles)
-      SourceFile << TA << '\n';
   }
 
   CompilerState().updateFileList(SourcePathList.begin(), SourcePathList.end());
