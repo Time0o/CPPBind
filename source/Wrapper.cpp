@@ -11,6 +11,20 @@
 #include "TypeIndex.hpp"
 #include "Wrapper.hpp"
 
+namespace
+{
+  template<typename T>
+  static std::vector<T const *> dequeToVector(std::deque<T> const &D) {
+    std::vector<T const *> V;
+    V.reserve(D.size());
+
+    for (auto const &Obj : D)
+      V.push_back(&Obj);
+
+    return V;
+  }
+}
+
 namespace cppbind
 {
 
@@ -24,17 +38,17 @@ Wrapper::overload()
     Wf.overload(II_);
 }
 
+std::vector<WrapperDefinition const *>
+Wrapper::getDefinitions() const
+{ return dequeToVector(Definitions_); }
+
+std::vector<WrapperEnum const *>
+Wrapper::getEnums() const
+{ return dequeToVector(Enums_); }
+
 std::vector<WrapperConstant const *>
 Wrapper::getConstants() const
-{
-  std::vector<WrapperConstant const *> Consts;
-  Consts.reserve(Constants_.size());
-
-  for (auto const &Const : Constants_)
-    Consts.push_back(&Const);
-
-  return Consts;
-}
+{ return dequeToVector(Constants_); }
 
 std::vector<WrapperFunction const *>
 Wrapper::getFunctions() const
@@ -64,6 +78,15 @@ Wrapper::getRecords() const
   }
 
   return Records;
+}
+
+bool
+Wrapper::_addWrapperEnum(WrapperEnum *Enum)
+{
+  for (auto const &Constant : Enum->getConstants())
+    II_->addDefinition(Constant.getName(), IdentifierIndex::CONST);
+
+  return true;
 }
 
 bool

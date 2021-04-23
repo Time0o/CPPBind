@@ -92,6 +92,8 @@ class BackendGeneric(metaclass=BackendMeta):
 
         self._wrapper = wrapper
         self._includes = wrapper.includes()
+        self._definitions = wrapper.definitions()
+        self._enums = wrapper.enums()
         self._constants = wrapper.constants()
         self._records = wrapper.records()
         self._functions = wrapper.functions()
@@ -135,8 +137,14 @@ class BackendGeneric(metaclass=BackendMeta):
     def run(self):
         self.wrap_before()
 
-        for v in self._constants:
-            self.wrap_constant(v)
+        for d in self._definitions:
+            self.wrap_definition(d)
+
+        for e in self._enums:
+            self.wrap_enum(e)
+
+        for c in self._constants:
+            self.wrap_constant(c)
 
         for r in self._records:
             self.wrap_record(r)
@@ -174,8 +182,23 @@ class BackendGeneric(metaclass=BackendMeta):
     def type_aliases(self):
         return sorted(self._type_aliases)
 
-    def constants(self):
-        return self._constants
+    def definition(self):
+        return self._definitions
+
+    def enums(self):
+        return self._enums
+
+    def constants(self, include_definitions=False, include_enums=False):
+        constants = self._constants
+
+        if include_definitions:
+            constants += [d.as_constant() for d in self._definitions]
+
+        if include_enums:
+            for e in self._enums:
+                constants += e.constants()
+
+        return constants
 
     def records(self):
         return self._records
@@ -192,8 +215,19 @@ class BackendGeneric(metaclass=BackendMeta):
         pass
 
     @abstractmethod
+    def wrap_before(self):
+        pass
+
+    @abstractmethod
     def wrap_after(self):
         pass
+
+    def wrap_definition(self, d):
+        self.wrap_constant(d.as_constant())
+
+    def wrap_enum(self, e):
+        for c in e.constants():
+            self.wrap_constant(c)
 
     @abstractmethod
     def wrap_constant(self, c):

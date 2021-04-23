@@ -68,6 +68,8 @@ void Backend::run(std::string const &InputFile,
 using namespace cppbind;
 
 using Type = WrapperType;
+using Definition = WrapperDefinition;
+using Enum = WrapperEnum;
 using Constant = WrapperConstant;
 using Function = WrapperFunction;
 using Parameter = WrapperParameter;
@@ -137,6 +139,10 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
 
   py::class_<Wrapper, std::shared_ptr<Wrapper>>(m, "Wrapper")
     .def("includes", &Wrapper::getIncludes)
+    .def("definitions", &Wrapper::getDefinitions,
+         py::return_value_policy::reference_internal)
+    .def("enums", &Wrapper::getEnums,
+         py::return_value_policy::reference_internal)
     .def("constants", &Wrapper::getConstants,
          py::return_value_policy::reference_internal)
     .def("functions", &Wrapper::getFunctions,
@@ -206,10 +212,23 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
 
   py::implicitly_convertible<std::string, Type>();
 
+  py::class_<Definition>(m, "Definition", py::dynamic_attr())
+    .def("__str__", [](Definition const &Self){ return Self.str(); })
+    .def("str", &Definition::str)
+    .def("name", &Definition::getName)
+    .def("arg", &Definition::getArg)
+    .def("as_constant", &Definition::getAsConstant,
+         "type"_a = WrapperType("int"));
+
+  py::class_<Enum>(m, "Enum", py::dynamic_attr())
+    .def("name", &Enum::getName)
+    .def("type", &Enum::getType)
+    .def("constants", &Enum::getConstants)
+    .def("is_scoped", &Enum::isScoped);
+
   py::class_<Constant>(m, "Constant", py::dynamic_attr())
     .def("name", &Constant::getName)
-    .def("type", &Constant::getType)
-    .def("is_macro", &Constant::isMacro);
+    .def("type", &Constant::getType);
 
   py::class_<Function>(m, "Function", py::dynamic_attr())
     .def("name", &Function::getName,

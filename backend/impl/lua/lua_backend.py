@@ -73,9 +73,11 @@ class LuaBackend(Backend('lua')):
 
             }} // namespace
             """,
-            register_module=self._register(constants=self.constants(),
-                                           functions=self.functions(),
-                                           records=self.records()),
+            register_module=self._register(
+                constants=self.constants(include_definitions=True,
+                                         include_enums=True),
+                functions=self.functions(),
+                records=self.records()),
             create_metatables=self._create_metatables(self.records()),
             module_name=self._module_name()))
 

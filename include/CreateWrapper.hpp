@@ -54,15 +54,15 @@ private:
   static std::string matchToplevel();
   static std::string matchNested();
   static std::string matchToplevelOrNested();
-  static std::string matchEnumConst();
-  static std::string matchVarConst();
+  static std::string matchEnum();
+  static std::string matchVariable();
   static std::string matchFunction();
   static std::string matchRecordDeclaration();
   static std::string matchRecordDefinition();
 
   void handleFundamentalType(clang::ValueDecl const *Decl);
-  void handleEnumConst(clang::EnumDecl const *Decl);
-  void handleVarConst(clang::VarDecl const *Decl);
+  void handleEnum(clang::EnumDecl const *Decl);
+  void handleVariable(clang::VarDecl const *Decl);
   void handleFunction(clang::FunctionDecl const *Decl);
   void handleRecordDeclaration(clang::CXXRecordDecl const *Decl);
   void handleRecordDefinition(clang::CXXRecordDecl const *Decl);

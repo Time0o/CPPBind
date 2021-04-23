@@ -88,6 +88,11 @@ class CBackend(Backend('c')):
             } // extern "C"
             """))
 
+    def wrap_definition(self, d):
+        self._wrapper_header.append(str(d))
+
+    # XXX wrap_enum
+
     def wrap_constant(self, c):
         self._wrapper_header.append(f"extern {c.type().target()} {c.name_target()};")
         self._wrapper_source.append(c.assign())

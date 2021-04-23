@@ -123,16 +123,17 @@ CreateWrapperConsumer::addWrapperHandlers()
       }
     };
 
-    if (MatcherID == "const") {
+    if (MatcherID == "enum") {
       addWrapperHandler<clang::EnumDecl>(
-        "enumConst",
-        match(INSIDE_SOURCE, "enumDecl", matchEnumConst()),
-        declHandler<&CreateWrapperConsumer::handleEnumConst>());
+        "enum",
+        match(INSIDE_SOURCE, "enumDecl", matchEnum()),
+        declHandler<&CreateWrapperConsumer::handleEnum>());
 
+    } else if (MatcherID == "variable") {
       addWrapperHandler<clang::VarDecl>(
-        "VarConst",
-        match(INSIDE_SOURCE, "varDecl", matchVarConst()),
-        declHandler<&CreateWrapperConsumer::handleVarConst>());
+        "const",
+        match(INSIDE_SOURCE, "varDecl", matchVariable()),
+        declHandler<&CreateWrapperConsumer::handleVariable>());
 
     } else if (MatcherID == "function") {
       addWrapperHandler<clang::FunctionDecl>(
@@ -170,12 +171,13 @@ CreateWrapperConsumer::matchToplevelOrNested()
 { return llvm::formatv("anyOf({0}, {1})", matchToplevel(), matchNested()); }
 
 std::string
-CreateWrapperConsumer::matchEnumConst()
+CreateWrapperConsumer::matchEnum()
 { return llvm::formatv("{0}", matchToplevelOrNested()); }
 
 std::string
-CreateWrapperConsumer::matchVarConst()
+CreateWrapperConsumer::matchVariable()
 {
+  // XXX non const variables
   return llvm::formatv("allOf(hasType(isConstQualified()), {0})",
                        matchToplevelOrNested());
 }
@@ -223,14 +225,11 @@ CreateWrapperConsumer::handleFundamentalType(clang::ValueDecl const *Decl)
 }
 
 void
-CreateWrapperConsumer::handleEnumConst(clang::EnumDecl const *Decl)
-{
-  for (auto const &ConstantDecl : Decl->enumerators())
-    Wrapper_->addWrapperConstant(ConstantDecl);
-}
+CreateWrapperConsumer::handleEnum(clang::EnumDecl const *Decl)
+{ Wrapper_->addWrapperEnum(Decl); }
 
 void
-CreateWrapperConsumer::handleVarConst(clang::VarDecl const *Decl)
+CreateWrapperConsumer::handleVariable(clang::VarDecl const *Decl)
 { Wrapper_->addWrapperConstant(Decl); }
 
 void
@@ -266,8 +265,10 @@ CreateWrapperFrontendAction::afterProcessing()
 {
   Wrapper_->addIncludes(includes().begin(), includes().end());
 
-  if (OPT(bool, "wrap-macro-constants"))
-    Wrapper_->addDefinitions(definitions().begin(), definitions().end());
+  if (OPT(bool, "wrap-macro-constants")) {
+    for (auto const &Definition : definitions())
+      Wrapper_->addDefinition(Identifier(Definition.first), Definition.second);
+  }
 
   Wrapper_->overload();
 

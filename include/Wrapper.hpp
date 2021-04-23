@@ -15,6 +15,8 @@
 #include "Options.hpp"
 #include "TypeIndex.hpp"
 #include "WrapperConstant.hpp"
+#include "WrapperDefinition.hpp"
+#include "WrapperEnum.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperRecord.hpp"
 #include "WrapperType.hpp"
@@ -38,11 +40,16 @@ public:
       Includes_.push_back(*It);
   }
 
-  template<typename IT>
-  void addDefinitions(IT First, IT Last)
+  template<typename ...ARGS>
+  void addDefinition(ARGS &&...Args)
+  { Definitions_.emplace_back(std::forward<ARGS>(Args)...); }
+
+  template<typename ...ARGS>
+  void addWrapperEnum(ARGS &&...Args)
   {
-    for (auto It = First; It != Last; ++It)
-      Constants_.emplace_back(Identifier(It->name()));
+    addWrapperObject(&Wrapper::_addWrapperEnum,
+                     Enums_,
+                     std::forward<ARGS>(Args)...);
   }
 
   template<typename ...ARGS>
@@ -74,6 +81,10 @@ public:
   std::deque<Include> getIncludes() const
   { return Includes_; }
 
+  std::vector<WrapperDefinition const *> getDefinitions() const;
+
+  std::vector<WrapperEnum const *> getEnums() const;
+
   std::vector<WrapperConstant const *> getConstants() const;
 
   std::vector<WrapperFunction const *> getFunctions() const;
@@ -96,6 +107,7 @@ private:
       log::info("created {0}", Objs.back());
   }
 
+  bool _addWrapperEnum(WrapperEnum *Enum);
   bool _addWrapperConstant(WrapperConstant *Constant);
   bool _addWrapperFunction(WrapperFunction *Function);
   bool _addWrapperRecord(WrapperRecord *Record);
@@ -104,7 +116,8 @@ private:
   bool checkTypeWrapped(WrapperType const &Type) const;
 
   std::deque<Include> Includes_;
-
+  std::deque<WrapperDefinition> Definitions_;
+  std::deque<WrapperEnum> Enums_;
   std::deque<WrapperConstant> Constants_;
 
   std::deque<WrapperFunction> Functions_;

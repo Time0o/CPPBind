@@ -4,11 +4,8 @@ from text import code
 
 
 def _constant_name_target(self):
-    if self.is_macro():
-        return 'M_' + self.name().format(case=Id.SNAKE_CASE_CAP_ALL)
-    else:
-        return self.name().format(case=Id.SNAKE_CASE_CAP_ALL,
-                                  quals=Id.REPLACE_QUALS)
+    return self.name().format(case=Id.SNAKE_CASE_CAP_ALL,
+                              quals=Id.REPLACE_QUALS)
 
 
 def _function_before_call(self):

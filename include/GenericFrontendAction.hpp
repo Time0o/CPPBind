@@ -15,7 +15,6 @@
 #include "llvm/ADT/StringRef.h"
 
 #include "CompilerState.hpp"
-#include "Definition.hpp"
 #include "Include.hpp"
 #include "Logging.hpp"
 #include "Print.hpp"
@@ -32,6 +31,8 @@ namespace cppbind
 template<typename CONSUMER>
 class GenericFrontendAction : public clang::ASTFrontendAction
 {
+  using Definition = std::pair<std::string, std::string>;
+
   class PPCallback : public clang::PPCallbacks
   {
   public:
