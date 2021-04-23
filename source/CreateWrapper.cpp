@@ -263,7 +263,8 @@ CreateWrapperFrontendAction::beforeProcessing()
 void
 CreateWrapperFrontendAction::afterProcessing()
 {
-  Wrapper_->addIncludes(includes().begin(), includes().end());
+  for (auto const &Include : includes())
+    Wrapper_->addInclude(Include.first, Include.second);
 
   if (OPT(bool, "wrap-macro-constants")) {
     for (auto const &Definition : definitions())

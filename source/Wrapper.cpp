@@ -38,6 +38,10 @@ Wrapper::overload()
     Wf.overload(II_);
 }
 
+std::vector<WrapperInclude const *>
+Wrapper::getIncludes() const
+{ return dequeToVector(Includes_); }
+
 std::vector<WrapperDefinition const *>
 Wrapper::getDefinitions() const
 { return dequeToVector(Definitions_); }

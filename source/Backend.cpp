@@ -13,12 +13,12 @@
 
 #include "Backend.hpp"
 #include "Identifier.hpp"
-#include "Include.hpp"
 #include "Logging.hpp"
 #include "Options.hpp"
 #include "Wrapper.hpp"
 #include "WrapperConstant.hpp"
 #include "WrapperFunction.hpp"
+#include "WrapperInclude.hpp"
 #include "WrapperRecord.hpp"
 #include "WrapperType.hpp"
 
@@ -68,6 +68,7 @@ void Backend::run(std::string const &InputFile,
 using namespace cppbind;
 
 using Type = WrapperType;
+using Include = WrapperInclude;
 using Definition = WrapperDefinition;
 using Enum = WrapperEnum;
 using Constant = WrapperConstant;
@@ -128,15 +129,6 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
          "quals"_a = Identifier::KEEP_QUALS);
 
   py::implicitly_convertible<std::string, Identifier>();
-
-  py::class_<Include>(m, "Include")
-    .def(py::init<std::string, bool>(),
-         "path"_a,
-         "system"_a = false)
-    .def("__str__", [](Include const &Self){ return Self.str(); })
-    .def("str", &Include::str,
-         "relative"_a = false)
-    .def("path", &Include::path);
 
   py::class_<Wrapper, std::shared_ptr<Wrapper>>(m, "Wrapper")
     .def("includes", &Wrapper::getIncludes)
@@ -212,6 +204,15 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("size", &Type::size);
 
   py::implicitly_convertible<std::string, Type>();
+
+  py::class_<Include>(m, "Include")
+    .def(py::init<std::string, bool>(),
+         "path"_a,
+         "system"_a = false)
+    .def("__str__", [](Include const &Self){ return Self.str(); })
+    .def("str", &Include::str,
+         "relative"_a = false)
+    .def("path", &Include::path);
 
   py::class_<Definition>(m, "Definition", py::dynamic_attr())
     .def("__str__", [](Definition const &Self){ return Self.str(); })

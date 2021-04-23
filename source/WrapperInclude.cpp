@@ -3,14 +3,14 @@
 
 #include "boost/filesystem.hpp"
 
-#include "Include.hpp"
+#include "WrapperInclude.hpp"
 
 namespace fs = boost::filesystem;
 
 namespace cppbind
 {
 
-Include::Include(std::string const &Path, bool IsSystem)
+WrapperInclude::WrapperInclude(std::string const &Path, bool IsSystem)
 : IsSystem_(IsSystem)
 {
   try {
@@ -23,7 +23,7 @@ Include::Include(std::string const &Path, bool IsSystem)
 }
 
 std::string
-Include::path(bool Relative) const
+WrapperInclude::path(bool Relative) const
 {
   if (!IsAbsolute_ || !Relative)
     return Path_;
@@ -32,7 +32,7 @@ Include::path(bool Relative) const
 }
 
 std::string
-Include::str(bool Relative) const
+WrapperInclude::str(bool Relative) const
 {
   std::ostringstream SS;
 

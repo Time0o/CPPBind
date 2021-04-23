@@ -6,10 +6,10 @@
 namespace cppbind
 {
 
-class Include
+class WrapperInclude
 {
 public:
-  explicit Include(std::string const &Path, bool IsSystem = false);
+  explicit WrapperInclude(std::string const &Path, bool IsSystem = false);
 
   std::string path(bool Relative = false) const;
 

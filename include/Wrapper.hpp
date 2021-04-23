@@ -10,7 +10,6 @@
 
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
-#include "Include.hpp"
 #include "Logging.hpp"
 #include "Options.hpp"
 #include "TypeIndex.hpp"
@@ -18,6 +17,7 @@
 #include "WrapperDefinition.hpp"
 #include "WrapperEnum.hpp"
 #include "WrapperFunction.hpp"
+#include "WrapperInclude.hpp"
 #include "WrapperRecord.hpp"
 #include "WrapperType.hpp"
 
@@ -33,12 +33,9 @@ public:
     TI_(TI)
   {}
 
-  template<typename IT>
-  void addIncludes(IT First, IT Last)
-  {
-    for (auto It = First; It != Last; ++It)
-      Includes_.push_back(*It);
-  }
+  template<typename ...ARGS>
+  void addInclude(ARGS &&...Args)
+  { Includes_.emplace_back(std::forward<ARGS>(Args)...); }
 
   template<typename ...ARGS>
   void addDefinition(ARGS &&...Args)
@@ -78,17 +75,11 @@ public:
 
   void overload();
 
-  std::deque<Include> getIncludes() const
-  { return Includes_; }
-
+  std::vector<WrapperInclude const *> getIncludes() const;
   std::vector<WrapperDefinition const *> getDefinitions() const;
-
   std::vector<WrapperEnum const *> getEnums() const;
-
   std::vector<WrapperConstant const *> getConstants() const;
-
   std::vector<WrapperFunction const *> getFunctions() const;
-
   std::vector<WrapperRecord const *> getRecords() const;
 
 private:
@@ -115,7 +106,7 @@ private:
   bool typeWrapped(WrapperType const &Type) const;
   bool checkTypeWrapped(WrapperType const &Type) const;
 
-  std::deque<Include> Includes_;
+  std::deque<WrapperInclude> Includes_;
   std::deque<WrapperDefinition> Definitions_;
   std::deque<WrapperEnum> Enums_;
   std::deque<WrapperConstant> Constants_;

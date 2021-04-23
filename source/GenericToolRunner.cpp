@@ -13,13 +13,12 @@
 
 #include "CompilerState.hpp"
 #include "GenericToolRunner.hpp"
-#include "Include.hpp"
 #include "Logging.hpp"
 #include "Options.hpp"
 #include "String.hpp"
 #include "TmpFile.hpp"
 
-using namespace boost::filesystem;
+namespace fs = boost::filesystem;
 
 namespace cppbind
 {
@@ -48,7 +47,7 @@ std::deque<TmpFile>
 GenericToolRunner::getSourceFiles(clang::tooling::CommonOptionsParser &Parser)
 {
   auto &SourcePathList(Parser.getSourcePathList());
-  auto SourceFileDirPath(temp_directory_path());
+  auto SourceFileDirPath(fs::temp_directory_path());
 
   std::deque<TmpFile> SourceFiles;
 
@@ -56,7 +55,7 @@ GenericToolRunner::getSourceFiles(clang::tooling::CommonOptionsParser &Parser)
   std::unordered_map<std::string, std::string> SourcePathsByStem;
 
   for (auto &SourcePath_ : SourcePathList) {
-    path SourcePath(SourcePath_);
+    fs::path SourcePath(SourcePath_);
 
     auto Stem(SourcePath.stem().string());
     auto Extension(SourcePath.extension().string());
@@ -67,7 +66,7 @@ GenericToolRunner::getSourceFiles(clang::tooling::CommonOptionsParser &Parser)
 
     TmpFile SourceFile((SourceFileDirPath / (Stem + "_tmp" + Extension)).string());
 
-    SourceFile << Include(SourcePath.string()).str() << '\n';
+    SourceFile << "#include " << fs::canonical(SourcePath.string()) << '\n';
 
     auto &SourceFileRef(SourceFiles.emplace_back(std::move(SourceFile)));
 
@@ -78,7 +77,7 @@ GenericToolRunner::getSourceFiles(clang::tooling::CommonOptionsParser &Parser)
   for (auto const &TIPath :
        OPT(std::vector<std::string>, "wrap-template-instantiations")) {
 
-    auto Stem(path(TIPath).stem());
+    auto Stem(fs::path(TIPath).stem());
 
     auto PathIt(SourcePathsByStem.find(Stem.string()));
     if (PathIt == SourcePathsByStem.end()) {
@@ -141,7 +140,7 @@ GenericToolRunner::getTool() const
   insertArguments({"-xc++-header"}, BEGIN);
 
   auto FundamentalTypesInclude(
-    (path(EXTRA_DIR) / "cppbind" / "fundamental_types.h").string());
+    (fs::path(EXTRA_DIR) / "cppbind" / "fundamental_types.h").string());
 
   insertArguments({"-include", FundamentalTypesInclude}, END);
 
