@@ -127,9 +127,6 @@ private:
   clang::QualType const &type() const;
   clang::Type const *typePtr() const;
 
-  static clang::QualType requalifyType(clang::QualType const &Type,
-                                       unsigned Qualifiers);
-
   std::string templatePostfix() const;
 
   clang::QualType Type_;

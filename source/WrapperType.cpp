@@ -53,14 +53,14 @@ WrapperType::operator<(WrapperType const &Other) const
 
 bool
 WrapperType::isBasic() const
-{
-  auto Str(print::qualType(type()));
-  return Str.find(' ') == std::string::npos;
-}
+{ return print::qualType(type(), print::QUALIFIED_POLICY).find(' ') == std::string::npos; }
 
 bool
 WrapperType::isAlias() const
-{ return type().getCanonicalType().getAsString() != Type_.getAsString(); }
+{
+  return print::qualType(type(), print::QUALIFIED_POLICY) !=
+         print::qualType(type().getCanonicalType(), print::QUALIFIED_POLICY);
+}
 
 bool
 WrapperType::isTemplateInstantiation(char const *Which) const
@@ -158,7 +158,7 @@ WrapperType::isConst() const
 
 WrapperType
 WrapperType::canonical() const
-{ return WrapperType(Type_.getCanonicalType()); }
+{ return WrapperType(type().getCanonicalType()); }
 
 std::vector<std::string>
 WrapperType::templateArguments() const
@@ -235,7 +235,7 @@ WrapperType::qualifiers() const
 
 WrapperType
 WrapperType::qualified(unsigned Qualifiers) const
-{ return WrapperType(requalifyType(type(), Qualifiers)); }
+{ return WrapperType(clang::QualType(typePtr(), Qualifiers)); }
 
 WrapperType
 WrapperType::unqualified() const
@@ -278,10 +278,9 @@ WrapperType::format(bool WithTemplatePostfix,
     StrReplace = Str;
 
   } else {
-    WrapperType BaseType(pointee(true));
+    WrapperType BaseType(pointee(true).unqualified());
 
-    StrBase = print::qualType(BaseType.unqualified().type(),
-                              print::QUALIFIED_POLICY);
+    StrBase = print::qualType(BaseType.type(), print::QUALIFIED_POLICY);
 
     if (WithTemplatePostfix && BaseType.isTemplateInstantiation()) {
       StrReplace = TemplateArgumentList::strip(StrBase)
@@ -399,10 +398,6 @@ WrapperType::type() const
 clang::Type const *
 WrapperType::typePtr() const
 { return type().getTypePtr(); }
-
-clang::QualType
-WrapperType::requalifyType(clang::QualType const &Type, unsigned Qualifiers)
-{ return clang::QualType(Type.getTypePtr(), Qualifiers); }
 
 std::string
 WrapperType::templatePostfix() const
