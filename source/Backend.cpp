@@ -71,6 +71,7 @@ using Type = WrapperType;
 using Include = WrapperInclude;
 using Definition = WrapperDefinition;
 using Enum = WrapperEnum;
+using EnumConstant = WrapperEnumConstant;
 using Constant = WrapperConstant;
 using Function = WrapperFunction;
 using Parameter = WrapperParameter;
@@ -226,7 +227,15 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("name", &Enum::getName)
     .def("type", &Enum::getType)
     .def("constants", &Enum::getConstants)
-    .def("is_scoped", &Enum::isScoped);
+    .def("is_scoped", &Enum::isScoped)
+    .def("is_anonymous", &Enum::isAnonymous);
+
+  py::class_<EnumConstant>(m, "EnumConstant", py::dynamic_attr())
+    .def("name", &EnumConstant::getName)
+    .def("type", &EnumConstant::getType)
+    .def("value", &EnumConstant::getValue,
+         "as_c_literal"_a = false)
+    .def("as_constant", &EnumConstant::getAsConstant);
 
   py::class_<Constant>(m, "Constant", py::dynamic_attr())
     .def("name", &Constant::getName)

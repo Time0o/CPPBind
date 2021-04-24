@@ -86,12 +86,7 @@ Wrapper::getRecords() const
 
 bool
 Wrapper::_addWrapperEnum(WrapperEnum *Enum)
-{
-  for (auto const &Constant : Enum->getConstants())
-    II_->addDefinition(Constant.getName(), IdentifierIndex::CONST);
-
-  return true;
-}
+{ return true; }
 
 bool
 Wrapper::_addWrapperConstant(WrapperConstant *Constant)

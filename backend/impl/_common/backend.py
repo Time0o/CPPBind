@@ -196,7 +196,7 @@ class BackendGeneric(metaclass=BackendMeta):
 
         if include_enums:
             for e in self._enums:
-                constants += e.constants()
+                constants += [c.as_constant() for c in e.constants()]
 
         return constants
 
@@ -227,7 +227,7 @@ class BackendGeneric(metaclass=BackendMeta):
 
     def wrap_enum(self, e):
         for c in e.constants():
-            self.wrap_constant(c)
+            self.wrap_constant(c.as_constant())
 
     @abstractmethod
     def wrap_constant(self, c):

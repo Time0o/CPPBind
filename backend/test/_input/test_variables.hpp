@@ -1,7 +1,7 @@
 namespace test
 {
 
-enum Enum : unsigned
+enum SimpleEnum : unsigned
 {
   ENUM_1 = 1u,
   ENUM_2 = 2u

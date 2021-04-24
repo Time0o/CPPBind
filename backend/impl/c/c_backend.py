@@ -91,7 +91,20 @@ class CBackend(Backend('c')):
     def wrap_definition(self, d):
         self._wrapper_header.append(str(d))
 
-    # XXX wrap_enum
+    def wrap_enum(self, e):
+        enum_constants = [f"{c.name_target()} = {c.value(as_c_literal=True)}"
+                          for c in e.constants()]
+
+        enum_definition = code(
+            """
+            enum {enum_name} {{
+              {enum_constants}
+            }};
+            """,
+            enum_name=e.name_target(),
+            enum_constants=',\n'.join(enum_constants))
+
+        self._wrapper_header.append(enum_definition)
 
     def wrap_constant(self, c):
         self._wrapper_header.append(c.declare())

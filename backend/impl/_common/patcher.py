@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from backend import backend
-from cppbind import Constant, Function, Identifier as Id, Options, Parameter, Record, Type
+from cppbind import Constant, Enum, EnumConstant, Function, Identifier as Id, Options, Parameter, Record, Type
 from text import code
 from util import dotdict
 
@@ -313,6 +313,9 @@ class Patcher:
         Function.handle_exception = _function_handle_exception
 
         Constant.name_target = _name(default_case=Id.SNAKE_CASE_CAP_ALL)
+
+        Enum.name_target = _name(default_case=Id.PASCAL_CASE)
+        EnumConstant.name_target = _name(default_case=Id.SNAKE_CASE_CAP_ALL)
 
         Function.name_target = \
             _name(get=lambda f: f.name(with_template_postfix=True,

@@ -1,5 +1,5 @@
-from cppbind import Constant, Function, Identifier as Id, Type
-from patcher import Patcher
+from cppbind import Constant, Enum, Function, Identifier as Id, Type
+from patcher import Patcher, _name
 from text import code
 
 
@@ -72,6 +72,7 @@ class CPatcher(Patcher):
         self._patch(Constant, 'name_target', _constant_name_target)
         self._patch(Constant, 'declare', _constant_declare)
         self._patch(Constant, 'assign', _constant_assign)
+        self._patch(Enum, 'name_target', _name(default_case=Id.SNAKE_CASE))
         self._patch(Function, 'before_call', _function_before_call)
         self._patch(Function, 'declare_return_value', _function_declare_return_value)
         self._patch(Function, 'perform_return', _function_perform_return)
