@@ -14,9 +14,6 @@ int main()
     assert(e == 2u);
   }
 
-  assert(TEST_ANONYMOUS_ENUM_1 == 1u);
-  assert(TEST_ANONYMOUS_ENUM_2 == 2u);
-
   {
     enum test_scoped_enum e;
 
@@ -26,6 +23,12 @@ int main()
     e = TEST_SCOPED_ENUM_SCOPED_ENUM_2;
     assert(e == 2u);
   }
+
+  assert(TEST_ANONYMOUS_ENUM_1 == 1u);
+  assert(TEST_ANONYMOUS_ENUM_2 == 2u);
+
+  assert(TEST_ENUM_IN_ANONYMOUS_NAMESPACE_1 == 1u);
+  assert(TEST_ENUM_IN_ANONYMOUS_NAMESPACE_2 == 2u);
 
   assert(TEST_UNSIGNED_CONSTEXPR_1 == 1u);
   assert(TEST_DOUBLE_CONSTEXPR_1 == 1.0);

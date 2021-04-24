@@ -181,11 +181,15 @@ std::string
 
 Identifier::Identifier(std::string const &Id)
 {
+  static boost::regex RAnon("\\(anonymous .*\\)");
+
   auto Components(string::split(Id, "::"));
 
   Components_.reserve(Components.size());
-  for (auto const &Component : Components)
-    Components_.emplace_back(Component);
+  for (auto const &Component : Components) {
+    if (!boost::regex_match(Component, RAnon))
+      Components_.emplace_back(Component);
+  }
 }
 
 bool
