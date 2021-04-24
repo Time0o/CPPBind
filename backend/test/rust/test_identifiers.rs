@@ -2,6 +2,8 @@ mod test_identifiers_rust;
 use test_identifiers_rust as test;
 
 fn main() {
+    unsafe {
+
     test::test_a_func();
     test::test_func_b();
 
@@ -15,4 +17,6 @@ fn main() {
     test::test_l4_re();
     test::test_l4_virtio();
     test::test_l4_func();
+
+    }
 }

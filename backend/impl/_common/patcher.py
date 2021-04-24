@@ -1,22 +1,21 @@
 from abc import abstractmethod
 from backend import backend
-from cppbind import Constant, Enum, EnumConstant, Function, Identifier as Id, Options, Parameter, Record, Type
+from cppbind import Constant, Definition, Enum, EnumConstant, Function, Identifier as Id, Options, Parameter, Record, Type
 from text import code
 from util import dotdict
 
 
 def _name(get=lambda self: self.name(),
           default_case=Id.SNAKE_CASE,
+          default_quals=Id.REPLACE_QUALS,
           default_prefix=None,
           default_postfix=None):
 
     def name_closure(self,
                      case=default_case,
+                     quals=default_quals,
                      prefix=default_prefix,
-                     postfix=default_postfix,
-                     qualified=True):
-
-        quals = Id.REPLACE_QUALS if qualified else Id.REMOVE_QUALS
+                     postfix=default_postfix):
 
         name = get(self).format(case=case, quals=quals)
 
@@ -313,6 +312,8 @@ class Patcher:
         Function.handle_exception = _function_handle_exception
 
         Constant.name_target = _name(default_case=Id.SNAKE_CASE_CAP_ALL)
+
+        Definition.name_target = _name(default_case=Id.SNAKE_CASE_CAP_ALL)
 
         Enum.name_target = _name(default_case=Id.PASCAL_CASE)
         EnumConstant.name_target = _name(default_case=Id.SNAKE_CASE_CAP_ALL)

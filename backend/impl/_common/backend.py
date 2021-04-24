@@ -124,11 +124,11 @@ class BackendGeneric(metaclass=BackendMeta):
                         t = t.pointee()
                         self._types.add(t.unqualified())
 
-        for r in self._records:
-            add_type(r.type())
-
         for v in self._constants:
             add_type(v.type())
+
+        for r in self._records:
+            add_type(r.type())
 
         for f in chain(self._functions, *(r.functions() for r in self._records)):
             for t in [f.return_type()] + [p.type() for p in f.parameters()]:
@@ -182,7 +182,7 @@ class BackendGeneric(metaclass=BackendMeta):
     def type_aliases(self):
         return sorted(self._type_aliases)
 
-    def definition(self):
+    def definitions(self):
         return self._definitions
 
     def enums(self):

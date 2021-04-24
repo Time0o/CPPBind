@@ -1,4 +1,5 @@
 from backend import Backend, backend, switch_backend
+from cppbind import Identifier as Id, Type
 from rust_patcher import RustPatcher
 from rust_type_translator import RustTypeTranslator
 from text import code
@@ -24,14 +25,40 @@ class RustBackend(Backend('rust')):
         self._wrapper_source = self.output_file(
             self.input_file().modified(filename='{filename}_rust', ext='.rs'))
 
-        self._wrapper_source.append(self._function_declarations_c(self.functions()))
-        self._wrapper_source.append(self._function_definitions_rust(self.functions()))
+        self._wrapper_source.append(self._declarations_c())
+        self._wrapper_source.append(self._definitions_rust())
 
     def wrap_after(self):
         pass
 
+    def wrap_definition(self, d):
+        pass # XXX
+
+    def wrap_enum(self, e):
+        if e.is_anonymous():
+            for c in e.constants():
+                c_name = c.name_target(case=Id.SNAKE_CASE_CAP_ALL)
+                c_type = c.type().target_rust()
+
+                self._wrapper_source.append(
+                    f"pub const {c_name}: {c_type} = {c.value()};")
+        else:
+            enum_constants = []
+            for c in e.constants():
+                enum_constants.append(f"{c.name_target()} = {c.value()}")
+
+            self._wrapper_source.append(code(
+                """
+                #[repr(C)]
+                pub enum {enum_name} {{
+                    {enum_constants}
+                }}
+                """,
+                enum_name=e.name_target(),
+                enum_constants=',\n'.join(enum_constants)))
+
     def wrap_constant(self, c):
-        pass
+        self._wrapper_source.append(c.assign())
 
     def wrap_record(self, r):
         pass
@@ -49,10 +76,13 @@ class RustBackend(Backend('rust')):
             if t.is_fundamental():
                 type_imports.add(f'std::os::raw::{t.target_c()}')
 
-        return '\n'.join(f'use {ti};' for ti in sorted(type_imports))
+        return '\n'.join(f'pub use {ti};' for ti in sorted(type_imports))
 
-    def _function_declarations_c(self, fs):
-        function_declarations = [self._function_declaration_c(f) for f in fs]
+    def _declarations_c(self):
+        c_constant_declarations = [c.declare() for c in self.constants()]
+
+        c_function_declarations = [self._function_declaration_c(f)
+                                   for f in self.functions()]
 
         return code(
             """
@@ -61,16 +91,20 @@ class RustBackend(Backend('rust')):
 
                 #[link(name="{c_lib_name}")]
                 extern "C" {{
+                    {c_constant_declarations}
+
                     {c_function_declarations}
                 }}
             }}
             """,
             c_types=self._c_types(),
             c_lib_name=self._c_lib_name(),
-            c_function_declarations='\n'.join(function_declarations))
+            c_constant_declarations='\n'.join(c_constant_declarations),
+            c_function_declarations='\n'.join(c_function_declarations))
 
-    def _function_definitions_rust(self, fs):
-        function_definitions = [self._function_definition_rust(f) for f in fs]
+    def _definitions_rust(self):
+        function_definitions = [self._function_definition_rust(f)
+                                for f in self.functions()]
 
         return '\n\n'.join(function_definitions)
 
@@ -91,31 +125,25 @@ class RustBackend(Backend('rust')):
         return self._function_header(f, target='c')
 
     def _function_header_rust(self, f):
-        return self._function_header(f, target='rust')
+        return self._function_header(f, target='rust', unsafe=True)
 
-    def _function_header(self, f, target):
+    def _function_header(self, f, target, unsafe=False):
         parameters = ', '.join(f"{p.name_target()}: {p.type().target()}"
                                for p in f.parameters())
 
-        header = f"pub fn {f.name_target()}({parameters})"
+        header = f"fn {f.name_target()}({parameters})"
+
+        if unsafe:
+            header = f"unsafe {header}"
 
         if not f.return_type().is_void():
             header += f" -> {f.return_type().target(target)}"
 
-        return header
+        return f"pub {header}"
 
     def _function_body_rust(self, f):
         parameters = ', '.join(p.name_target() for p in f.parameters())
 
         call = f"c::{f.name_target()}({parameters})"
 
-        call_forward = f.return_type().output(outp=call)
-
-        # XXX panic on exception!
-        return code(
-            """
-            unsafe {{
-                {call_forward}
-            }}
-            """,
-            call_forward=call_forward)
+        return f.return_type().output(outp=call)

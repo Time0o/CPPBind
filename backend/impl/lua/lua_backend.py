@@ -1,7 +1,7 @@
 import lua_util
 import type_info
 from backend import Backend
-from cppbind import Options
+from cppbind import Identifier as Id, Options
 from lua_patcher import LuaPatcher
 from lua_type_translator import LuaTypeTranslator
 from text import code
@@ -254,7 +254,7 @@ class LuaBackend(Backend('lua')):
 
         def function_entry(f):
             if f.is_member():
-                return f'{{"{f.name_target(qualified=False)}", {f.name_target()}}}'
+                return f'{{"{f.name_target(quals=Id.REMOVE_QUALS)}", {f.name_target()}}}'
             else:
                 return f'{{"{f.name_target()}", {f.name_target()}}}'
 

@@ -1,7 +1,7 @@
 import os
 import type_info as ti
-
 from backend import Backend
+from cppbind import Identifier as Id
 from file import Path
 from text import code
 
@@ -36,7 +36,7 @@ def createmetatable(r):
         if f.is_constructor() or f.is_destructor():
             continue
 
-        entry_name = f'"{f.name_target(qualified=False)}"'
+        entry_name = f'"{f.name_target(quals=Id.REMOVE_QUALS)}"'
         entry = f"__{r.name_target()}::{f.name_target()}"
 
         function_entries.append(f"{{{entry_name}, {entry}}}")

@@ -24,14 +24,24 @@ class RustTypeTranslator(TypeTranslator('rust')):
     }
 
     @classmethod
-    def _rust_c_type(cls, t):
+    def _rust_c_type(cls, t, scoped=False):
         c_type = cls._rust_c_type_map[t.without_const()]
 
-        return f"const {c_type}" if t.is_const() else c_type
+        if scoped:
+            c_type = f"c::{c_type}"
+
+        if t.is_const():
+            c_type = f"const {c_type}"
+
+        return c_type
 
     @rule(lambda t: t.is_pointer())
     def target_c(cls, t, args):
         return f"* {cls.target_c(t.pointee())}"
+
+    @rule(lambda t: t.is_enum())
+    def target_c(cls, t, args):
+        return cls._rust_c_type(t.underlying_integer_type())
 
     @rule(lambda t: t.is_fundamental())
     def target_c(cls, t, args):
@@ -41,9 +51,13 @@ class RustTypeTranslator(TypeTranslator('rust')):
     def target_rust(cls, t, args):
         return "&'static str"
 
+    @rule(lambda t: t.is_enum())
+    def target_rust(cls, t, args):
+        return cls._rust_c_type(t.underlying_integer_type(), scoped=True)
+
     @rule(lambda t: t.is_fundamental())
     def target_rust(cls, t, args):
-        return cls._rust_c_type(t) # XXX
+        return cls._rust_c_type(t, scoped=True)
 
     @rule(lambda t: t.is_c_string())
     def output(cls, t, args):
