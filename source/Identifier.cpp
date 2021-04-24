@@ -62,7 +62,11 @@ Identifier::Component::format(Case Case) const
   if (Case == ORIG_CASE) {
     Str = Name_;
   } else {
-    Str = transformAndPaste(NameWords_,
+    auto NameWordsLower(NameWords_);
+    for (auto &Word : NameWordsLower)
+      Word = lower(Word);
+
+    Str = transformAndPaste(NameWordsLower,
                             caseTransform(Case),
                             caseDelim(Case));
   }
