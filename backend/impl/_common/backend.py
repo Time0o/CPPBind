@@ -98,6 +98,9 @@ class BackendGeneric(metaclass=BackendMeta):
         self._records = wrapper.records()
         self._functions = wrapper.functions()
 
+        self._add_types()
+
+    def _add_types(self):
         self._types = set()
         self._type_aliases = set()
 
@@ -124,7 +127,7 @@ class BackendGeneric(metaclass=BackendMeta):
                         t = t.pointee()
                         self._types.add(t.unqualified())
 
-        for v in self._constants:
+        for v in self.constants(include_definitions=True, include_enums=True):
             add_type(v.type())
 
         for r in self._records:
@@ -189,7 +192,7 @@ class BackendGeneric(metaclass=BackendMeta):
         return self._enums
 
     def constants(self, include_definitions=False, include_enums=False):
-        constants = self._constants
+        constants = self._constants[:]
 
         if include_definitions:
             constants += [d.as_constant() for d in self._definitions]

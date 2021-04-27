@@ -210,6 +210,7 @@ class BackendTestGenerator:
 
         self._subprocess(['rustc', rust_test_src,
                           '--deny', 'warnings',
+                          '-A', 'dead_code',
                           '-lstdc++',
                           '-L', self._test_output_dir(),
                           '--out-dir', self._test_output_dir()])

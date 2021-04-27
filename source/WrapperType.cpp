@@ -104,6 +104,17 @@ WrapperType::isScopedEnum() const
 { return type()->isScopedEnumeralType(); }
 
 bool
+WrapperType::isAnonymousEnum() const
+{
+  auto EnumType = type()->getAs<clang::EnumType>();
+
+  if (!EnumType)
+    return false;
+
+  return EnumType->getDecl()->getDeclName().isEmpty();
+}
+
+bool
 WrapperType::isIntegral() const
 {
   if (!type()->isIntegralType(ASTContext()))

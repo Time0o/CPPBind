@@ -37,15 +37,11 @@ class RustBackend(Backend('rust')):
     def wrap_enum(self, e):
         if e.is_anonymous():
             for c in e.constants():
-                c_name = c.name_target(case=Id.SNAKE_CASE_CAP_ALL)
-                c_type = c.type().target_rust()
-
                 self._wrapper_source.append(
-                    f"pub const {c_name}: {c_type} = {c.value()};")
+                    f"pub const {c.name_target(case=Id.SNAKE_CASE_CAP_ALL)}: {c.type().target()} = {c.value()};")
         else:
-            enum_constants = []
-            for c in e.constants():
-                enum_constants.append(f"{c.name_target()} = {c.value()}")
+            enum_constants = [f"{c.name_target()} = {c.value()}"
+                              for c in e.constants()]
 
             self._wrapper_source.append(code(
                 """
@@ -74,7 +70,7 @@ class RustBackend(Backend('rust')):
 
         for t in self.types():
             if t.is_fundamental():
-                type_imports.add(f'std::os::raw::{t.target_c()}')
+                type_imports.add(f'std::os::raw::{t.target_c(scoped=False)}')
 
         return '\n'.join(f'pub use {ti};' for ti in sorted(type_imports))
 
@@ -122,28 +118,26 @@ class RustBackend(Backend('rust')):
             body=self._function_body_rust(f))
 
     def _function_header_c(self, f):
-        return self._function_header(f, target='c')
+        parameters = ', '.join(f"{p.name_target()}: {p.type().target_c(scoped=False)}"
+                               for p in f.parameters())
+
+        header = f"pub fn {f.name_target()}({parameters})"
+
+        if not f.return_type().is_void():
+            header += f" -> {f.return_type().target_c(scoped=False)}"
+
+        return header
 
     def _function_header_rust(self, f):
-        return self._function_header(f, target='rust', unsafe=True)
-
-    def _function_header(self, f, target, unsafe=False):
         parameters = ', '.join(f"{p.name_target()}: {p.type().target()}"
                                for p in f.parameters())
 
-        header = f"fn {f.name_target()}({parameters})"
-
-        if unsafe:
-            header = f"unsafe {header}"
+        header = f"pub unsafe fn {f.name_target()}({parameters})"
 
         if not f.return_type().is_void():
-            header += f" -> {f.return_type().target(target)}"
+            header += f" -> {f.return_type().target()}"
 
-        return f"pub {header}"
+        return header
 
     def _function_body_rust(self, f):
-        parameters = ', '.join(p.name_target() for p in f.parameters())
-
-        call = f"c::{f.name_target()}({parameters})"
-
-        return f.return_type().output(outp=call)
+        return f.forward()

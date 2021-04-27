@@ -57,6 +57,7 @@ public:
   bool isBoolean() const;
   bool isEnum() const;
   bool isScopedEnum() const;
+  bool isAnonymousEnum() const;
   bool isIntegral() const;
   bool isFloating() const;
   bool isCString() const;

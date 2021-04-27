@@ -1,4 +1,4 @@
-from cppbind import Type
+from cppbind import Identifier as Id, Type
 from type_translator import TypeTranslator
 from text import code
 
@@ -6,7 +6,8 @@ from text import code
 class RustTypeTranslator(TypeTranslator('rust')):
     rule = TypeTranslator('rust').rule
 
-    _rust_c_type_map = {
+    _RUST_C_TYPE_MAP = {
+        Type('bool'): 'c_int',
         Type('char'): 'c_char',
         Type('double'): 'c_double',
         Type('float'): 'c_float',
@@ -24,10 +25,10 @@ class RustTypeTranslator(TypeTranslator('rust')):
     }
 
     @classmethod
-    def _rust_c_type(cls, t, scoped=False):
-        c_type = cls._rust_c_type_map[t.without_const()]
+    def _rust_c_type(cls, t, args):
+        c_type = cls._RUST_C_TYPE_MAP[t.without_const()]
 
-        if scoped:
+        if args.scoped:
             c_type = f"c::{c_type}"
 
         if t.is_const():
@@ -37,27 +38,43 @@ class RustTypeTranslator(TypeTranslator('rust')):
 
     @rule(lambda t: t.is_pointer())
     def target_c(cls, t, args):
-        return f"* {cls.target_c(t.pointee())}"
+        return f"* {cls.target_c(t.pointee(), args)}"
 
     @rule(lambda t: t.is_enum())
     def target_c(cls, t, args):
-        return cls._rust_c_type(t.underlying_integer_type())
+        return cls._rust_c_type(t.underlying_integer_type(), args)
 
     @rule(lambda t: t.is_fundamental())
     def target_c(cls, t, args):
-        return cls._rust_c_type(t)
+        return cls._rust_c_type(t, args)
 
     @rule(lambda t: t.is_c_string())
-    def target_rust(cls, t, args):
+    def target(cls, t, args):
         return "&'static str"
 
+    @rule(lambda t: t.is_anonymous_enum())
+    def target(cls, t, args):
+        return t.underlying_integer_type().target_c()
+
     @rule(lambda t: t.is_enum())
-    def target_rust(cls, t, args):
-        return cls._rust_c_type(t.underlying_integer_type(), scoped=True)
+    def target(cls, t, args):
+        return t.format(case=Id.PASCAL_CASE, quals=Id.REPLACE_QUALS)
 
     @rule(lambda t: t.is_fundamental())
-    def target_rust(cls, t, args):
-        return cls._rust_c_type(t, scoped=True)
+    def target(cls, t, args):
+        return t.target_c()
+
+    @rule(lambda t: t.is_anonymous_enum())
+    def input(cls, t, args):
+        return "{interm} = {inp};"
+
+    @rule(lambda t: t.is_enum())
+    def input(cls, t, args):
+        return f"{{interm}} = {{inp}} as {t.underlying_integer_type().target_c()};"
+
+    @rule(lambda _: True)
+    def input(cls, t, args):
+        return "{interm} = {inp};"
 
     @rule(lambda t: t.is_c_string())
     def output(cls, t, args):
