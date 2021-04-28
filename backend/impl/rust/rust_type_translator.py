@@ -31,14 +31,16 @@ class RustTypeTranslator(TypeTranslator('rust')):
         if args.scoped:
             c_type = f"c::{c_type}"
 
-        if t.is_const():
-            c_type = f"const {c_type}"
-
         return c_type
 
-    @rule(lambda t: t.is_pointer())
+    @rule(lambda t: t.is_pointer() or t.is_reference())
     def target_c(cls, t, args):
-        return f"* {cls.target_c(t.pointee(), args)}"
+        ptr = cls.target_c(t.pointee(), args)
+
+        if t.pointee().is_const():
+            return f"* const {ptr}"
+        else:
+            return f"* mut {ptr}"
 
     @rule(lambda t: t.is_enum())
     def target_c(cls, t, args):
@@ -50,7 +52,20 @@ class RustTypeTranslator(TypeTranslator('rust')):
 
     @rule(lambda t: t.is_c_string())
     def target(cls, t, args):
-        return "&'static str"
+        return "&'a c::CStr"
+
+    @rule(lambda t: t.is_pointer())
+    def target(cls, t, args):
+        return t.target_c()
+
+    @rule(lambda t: t.is_reference())
+    def target(cls, t, args):
+        ref = t.referenced().target_c()
+
+        if t.referenced().is_const():
+            return f"&'a {ref}"
+        else:
+            return f"&'a mut {ref}"
 
     @rule(lambda t: t.is_anonymous_enum())
     def target(cls, t, args):
@@ -60,9 +75,17 @@ class RustTypeTranslator(TypeTranslator('rust')):
     def target(cls, t, args):
         return t.format(case=Id.PASCAL_CASE, quals=Id.REMOVE_QUALS)
 
+    @rule(lambda t: t.is_boolean())
+    def target(cls, t, args):
+        return 'bool'
+
     @rule(lambda t: t.is_fundamental())
     def target(cls, t, args):
         return t.target_c()
+
+    @rule(lambda t: t.is_c_string())
+    def input(cls, t, args):
+        return "{interm} = {inp}.as_ptr();"
 
     @rule(lambda t: t.is_anonymous_enum())
     def input(cls, t, args):
@@ -72,17 +95,32 @@ class RustTypeTranslator(TypeTranslator('rust')):
     def input(cls, t, args):
         return f"{{interm}} = {{inp}} as {t.underlying_integer_type().target_c()};"
 
+    @rule(lambda t: t.is_boolean())
+    def input(cls, t, args):
+        return f"{{interm}} = {{inp}} as {t.target_c()};"
+
     @rule(lambda _: True)
     def input(cls, t, args):
         return "{interm} = {inp};"
 
     @rule(lambda t: t.is_c_string())
     def output(cls, t, args):
-        return code(
-            """
-            use std::ffi::CStr;
-            CStr::from_ptr({outp}).to_str().unwrap()
-            """)
+        return "c::CStr::from_ptr({outp})"
+
+    @rule(lambda t: t.is_reference())
+    def output(cls, t, args):
+        if t.referenced().is_const():
+            return "& *{outp}"
+        else:
+            return "&mut *{outp}"
+
+    @rule(lambda t: t.is_enum())
+    def output(cls, t, args):
+        return "std::mem::transmute({outp})"
+
+    @rule(lambda t: t.is_boolean())
+    def output(cls, t, args):
+        return f"{{outp}} != 0"
 
     @rule(lambda _: True)
     def output(cls, t, args):

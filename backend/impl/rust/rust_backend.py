@@ -82,6 +82,9 @@ class RustBackend(Backend('rust')):
         for t in self.types():
             if t.is_fundamental():
                 type_imports.add(f'std::os::raw::{t.target_c(scoped=False)}')
+            elif t.is_c_string():
+                type_imports.add(f'std::ffi::CStr')
+                type_imports.add(f'std::ffi::CString')
 
         return '\n'.join(f'pub use {ti};' for ti in sorted(type_imports))
 
@@ -123,10 +126,12 @@ class RustBackend(Backend('rust')):
             body=self._function_body_rust(f))
 
     def _function_header_c(self, f):
-        parameters = ', '.join(f"{p.name_target()}: {p.type().target_c(scoped=False)}"
-                               for p in f.parameters())
+        name = f.name_target(quals=Id.REPLACE_QUALS)
 
-        header = f"pub fn {f.name_target(quals=Id.REPLACE_QUALS)}({parameters})"
+        param_declare = lambda p: f"{p.name_target()}: {p.type().target_c(scoped=False)}"
+        params = ', '.join(param_declare(p) for p in f.parameters())
+
+        header = f"pub fn {name}({params})"
 
         if not f.return_type().is_void():
             header += f" -> {f.return_type().target_c(scoped=False)}"
@@ -134,10 +139,17 @@ class RustBackend(Backend('rust')):
         return header
 
     def _function_header_rust(self, f):
-        parameters = ', '.join(f"{p.name_target()}: {p.type().target()}"
-                               for p in f.parameters())
+        name = f.name_target()
 
-        header = f"pub unsafe fn {f.name_target()}({parameters})"
+        has_lifetime = lambda t: t.is_reference() or t.is_c_string()
+
+        if any(has_lifetime(p.type()) for p in f.parameters()) or has_lifetime(f.return_type()):
+            name = f"{name}<'a>"
+
+        param_declare = lambda p: f"{p.name_target()}: {p.type().target()}"
+        params = ', '.join(param_declare(p) for p in f.parameters())
+
+        header = f"pub unsafe fn {name}({params})"
 
         if not f.return_type().is_void():
             header += f" -> {f.return_type().target()}"

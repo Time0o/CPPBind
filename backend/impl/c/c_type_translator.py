@@ -42,7 +42,7 @@ class CTypeTranslator(TypeTranslator('c')):
 
     @rule(lambda t: t.is_enum())
     def target(cls, t, args):
-        return cls._c_type(t.underlying_integer_type())
+        return cls.target(t.underlying_integer_type())
 
     @rule(lambda t: t.is_pointer() and t.pointee(recursive=True).is_fundamental())
     def target(cls, t, args):
@@ -117,7 +117,7 @@ class CTypeTranslator(TypeTranslator('c')):
 
     @rule(lambda t: t.is_enum())
     def output(cls, t, args):
-        return f"{{interm}} = static_cast<{t.underlying_integer_type()}>({{outp}});"
+        return f"{{interm}} = static_cast<{cls.target(t)}>({{outp}});"
 
     @rule(lambda t: t.is_pointer() and t.pointee(recursive=True).is_fundamental() or \
                     t.is_reference() and t.referenced().is_fundamental())
