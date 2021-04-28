@@ -6,8 +6,8 @@ from util import dotdict
 
 
 def _name(get=lambda self: self.name(),
-          default_case=Id.SNAKE_CASE,
-          default_quals=Id.REPLACE_QUALS,
+          default_case=None,
+          default_quals=None,
           default_prefix=None,
           default_postfix=None):
 
@@ -16,6 +16,12 @@ def _name(get=lambda self: self.name(),
                      quals=default_quals,
                      prefix=default_prefix,
                      postfix=default_postfix):
+
+        if case is None:
+            case = _name.fallback_case()
+
+        if quals is None:
+            quals = _name.fallback_quals()
 
         name = get(self).format(case=case, quals=quals)
 
@@ -289,6 +295,9 @@ class Patcher:
     def _patch_global():
         if Patcher._init:
             return
+
+        _name.fallback_case = lambda: Id.SNAKE_CASE
+        _name.fallback_quals = lambda: Id.REPLACE_QUALS
 
         Type.target = _type_target
         Type.input = _type_input

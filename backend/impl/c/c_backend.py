@@ -67,7 +67,7 @@ class CBackend(Backend('c')):
 
             {record_definitions}
             """,
-            input_includes='\n'.join(self.input_includes()),
+            input_includes='\n'.join(self.includes()),
             c_util_include=c_util.path_cc().include(),
             wrapper_header_include=self._wrapper_header.include(),
             record_definitions='\n\n'.join(self._record_definitions('source'))))

@@ -90,7 +90,6 @@ class BackendGeneric(metaclass=BackendMeta):
         self._input_file = Path(input_file)
         self._output_files = []
 
-        self._wrapper = wrapper
         self._includes = wrapper.includes()
         self._definitions = wrapper.definitions()
         self._enums = wrapper.enums()
@@ -98,7 +97,26 @@ class BackendGeneric(metaclass=BackendMeta):
         self._records = wrapper.records()
         self._functions = wrapper.functions()
 
+        self._objects = self._definitions + \
+                        self._enums + \
+                        self._constants + \
+                        self._records + \
+                        self._functions
+
+        self._add_scopes()
+
         self._add_types()
+
+    def _add_scopes(self):
+        self._scopes = {}
+
+        for obj in self._objects:
+            if not obj.name():
+                continue
+
+            scope = obj.name().qualifiers()
+
+            self._scopes[scope] = self._scopes.get(scope, []) + [obj]
 
     def _add_types(self):
         self._types = set()
@@ -164,12 +182,6 @@ class BackendGeneric(metaclass=BackendMeta):
     def input_file(self):
         return self._input_file
 
-    def input_includes(self, relative=None):
-        if relative is None:
-            relative = Options.output_relative_includes
-
-        return [inc.str(relative=relative) for inc in self._includes]
-
     def output_file(self, output_path):
         output_dir = os.path.abspath(Options.output_directory)
 
@@ -179,11 +191,23 @@ class BackendGeneric(metaclass=BackendMeta):
 
         return output_file
 
+    def scopes(self):
+        return self._scopes
+
+    def types(self):
+        return sorted(self._types)
+
     def types(self):
         return sorted(self._types)
 
     def type_aliases(self):
         return sorted(self._type_aliases)
+
+    def includes(self, relative=None):
+        if relative is None:
+            relative = Options.output_relative_includes
+
+        return [inc.str(relative=relative) for inc in self._includes]
 
     def definitions(self):
         return self._definitions

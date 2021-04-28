@@ -30,8 +30,8 @@ int main()
   assert(TEST_ENUM_IN_ANONYMOUS_NAMESPACE_1 == 1u);
   assert(TEST_ENUM_IN_ANONYMOUS_NAMESPACE_2 == 2u);
 
-  assert(TEST_UNSIGNED_CONSTEXPR_1 == 1u);
-  assert(TEST_DOUBLE_CONSTEXPR_1 == 1.0);
+  assert(TEST_UNSIGNED_CONSTEXPR == 1u);
+  assert(TEST_DOUBLE_CONSTEXPR == 1.0);
 
   assert(MACRO_CONST == 1);
   assert(MACRO_EXPR == ~(1 << 3));

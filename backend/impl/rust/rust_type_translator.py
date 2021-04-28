@@ -58,7 +58,7 @@ class RustTypeTranslator(TypeTranslator('rust')):
 
     @rule(lambda t: t.is_enum())
     def target(cls, t, args):
-        return t.format(case=Id.PASCAL_CASE, quals=Id.REPLACE_QUALS)
+        return t.format(case=Id.PASCAL_CASE, quals=Id.REMOVE_QUALS)
 
     @rule(lambda t: t.is_fundamental())
     def target(cls, t, args):

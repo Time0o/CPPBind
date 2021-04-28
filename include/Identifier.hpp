@@ -136,6 +136,10 @@ public:
   bool operator>=(Identifier const &Id) const
   { return !(*this < Id); }
 
+  bool isEmpty() const
+  { return Components_.empty(); }
+
+  Identifier qualifiers() const;
   Identifier qualified(Identifier const &Qualifiers) const;
   Identifier unqualified() const;
   Identifier unscoped() const;

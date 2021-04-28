@@ -208,15 +208,22 @@ class BackendTestGenerator:
 
         self._subprocess(['ln', '-sf', rust_wrap_src, self._test_source_dir()])
 
-        self._subprocess(['rustc', rust_test_src,
-                          '--deny', 'warnings',
-                          '-A', 'dead_code',
-                          '-lstdc++',
-                          '-L', self._test_output_dir(),
-                          '--out-dir', self._test_output_dir()])
+        rust_wrap_src_link = os.path.join(self._test_source_dir(),
+                                          os.path.basename(rust_wrap_src))
 
-        self._subprocess(['rm', os.path.join(self._test_source_dir(),
-                                             os.path.basename(rust_wrap_src))])
+        try:
+            self._subprocess(['rustc', rust_test_src,
+                              '--deny', 'warnings',
+                              '-A', 'dead_code',
+                              '-lstdc++',
+                              '-L', self._test_output_dir(),
+                              '--out-dir', self._test_output_dir()])
+
+        except subprocess.CalledProcessError as e:
+            raise e
+
+        finally:
+            self._subprocess(['rm', rust_wrap_src_link])
 
     def _compile_lua_test(self, test, **kwargs):
         mod_src = self._test_wrapper(test, ext='.cc')

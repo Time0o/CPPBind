@@ -29,8 +29,8 @@ namespace
   };
 }
 
-constexpr unsigned unsigned_constexpr_1 = 1u;
-constexpr double double_constexpr_1 = 1.0;
+constexpr unsigned unsigned_constexpr = 1u;
+constexpr double double_constexpr = 1.0;
 
 #define MACRO_CONST 1
 #define MACRO_EXPR ~(1 << 3)

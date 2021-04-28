@@ -44,7 +44,7 @@ class LuaBackend(Backend('lua')):
             {forward_declarations}
             """,
             lua_includes=self._lua_includes(),
-            input_includes='\n'.join(self.input_includes()),
+            input_includes='\n'.join(self.includes()),
             type_info_include=type_info.path().include(),
             type_info_type_instances=type_info.type_instances(),
             forward_declarations=self._function_forward_declarations(),

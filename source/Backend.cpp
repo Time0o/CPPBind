@@ -121,13 +121,16 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def(py::self >= py::self)
     .def(hash(py::self))
     .def("__str__", &Identifier::str)
-    .def("qualified", &Identifier::qualified, "qualifiers"_a)
-    .def("unqualified", &Identifier::unqualified)
-    .def("unscoped", &Identifier::unscoped)
+    .def("__bool__", [](Identifier const &Self){ return !Self.isEmpty(); })
     .def("str", &Identifier::str)
     .def("format", &Identifier::format,
          "case"_a = Identifier::ORIG_CASE,
-         "quals"_a = Identifier::KEEP_QUALS);
+         "quals"_a = Identifier::KEEP_QUALS)
+    .def("is_empty", &Identifier::isEmpty)
+    .def("qualifiers", &Identifier::qualifiers)
+    .def("qualified", &Identifier::qualified, "qualifiers"_a)
+    .def("unqualified", &Identifier::unqualified)
+    .def("unscoped", &Identifier::unscoped);
 
   py::implicitly_convertible<std::string, Identifier>();
 

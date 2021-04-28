@@ -1,22 +1,22 @@
 mod test_identifiers_rust;
-use test_identifiers_rust as test;
+use test_identifiers_rust::*;
 
 fn main() {
     unsafe {
 
-    test::test_a_func();
-    test::test_func_b();
+    test::a_func();
+    test::func_b();
 
-    test::test_func_1();
-    test::test_too_func_2_furious();
+    test::func_1();
+    test::too_func_2_furious();
 
-    test::test_foo_bar();
-    test::test_bar_foo();
+    test::foo_bar();
+    test::bar_foo();
 
-    test::test_l4();
-    test::test_l4_re();
-    test::test_l4_virtio();
-    test::test_l4_func();
+    test::l4();
+    test::l4_re();
+    test::l4_virtio();
+    test::l4_func();
 
     }
 }

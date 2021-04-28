@@ -12,6 +12,8 @@ class RustBackend(Backend('rust')):
         self._patcher = RustPatcher()
         self._type_translator = RustTypeTranslator()
 
+        self._modules = {}
+
     def patcher(self):
         return self._patcher
 
@@ -25,11 +27,12 @@ class RustBackend(Backend('rust')):
         self._wrapper_source = self.output_file(
             self.input_file().modified(filename='{filename}_rust', ext='.rs'))
 
-        self._wrapper_source.append(self._declarations_c())
-        self._wrapper_source.append(self._definitions_rust())
+        self._wrapper_source.append("mod internal {")
+        self._wrapper_source.append(self._c_functions())
 
     def wrap_after(self):
-        pass
+        self._wrapper_source.append("} // mod internal")
+        self._wrapper_source.append(self._modules_export())
 
     def wrap_definition(self, d):
         pass # XXX
@@ -37,8 +40,12 @@ class RustBackend(Backend('rust')):
     def wrap_enum(self, e):
         if e.is_anonymous():
             for c in e.constants():
+                name = c.name_target(case=Id.SNAKE_CASE_CAP_ALL)
+
                 self._wrapper_source.append(
-                    f"pub const {c.name_target(case=Id.SNAKE_CASE_CAP_ALL)}: {c.type().target()} = {c.value()};")
+                    f"pub const {name}: {c.type().target()} = {c.value()};")
+
+                self._modules_add(self._module(c), name)
         else:
             enum_constants = [f"{c.name_target()} = {c.value()}"
                               for c in e.constants()]
@@ -53,14 +60,18 @@ class RustBackend(Backend('rust')):
                 enum_name=e.name_target(),
                 enum_constants=',\n'.join(enum_constants)))
 
+            self._modules_add(self._module(e), e.name_target())
+
     def wrap_constant(self, c):
         self._wrapper_source.append(c.assign())
+        self._modules_add(self._module(c), f"get_{c.name_target(case=Id.SNAKE_CASE)}")
 
     def wrap_record(self, r):
         pass
 
     def wrap_function(self, f):
-        pass
+        self._wrapper_source.append(self._function_definition_rust(f))
+        self._modules_add(self._module(f), f.name_target())
 
     def _c_lib_name(self):
         return f"{self.input_file().filename()}_c"
@@ -74,7 +85,7 @@ class RustBackend(Backend('rust')):
 
         return '\n'.join(f'pub use {ti};' for ti in sorted(type_imports))
 
-    def _declarations_c(self):
+    def _c_functions(self):
         c_constant_declarations = [c.declare() for c in self.constants()]
 
         c_function_declarations = [self._function_declaration_c(f)
@@ -98,12 +109,6 @@ class RustBackend(Backend('rust')):
             c_constant_declarations='\n'.join(c_constant_declarations),
             c_function_declarations='\n'.join(c_function_declarations))
 
-    def _definitions_rust(self):
-        function_definitions = [self._function_definition_rust(f)
-                                for f in self.functions()]
-
-        return '\n\n'.join(function_definitions)
-
     def _function_declaration_c(self, f):
         return f"{self._function_header_c(f)};"
 
@@ -121,7 +126,7 @@ class RustBackend(Backend('rust')):
         parameters = ', '.join(f"{p.name_target()}: {p.type().target_c(scoped=False)}"
                                for p in f.parameters())
 
-        header = f"pub fn {f.name_target()}({parameters})"
+        header = f"pub fn {f.name_target(quals=Id.REPLACE_QUALS)}({parameters})"
 
         if not f.return_type().is_void():
             header += f" -> {f.return_type().target_c(scoped=False)}"
@@ -141,3 +146,22 @@ class RustBackend(Backend('rust')):
 
     def _function_body_rust(self, f):
         return f.forward()
+
+    def _module(self, obj):
+        return obj.name().qualifiers().format(case=Id.SNAKE_CASE, quals=Id.REPLACE_QUALS)
+
+    def _modules_add(self, mod, symbol):
+        self._modules[mod] = self._modules.get(mod, []) + [symbol]
+
+    def _modules_export(self):
+        for mod, symbols in self._modules.items():
+            use = [f"pub use super::internal::{s};" for s in symbols]
+
+            return code(
+                """
+                pub mod {mod_name} {{
+                    {mod_use}
+                }} // mod {mod_name}
+                """,
+                mod_name=mod,
+                mod_use='\n'.join(use))

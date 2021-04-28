@@ -233,6 +233,16 @@ Identifier::isIdentifier(std::string const &Name,
 }
 
 Identifier
+Identifier::qualifiers() const
+{
+  auto Qualifiers(*this);
+
+  Qualifiers.Components_.pop_back();
+
+  return Qualifiers;
+}
+
+Identifier
 Identifier::qualified(Identifier const &Qualifiers) const
 {
   auto Qualified(Qualifiers);
