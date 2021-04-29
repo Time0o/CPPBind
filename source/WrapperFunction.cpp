@@ -90,6 +90,10 @@ WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
   IsDefinition_(Decl->isThisDeclarationADefinition()),
   IsMember_(true),
   IsConstructor_(llvm::isa<clang::CXXConstructorDecl>(Decl)),
+  IsCopyConstructor_(IsConstructor_ && llvm::dyn_cast<clang::CXXConstructorDecl>(Decl)->isCopyConstructor()),
+  IsCopyAssignmentOperator_(Decl->isCopyAssignmentOperator()),
+  IsMoveConstructor_(IsConstructor_ && llvm::dyn_cast<clang::CXXConstructorDecl>(Decl)->isMoveConstructor()),
+  IsMoveAssignmentOperator_(Decl->isMoveAssignmentOperator()),
   IsDestructor_(llvm::isa<clang::CXXDestructorDecl>(Decl)),
   IsStatic_(Decl->isStatic()),
   IsConst_(Decl->isConst()),
@@ -369,16 +373,6 @@ WrapperFunction::determineOverloadedOperator(clang::FunctionDecl const *Decl)
     return std::nullopt;
   }
 
-  bool IsCopyAssignment = false;
-  bool IsMoveAssignment = false;
-
-  if (llvm::isa<clang::CXXMethodDecl>(Decl)) {
-    auto const *MethodDecl = llvm::dyn_cast<clang::CXXMethodDecl>(Decl);
-
-    IsCopyAssignment = MethodDecl->isCopyAssignmentOperator();
-    IsMoveAssignment = MethodDecl->isMoveAssignmentOperator();
-  }
-
   bool OOUnary = Parameters_.empty();
 
   switch (Decl->getOverloadedOperator()) {
@@ -392,9 +386,9 @@ WrapperFunction::determineOverloadedOperator(clang::FunctionDecl const *Decl)
     break;
   }
 
-  if (IsCopyAssignment) {
+  if (IsCopyAssignmentOperator_) {
     OO->Name = "copy_assign";
-  } else if (IsMoveAssignment) {
+  } else if (IsMoveAssignmentOperator_) {
     OO->Name = "move_assign";
   } else {
     if (OO->Name == "Star") {

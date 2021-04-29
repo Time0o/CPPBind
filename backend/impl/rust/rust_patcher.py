@@ -39,9 +39,16 @@ def _constant_assign(self):
 
 
 def _function_declare_parameters(self):
-    decl = lambda p: f"let {p.name_interm()}: {p.type().target_c()};"
+    def declare_parameter(p):
+        decl_name = p.name_interm()
+        decl_type = p.type()
 
-    return '\n'.join(decl(p) for p in self.parameters())
+        if decl_type.is_record():
+            decl_type = decl_type.pointer_to()
+
+        return f"let {decl_name}: {decl_type.target_c()};"
+
+    return '\n'.join(declare_parameter(p) for p in self.parameters())
 
 
 def _function_forward_parameters(self):
@@ -52,14 +59,29 @@ def _function_forward_parameters(self):
 
 def _function_forward_call(self):
     c_name = self.name_target(quals=Id.REPLACE_QUALS)
-    c_parameters = ', '.join(p.name_interm() for p in self.parameters())
 
-    call = f"c::{c_name}({c_parameters})"
+    if self.is_copy_constructor():
+        c_type = self.parent().type().with_const().pointer_to().target_c()
+
+        call = f"c::{c_name}(self as {c_type})"
+
+    elif self.is_move_constructor():
+        pass # XXX
+
+    else:
+        c_parameters = ', '.join(p.name_interm() for p in self.parameters())
+
+        call = f"c::{c_name}({c_parameters})"
 
     return self.return_type().output(outp=call)
 
 
 def _function_forward(self):
+    if self.is_copy_constructor() or \
+       self.is_move_constructor() or \
+       not self.parameters():
+        return self.forward_call()
+
     forward = code(
         """
         {declare_parameters}

@@ -123,6 +123,14 @@ public:
   std::deque<Identifier> const &getEnclosingNamespaces() const
   { return EnclosingNamespaces_; }
 
+  std::optional<WrapperParameter const *> getThis() const
+  {
+    if (!isInstance())
+      return std::nullopt;
+
+    return &Parameters_[0];
+  }
+
   std::deque<WrapperParameter> const &getParameters() const
   { return Parameters_; }
 
@@ -151,6 +159,18 @@ public:
 
   bool isConstructor() const
   { return IsConstructor_; }
+
+  bool isCopyConstructor() const
+  { return IsCopyConstructor_; }
+
+  bool isCopyAssignmentOperator() const
+  { return IsCopyAssignmentOperator_; }
+
+  bool isMoveConstructor() const
+  { return IsMoveConstructor_; }
+
+  bool isMoveAssignmentOperator() const
+  { return IsMoveAssignmentOperator_; }
 
   bool isDestructor() const
   { return IsDestructor_; }
@@ -210,6 +230,10 @@ private:
   bool IsDefinition_ = false;
   bool IsMember_ = false;
   bool IsConstructor_ = false;
+  bool IsCopyConstructor_ = false;
+  bool IsCopyAssignmentOperator_ = false;
+  bool IsMoveConstructor_ = false;
+  bool IsMoveAssignmentOperator_ = false;
   bool IsDestructor_ = false;
   bool IsStatic_ = false;
   bool IsConst_ = false;

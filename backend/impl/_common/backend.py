@@ -197,8 +197,8 @@ class BackendGeneric(metaclass=BackendMeta):
     def types(self):
         return sorted(self._types)
 
-    def types(self):
-        return sorted(self._types)
+    def type_set(self):
+        return self._types
 
     def type_aliases(self):
         return sorted(self._type_aliases)

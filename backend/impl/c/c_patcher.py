@@ -50,7 +50,9 @@ def _function_construct(self, parameters):
     return f"new ({Id.BUF}) {t}({parameters});"
 
 
-def _function_destruct(self, this):
+def _function_destruct(self):
+    this = self.parameters()[0].name_interm()
+
     t = self.parent().type()
 
     return f"{this}->~{t.format(quals=Id.REMOVE_QUALS)}();"

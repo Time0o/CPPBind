@@ -65,6 +65,73 @@ WrapperRecord::getName(bool WithTemplatePostfix) const
   return Name;
 }
 
+std::deque<WrapperFunction const *>
+WrapperRecord::getConstructors() const
+{
+  std::deque<WrapperFunction const *> Constructors;
+  for (auto const &F : Functions_) {
+    if (F.isConstructor())
+      Constructors.push_back(&F);
+  }
+
+  return Constructors;
+}
+
+std::optional<WrapperFunction const *>
+WrapperRecord::getCopyConstructor() const
+{
+  for (auto const &F : Functions_) {
+    if (F.isCopyConstructor())
+      return &F;
+  }
+
+  return std::nullopt;
+}
+
+std::optional<WrapperFunction const *>
+WrapperRecord::getCopyAssignmentOperator() const
+{
+  for (auto const &F : Functions_) {
+    if (F.isCopyAssignmentOperator())
+      return &F;
+  }
+
+  return std::nullopt;
+}
+
+std::optional<WrapperFunction const *>
+WrapperRecord::getMoveConstructor() const
+{
+  for (auto const &F : Functions_) {
+    if (F.isMoveConstructor())
+      return &F;
+  }
+
+  return std::nullopt;
+}
+
+std::optional<WrapperFunction const *>
+WrapperRecord::getMoveAssignmentOperator() const
+{
+  for (auto const &F : Functions_) {
+    if (F.isMoveAssignmentOperator())
+      return &F;
+  }
+
+  return std::nullopt;
+}
+
+std::optional<WrapperFunction const *>
+WrapperRecord::getDestructor() const
+{
+  for (auto const &F : Functions_) {
+    if (F.isDestructor())
+      return &F;
+  }
+
+  return std::nullopt;
+}
+
 std::optional<std::string>
 WrapperRecord::getTemplateArgumentList() const
 {
@@ -255,15 +322,21 @@ WrapperRecord::determineIfCopyable(clang::CXXRecordDecl const *Decl)
   if (!Decl->isThisDeclarationADefinition())
     return false;
 
-  // XXX likely not always correct
-  // XXX can there be more than one 'copy constructor'?
+  unsigned NumCopyConstructors = 0u;
+  bool CopyConstructorDeleted = false;
 
   for (auto ctor : Decl->ctors()) {
-    if (ctor->isCopyConstructor() && ctor->isDeleted())
-      return false;
+    if (ctor->isCopyConstructor()) {
+      ++NumCopyConstructors;
+      if (ctor->isDeleted())
+        CopyConstructorDeleted = true;
+    }
   }
 
-  return true;
+  if (NumCopyConstructors > 1u)
+    throw log::exception("multiple copy constructors defined for {}", Decl->getNameAsString());
+
+  return NumCopyConstructors == 1 && !CopyConstructorDeleted;
 }
 
 bool
@@ -272,15 +345,21 @@ WrapperRecord::determineIfMoveable(clang::CXXRecordDecl const *Decl)
   if (!Decl->isThisDeclarationADefinition())
     return false;
 
-  // XXX likely not always correct
-  // XXX can there be more than one 'move constructor'?
+  unsigned NumMoveConstructors = 0u;
+  bool MoveConstructorDeleted = false;
 
   for (auto ctor : Decl->ctors()) {
-    if (ctor->isMoveConstructor() && ctor->isDeleted())
-      return false;
+    if (ctor->isMoveConstructor()) {
+      ++NumMoveConstructors;
+      if (ctor->isDeleted())
+        MoveConstructorDeleted = true;
+    }
   }
 
-  return true;
+  if (NumMoveConstructors > 1u)
+    throw log::exception("multiple copy constructors defined for {}", Decl->getNameAsString());
+
+  return NumMoveConstructors == 1 && !MoveConstructorDeleted;
 }
 
 std::optional<TemplateArgumentList>

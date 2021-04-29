@@ -58,6 +58,13 @@ public:
   std::deque<WrapperFunction> &getFunctions()
   { return Functions_; }
 
+  std::deque<WrapperFunction const *> getConstructors() const;
+  std::optional<WrapperFunction const *> getCopyConstructor() const;
+  std::optional<WrapperFunction const *> getCopyAssignmentOperator() const;
+  std::optional<WrapperFunction const *> getMoveConstructor() const;
+  std::optional<WrapperFunction const *> getMoveAssignmentOperator() const;
+  std::optional<WrapperFunction const *> getDestructor() const;
+
   std::optional<std::string> getTemplateArgumentList() const;
 
   bool isDefinition() const

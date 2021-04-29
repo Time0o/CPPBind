@@ -145,9 +145,7 @@ def _function_forward_call(self):
     parameters = []
 
     for p in self.parameters():
-        if p.is_self():
-            this = p.name_interm()
-        else:
+        if not p.is_self():
             parameters.append(p)
 
     if self.is_overloaded_operator('++', 1):
@@ -156,21 +154,16 @@ def _function_forward_call(self):
     parameters = ', '.join(map(forward_parameter, parameters))
 
     if self.is_constructor():
-        call = self.construct(parameters)
-    elif self.is_destructor():
-        call = self.destruct(this)
-    else:
-        function_name = self.name()
-
-        if self.is_instance():
-            call = f"{this}->{self.name().format(quals=Id.REMOVE_QUALS)}"
+        if self.is_copy_constructor():
+            call = self.copy(parameters)
+        elif self.is_move_constructor():
+            call = self.move(parameters)
         else:
-            call = f"{self.name()}"
-
-        if self.template_argument_list():
-            call = f"{call}{self.template_argument_list()}"
-
-        call = f"{call}({parameters});"
+            call = self.construct(parameters)
+    elif self.is_destructor():
+        call = self.destruct()
+    else:
+        call = self.call(parameters)
 
     if self.return_type().is_lvalue_reference():
         call = f"&{call}"
@@ -193,6 +186,36 @@ def _function_forward_call(self):
         call_after=self.after_call())
 
     return call
+
+
+def _function_call(self, parameters):
+    if self.is_instance():
+        call = f"{self.this().name_interm()}->{self.name().format(quals=Id.REMOVE_QUALS)}"
+    else:
+        call = f"{self.name()}"
+
+    if self.template_argument_list():
+        call = f"{call}{self.template_argument_list()}"
+
+    return f"{call}({parameters});"
+
+
+def _function_construct(self, parameters):
+    t = self.parent().type()
+
+    return f"new {t}({parameters});"
+
+
+def _function_copy(self, parameters):
+    return self.construct(parameters)
+
+
+def _function_move(self, parameters):
+    return self.construct(parameters)
+
+
+def _function_destruct(self):
+    return f"delete {self.this().name_interm()};"
 
 
 def _function_before_call(self):
@@ -251,16 +274,6 @@ def _function_forward(self):
     return forward
 
 
-def _function_construct(self, parameters):
-    t = self.parent().type()
-
-    return f"new {t}({parameters});"
-
-
-def _function_destruct(self, this):
-    return f"delete {this};"
-
-
 def _function_try_catch(self, what):
     return code(
         """
@@ -308,6 +321,11 @@ class Patcher:
 
         Function.declare_parameters = _function_declare_parameters
         Function.forward_parameters = _function_forward_parameters
+        Function.call = _function_call
+        Function.construct = _function_construct
+        Function.copy = _function_copy
+        Function.move = _function_move
+        Function.destruct = _function_destruct
         Function.before_call = _function_before_call
         Function.after_call = _function_after_call
         Function.forward_call = _function_forward_call
@@ -315,8 +333,6 @@ class Patcher:
         Function.forward_return_value = _function_forward_return_value
         Function.perform_return = _function_perform_return
         Function.forward = _function_forward
-        Function.construct = _function_construct
-        Function.destruct = _function_destruct
         Function.try_catch = _function_try_catch
         Function.handle_exception = _function_handle_exception
 

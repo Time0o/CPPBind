@@ -26,7 +26,7 @@ class RustTypeTranslator(TypeTranslator('rust')):
 
     @classmethod
     def _rust_c_type(cls, t, args):
-        c_type = cls._RUST_C_TYPE_MAP[t.without_const()]
+        c_type = cls._RUST_C_TYPE_MAP[t.unqualified()]
 
         if args.scoped:
             c_type = f"c::{c_type}"
@@ -35,12 +35,16 @@ class RustTypeTranslator(TypeTranslator('rust')):
 
     @rule(lambda t: t.is_pointer() or t.is_reference())
     def target_c(cls, t, args):
-        ptr = cls.target_c(t.pointee(), args)
+        ptr = cls.target_c(t.pointee().unqualified(), args)
 
         if t.pointee().is_const():
             return f"* const {ptr}"
         else:
             return f"* mut {ptr}"
+
+    @rule(lambda t: t.is_record())
+    def target_c(cls, t, args):
+        return t.unqualified().format(case=Id.PASCAL_CASE, quals=Id.REMOVE_QUALS)
 
     @rule(lambda t: t.is_enum())
     def target_c(cls, t, args):
@@ -67,6 +71,10 @@ class RustTypeTranslator(TypeTranslator('rust')):
         else:
             return f"&'a mut {ref}"
 
+    @rule(lambda t: t.is_record())
+    def target(cls, t, args):
+        return t.target_c()
+
     @rule(lambda t: t.is_anonymous_enum())
     def target(cls, t, args):
         return t.underlying_integer_type().target_c()
@@ -82,6 +90,17 @@ class RustTypeTranslator(TypeTranslator('rust')):
     @rule(lambda t: t.is_fundamental())
     def target(cls, t, args):
         return t.target_c()
+
+    @rule(lambda t: t.is_record_indirection())
+    def input(cls, t, args):
+        if args.p.is_self():
+            return f"{{interm}} = self as {t.target_c()};"
+
+        return "{interm} = {inp};"
+
+    @rule(lambda t: t.is_record())
+    def input(cls, t, args):
+        return f"{{interm}} = {{inp}} as {t.pointer_to().target_c()};"
 
     @rule(lambda t: t.is_c_string())
     def input(cls, t, args):
@@ -106,6 +125,10 @@ class RustTypeTranslator(TypeTranslator('rust')):
     @rule(lambda t: t.is_c_string())
     def output(cls, t, args):
         return "c::CStr::from_ptr({outp})"
+
+    @rule(lambda t: t.is_record_indirection())
+    def output(cls, t, args):
+        return "{outp}"
 
     @rule(lambda t: t.is_reference())
     def output(cls, t, args):

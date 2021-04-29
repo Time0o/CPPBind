@@ -253,6 +253,8 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("enclosing_namespaces", &Function::getEnclosingNamespaces)
     .def("return_type", &Function::getReturnType)
     .def("out_type", &Function::getOutType)
+    .def("this", &Function::getThis,
+         py::return_value_policy::reference_internal)
     .def("parameters",
          py::overload_cast<>(&Function::getParameters, py::const_),
          py::return_value_policy::reference_internal)
@@ -262,6 +264,10 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_member", &Function::isMember)
     .def("is_instance", &Function::isInstance)
     .def("is_constructor", &Function::isConstructor)
+    .def("is_copy_constructor", &Function::isCopyConstructor)
+    .def("is_copy_assignment_operator", &Function::isCopyAssignmentOperator)
+    .def("is_move_constructor", &Function::isMoveConstructor)
+    .def("is_move_assignment_operator", &Function::isMoveAssignmentOperator)
     .def("is_destructor", &Function::isDestructor)
     .def("is_static", &Function::isStatic)
     .def("is_const", &Function::isConst)
@@ -289,6 +295,18 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
          py::return_value_policy::reference_internal)
     .def("functions",
          py::overload_cast<>(&Record::getFunctions, py::const_),
+         py::return_value_policy::reference_internal)
+    .def("constructors", &Record::getConstructors,
+         py::return_value_policy::reference_internal)
+    .def("copy_constructor", &Record::getCopyConstructor,
+         py::return_value_policy::reference_internal)
+    .def("copy_assignment_operator", &Record::getCopyAssignmentOperator,
+         py::return_value_policy::reference_internal)
+    .def("move_constructor", &Record::getMoveConstructor,
+         py::return_value_policy::reference_internal)
+    .def("move_assignment_operator", &Record::getMoveAssignmentOperator,
+         py::return_value_policy::reference_internal)
+    .def("destructor", &Record::getDestructor,
          py::return_value_policy::reference_internal)
     .def("template_argument_list", &Record::getTemplateArgumentList)
     .def("is_abstract", &Record::isAbstract)
