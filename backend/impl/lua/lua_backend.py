@@ -85,9 +85,6 @@ class LuaBackend(Backend('lua')):
         pass
 
     def wrap_record(self, r):
-        if r.is_abstract():
-            return
-
         self._wrapper_module.append(code(
             f"""
             namespace __{r.name_target()}

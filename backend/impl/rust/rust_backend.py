@@ -70,6 +70,10 @@ class RustBackend(Backend('rust')):
         self._wrapper_source.append(self._record_definition_rust(r))
         self._modules_add(self._module(r), r.name_target())
 
+    def wrap_function(self, f):
+        self._wrapper_source.append(self._function_definition_rust(f))
+        self._modules_add(self._module(f), f.name_target())
+
     def _record_definition_rust(self, r):
         record_name = r.name_target()
         record_union = f"{record_name}Union"
@@ -176,10 +180,6 @@ class RustBackend(Backend('rust')):
 
         return '\n\n'.join(record_definition)
 
-    def wrap_function(self, f):
-        self._wrapper_source.append(self._function_definition_rust(f))
-        self._modules_add(self._module(f), f.name_target())
-
     def _c_lib_name(self):
         return f"{self.input_file().filename()}_c"
 
@@ -204,8 +204,7 @@ class RustBackend(Backend('rust')):
     def _c_declarations(self):
         c_declarations = []
         c_declarations += [c.declare() for c in self.constants()]
-        c_declarations += [self._function_declaration_c(f) for f in self.functions()]
-        c_declarations += [self._function_declaration_c(f) for r in self.records() for f in r.functions()]
+        c_declarations += [self._function_declaration_c(f) for f in self.functions(include_members=True)]
 
         return code(
             """

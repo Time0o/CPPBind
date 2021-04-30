@@ -168,7 +168,8 @@ class BackendGeneric(metaclass=BackendMeta):
             self.wrap_constant(c)
 
         for r in self._records:
-            self.wrap_record(r)
+            if not r.is_abstract():
+                self.wrap_record(r)
 
         for f in self._functions:
             self.wrap_function(f)
@@ -227,11 +228,20 @@ class BackendGeneric(metaclass=BackendMeta):
 
         return constants
 
-    def records(self):
+    def records(self, include_abstract=True):
+        if not include_abstract:
+            return [r for r in self._records if not r.is_abstract()]
+
         return self._records
 
-    def functions(self):
-        return self._functions
+    def functions(self, include_members=False):
+        functions = self._functions[:]
+
+        if include_members:
+            for r in self.records(include_abstract=False):
+                functions += r.functions()
+
+        return functions
 
     @abstractmethod
     def patcher(self):
