@@ -12,7 +12,7 @@ class RustBackend(Backend('rust')):
         self._patcher = RustPatcher()
         self._type_translator = RustTypeTranslator()
 
-        self._modules = {}
+        self._rust_modules = {}
 
     def patcher(self):
         return self._patcher
@@ -60,7 +60,7 @@ class RustBackend(Backend('rust')):
             c_types='\n'.join(f"use {t};" for t in self._c_types()),
             c_declarations=self._c_declarations()))
 
-        self._wrapper_source.append(self._modules_export())
+        self._wrapper_source.append(self._rust_modules_export())
 
     def wrap_definition(self, d):
         pass # XXX
@@ -73,7 +73,7 @@ class RustBackend(Backend('rust')):
                 self._wrapper_source.append(
                     f"pub const {name}: {c.type().target()} = {c.value()};")
 
-                self._modules_add(self._module(c.name()), name)
+                self._rust_modules_add(c, name)
         else:
             enum_constants = [f"{c.name_target()} = {c.value()}"
                               for c in e.constants()]
@@ -88,19 +88,19 @@ class RustBackend(Backend('rust')):
                 enum_name=e.name_target(),
                 enum_constants=',\n'.join(enum_constants)))
 
-            self._modules_add(self._module(e.name()), e.name_target())
+            self._rust_modules_add(e, e.name_target())
 
     def wrap_constant(self, c):
         self._wrapper_source.append(c.assign())
-        self._modules_add(self._module(c.name()), f"get_{c.name_target(case=Id.SNAKE_CASE)}")
+        self._rust_modules_add(c, f"get_{c.name_target(case=Id.SNAKE_CASE)}")
 
     def wrap_record(self, r):
         self._wrapper_source.append(self._record_definition_rust(r))
-        self._modules_add(self._module(r.name()), r.name_target())
+        self._rust_modules_add(r, r.name_target())
 
     def wrap_function(self, f):
         self._wrapper_source.append(self._function_definition_rust(f))
-        self._modules_add(self._module(f.name()), f.name_target())
+        self._rust_modules_add(f, f.name_target())
 
     def _c_lib(self):
         return f"{self.input_file().filename()}_c"
@@ -137,10 +137,61 @@ class RustBackend(Backend('rust')):
             c_lib=self._c_lib(),
             c_declarations='\n'.join(c_declarations))
 
+    def _rust_module(self):
+        return f"{self.input_file().filename()}_rust"
+
+    def _rust_modules_add(self, obj, symbol):
+        try:
+            name = obj.name()
+        except:
+            name = Id(str(obj))
+
+        mod = name.qualifiers()
+
+        d = self._rust_modules
+
+        if mod:
+            for c in mod.components():
+                c = c.format(case=Id.SNAKE_CASE)
+
+                if c not in d:
+                    d[c] = {}
+
+                d = d[c]
+
+        d['__symbols'] = d.get('__symbols', []) + [symbol]
+
+    def _rust_modules_export(self, modules=None):
+        if modules is None:
+            modules = self._rust_modules
+
+        export = []
+
+        for mod_name in modules:
+            if not mod_name:
+                continue
+
+            mod_inner = []
+
+            if mod_name == '__symbols':
+                export += [f"pub use {self._rust_module()}::internal::{s};"
+                           for s in modules[mod_name]]
+            else:
+                export.append(code(
+                    """
+                    pub mod {mod_name} {{
+                        {mod_inner}
+                    }} // mod {mod_name}
+                    """,
+                    mod_name=mod_name,
+                    mod_inner=self._rust_modules_export(modules[mod_name])))
+
+        return '\n\n'.join(export)
+
     def _rust_typedefs(self):
         typedefs = []
         for a, t in self.type_aliases():
-            self._modules_add(self._module(Id(str(a))), a.target())
+            self._rust_modules_add(a, a.target())
 
             typedefs.append(f"type {a.target()} = {t.target()}")
 
@@ -333,31 +384,3 @@ class RustBackend(Backend('rust')):
 
     def _function_body_rust(self, f):
         return f.forward()
-
-    def _module(self, obj):
-        return obj.qualifiers().format(case=Id.SNAKE_CASE, quals=Id.REPLACE_QUALS)
-
-    def _modules_add(self, mod, symbol):
-        self._modules[mod] = self._modules.get(mod, []) + [symbol]
-
-    def _modules_export(self):
-        mods = []
-
-        for mod_name, mod_symbols in self._modules.items():
-            if mod_name:
-                mod_use = [f"pub use super::internal::{s};" for s in mod_symbols]
-
-                mods.append(code(
-                    """
-                    pub mod {mod_name} {{
-                        {mod_use}
-                    }} // mod {mod_name}
-                    """,
-                    mod_name=mod_name,
-                    mod_use='\n'.join(mod_use)))
-            else:
-                mod_use = [f"pub use self::internal::{s};" for s in mod_symbols]
-
-                mods.append('\n'.join(mod_use))
-
-        return '\n\n'.join(mods)

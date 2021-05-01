@@ -139,6 +139,7 @@ public:
   bool isEmpty() const
   { return Components_.empty(); }
 
+  std::vector<Identifier> components() const;
   Identifier qualifiers() const;
   Identifier qualified(Identifier const &Qualifiers) const;
   Identifier unqualified() const;

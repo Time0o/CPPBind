@@ -127,6 +127,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
          "case"_a = Identifier::ORIG_CASE,
          "quals"_a = Identifier::KEEP_QUALS)
     .def("is_empty", &Identifier::isEmpty)
+    .def("components", &Identifier::components)
     .def("qualifiers", &Identifier::qualifiers)
     .def("qualified", &Identifier::qualified, "qualifiers"_a)
     .def("unqualified", &Identifier::unqualified)

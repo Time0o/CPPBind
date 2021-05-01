@@ -232,6 +232,16 @@ Identifier::isIdentifier(std::string const &Name,
   return !isKeyword(Name) && !isReserved(Name);
 }
 
+std::vector<Identifier>
+Identifier::components() const
+{
+  std::vector<Identifier> Components;
+  for (auto const &C : Components_)
+    Components.emplace_back(C.format());
+
+  return Components;
+}
+
 Identifier
 Identifier::qualifiers() const
 {

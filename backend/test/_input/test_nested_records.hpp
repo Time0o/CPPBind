@@ -20,7 +20,7 @@ public:
     {};
   };
 
-  static void func(NestedPublic *, NestedPublic::T, NestedPublic::E) {}
+  static void func(NestedPublic const *, NestedPublic::T, NestedPublic::E) {}
 
 private:
   struct NestedPrivate
