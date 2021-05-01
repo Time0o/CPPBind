@@ -42,7 +42,9 @@ class RustTypeTranslator(TypeTranslator('rust')):
 
     @classmethod
     def _record(cls, t):
-        return t.unqualified().format(case=Id.PASCAL_CASE, quals=Id.REMOVE_QUALS)
+        return t.unqualified().format(with_template_postfix=True,
+                                      case=Id.PASCAL_CASE,
+                                      quals=Id.REMOVE_QUALS)
 
     @classmethod
     def _pointer_to(cls, t, what):
