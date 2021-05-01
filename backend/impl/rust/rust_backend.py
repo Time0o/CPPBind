@@ -1,5 +1,6 @@
 from backend import Backend, backend, switch_backend
 from cppbind import Identifier as Id, Type
+from itertools import chain
 from rust_patcher import RustPatcher
 from rust_type_translator import RustTypeTranslator
 from text import code
@@ -33,31 +34,31 @@ class RustBackend(Backend('rust')):
 
             mod internal {{
 
-            {rust_typedefs}
+            {rust_use}
 
-            {c_types}
+            {rust_typedefs}
             """,
-            rust_typedefs='\n'.join(f"pub {td};" for td in self._rust_typedefs()),
-            c_types='\n'.join(f"use {t};" for t in self._c_types())))
+            rust_use='\n'.join(f"use {t};" for t in self._c_types()),
+            rust_typedefs='\n'.join(f"pub {td};" for td in self._rust_typedefs())))
 
     def wrap_after(self):
+        c_use = [f"use {t};" for t in self._c_types()]
+
+        c_use += [f"use {self._rust_module()}::internal::{t};"
+                  for t in chain(self._rust_record_types(),
+                                 self._rust_typedef_types())]
+
         self._wrapper_source.append(code(
             """
             mod c {{
-                {rust_typedef_types}
-
-                {rust_record_types}
-
-                {c_types}
+                {c_use}
 
                 {c_declarations}
             }} // mod c
 
             }} // mod internal
             """,
-            rust_typedef_types='\n'.join(f"use super::{t};" for t in self._rust_typedef_types()),
-            rust_record_types='\n'.join(f"use super::{t};" for t in self._rust_record_types()),
-            c_types='\n'.join(f"use {t};" for t in self._c_types()),
+            c_use='\n'.join(c_use),
             c_declarations=self._c_declarations()))
 
         self._wrapper_source.append(self._rust_modules_export())
