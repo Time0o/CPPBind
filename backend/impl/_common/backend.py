@@ -201,8 +201,16 @@ class BackendGeneric(metaclass=BackendMeta):
     def type_set(self):
         return self._types
 
-    def type_aliases(self):
-        return sorted(self._type_aliases)
+    def type_aliases(self, include_indistinguishable=False):
+        if include_indistinguishable:
+            return sorted(self._type_aliases)
+
+        aliases = []
+        for a, t in self._type_aliases:
+            if a.target() != t.target():
+                aliases.append((a, t))
+
+        return aliases
 
     def includes(self, relative=None):
         if relative is None:
@@ -228,7 +236,7 @@ class BackendGeneric(metaclass=BackendMeta):
 
         return constants
 
-    def records(self, include_abstract=True):
+    def records(self, include_abstract=False):
         if not include_abstract:
             return [r for r in self._records if not r.is_abstract()]
 

@@ -38,7 +38,7 @@ def type_instances():
 
         types[(t.without_const(), t_bases)] = True
 
-    for r in backend().records():
+    for r in backend().records(include_abstract=True):
         add_type(r.type(), (b.type() for b in r.bases()))
 
     for t in backend().types():

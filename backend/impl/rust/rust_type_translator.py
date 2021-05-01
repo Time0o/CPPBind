@@ -25,86 +25,105 @@ class RustTypeTranslator(TypeTranslator('rust')):
     }
 
     @classmethod
-    def _rust_c_type(cls, t, args):
-        c_type = cls._RUST_C_TYPE_MAP[t.unqualified()]
-
-        if args.scoped:
-            c_type = f"c::{c_type}"
+    def _c_type_fundamental(cls, t):
+        c_type = cls._RUST_C_TYPE_MAP[t.unqualified().canonical()]
 
         return c_type
 
+    @classmethod
+    def _rust_type_fundamental(cls, t):
+        if t.is_alias():
+            return t.format(case=Id.PASCAL_CASE, quals=Id.REMOVE_QUALS)
+
+        if t.is_boolean():
+            return 'bool'
+
+        return cls._c_type_fundamental(t)
+
+    @classmethod
+    def _record(cls, t):
+        return t.unqualified().format(case=Id.PASCAL_CASE, quals=Id.REMOVE_QUALS)
+
+    @classmethod
+    def _pointer_to(cls, t, what):
+        if t.is_const():
+            return f"* const {what}"
+        else:
+            return f"* mut {what}"
+
+    @classmethod
+    def _reference_to(cls, t, what):
+        if t.is_const():
+            return f"&'a {what}"
+        else:
+            return f"&'a mut {what}"
+
     @rule(lambda t: t.is_pointer() or t.is_reference())
     def target_c(cls, t, args):
-        ptr = cls.target_c(t.pointee().unqualified(), args)
-
-        if t.pointee().is_const():
-            return f"* const {ptr}"
-        else:
-            return f"* mut {ptr}"
+        what = cls.target_c(t.pointee().unqualified(), args)
+        return cls._pointer_to(t.pointee(), what)
 
     @rule(lambda t: t.is_record())
     def target_c(cls, t, args):
-        return t.unqualified().format(case=Id.PASCAL_CASE, quals=Id.REMOVE_QUALS)
+        return cls._record(t)
 
     @rule(lambda t: t.is_enum())
     def target_c(cls, t, args):
-        return cls._rust_c_type(t.underlying_integer_type(), args)
+        return cls._c_type_fundamental(t.underlying_integer_type())
 
     @rule(lambda t: t.is_fundamental())
     def target_c(cls, t, args):
-        return cls._rust_c_type(t, args)
+        return cls._c_type_fundamental(t)
+
+
+    @rule(lambda t: t.is_alias() and t.is_basic())
+    def target(cls, t, args):
+        return t.format(case=Id.PASCAL_CASE, quals=Id.REMOVE_QUALS)
 
     @rule(lambda t: t.is_c_string())
     def target(cls, t, args):
-        return "&'a c::CStr"
+        return "&'a CStr"
 
     @rule(lambda t: t.is_pointer())
     def target(cls, t, args):
-        return t.target_c()
+        what = cls.target(t.pointee().unqualified(), args)
+        return cls._pointer_to(t.pointee(), what)
 
     @rule(lambda t: t.is_reference())
     def target(cls, t, args):
-        ref = t.referenced().target_c()
-
-        if t.referenced().is_const():
-            return f"&'a {ref}"
-        else:
-            return f"&'a mut {ref}"
+        what = cls.target(t.referenced().unqualified(), args)
+        return cls._reference_to(t.referenced(), what)
 
     @rule(lambda t: t.is_record())
     def target(cls, t, args):
-        return t.target_c()
+        return cls._record(t)
 
     @rule(lambda t: t.is_anonymous_enum())
     def target(cls, t, args):
-        return t.underlying_integer_type().target_c()
+        return cls._rust_type_fundamental(t.underlying_integer_type())
 
     @rule(lambda t: t.is_enum())
     def target(cls, t, args):
         return t.format(case=Id.PASCAL_CASE, quals=Id.REMOVE_QUALS)
 
-    @rule(lambda t: t.is_boolean())
-    def target(cls, t, args):
-        return 'bool'
-
     @rule(lambda t: t.is_fundamental())
     def target(cls, t, args):
-        return t.target_c()
+        return cls._rust_type_fundamental(t)
+
+    @rule(lambda t: t.is_c_string())
+    def input(cls, t, args):
+        return "{interm} = {inp}.as_ptr();"
 
     @rule(lambda t: t.is_record_indirection())
     def input(cls, t, args):
         if args.p.is_self():
-            return f"{{interm}} = self as {t.target_c()};"
+            return f"{{interm}} = self as {cls.target_c(t, args)};"
 
         return "{interm} = {inp};"
 
     @rule(lambda t: t.is_record())
     def input(cls, t, args):
-        return f"{{interm}} = {{inp}} as {t.pointer_to().target_c()};"
-
-    @rule(lambda t: t.is_c_string())
-    def input(cls, t, args):
-        return "{interm} = {inp}.as_ptr();"
+        return f"{{interm}} = {{inp}} as {cls.target_c(t.pointer_to(), args)};"
 
     @rule(lambda t: t.is_anonymous_enum())
     def input(cls, t, args):
@@ -112,11 +131,11 @@ class RustTypeTranslator(TypeTranslator('rust')):
 
     @rule(lambda t: t.is_enum())
     def input(cls, t, args):
-        return f"{{interm}} = {{inp}} as {t.underlying_integer_type().target_c()};"
+        return f"{{interm}} = {{inp}} as {cls.target_c(t.underlying_integer_type(), args)};"
 
     @rule(lambda t: t.is_boolean())
     def input(cls, t, args):
-        return f"{{interm}} = {{inp}} as {t.target_c()};"
+        return f"{{interm}} = {{inp}} as {cls.target_c(t, args)};"
 
     @rule(lambda _: True)
     def input(cls, t, args):
@@ -124,7 +143,7 @@ class RustTypeTranslator(TypeTranslator('rust')):
 
     @rule(lambda t: t.is_c_string())
     def output(cls, t, args):
-        return "c::CStr::from_ptr({outp})"
+        return "CStr::from_ptr({outp})"
 
     @rule(lambda t: t.is_record_indirection())
     def output(cls, t, args):

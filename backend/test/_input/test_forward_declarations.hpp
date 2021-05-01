@@ -16,16 +16,16 @@ class Adder;
 class Adder
 {
 public:
-  int add(int a, int b);
+  int add(int a, int b) const;
 
 private:
-  int _add(int a, int b);
+  int _add(int a, int b) const;
 };
 
-int Adder::add(int a, int b)
+int Adder::add(int a, int b) const
 { return _add(a, b); }
 
-int Adder::_add(int a, int b)
+int Adder::_add(int a, int b) const
 { return a + b; }
 
 } // namespace test

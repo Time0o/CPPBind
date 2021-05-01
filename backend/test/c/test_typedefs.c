@@ -19,7 +19,8 @@ int main()
 
   {
     test_s_t s = test_s_new();
-    test_s_t s_copy = test_copy(&s);
+    test_s_ptr_t s_ptr = &s;
+    test_s_t s_copy = test_copy_s_ptr(s_ptr);
 
     test_s_delete(&s);
     test_s_delete(&s_copy);

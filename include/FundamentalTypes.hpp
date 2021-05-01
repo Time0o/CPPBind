@@ -46,7 +46,7 @@ public:
     if (TypeName.empty())
       return true;
 
-    return clang::QualType(Type, 0) == clang::QualType(get(TypeName), 0);
+    return clang::QualType(Type, 0).getCanonicalType() == clang::QualType(get(TypeName), 0);
   }
 
 private:

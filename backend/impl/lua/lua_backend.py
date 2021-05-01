@@ -141,9 +141,6 @@ class LuaBackend(Backend('lua')):
         forward_declarations = []
 
         for r in self.records():
-            if r.is_abstract():
-                continue
-
             forward_declarations.append(code(
                 f"""
                 namespace __{r.name_target()}
@@ -268,8 +265,6 @@ class LuaBackend(Backend('lua')):
 
     @staticmethod
     def _register_records(records):
-        records = [r for r in records if not r.is_abstract()]
-
         if not records:
             return "// no records"
 
@@ -287,9 +282,6 @@ class LuaBackend(Backend('lua')):
         create = []
 
         for r in records:
-            if r.is_abstract():
-                continue
-
             create.append(lua_util.createmetatable(r))
 
         return code(

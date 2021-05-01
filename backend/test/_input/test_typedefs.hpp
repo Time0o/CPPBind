@@ -16,9 +16,9 @@ inline IntTypeCommon add(int_type1 a, int_type2 b)
 { return a + b; }
 
 typedef struct S {} s_t;
-typedef s_t *s_ptr_t;
+typedef s_t const *s_ptr_t;
 
-inline s_t copy(s_ptr_t s)
+inline s_t copy_s_ptr(s_ptr_t s)
 { return *s; }
 
 } // namespace test

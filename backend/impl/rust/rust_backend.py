@@ -27,11 +27,39 @@ class RustBackend(Backend('rust')):
         self._wrapper_source = self.output_file(
             self.input_file().modified(filename='{filename}_rust', ext='.rs'))
 
-        self._wrapper_source.append("mod internal {")
-        self._wrapper_source.append(self._c_declarations())
+        self._wrapper_source.append(code(
+            """
+            #![allow(unused_imports)]
+
+            mod internal {{
+
+            {rust_typedefs}
+
+            {c_types}
+            """,
+            rust_typedefs='\n'.join(f"pub {td};" for td in self._rust_typedefs()),
+            c_types='\n'.join(f"use {t};" for t in self._c_types())))
 
     def wrap_after(self):
-        self._wrapper_source.append("} // mod internal")
+        self._wrapper_source.append(code(
+            """
+            mod c {{
+                {rust_typedef_types}
+
+                {rust_record_types}
+
+                {c_types}
+
+                {c_declarations}
+            }} // mod c
+
+            }} // mod internal
+            """,
+            rust_typedef_types='\n'.join(f"use super::{t};" for t in self._rust_typedef_types()),
+            rust_record_types='\n'.join(f"use super::{t};" for t in self._rust_record_types()),
+            c_types='\n'.join(f"use {t};" for t in self._c_types()),
+            c_declarations=self._c_declarations()))
+
         self._wrapper_source.append(self._modules_export())
 
     def wrap_definition(self, d):
@@ -45,7 +73,7 @@ class RustBackend(Backend('rust')):
                 self._wrapper_source.append(
                     f"pub const {name}: {c.type().target()} = {c.value()};")
 
-                self._modules_add(self._module(c), name)
+                self._modules_add(self._module(c.name()), name)
         else:
             enum_constants = [f"{c.name_target()} = {c.value()}"
                               for c in e.constants()]
@@ -60,19 +88,69 @@ class RustBackend(Backend('rust')):
                 enum_name=e.name_target(),
                 enum_constants=',\n'.join(enum_constants)))
 
-            self._modules_add(self._module(e), e.name_target())
+            self._modules_add(self._module(e.name()), e.name_target())
 
     def wrap_constant(self, c):
         self._wrapper_source.append(c.assign())
-        self._modules_add(self._module(c), f"get_{c.name_target(case=Id.SNAKE_CASE)}")
+        self._modules_add(self._module(c.name()), f"get_{c.name_target(case=Id.SNAKE_CASE)}")
 
     def wrap_record(self, r):
         self._wrapper_source.append(self._record_definition_rust(r))
-        self._modules_add(self._module(r), r.name_target())
+        self._modules_add(self._module(r.name()), r.name_target())
 
     def wrap_function(self, f):
         self._wrapper_source.append(self._function_definition_rust(f))
-        self._modules_add(self._module(f), f.name_target())
+        self._modules_add(self._module(f.name()), f.name_target())
+
+    def _c_lib(self):
+        return f"{self.input_file().filename()}_c"
+
+    def _c_types(self):
+        type_set = self.type_set()
+
+        if self.records():
+            type_set.add(Type('void'))
+            type_set.add(Type('char'))
+
+        type_imports = set()
+
+        for t in sorted(type_set):
+            if t.is_fundamental():
+                type_imports.add(f'std::os::raw::{t.target_c()}')
+            elif t.is_c_string():
+                type_imports.add(f'std::ffi::CStr')
+
+        return list(sorted(type_imports))
+
+    def _c_declarations(self):
+        c_declarations = []
+        c_declarations += [c.declare() for c in self.constants()]
+        c_declarations += [self._function_declaration_c(f) for f in self.functions(include_members=True)]
+
+        return code(
+            """
+            #[link(name="{c_lib}")]
+            extern "C" {{
+                {c_declarations}
+            }}
+            """,
+            c_lib=self._c_lib(),
+            c_declarations='\n'.join(c_declarations))
+
+    def _rust_typedefs(self):
+        typedefs = []
+        for a, t in self.type_aliases():
+            self._modules_add(self._module(Id(str(a))), a.target())
+
+            typedefs.append(f"type {a.target()} = {t.target()}")
+
+        return typedefs
+
+    def _rust_typedef_types(self):
+        return [a.target() for a, _ in self.type_aliases()]
+
+    def _rust_record_types(self):
+        return [r.type().target() for r in self.records()]
 
     def _record_definition_rust(self, r):
         record_name = r.name_target()
@@ -180,50 +258,6 @@ class RustBackend(Backend('rust')):
 
         return '\n\n'.join(record_definition)
 
-    def _c_lib_name(self):
-        return f"{self.input_file().filename()}_c"
-
-    def _c_types(self):
-        type_set = self.type_set()
-
-        if self.records():
-            type_set.add(Type('void'))
-            type_set.add(Type('char'))
-
-        type_imports = set()
-
-        for t in sorted(type_set):
-            if t.is_fundamental():
-                type_imports.add(f'std::os::raw::{t.target_c(scoped=False)}')
-            elif t.is_c_string():
-                type_imports.add(f'std::ffi::CStr')
-                type_imports.add(f'std::ffi::CString')
-
-        return '\n'.join(f'pub use {ti};' for ti in sorted(type_imports))
-
-    def _c_declarations(self):
-        c_declarations = []
-        c_declarations += [c.declare() for c in self.constants()]
-        c_declarations += [self._function_declaration_c(f) for f in self.functions(include_members=True)]
-
-        return code(
-            """
-            mod c {{
-                #[allow(unused_imports)]
-                use super::*;
-
-                {c_types}
-
-                #[link(name="{c_lib_name}")]
-                extern "C" {{
-                    {c_declarations}
-                }}
-            }}
-            """,
-            c_types=self._c_types(),
-            c_lib_name=self._c_lib_name(),
-            c_declarations='\n'.join(c_declarations))
-
     def _function_declaration_c(self, f):
         return f"{self._function_header_c(f)};"
 
@@ -245,7 +279,7 @@ class RustBackend(Backend('rust')):
             if t.is_record():
                 t = t.pointer_to()
 
-            return f"{p.name_target()}: {t.target_c(scoped=False)}"
+            return f"{p.name_target()}: {t.target_c()}"
 
         params = ', '.join(param_declare(p) for p in f.parameters())
 
@@ -257,7 +291,7 @@ class RustBackend(Backend('rust')):
             if return_type.is_record_indirection():
                 return_type = return_type.pointee().unqualified()
 
-            header += f" -> {return_type.target_c(scoped=False)}"
+            header += f" -> {return_type.target_c()}"
 
         return header
 
@@ -301,7 +335,7 @@ class RustBackend(Backend('rust')):
         return f.forward()
 
     def _module(self, obj):
-        return obj.name().qualifiers().format(case=Id.SNAKE_CASE, quals=Id.REPLACE_QUALS)
+        return obj.qualifiers().format(case=Id.SNAKE_CASE, quals=Id.REPLACE_QUALS)
 
     def _modules_add(self, mod, symbol):
         self._modules[mod] = self._modules.get(mod, []) + [symbol]
@@ -310,15 +344,20 @@ class RustBackend(Backend('rust')):
         mods = []
 
         for mod_name, mod_symbols in self._modules.items():
-            mod_use = [f"pub use super::internal::{s};" for s in mod_symbols]
+            if mod_name:
+                mod_use = [f"pub use super::internal::{s};" for s in mod_symbols]
 
-            mods.append(code(
-                """
-                pub mod {mod_name} {{
-                    {mod_use}
-                }} // mod {mod_name}
-                """,
-                mod_name=mod_name,
-                mod_use='\n'.join(mod_use)))
+                mods.append(code(
+                    """
+                    pub mod {mod_name} {{
+                        {mod_use}
+                    }} // mod {mod_name}
+                    """,
+                    mod_name=mod_name,
+                    mod_use='\n'.join(mod_use)))
+            else:
+                mod_use = [f"pub use self::internal::{s};" for s in mod_symbols]
+
+                mods.append('\n'.join(mod_use))
 
         return '\n\n'.join(mods)
