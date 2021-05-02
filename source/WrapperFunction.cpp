@@ -224,6 +224,10 @@ WrapperFunction::determineEnclosingNamespaces(clang::FunctionDecl const *Decl)
 }
 
 bool
+WrapperFunction::isNoexcept() const
+{ return OPT(bool, "wrap-noexcept") || isDestructor() || IsNoexcept_; }
+
+bool
 WrapperFunction::isOverloadedOperator(char const *Which,
                                       int numParameters) const
 {

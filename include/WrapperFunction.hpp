@@ -181,8 +181,7 @@ public:
   bool isConst() const
   { return IsConst_; }
 
-  bool isNoexcept() const
-  { return IsNoexcept_; }
+  bool isNoexcept() const;
 
   bool isOverloaded() const
   { return static_cast<bool>(Overload_); }

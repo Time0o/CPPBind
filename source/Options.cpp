@@ -43,6 +43,11 @@ void OptionsRegistry::init()
     };
   };
 
+  Options().add<bool>("wrap-noexcept")
+    .setDescription("Don't catch and propagate exceptions in wrapped code")
+    .setDefault(false)
+    .done();
+
   Options().add<std::string>("wrap-func-overload-postfix")
     .setDescription("Wrapper function overload postfix, "
                     "use %o to denote #overload", "postfix")
@@ -62,11 +67,6 @@ void OptionsRegistry::init()
   Options().add<std::string>("output-custom-type-translation-rules")
     .setDescription("Python script containing extra type translation rules", "path")
     .setDefault("")
-    .done();
-
-  Options().add<bool>("output-noexcept")
-    .setDescription("Don't catch and propagate exceptions in wrapped code")
-    .setDefault(false)
     .done();
 
   Options().add<std::string>("output-directory")
