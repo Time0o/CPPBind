@@ -1,3 +1,6 @@
+#ifndef GUARD_CPPBIND_C_UTIL_CC_H
+#define GUARD_CPPBIND_C_UTIL_CC_H
+
 #include <cstring>
 
 namespace cppbind
@@ -67,3 +70,5 @@ T const *struct_cast(S const *s)
 } // namespace c
 
 } // namespace cppbind
+
+#endif // GUARD_CPPBIND_C_UTIL_CC_H

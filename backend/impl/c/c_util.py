@@ -11,14 +11,6 @@ MAKE_NON_OWNING_STRUCT = f"{_NS}::make_non_owning_struct"
 STRUCT_CAST = f"{_NS}::struct_cast"
 
 
-def path_c():
-    return Path(os.path.join('cppbind', 'c', 'c_util_c.h'))
-
-
-def path_cc():
-    return Path(os.path.join('cppbind', 'c', 'c_util_cc.h'))
-
-
 def make_owning_struct_mem(s, t, mem):
     return f"{MAKE_OWNING_STRUCT_MEM}<{t}>({s}, {mem})"
 

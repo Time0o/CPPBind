@@ -60,12 +60,12 @@ def _function_destruct(self):
 
 def _function_handle_exception(self, what):
     if self.return_type().is_void():
-        return "errno = EBIND;"
+        return f"bind_error = {what};"
 
     return code(
-        """
-        errno = EBIND;
-        return {};
+        f"""
+        bind_error = {what};
+        return {{}};
         """)
 
 

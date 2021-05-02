@@ -40,7 +40,7 @@ class BackendTestGenerator:
     TEST_PATTERN = 'test_(.*)\..*'
 
     def __init__(self, **kwargs):
-        self._test_lang = kwargs['test_language']
+        self._repo_root_dir = kwargs['repo_root_dir']
 
         self._test_root_dir = kwargs['test_root_dir']
 
@@ -49,6 +49,8 @@ class BackendTestGenerator:
 
         self._test_output_root_dir = os.path.join(self._test_root_dir,
                                                   self.OUTPUT_ROOT_DIR)
+
+        self._test_lang = kwargs['test_language']
 
         single_test = kwargs.get('single_test')
 
@@ -170,9 +172,11 @@ class BackendTestGenerator:
 
     def _compile_c_test(self, test, **kwargs):
         cpp_src = self._test_wrapper(test, ext='.cc')
+        cpp_src_extra = self._generate('c_bind_error', ext='.cc')
         c_src = self._test_source(test, ext='.c')
 
-        cpp_obj = self._test_output(test, ext='_cpp.o')
+        cpp_obj = self._test_output(test, ext='_cc.o')
+        cpp_obj_extra = self._test_output('c_bind_error', ext='_cc.o')
         c_obj = self._test_output(test, ext='_c.o')
 
         test_bin = self._test_output(test, '_bin')
@@ -182,13 +186,17 @@ class BackendTestGenerator:
                       includes=[self._test_input_dir, self._test_output_dir()],
                       **kwargs)
 
+        self._compile(cpp_src_extra,
+                      cpp_obj_extra,
+                      **kwargs)
+
         self._compile(c_src,
                       c_obj,
                       includes=[self._test_output_dir()],
                       compiler='clang',
                       **kwargs)
 
-        self._link([cpp_obj, c_obj], test_bin, **kwargs)
+        self._link([cpp_obj, cpp_obj_extra, c_obj], test_bin, **kwargs)
 
     def _compile_rust_test(self, test, **kwargs):
         cpp_src = self._test_wrapper(test, ext='.cc', postfix='_c')
@@ -270,6 +278,12 @@ class BackendTestGenerator:
 
         run([kwargs['lua'], test_lua], env=env, quiet=True)
 
+    def _generate_dir(self):
+        return os.path.join(self._repo_root_dir, 'generate')
+
+    def _generate(self, file, ext):
+        return os.path.join(self._generate_dir(), 'cppbind', self._test_lang, f"{file}{ext}")
+
     def _test_source_dir(self):
         return os.path.join(self._test_root_dir, self._test_lang)
 
@@ -302,26 +316,12 @@ class BackendTestGenerator:
             '-o', obj
         ]
 
-        includes = kwargs.get('includes', []) + [kwargs['cppbind_extra_dir']]
+        includes = kwargs.get('includes', []) + [self._generate_dir()]
 
         for include in includes:
             args += ['-I', include]
 
         self._subprocess(args)
-
-    def _compile_extra(self, extra_srcs, **kwargs):
-        extra_objs = []
-
-        for extra_src in extra_srcs:
-            extra_src = os.path.join(kwargs['cppbind_extra_dir'], extra_src)
-
-            extra_stem = os.path.splitext(os.path.basename(extra_src))[0]
-            extra_obj = self._test_output(extra_stem, ext='.o')
-            extra_objs.append(extra_obj)
-
-            self._compile(extra_src, extra_obj, **kwargs)
-
-        return extra_objs
 
     @classmethod
     def _link(cls, objs, out, **kwargs):
@@ -420,6 +420,8 @@ if __name__ == '__main__':
     list_parser = sub_parsers.add_parser('list', help="list available tests")
     run_parser = sub_parsers.add_parser('run', help="run tests")
 
+    parser.add_argument('repo_root_dir', metavar='REPO_ROOT_DIR',
+                        help="repo root directory")
     parser.add_argument('test_root_dir', metavar='TEST_ROOT_DIR',
                         help="test root directory")
     parser.add_argument('test_language', choices=['c', 'rust', 'lua'],
@@ -431,8 +433,6 @@ if __name__ == '__main__':
                             help="only run specific test")
     run_parser.add_argument('--cppbind', default='cppbind',
                             help="cppbind executable")
-    run_parser.add_argument('--cppbind-extra-dir', default='.',
-                            help="cppbind extra include/source file directory")
     run_parser.add_argument('--clang', default='clang',
                             help="clang executable (C)")
     run_parser.add_argument('--clangpp', default='clang++',

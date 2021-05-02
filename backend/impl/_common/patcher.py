@@ -268,7 +268,7 @@ def _function_forward(self):
         forward_return_value=self.forward_return_value(),
         perform_return=self.perform_return())
 
-    if not Options.output_noexcept and not self.is_noexcept():
+    if not self.is_noexcept():
         forward = self.try_catch(forward)
 
     return forward

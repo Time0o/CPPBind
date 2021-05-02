@@ -35,7 +35,7 @@ class CBackend(Backend('c')):
             extern "C" {{
             #endif
 
-            {c_util_include}
+            #include "cppbind/c/c_bind_error_c.h"
 
             {typedefs}
 
@@ -44,7 +44,6 @@ class CBackend(Backend('c')):
             {record_definitions}
             """,
             header_guard=self._header_guard(),
-            c_util_include=c_util.path_c().include(),
             typedefs='\n'.join(self._typedefs()),
             record_declarations='\n'.join(self._record_declarations()),
             record_definitions='\n\n'.join(self._record_definitions('header'))))
@@ -57,9 +56,10 @@ class CBackend(Backend('c')):
             #include <stdexcept>
             #include <utility>
 
-            {input_includes}
+            #include "cppbind/c/c_bind_error_cc.h"
+            #include "cppbind/c/c_util_cc.h"
 
-            {c_util_include}
+            {input_includes}
 
             extern "C" {{
 
@@ -68,7 +68,6 @@ class CBackend(Backend('c')):
             {record_definitions}
             """,
             input_includes='\n'.join(self.includes()),
-            c_util_include=c_util.path_cc().include(),
             wrapper_header_include=self._wrapper_header.include(),
             record_definitions='\n\n'.join(self._record_definitions('source'))))
 

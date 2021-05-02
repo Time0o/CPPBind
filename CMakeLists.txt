@@ -26,7 +26,7 @@ set(DEPS_DIR ${PROJECT_SOURCE_DIR}/deps)
 set(PYBIND11_DIR ${DEPS_DIR}/pybind11)
 set(COVERAGE_DIR ${PROJECT_BINARY_DIR}/coverage)
 
-set(EXTRA_DIR ${PROJECT_SOURCE_DIR}/generate/)
+set(GENERATE_DIR ${PROJECT_SOURCE_DIR}/generate/)
 
 set(BACKEND_DIR ${PROJECT_SOURCE_DIR}/backend)
 set(BACKEND_IMPL_DIR ${BACKEND_DIR}/impl)
@@ -173,7 +173,7 @@ function(target_pybind11_config TARGET)
   # definitions
   target_compile_definitions(
     ${TARGET} PRIVATE
-      -DEXTRA_DIR="${EXTRA_DIR}"
+      -DGENERATE_DIR="${GENERATE_DIR}"
       -DBACKEND_IMPL_DIR="${BACKEND_IMPL_DIR}"
       -DBACKEND_IMPL_COMMON_DIR="${BACKEND_IMPL_COMMON_DIR}")
 
@@ -221,6 +221,7 @@ if(CMAKE_BUILD_TYPE STREQUAL Debug)
 
     execute_process(
       COMMAND ${BACKEND_TEST_RUNNER} list
+              ${PROJECT_SOURCE_DIR}
               ${BACKEND_TEST_DIR}
               ${BACKEND_LANGUAGE}
       OUTPUT_VARIABLE BACKEND_TESTS
@@ -248,7 +249,6 @@ if(CMAKE_BUILD_TYPE STREQUAL Debug)
           COMMAND ${BACKEND_TEST_RUNNER} run
                   --single-test ${BACKEND_TEST}
                   --cppbind $<TARGET_FILE:${CPPBIND}>
-                  --cppbind-extra-dir ${EXTRA_DIR}
                   --clang ${CMAKE_C_COMPILER}
                   --clangpp ${CMAKE_CXX_COMPILER}
                   --clang-common-args Wall Werror
@@ -259,6 +259,7 @@ if(CMAKE_BUILD_TYPE STREQUAL Debug)
                   --valgrind ${VALGRIND}
                   --lua ${LUA}
                   --lua-include-dir ${LUA_INCLUDE_DIR}
+                  ${PROJECT_SOURCE_DIR}
                   ${BACKEND_TEST_DIR}
                   ${BACKEND_LANGUAGE}
         )
