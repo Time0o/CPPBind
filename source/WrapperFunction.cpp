@@ -341,11 +341,13 @@ WrapperFunction::postfixParameterName(std::string &ParamName, unsigned p)
 bool
 WrapperFunction::determineIfNoexcept(clang::FunctionDecl const *Decl)
 {
-# if __clang_major__ >= 9
+#if __clang_major__ >= 9
   auto EST = Decl->getExceptionSpecType();
 #else
-  auto const *ProtoType = Decl->getType()->getAs<clang::FunctionProtoType>();
-  auto EST = ProtoType->getExceptionSpecType();
+  auto *TSI = Decl->getTypeSourceInfo();
+  clang::QualType T = TSI ? TSI->getType() : Decl->getType();
+  const auto *FPT = T->getAs<clang::FunctionProtoType>();
+  auto EST = FPT ? FPT->getExceptionSpecType() : clang::EST_None;
 #endif
 
   return EST == clang::EST_BasicNoexcept || EST == clang::EST_NoexceptTrue;

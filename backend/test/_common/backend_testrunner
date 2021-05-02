@@ -216,6 +216,7 @@ class BackendTestGenerator:
 
         self._compile(cpp_src_extra,
                       cpp_obj_extra,
+                      action=['-c', '-fPIC'],
                       **kwargs)
 
         self._subprocess(['ar', 'rcs', cpp_lib, cpp_obj, cpp_obj_extra])

@@ -2,8 +2,8 @@
 
 #include <any>
 #include <cmath>
-#include <stack>
 #include <type_traits>
+#include <vector>
 
 namespace test
 {
@@ -60,13 +60,13 @@ public:
 
   template<typename T = T_DEFAULT>
   void push(T val) noexcept
-  { _stack.push(val); }
+  { _stack.push_back(val); }
 
   template<typename T = T_DEFAULT>
   T pop() noexcept
   {
-    std::any ret(_stack.top());
-    _stack.pop();
+    std::any ret(_stack.back());
+    _stack.pop_back();
     return std::any_cast<T>(ret);
   }
 
@@ -74,7 +74,7 @@ public:
   { return _stack.empty(); }
 
 private:
-  std::stack<std::any> _stack;
+  std::vector<std::any> _stack;
 };
 
 template class AnyStack<int>;
