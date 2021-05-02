@@ -77,10 +77,13 @@ class RustTypeTranslator(TypeTranslator('rust')):
     def target_c(cls, t, args):
         return cls._c_type_fundamental(t)
 
-
     @rule(lambda t: t.is_alias() and t.is_basic())
     def target(cls, t, args):
         return t.format(case=Id.PASCAL_CASE, quals=Id.REMOVE_QUALS)
+
+    @rule(lambda t: t.is_void())
+    def target(cls, t, args):
+        return "()"
 
     @rule(lambda t: t.is_c_string())
     def target(cls, t, args):

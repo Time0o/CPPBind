@@ -73,28 +73,70 @@ def _function_forward_call(self):
 
         call = f"c::{c_name}({c_parameters})"
 
-    return self.return_type().output(outp=call)
+    call = f"{self.return_type().output(outp=call)};"
+
+    if not self.return_type().is_void():
+        call = f"let {Id.RET} = {call}"
+
+    if not self.is_noexcept():
+        call = self.try_catch(call)
+
+    return call
+
+
+def _function_perform_return(self):
+    if not self.return_type().is_void():
+        return f"{Id.RET}" if self.is_noexcept() else f"Ok({Id.RET})"
+
+
+def _function_try_catch(self, what):
+    return code(
+        """
+        c::bind_error_reset();
+
+        {what}
+
+        if !c::bind_error_what().is_null() {{
+            {handle_exception}
+        }}
+        """,
+        what=what,
+        handle_exception=self.handle_exception(
+            'CStr::from_ptr(c::bind_error_what()).to_str().unwrap().to_owned()'))
+
+
+def _function_handle_exception(self, what):
+    return f"return Err(BindError::new({what}));"
 
 
 def _function_forward(self):
-    if self.is_copy_constructor() or \
-       self.is_move_constructor() or \
-       not self.parameters():
+    if self.is_copy_constructor() or self.is_move_constructor():
         return self.forward_call()
 
-    forward = code(
-        """
-        {declare_parameters}
+    if self.parameters():
+        return code(
+            """
+            {declare_parameters}
 
-        {forward_parameters}
+            {forward_parameters}
 
-        {forward_call}
-        """,
-        declare_parameters=self.declare_parameters(),
-        forward_parameters=self.forward_parameters(),
-        forward_call=self.forward_call())
+            {forward_call}
 
-    return forward
+            {perform_return}
+            """,
+            declare_parameters=self.declare_parameters(),
+            forward_parameters=self.forward_parameters(),
+            forward_call=self.forward_call(),
+            perform_return=self.perform_return())
+    else:
+        return code(
+            """
+            {forward_call}
+
+            {perform_return}
+            """,
+            forward_call=self.forward_call(),
+            perform_return=self.perform_return())
 
 
 class RustPatcher(Patcher):
@@ -105,6 +147,9 @@ class RustPatcher(Patcher):
         self._patch(EnumConstant, 'name_target', _name(default_case=Id.PASCAL_CASE))
         self._patch(Function, 'declare_parameters', _function_declare_parameters)
         self._patch(Function, 'forward_call', _function_forward_call)
+        self._patch(Function, 'try_catch', _function_try_catch)
+        self._patch(Function, 'handle_exception', _function_handle_exception)
+        self._patch(Function, 'perform_return', _function_perform_return)
         self._patch(Function, 'forward', _function_forward)
         self._patch(Type, 'target_c', _type_target_c)
         self._patch(Type, 'target', _type_target)

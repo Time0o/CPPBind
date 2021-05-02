@@ -37,9 +37,12 @@ class RustBackend(Backend('rust')):
             {rust_use}
 
             {rust_typedefs}
+
+            {rust_bind_error}
             """,
             rust_use='\n'.join(f"use {t};" for t in self._c_types()),
-            rust_typedefs='\n'.join(f"pub {td};" for td in self._rust_typedefs())))
+            rust_typedefs='\n'.join(f"pub {td};" for td in self._rust_typedefs()),
+            rust_bind_error=self._rust_bind_error()))
 
     def wrap_after(self):
         c_use = [f"use {t};" for t in self._c_types()]
@@ -109,22 +112,24 @@ class RustBackend(Backend('rust')):
     def _c_types(self):
         type_set = self.type_set()
 
-        if self.records():
-            type_set.add(Type('void'))
-            type_set.add(Type('char'))
+        type_set.add(Type('void'))
+        type_set.add(Type('char'))
 
         type_imports = set()
 
         for t in sorted(type_set):
             if t.is_fundamental():
                 type_imports.add(f'std::os::raw::{t.target_c()}')
-            elif t.is_c_string():
-                type_imports.add(f'std::ffi::CStr')
+
+        type_imports.add(f'std::ffi::CStr')
+        type_imports.add(f'std::ffi::CString')
 
         return list(sorted(type_imports))
 
     def _c_declarations(self):
         c_declarations = []
+        c_declarations += ['pub fn bind_error_what() -> *const c_char;',
+                           'pub fn bind_error_reset();']
         c_declarations += [c.declare() for c in self.constants()]
         c_declarations += [self._function_declaration_c(f) for f in self.functions(include_members=True)]
 
@@ -201,6 +206,32 @@ class RustBackend(Backend('rust')):
     def _rust_typedef_types(self):
         return [a.target() for a, _ in self.type_aliases()]
 
+    def _rust_bind_error(self):
+        if all(f.is_noexcept() for f in self.functions(include_members=True)):
+            return None
+
+        return code(
+            """
+            use std::fmt;
+
+            #[derive(Debug, Clone)]
+            pub struct BindError {
+                pub what: String
+            }
+
+            impl BindError {
+                pub fn new(what: String) -> Self {
+                    Self { what }
+                }
+            }
+
+            impl fmt::Display for BindError {
+                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                    write!(f, "{}", self.what)
+                }
+            }
+            """)
+
     def _rust_record_types(self):
         return [r.type().target() for r in self.records()]
 
@@ -252,44 +283,45 @@ class RustBackend(Backend('rust')):
             record_members='\n\n'.join(record_members)))
 
         if r.is_copyable():
-            record_clone = []
+            pass # TODO
+            #record_clone = []
 
-            record_clone.append(code(
-                """
-                fn clone(&self) -> {record_type} {{
-                    unsafe {{
-                        {record_clone}
-                    }}
-                }}
-                """,
-                record_type=record_type,
-                record_clone=r.copy_constructor().forward()))
+            #record_clone.append(code(
+            #    """
+            #    fn clone(&self) -> {record_type} {{
+            #        unsafe {{
+            #            {record_clone}
+            #        }}
+            #    }}
+            #    """,
+            #    record_type=record_type,
+            #    record_clone=r.copy_constructor().forward()))
 
-            copy_assign = r.copy_assignment_operator()
+            #copy_assign = r.copy_assignment_operator()
 
-            if copy_assign is not None:
-                other = copy_assign.parameters()[1]
+            #if copy_assign is not None:
+            #    other = copy_assign.parameters()[1]
 
-                record_clone.append(code(
-                    """
-                    fn clone_from<'a>(&mut self, {record_other}) {{
-                        unsafe {{
-                            {record_clone_from};
-                        }}
-                    }}
-                    """,
-                    record_other=f"{other.name_target()}: {other.type().target()}",
-                    record_clone_from=copy_assign.forward()))
+            #    record_clone.append(code(
+            #        """
+            #        fn clone_from<'a>(&mut self, {record_other}) {{
+            #            unsafe {{
+            #                {record_clone_from};
+            #            }}
+            #        }}
+            #        """,
+            #        record_other=f"{other.name_target()}: {other.type().target()}",
+            #        record_clone_from=copy_assign.forward()))
 
-            record_definition.append(code(
-                """
-                impl Clone for {record_name} {{
-                    {record_clone}
-                }}
-                """,
-                record_name=record_name,
-                record_type=record_type,
-                record_clone='\n\n'.join(record_clone)))
+            #record_definition.append(code(
+            #    """
+            #    impl Clone for {record_name} {{
+            #        {record_clone}
+            #    }}
+            #    """,
+            #    record_name=record_name,
+            #    record_type=record_type,
+            #    record_clone='\n\n'.join(record_clone)))
 
         if r.is_moveable():
             pass # XXX
@@ -300,7 +332,7 @@ class RustBackend(Backend('rust')):
                 impl Drop for {record_name} {{
                     fn drop(&mut self) {{
                         unsafe {{
-                            {record_destruct};
+                            {record_destruct}
                         }}
                     }}
                 }}
@@ -335,17 +367,9 @@ class RustBackend(Backend('rust')):
 
         params = ', '.join(param_declare(p) for p in f.parameters())
 
-        header = f"pub fn {name}({params})"
+        return_annotation = self._function_return_c(f)
 
-        return_type = f.return_type()
-
-        if not return_type.is_void():
-            if return_type.is_record_indirection():
-                return_type = return_type.pointee().unqualified()
-
-            header += f" -> {return_type.target_c()}"
-
-        return header
+        return f"pub fn {name}({params}){return_annotation}"
 
     def _function_header_rust(self, f):
         name = f.name_target()
@@ -371,17 +395,34 @@ class RustBackend(Backend('rust')):
 
         params = ', '.join(param_declare(p) for p in f.parameters())
 
-        header = f"pub unsafe fn {name}({params})"
+        return_annotation = self._function_return_rust(f)
 
+        return f"pub unsafe fn {name}({params}){return_annotation}"
+
+    def _function_return_c(self, f):
         return_type = f.return_type()
 
-        if not return_type.is_void():
-            if return_type.is_record_indirection():
-                return_type = return_type.pointee().unqualified()
+        if return_type.is_void():
+            return ""
 
-            header += f" -> {return_type.target()}"
+        if return_type.is_record_indirection():
+            return_type = return_type.pointee().unqualified()
 
-        return header
+        return f" -> {return_type.target_c()}"
+
+    def _function_return_rust(self, f):
+        return_type = f.return_type()
+
+        if return_type.is_void() and f.is_noexcept():
+            return ""
+
+        if return_type.is_record_indirection():
+            return_type = return_type.pointee().unqualified()
+
+        if f.is_noexcept():
+            return f" -> {return_type.target()}"
+
+        return f" -> Result<{return_type.target()}, BindError>"
 
     def _function_body_rust(self, f):
         return f.forward()
