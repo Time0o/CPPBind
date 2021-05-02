@@ -1,14 +1,14 @@
 namespace test
 {
 
-int add(int, int);
+int add(int, int) noexcept;
 
-int add(int a, int b)
+int add(int a, int b) noexcept
 { return a + b; }
 
-int add(int, int, int);
+int add(int, int, int) noexcept;
 
-int add(int a, int b, int c)
+int add(int a, int b, int c) noexcept
 { return a + b + c; }
 
 class Adder;
@@ -16,16 +16,18 @@ class Adder;
 class Adder
 {
 public:
-  int add(int a, int b) const;
+  Adder() noexcept = default;
+
+  int add(int a, int b) const noexcept;
 
 private:
-  int _add(int a, int b) const;
+  int _add(int a, int b) const noexcept;
 };
 
-int Adder::add(int a, int b) const
+int Adder::add(int a, int b) const noexcept
 { return _add(a, b); }
 
-int Adder::_add(int a, int b) const
+int Adder::_add(int a, int b) const noexcept
 { return a + b; }
 
 } // namespace test

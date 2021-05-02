@@ -1,19 +1,19 @@
 namespace test
 {
 
-void AFunc() {}
-void FuncB() {}
+void AFunc() noexcept {}
+void FuncB() noexcept {}
 
-void Func1() {}
-void TooFunc2Furious() {}
+void Func1() noexcept {}
+void TooFunc2Furious() noexcept {}
 
-void FooBAR() {}
-void BARFoo() {}
+void FooBAR() noexcept {}
+void BARFoo() noexcept {}
 
-void L4() {}
-void L4Re() {}
-void L4virtio() {}
-void l4_func() {}
+void L4() noexcept {}
+void L4Re() noexcept {}
+void L4virtio() noexcept {}
+void l4_func() noexcept {}
 
 // XXX mixed snake and pascal case
 

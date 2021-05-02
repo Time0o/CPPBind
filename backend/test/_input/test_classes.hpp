@@ -25,37 +25,37 @@ struct ImplicitlyNonConstructible
 class AClass
 {
 public:
-  AClass()
+  AClass() noexcept
   : _state(0)
   {}
 
-  AClass(int initial_state)
+  AClass(int initial_state) noexcept
   : _state(initial_state)
   { ++_num_created; }
 
-  ~AClass()
+  ~AClass() noexcept
   { ++_num_destroyed; }
 
-  static void set_static_state(int state)
+  static void set_static_state(int state) noexcept
   { _static_state = state; }
 
-  static int get_static_state()
+  static int get_static_state() noexcept
   { return _static_state; }
 
-  static int get_num_created()
+  static int get_num_created() noexcept
   { return _num_created; }
 
-  static int get_num_destroyed()
+  static int get_num_destroyed() noexcept
   { return _num_destroyed; }
 
-  void set_state(int state)
+  void set_state(int state) noexcept
   { set_state_private(state); }
 
-  int get_state() const
+  int get_state() const noexcept
   { return _state; }
 
 private:
-  void set_state_private(int state)
+  void set_state_private(int state) noexcept
   { _state = state; }
 
   int _state;
@@ -69,15 +69,15 @@ private:
 class CopyableClass
 {
 public:
-  CopyableClass(int state)
+  CopyableClass(int state) noexcept
   : _state(state)
   {}
 
-  CopyableClass(CopyableClass const &other)
+  CopyableClass(CopyableClass const &other) noexcept
   : _state(other._state)
   { ++_num_copied; }
 
-  CopyableClass &operator=(CopyableClass const &other)
+  CopyableClass &operator=(CopyableClass const &other) noexcept
   {
     _state = other._state;
     ++_num_copied;
@@ -87,13 +87,13 @@ public:
   CopyableClass(CopyableClass &&other) = delete;
   void operator=(CopyableClass &&other) = delete;
 
-  static int get_num_copied()
+  static int get_num_copied() noexcept
   { return _num_copied; }
 
-  void set_state(int state)
+  void set_state(int state) noexcept
   { _state = state; }
 
-  int get_state() const
+  int get_state() const noexcept
   { return _state; }
 
 private:
@@ -105,30 +105,30 @@ private:
 class MoveableClass
 {
 public:
-  MoveableClass(int state)
+  MoveableClass(int state) noexcept
   : _state(state)
   {}
 
   MoveableClass(MoveableClass const &other) = delete;
   MoveableClass &operator=(MoveableClass const &other) = delete;
 
-  MoveableClass(MoveableClass &&other)
+  MoveableClass(MoveableClass &&other) noexcept
   : _state(other._state)
   { ++_num_moved; }
 
-  void operator=(MoveableClass &&other)
+  void operator=(MoveableClass &&other) noexcept
   {
     _state = other._state;
     ++_num_moved;
   }
 
-  static int get_num_moved()
+  static int get_num_moved() noexcept
   { return _num_moved; }
 
-  void set_state(int state)
+  void set_state(int state) noexcept
   { _state = state; }
 
-  int get_state() const
+  int get_state() const noexcept
   { return _state; }
 
 private:
@@ -140,24 +140,24 @@ private:
 class ClassParameter
 {
 public:
-  ClassParameter(int state)
+  ClassParameter(int state) noexcept
   : _state(state)
   {}
 
-  ClassParameter(ClassParameter const &other)
+  ClassParameter(ClassParameter const &other) noexcept
   { *this = other; }
 
-  ClassParameter &operator=(ClassParameter const &other)
+  ClassParameter &operator=(ClassParameter const &other) noexcept
   {
     assert(_copyable);
     _state = other._state;
     return *this;
   }
 
-  ClassParameter(ClassParameter &&other)
+  ClassParameter(ClassParameter &&other) noexcept
   { *this = std::move(other); }
 
-  void operator=(ClassParameter &&other)
+  void operator=(ClassParameter &&other) noexcept
   {
     if (_moveable) {
       _state = other._state;
@@ -168,19 +168,19 @@ public:
     }
   }
 
-  static void set_copyable(bool val)
+  static void set_copyable(bool val) noexcept
   { _copyable = val; }
 
-  static void set_moveable(bool val)
+  static void set_moveable(bool val) noexcept
   { _moveable = val; }
 
-  bool was_moved() const
+  bool was_moved() const noexcept
   { return _moved; }
 
-  void set_state(int state)
+  void set_state(int state) noexcept
   { _state = state; }
 
-  int get_state() const
+  int get_state() const noexcept
   { return _state; }
 
 private:
@@ -193,7 +193,7 @@ private:
 
 // value parameters
 inline ClassParameter add_class(ClassParameter a,
-                                ClassParameter const b)
+                                ClassParameter const b) noexcept
 {
   a.set_state(a.get_state() + b.get_state());
   return a;
@@ -201,7 +201,7 @@ inline ClassParameter add_class(ClassParameter a,
 
 // pointer parameters
 inline ClassParameter const *add_class_pointer(ClassParameter *a,
-                                               ClassParameter const *b)
+                                               ClassParameter const *b) noexcept
 {
   a->set_state(a->get_state() + b->get_state());
   return a;
@@ -209,14 +209,14 @@ inline ClassParameter const *add_class_pointer(ClassParameter *a,
 
 // lvalue reference parameters
 inline ClassParameter const &add_class_lvalue_ref(ClassParameter &a,
-                                                  ClassParameter const &b)
+                                                  ClassParameter const &b) noexcept
 {
   a.set_state(a.get_state() + b.get_state());
   return a;
 }
 
 // rvalue reference parameters
-inline void noop_class_rvalue_ref(ClassParameter &&a)
+inline void noop_class_rvalue_ref(ClassParameter &&a) noexcept
 { ClassParameter b(std::move(a)); }
 
 } // namespace test

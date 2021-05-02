@@ -3,36 +3,46 @@ namespace test
 
 struct Base1
 {
-  virtual ~Base1() = default;
+  Base1() noexcept = default;
 
-  virtual int func1() const
+  virtual ~Base1() noexcept = default;
+
+  virtual int func1() const noexcept
   { return 1; }
 };
 
 struct Base2 : public Base1
 {
-  virtual ~Base2() = default;
+  Base2() noexcept = default;
 
-  virtual int func2() const
+  virtual ~Base2() noexcept = default;
+
+  virtual int func2() const noexcept
   { return 2; }
 };
 
 struct BaseAbstract
 {
-  virtual ~BaseAbstract() = default;
+  BaseAbstract() noexcept = default;
 
-  virtual bool func_abstract() const = 0;
+  virtual ~BaseAbstract() noexcept = default;
+
+  virtual bool func_abstract() const noexcept = 0;
 };
 
 struct BaseProtected
 {
-  bool func_protected() const
+  BaseProtected() noexcept = default;
+
+  bool func_protected() const noexcept
   { return true; }
 };
 
 struct BasePrivate
 {
-  bool func_private() const
+  BasePrivate() noexcept = default;
+
+  bool func_private() const noexcept
   { return true; }
 };
 
@@ -41,10 +51,12 @@ struct Derived : public Base2,
                  protected BaseProtected,
                  private BasePrivate
 {
-  int func2() const override
+  Derived() noexcept = default;
+
+  int func2() const noexcept override
   { return 3; }
 
-  bool func_abstract() const override
+  bool func_abstract() const noexcept override
   { return true; }
 };
 

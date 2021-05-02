@@ -13,21 +13,26 @@ public:
       V
     };
 
+    NestedPublic() noexcept = default;
+
     struct NestedNestedPublic
     {};
+
   private:
     struct NestedNestedPrivate
     {};
   };
 
-  static void func(NestedPublic const *, NestedPublic::T, NestedPublic::E) {}
+  Toplevel() noexcept = default;
+
+  static void func(NestedPublic const *, NestedPublic::T, NestedPublic::E) noexcept {}
 
 private:
   struct NestedPrivate
   {};
 };
 
-inline void func()
+inline void func() noexcept
 {
   struct Local
   {};
