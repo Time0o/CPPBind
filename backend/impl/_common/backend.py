@@ -251,6 +251,9 @@ class BackendGeneric(metaclass=BackendMeta):
 
         return functions
 
+    def functions_can_throw(self):
+        return any(not f.is_noexcept() for f in self.functions(include_members=True))
+
     @abstractmethod
     def patcher(self):
         pass

@@ -28,6 +28,13 @@ class RustBackend(Backend('rust')):
         self._wrapper_source = self.output_file(
             self.input_file().modified(filename='{filename}_rust', ext='.rs'))
 
+        rust_use = [f"use {t};" for t in self._c_types()]
+
+        if self.functions_can_throw():
+            rust_use += ["use rust_bind_error::BindError;"]
+
+        rust_typedefs = [f"pub {td};" for td in self._rust_typedefs()]
+
         self._wrapper_source.append(code(
             """
             #![allow(unused_imports)]
@@ -37,12 +44,9 @@ class RustBackend(Backend('rust')):
             {rust_use}
 
             {rust_typedefs}
-
-            {rust_bind_error}
             """,
-            rust_use='\n'.join(f"use {t};" for t in self._c_types()),
-            rust_typedefs='\n'.join(f"pub {td};" for td in self._rust_typedefs()),
-            rust_bind_error=self._rust_bind_error()))
+            rust_use='\n'.join(rust_use),
+            rust_typedefs='\n'.join(rust_typedefs)))
 
     def wrap_after(self):
         c_use = [f"use {t};" for t in self._c_types()]
@@ -205,32 +209,6 @@ class RustBackend(Backend('rust')):
 
     def _rust_typedef_types(self):
         return [a.target() for a, _ in self.type_aliases()]
-
-    def _rust_bind_error(self):
-        if all(f.is_noexcept() for f in self.functions(include_members=True)):
-            return None
-
-        return code(
-            """
-            use std::fmt;
-
-            #[derive(Debug, Clone)]
-            pub struct BindError {
-                pub what: String
-            }
-
-            impl BindError {
-                pub fn new(what: String) -> Self {
-                    Self { what }
-                }
-            }
-
-            impl fmt::Display for BindError {
-                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                    write!(f, "{}", self.what)
-                }
-            }
-            """)
 
     def _rust_record_types(self):
         return [r.type().target() for r in self.records()]

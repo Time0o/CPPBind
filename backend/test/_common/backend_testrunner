@@ -200,13 +200,15 @@ class BackendTestGenerator:
 
     def _compile_rust_test(self, test, **kwargs):
         cpp_src = self._test_output(test, ext='_c.cc')
-        cpp_src_extra = self._generate('c_bind_error', ext='.cc', lang='c')
+        cpp_bind_error_src = self._generate('c_bind_error', ext='.cc', lang='c')
+
         cpp_obj = self._test_output(test, ext='_c.o')
-        cpp_obj_extra = self._test_output('c_bind_error', ext='.o')
+        cpp_bind_error_obj = self._test_output('c_bind_error', ext='.o')
         cpp_lib = self._test_output(test, ext='_c.a', prefix='lib')
 
         rust_wrap_src = self._test_output(test, ext='_rust.rs')
         rust_test_src = self._test_source(test, ext='.rs')
+        rust_bind_error_src = self._generate('rust_bind_error', ext='.rs')
 
         self._compile(cpp_src,
                       cpp_obj,
@@ -214,12 +216,12 @@ class BackendTestGenerator:
                       action=['-c', '-fPIC'],
                       **kwargs)
 
-        self._compile(cpp_src_extra,
-                      cpp_obj_extra,
+        self._compile(cpp_bind_error_src,
+                      cpp_bind_error_obj,
                       action=['-c', '-fPIC'],
                       **kwargs)
 
-        self._subprocess(['ar', 'rcs', cpp_lib, cpp_obj, cpp_obj_extra])
+        self._subprocess(['ar', 'rcs', cpp_lib, cpp_obj, cpp_bind_error_obj])
 
         class TmpLnk:
             def __init__(_self, src, target_dir):
@@ -234,7 +236,9 @@ class BackendTestGenerator:
             def __exit__(_self, type, value, traceback):
                 self._subprocess(['rm', _self._target_lnk])
 
-        with TmpLnk(rust_wrap_src, self._test_source_dir()):
+        with TmpLnk(rust_wrap_src, self._test_source_dir()), \
+             TmpLnk(rust_bind_error_src, self._test_source_dir()):
+
             self._subprocess(['rustc', rust_test_src,
                               '--deny', 'warnings',
                               '-A', 'dead_code',

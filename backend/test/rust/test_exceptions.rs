@@ -1,3 +1,5 @@
+mod rust_bind_error;
+
 mod test_exceptions_rust;
 use test_exceptions_rust::*;
 
