@@ -390,15 +390,12 @@ class RustBackend(Backend('rust')):
 
             return f"{p.name_target()}: {t.target()}"
 
-        RustTypeTranslator._lifetimes = []
-
         params = ', '.join(param_declare(p) for p in f.parameters())
 
         return_annotation = self._function_return_rust(f)
 
-        if RustTypeTranslator._lifetimes:
-            name = f"{name}<{', '.join(RustTypeTranslator._lifetimes)}>"
-
+        if '&' in return_annotation:
+            name = f"{name}<'a>"
 
         return f"pub unsafe fn {name}({params}){return_annotation}"
 
@@ -422,10 +419,14 @@ class RustBackend(Backend('rust')):
         if return_type.is_record_indirection():
             return_type = return_type.pointee().unqualified()
 
-        if f.is_noexcept():
-            return f" -> {return_type.target()}"
+        return_type = return_type.target()
 
-        return f" -> Result<{return_type.target()}, BindError>"
+        return_type = return_type.replace('&', "&'a")
+
+        if f.is_noexcept():
+            return f" -> {return_type}"
+
+        return f" -> Result<{return_type}, BindError>"
 
     def _function_body_rust(self, f):
         return f.forward()
