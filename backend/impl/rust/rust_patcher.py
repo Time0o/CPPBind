@@ -101,8 +101,7 @@ def _function_try_catch(self, what):
         }}
         """,
         what=what,
-        handle_exception=self.handle_exception(
-            "c_str_to_string(c::bind_error_what())"))
+        handle_exception=self.handle_exception("c::bind_error_what()"))
 
 
 def _function_handle_exception(self, what):

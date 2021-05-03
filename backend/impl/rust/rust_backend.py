@@ -44,12 +44,9 @@ class RustBackend(Backend('rust')):
             {rust_use}
 
             {rust_typedefs}
-
-            {rust_util}
             """,
             rust_use='\n'.join(rust_use),
-            rust_typedefs='\n'.join(rust_typedefs),
-            rust_util=self._rust_util()))
+            rust_typedefs='\n'.join(rust_typedefs)))
 
     def wrap_after(self):
         c_use = [f"use {t};" for t in self._c_types()]
@@ -149,14 +146,6 @@ class RustBackend(Backend('rust')):
             """,
             c_lib=self._c_lib(),
             c_declarations='\n'.join(c_declarations))
-
-    def _rust_util(self):
-        return code(
-            """
-            unsafe fn c_str_to_string(c_str: * const c_char) -> String {
-                CStr::from_ptr(c_str).to_str().unwrap().to_owned()
-            }
-            """)
 
     def _rust_module(self):
         return f"{self.input_file().filename()}_rust"
