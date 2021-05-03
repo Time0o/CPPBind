@@ -102,7 +102,7 @@ def _function_try_catch(self, what):
         """,
         what=what,
         handle_exception=self.handle_exception(
-            'CStr::from_ptr(c::bind_error_what()).to_str().unwrap().to_owned()'))
+            "c_str_to_string(c::bind_error_what())"))
 
 
 def _function_handle_exception(self, what):
