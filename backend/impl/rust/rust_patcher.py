@@ -61,11 +61,20 @@ def _function_forward_call(self):
     c_name = self.name_target(quals=Id.REPLACE_QUALS)
 
     if self.is_copy_constructor():
-        c_type = self.parent().type().with_const().pointer_to().target_c()
+        c_type_self = self.parent().type().with_const().pointer_to().target_c()
 
-        call = f"c::{c_name}(self as {c_type})"
+        return f"c::{c_name}(self as {c_type_self})"
+
+    elif self.is_copy_assignment_operator():
+        c_type_self = self.parent().type().pointer_to().target_c()
+        c_type_other = self.parent().type().with_const().pointer_to().target_c()
+
+        return f"c::{c_name}(self as {c_type_self}, other as {c_type_other});"
 
     elif self.is_move_constructor():
+        pass # XXX
+
+    elif self.is_move_assignment_operator():
         pass # XXX
 
     else:
@@ -73,10 +82,10 @@ def _function_forward_call(self):
 
         call = f"c::{c_name}({c_parameters})"
 
-    call = f"{self.return_type().output(outp=call)};"
+    call = f"{self.return_type().output(outp=call)}"
 
     if not self.return_type().is_void():
-        call = f"let {Id.RET} = {call}"
+        call = f"let {Id.RET} = {call};"
 
     if not self.is_noexcept():
         call = self.try_catch(call)
@@ -109,7 +118,10 @@ def _function_handle_exception(self, what):
 
 
 def _function_forward(self):
-    if self.is_copy_constructor() or self.is_move_constructor():
+    if self.is_copy_constructor() or \
+       self.is_copy_assignment_operator() or \
+       self.is_move_constructor() or \
+       self.is_move_assignment_operator():
         return self.forward_call()
 
     if self.parameters():

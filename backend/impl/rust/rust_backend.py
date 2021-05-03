@@ -261,45 +261,44 @@ class RustBackend(Backend('rust')):
             record_members='\n\n'.join(record_members)))
 
         if r.is_copyable():
-            pass # TODO
-            #record_clone = []
+            record_clone = []
 
-            #record_clone.append(code(
-            #    """
-            #    fn clone(&self) -> {record_type} {{
-            #        unsafe {{
-            #            {record_clone}
-            #        }}
-            #    }}
-            #    """,
-            #    record_type=record_type,
-            #    record_clone=r.copy_constructor().forward()))
+            record_clone.append(code(
+                """
+                fn clone(&self) -> {record_type} {{
+                    unsafe {{
+                        {record_clone}
+                    }}
+                }}
+                """,
+                record_type=record_type,
+                record_clone=r.copy_constructor().forward()))
 
-            #copy_assign = r.copy_assignment_operator()
+            copy_assign = r.copy_assignment_operator()
 
-            #if copy_assign is not None:
-            #    other = copy_assign.parameters()[1]
+            if copy_assign is not None:
+                other = copy_assign.parameters()[1]
 
-            #    record_clone.append(code(
-            #        """
-            #        fn clone_from(&mut self, {record_other}) {{
-            #            unsafe {{
-            #                {record_clone_from};
-            #            }}
-            #        }}
-            #        """,
-            #        record_other=f"{other.name_target()}: {other.type().target()}",
-            #        record_clone_from=copy_assign.forward()))
+                record_clone.append(code(
+                    """
+                    fn clone_from(&mut self, other: &Self) {{
+                        unsafe {{
+                            {record_clone_from}
+                        }}
+                    }}
+                    """,
+                    record_other=f"{other.name_target()}: {other.type().target()}",
+                    record_clone_from=copy_assign.forward()))
 
-            #record_definition.append(code(
-            #    """
-            #    impl Clone for {record_name} {{
-            #        {record_clone}
-            #    }}
-            #    """,
-            #    record_name=record_name,
-            #    record_type=record_type,
-            #    record_clone='\n\n'.join(record_clone)))
+            record_definition.append(code(
+                """
+                impl Clone for {record_name} {{
+                    {record_clone}
+                }}
+                """,
+                record_name=record_name,
+                record_type=record_type,
+                record_clone='\n\n'.join(record_clone)))
 
         if r.is_moveable():
             pass # XXX
