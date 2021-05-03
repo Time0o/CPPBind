@@ -30,7 +30,7 @@ class RustBackend(Backend('rust')):
 
         rust_use = [f"use {t};" for t in self._c_types()]
 
-        if self.functions_can_throw():
+        if not self._rust_is_noexcept():
             rust_use += ["use rust_bind_error::BindError;"]
 
         rust_typedefs = [f"pub {td};" for td in self._rust_typedefs()]
@@ -330,6 +330,19 @@ class RustBackend(Backend('rust')):
                 record_destruct=r.destructor().forward()))
 
         return '\n\n'.join(record_definition)
+
+    def _rust_is_noexcept(self):
+        for f in self.functions(include_members=True):
+            if (f.is_copy_constructor() or \
+                f.is_copy_assignment_operator() or \
+                f.is_move_constructor() or \
+                f.is_move_assignment_operator()):
+                continue
+
+            if not f.is_noexcept():
+                return False
+
+        return True
 
     def _function_declaration_c(self, f):
         return f"{self._function_header_c(f)};"

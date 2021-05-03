@@ -16,7 +16,9 @@ public:
     NestedPublic() noexcept = default;
 
     struct NestedNestedPublic
-    {};
+    {
+      NestedNestedPublic() noexcept = default;
+    };
 
   private:
     struct NestedNestedPrivate

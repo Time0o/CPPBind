@@ -7,7 +7,9 @@ namespace test
 {
 
 struct Trivial
-{};
+{
+  Trivial() noexcept = default;
+};
 
 struct NonConstructible
 {

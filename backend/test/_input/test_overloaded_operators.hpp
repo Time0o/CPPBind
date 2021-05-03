@@ -77,6 +77,8 @@ struct ClassWithCallableMember
 
   struct Sum
   {
+    Sum() noexcept = default;
+
     int operator()(int a, int b) const noexcept
     { return a + b; }
   } sum;
