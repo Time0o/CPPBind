@@ -55,10 +55,14 @@ class RustTypeTranslator(TypeTranslator('rust')):
 
     @classmethod
     def _reference_to(cls, t, what):
+        cls._lifetimes.append(f"'_{len(cls._lifetimes)}")
+
+        ref = f"&{cls._lifetimes[-1]}"
+
         if t.is_const():
-            return f"&'a {what}"
+            return f"{ref} {what}"
         else:
-            return f"&'a mut {what}"
+            return f"{ref} mut {what}"
 
     @rule(lambda t: t.is_pointer() or t.is_reference())
     def target_c(cls, t, args):
@@ -87,7 +91,7 @@ class RustTypeTranslator(TypeTranslator('rust')):
 
     @rule(lambda t: t.is_c_string())
     def target(cls, t, args):
-        return "&'a CStr"
+        return cls._reference_to(t.pointee(), "CStr")
 
     @rule(lambda t: t.is_pointer())
     def target(cls, t, args):

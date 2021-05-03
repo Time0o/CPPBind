@@ -293,7 +293,7 @@ class RustBackend(Backend('rust')):
 
             #    record_clone.append(code(
             #        """
-            #        fn clone_from<'a>(&mut self, {record_other}) {{
+            #        fn clone_from(&mut self, {record_other}) {{
             #            unsafe {{
             #                {record_clone_from};
             #            }}
@@ -376,11 +376,6 @@ class RustBackend(Backend('rust')):
     def _function_header_rust(self, f):
         name = f.name_target()
 
-        has_lifetime = lambda t: t.is_reference() or t.is_record or t.is_c_string()
-
-        if any(has_lifetime(p.type()) for p in f.parameters()) or has_lifetime(f.return_type()):
-            name = f"{name}<'a>"
-
         def param_declare(p):
             t = p.type()
 
@@ -395,9 +390,15 @@ class RustBackend(Backend('rust')):
 
             return f"{p.name_target()}: {t.target()}"
 
+        RustTypeTranslator._lifetimes = []
+
         params = ', '.join(param_declare(p) for p in f.parameters())
 
         return_annotation = self._function_return_rust(f)
+
+        if RustTypeTranslator._lifetimes:
+            name = f"{name}<{', '.join(RustTypeTranslator._lifetimes)}>"
+
 
         return f"pub unsafe fn {name}({params}){return_annotation}"
 
