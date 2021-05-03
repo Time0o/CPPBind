@@ -4,7 +4,28 @@ use test_overloaded_operators_rust::*;
 fn main() {
     unsafe {
 
-    // XXX integer
+    {
+        let mut i1 = test::Integer::new(2);
+        assert!(i1.deref() == 2);
+
+        let mut i2 = test::Integer::new(3);
+        assert!(i2.deref() == 3);
+
+        let i3 = test::mult(&i1, &i2);
+        assert!(i3.deref() == 6);
+
+        let i1_inc = test::Integer::inc_pre(&mut i1);
+        assert!(i1_inc.deref() == 3);
+        assert!(i1.deref() == 3);
+
+        let i2_inc = test::Integer::inc_post(&mut i2);
+        assert!(i2_inc.deref() == 3);
+        assert!(i2.deref() == 4);
+
+        let i0 = test::Integer::new(0);
+        assert!(!i0.cast_bool());
+        assert!(i1.cast_bool());
+    }
 
     {
         let mut pointer = test::Pointer::new(1);
