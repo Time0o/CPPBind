@@ -64,7 +64,11 @@ def _function_perform_return(self):
 
 
 def _function_handle_exception(self, what):
-    return f"return luaL_error(L, {what});"
+    return f"lua_pushstring(L, {what});"
+
+
+def _function_finalize_exception(self):
+    return f"return lua_error(L);"
 
 
 class LuaPatcher(Patcher):
@@ -74,3 +78,4 @@ class LuaPatcher(Patcher):
         self._patch(Function, 'declare_return_value', _function_declare_return_value)
         self._patch(Function, 'perform_return', _function_perform_return)
         self._patch(Function, 'handle_exception', _function_handle_exception)
+        self._patch(Function, 'finalize_exception', _function_finalize_exception)

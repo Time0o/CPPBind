@@ -284,15 +284,21 @@ def _function_try_catch(self, what):
         }} catch (...) {{
           {unknown_except}
         }}
+
+        {finalize_except}
         """,
         what=what,
         std_except=self.handle_exception("__e.what()"),
-        unknown_except=self.handle_exception('"exception"'))
-
+        unknown_except=self.handle_exception('"exception"'),
+        finalize_except=self.finalize_exception())
 
 
 def _function_handle_exception(self, what):
     return f"throw std::runtime_error({what});"
+
+
+def _function_finalize_exception(self):
+    pass
 
 
 class Patcher:
@@ -335,6 +341,7 @@ class Patcher:
         Function.forward = _function_forward
         Function.try_catch = _function_try_catch
         Function.handle_exception = _function_handle_exception
+        Function.finalize_exception = _function_finalize_exception
 
         Constant.name_target = _name(default_case=Id.SNAKE_CASE_CAP_ALL)
 
