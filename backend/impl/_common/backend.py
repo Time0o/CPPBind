@@ -141,6 +141,7 @@ class BackendGeneric(metaclass=BackendMeta):
                 while t.is_pointer() or t.is_reference():
                     if t.pointee().is_void():
                         self._types.add(t.pointee().unqualified())
+                        break
                     else:
                         t = t.pointee()
                         self._types.add(t.unqualified())
