@@ -223,7 +223,7 @@ class CBackend(Backend('c')):
         for p in f.parameters():
             t = p.type()
             if t.is_record():
-                t = t.pointer_to()
+                t = t.with_const().pointer_to()
 
             parameters.append(f"{t.target()} {p.name_target()}")
 

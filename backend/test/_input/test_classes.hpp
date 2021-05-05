@@ -195,7 +195,7 @@ private:
 
 // value parameters
 inline ClassParameter add_class(ClassParameter a,
-                                ClassParameter const b) noexcept
+                                ClassParameter b) noexcept
 {
   a.set_state(a.get_state() + b.get_state());
   return a;

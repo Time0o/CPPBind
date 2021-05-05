@@ -69,7 +69,7 @@ def _function_declare_parameters(self):
         decl_type = p.type()
 
         if decl_type.is_record():
-            decl_type = decl_type.pointer_to()
+            decl_type = decl_type.with_const().pointer_to()
         elif decl_type.is_reference():
             decl_type = decl_type.referenced().pointer_to()
 

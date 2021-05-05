@@ -119,16 +119,16 @@ class RustTypeTranslator(TypeTranslator('rust')):
     def input(cls, t, args):
         return "{interm} = {inp}.as_ptr();"
 
+    @rule(lambda t: t.is_record())
+    def input(cls, t, args):
+        return f"{{interm}} = {{inp}} as {cls.target_c(t.with_const().pointer_to(), args)};"
+
     @rule(lambda t: t.is_record_indirection())
     def input(cls, t, args):
         if args.p.is_self():
             return f"{{interm}} = self as {cls.target_c(t, args)};"
 
         return "{interm} = {inp};"
-
-    @rule(lambda t: t.is_record())
-    def input(cls, t, args):
-        return f"{{interm}} = {{inp}} as {cls.target_c(t.pointer_to(), args)};"
 
     @rule(lambda t: t.is_anonymous_enum())
     def input(cls, t, args):

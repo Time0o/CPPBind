@@ -351,7 +351,7 @@ class RustBackend(Backend('rust')):
         def param_declare(p):
             t = p.type()
             if t.is_record():
-                t = t.pointer_to()
+                t = t.with_const().pointer_to()
 
             return f"{p.name_target()}: {t.target_c()}"
 
@@ -374,7 +374,7 @@ class RustBackend(Backend('rust')):
                 return "&mut self"
 
             elif t.is_record():
-                t = t.lvalue_reference_to()
+                t = t.with_const().lvalue_reference_to()
 
             return f"{p.name_target()}: {t.target()}"
 

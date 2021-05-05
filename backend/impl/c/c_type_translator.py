@@ -84,7 +84,7 @@ class CTypeTranslator(TypeTranslator('c')):
 
     @rule(lambda t: t.is_record())
     def input(cls, t, args):
-        return cls._c_input_assert(c_util.struct_cast(t, '{inp}'),
+        return cls._c_input_assert(c_util.struct_cast(t.with_const(), '{inp}'),
                                    ["assert({inp}->is_initialized);"])
 
     @rule(lambda t: t.is_record_indirection())
