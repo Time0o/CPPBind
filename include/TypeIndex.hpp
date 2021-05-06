@@ -1,13 +1,16 @@
 #ifndef GUARD_TYPE_INDEX_H
 #define GUARD_TYPE_INDEX_H
 
-#include <deque>
 #include <set>
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/graph/labeled_graph.hpp"
+
+#include "WrapperRecord.hpp"
+#include "WrapperType.hpp"
 
 namespace cppbind
 {
@@ -15,34 +18,23 @@ namespace cppbind
 class TypeIndex
 {
 public:
-  void addProto(std::string const &Type);
+  void addDeclaration(WrapperRecord const *Record);
+  void addDefinition(WrapperRecord const *Record);
 
-  template<typename IT>
-  void add(std::string const &Type, IT BasesFirst, IT BasesLast)
-  {
-    addProto(Type);
+  void clearDefinitions();
 
-    auto [_, New] = S_.insert(Type);
-    if (!New)
-      return;
+  bool hasDeclaration(WrapperRecord const *Record) const;
+  bool hasDeclaration(WrapperType const &Type) const;
 
-    addVertex(Type);
+  bool hasDefinition(WrapperRecord const *Record) const;
+  bool hasDefinition(WrapperType const &Type) const;
 
-    for (auto It = BasesFirst; It != BasesLast; ++It) {
-      auto BaseType(*It);
+  std::optional<WrapperRecord const *> getRecord(WrapperType const &Type) const;
 
-      if (has(BaseType))
-        addEdge(Type, *It);
-    }
-  }
+  std::vector<WrapperRecord const *> getBases(WrapperRecord const *Record,
+                                              bool Recursive = false) const;
 
-  bool hasProto(std::string const &Type) const;
-
-  bool has(std::string const &Type) const;
-
-  std::deque<std::string> bases(std::string const &Type, bool Recursive = false) const;
-
-  std::deque<std::string> basesFirstOrdering() const;
+  std::vector<WrapperRecord const *> getBasesFirstOrdering() const;
 
 private:
   using Graph = boost::adjacency_list<boost::vecS,
@@ -55,8 +47,9 @@ private:
   void addVertex(std::string const &Type);
   void addEdge(std::string const &SourceType, std::string const &TargetType);
 
-  std::unordered_set<std::string> SProto_;
-  std::set<std::string> S_;
+  std::unordered_map<std::string, WrapperRecord const *> Records_;
+  std::unordered_set<std::string> Declarations_;
+  std::set<std::string> Definitions_;
 
   LabeledGraph G_;
 };

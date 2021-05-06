@@ -1,10 +1,10 @@
 #include <cassert>
 #include <deque>
-#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
+#include "CompilerState.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
 #include "Logging.hpp"
@@ -28,14 +28,17 @@ namespace
 namespace cppbind
 {
 
+Wrapper::Wrapper()
+{ CompilerState().types()->clearDefinitions(); }
+
 void
 Wrapper::overload()
 {
   for (auto &Wr : Records_)
-    Wr.overload(II_);
+    Wr.overload(CompilerState().identifiers());
 
   for (auto &Wf : Functions_)
-    Wf.overload(II_);
+    Wf.overload(CompilerState().identifiers());
 }
 
 std::vector<WrapperInclude const *>
@@ -71,17 +74,7 @@ Wrapper::getRecords() const
 {
   std::vector<WrapperRecord const *> Records;
 
-  for (auto Type : TI_->basesFirstOrdering()) {
-    auto It(RecordTypesMangled_.find(Type));
-    if (It == RecordTypesMangled_.end())
-      continue;
-
-    auto const *Record(It->second);
-
-    Records.push_back(Record);
-  }
-
-  return Records;
+  return CompilerState().types()->getBasesFirstOrdering();
 }
 
 bool
@@ -94,7 +87,8 @@ Wrapper::_addWrapperConstant(WrapperConstant *Constant)
   if (!checkTypeWrapped(Constant->getType()))
     return false;
 
-  II_->addDefinition(Constant->getName(), IdentifierIndex::CONST);
+  CompilerState().identifiers()->addDefinition(Constant->getName(),
+                                               IdentifierIndex::CONST);
 
   return true;
 }
@@ -130,10 +124,13 @@ Wrapper::_addWrapperFunction(WrapperFunction *Function)
   if (It == FunctionNames_.end()) {
     FunctionNames_[FunctionNameTemplated].push_back(Function);
 
-    if (Function->isDefinition())
-      II_->addDefinition(FunctionNameTemplated, IdentifierIndex::FUNC);
-    else
-      II_->addDeclaration(FunctionNameTemplated, IdentifierIndex::FUNC);
+    if (Function->isDefinition()) {
+      CompilerState().identifiers()->addDefinition(FunctionNameTemplated,
+                                                   IdentifierIndex::FUNC);
+    } else {
+      CompilerState().identifiers()->addDeclaration(FunctionNameTemplated,
+                                                    IdentifierIndex::FUNC);
+    }
 
     return true;
   }
@@ -141,7 +138,8 @@ Wrapper::_addWrapperFunction(WrapperFunction *Function)
     if (*Prev == *Function) {
       assert(!Prev->isDefinition() && Function->isDefinition());
 
-      II_->addDefinition(FunctionNameTemplated, IdentifierIndex::FUNC);
+      CompilerState().identifiers()->addDefinition(FunctionNameTemplated,
+                                                   IdentifierIndex::FUNC);
 
       return false;
     }
@@ -149,12 +147,15 @@ Wrapper::_addWrapperFunction(WrapperFunction *Function)
 
   FunctionNames_[FunctionNameTemplated].push_back(Function);
 
-  if (Function->isDefinition())
-    II_->addDefinition(FunctionNameTemplated, IdentifierIndex::FUNC);
-  else
-    II_->addDeclaration(FunctionNameTemplated, IdentifierIndex::FUNC);
+  if (Function->isDefinition()) {
+    CompilerState().identifiers()->addDefinition(FunctionNameTemplated,
+                                                 IdentifierIndex::FUNC);
+  } else {
+    CompilerState().identifiers()->addDeclaration(FunctionNameTemplated,
+                                                  IdentifierIndex::FUNC);
+  }
 
-  II_->pushOverload(FunctionNameTemplated);
+  CompilerState().identifiers()->pushOverload(FunctionNameTemplated);
 
   return true;
 }
@@ -168,25 +169,18 @@ Wrapper::_addWrapperRecord(WrapperRecord *Record)
   if (!Record->isDefinition()) {
     log::debug("not a definition");
 
-    II_->addDeclaration(RecordNameTemplated, IdentifierIndex::RECORD);
-    TI_->addProto(RecordTypeMangled);
+    CompilerState().identifiers()->addDeclaration(RecordNameTemplated,
+                                                  IdentifierIndex::RECORD);
+
+    CompilerState().types()->addDeclaration(Record);
 
     return false;
   }
 
-  std::deque<std::string> BaseTypesMangled;
-  for (auto const &BaseType : Record->getType().baseTypes()) {
-    auto BaseTypeMangled(BaseType.mangled());
-    BaseTypesMangled.push_back(BaseTypeMangled);
+  CompilerState().identifiers()->addDefinition(RecordNameTemplated,
+                                               IdentifierIndex::RECORD);
 
-    auto It(RecordTypesMangled_.find(BaseTypeMangled));
-    if (It != RecordTypesMangled_.end())
-      Record->getBases().push_back(It->second);
-  }
-
-  II_->addDefinition(RecordNameTemplated, IdentifierIndex::RECORD);
-  TI_->add(RecordTypeMangled, BaseTypesMangled.begin(), BaseTypesMangled.end());
-  RecordTypesMangled_[RecordTypeMangled] = Record;
+  CompilerState().types()->addDefinition(Record);
 
   auto &Functions(Record->getFunctions());
 
@@ -217,7 +211,7 @@ Wrapper::typeWrapped(WrapperType const &Type) const
 
   RecordType = RecordType.withoutConst();
 
-  return TI_->hasProto(RecordType.mangled());
+  return CompilerState().types()->hasDeclaration(RecordType);
 }
 
 bool

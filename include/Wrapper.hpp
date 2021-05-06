@@ -2,17 +2,14 @@
 #define GUARD_WRAPPER_H
 
 #include <deque>
-#include <memory>
 #include <optional>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include "Identifier.hpp"
-#include "IdentifierIndex.hpp"
 #include "Logging.hpp"
 #include "Options.hpp"
-#include "TypeIndex.hpp"
 #include "WrapperConstant.hpp"
 #include "WrapperDefinition.hpp"
 #include "WrapperEnum.hpp"
@@ -27,11 +24,7 @@ namespace cppbind
 class Wrapper
 {
 public:
-  Wrapper(std::shared_ptr<IdentifierIndex> II,
-          std::shared_ptr<TypeIndex> TI)
-  : II_(II),
-    TI_(TI)
-  {}
+  Wrapper();
 
   template<typename ...ARGS>
   void addInclude(ARGS &&...Args)
@@ -115,10 +108,6 @@ private:
   std::unordered_map<Identifier, std::deque<WrapperFunction const *>> FunctionNames_;
 
   std::deque<WrapperRecord> Records_;
-  std::unordered_map<std::string, WrapperRecord const *> RecordTypesMangled_;
-
-  std::shared_ptr<IdentifierIndex> II_;
-  std::shared_ptr<TypeIndex> TI_;
 };
 
 } // namespace cppbind

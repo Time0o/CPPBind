@@ -7,8 +7,6 @@
 #include "clang/AST/Type.h"
 #include "clang/Basic/SourceLocation.h"
 
-#include "CompilerState.hpp"
-
 namespace cppbind
 {
 

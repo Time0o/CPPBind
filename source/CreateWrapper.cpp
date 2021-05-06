@@ -11,7 +11,6 @@
 #include "ClangUtil.hpp"
 #include "FundamentalTypes.hpp"
 #include "Identifier.hpp"
-#include "IdentifierIndex.hpp"
 #include "Logging.hpp"
 #include "Options.hpp"
 #include "String.hpp"
@@ -257,7 +256,7 @@ CreateWrapperFrontendAction::beforeProcessing()
 {
   InputFile_ = CompilerState().currentFile(ORIG_INPUT_FILE);
 
-  Wrapper_ = std::make_shared<Wrapper>(II_, TI_);
+  Wrapper_ = std::make_shared<Wrapper>();
 }
 
 void
@@ -278,6 +277,6 @@ CreateWrapperFrontendAction::afterProcessing()
 
 std::unique_ptr<clang::tooling::FrontendActionFactory>
 CreateWrapperToolRunner::makeFactory() const
-{ return makeFactoryWithArgs<CreateWrapperFrontendAction>(II_, TI_); }
+{ return makeFactoryWithArgs<CreateWrapperFrontendAction>(); }
 
 } // namespace cppbind

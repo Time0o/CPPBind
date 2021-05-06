@@ -21,6 +21,10 @@ CompilerStateRegistry::updateFileEntry(std::string const &File)
 }
 
 void
+CompilerStateRegistry::updateCompilerInstance(clang::CompilerInstance const &CI)
+{ CI_ = CI; }
+
+void
 CompilerStateRegistry::updateFile(std::string const &File)
 {
   TmpFile_ = File;
@@ -79,6 +83,20 @@ CompilerStateRegistry::inCurrentFile(InputFile IF,
   }
 
   return false;
+}
+
+clang::CompilerInstance const &
+CompilerStateRegistry::operator*() const
+{
+  assert(CI_);
+  return CI_->get();
+}
+
+clang::CompilerInstance const *
+CompilerStateRegistry::operator->() const
+{
+  assert(CI_);
+  return &CI_->get();
 }
 
 } // namespace cppbind
