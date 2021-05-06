@@ -84,6 +84,13 @@ class CTypeTranslator(TypeTranslator('c')):
 
     @rule(lambda t: t.is_record())
     def input(cls, t, args):
+        if t.proxy_for() is not None:
+            return code(
+                f"""
+                auto _{{interm}} = {t}({{inp}});
+                {{interm}} = &_{{interm}};
+                """)
+
         return cls._c_input_assert(c_util.struct_cast(t.with_const(), '{inp}'),
                                    ["assert({inp}->is_initialized);"])
 

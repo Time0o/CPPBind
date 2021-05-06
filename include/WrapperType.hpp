@@ -59,6 +59,7 @@ public:
   bool isScopedEnum() const;
   bool isAnonymousEnum() const;
   bool isIntegral() const;
+  bool isSigned() const;
   bool isFloating() const;
   bool isCString() const;
   bool isReference() const;
@@ -73,10 +74,10 @@ public:
   bool isConst() const;
 
   WrapperType canonical() const;
+  std::vector<WrapperType> baseTypes() const;
+  std::optional<WrapperType> proxyFor();
 
   std::vector<std::string> templateArguments() const;
-
-  std::vector<WrapperType> baseTypes() const;
 
   WrapperType lvalueReferenceTo() const;
   WrapperType rvalueReferenceTo() const;
@@ -132,7 +133,11 @@ private:
 
   clang::QualType Type_;
   std::vector<clang::QualType> BaseTypes_;
+
   std::size_t Size_;
+
+  std::optional<bool> IsProxy_;
+  std::optional<clang::QualType> ProxyFor_;
 
   std::optional<std::string> Template_;
   std::optional<TemplateArgumentList> TemplateArgumentList_;

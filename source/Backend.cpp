@@ -181,6 +181,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_scoped_enum", &Type::isScopedEnum)
     .def("is_anonymous_enum", &Type::isAnonymousEnum)
     .def("is_integral", &Type::isIntegral)
+    .def("is_signed", &Type::isSigned)
     .def("is_floating", &Type::isFloating)
     .def("is_c_string", &Type::isCString)
     .def("is_reference", &Type::isReference)
@@ -193,6 +194,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_struct", &Type::isStruct)
     .def("is_record_indirection", &Type::isRecordIndirection,
          "recursive"_a = false)
+    .def("proxy_for", &Type::proxyFor)
     .def("canonical", &Type::canonical)
     .def("template_arguments", &Type::templateArguments)
     .def("base_types", &Type::baseTypes)
@@ -272,6 +274,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_destructor", &Function::isDestructor)
     .def("is_static", &Function::isStatic)
     .def("is_const", &Function::isConst)
+    .def("is_constexpr", &Function::isConstexpr)
     .def("is_noexcept", &Function::isNoexcept)
     .def("is_overloaded_operator", &Function::isOverloadedOperator,
          "which"_a = nullptr,
@@ -299,6 +302,8 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
          py::return_value_policy::reference_internal)
     .def("constructors", &Record::getConstructors,
          py::return_value_policy::reference_internal)
+    .def("default_constructor", &Record::getDefaultConstructor,
+         py::return_value_policy::reference_internal)
     .def("copy_constructor", &Record::getCopyConstructor,
          py::return_value_policy::reference_internal)
     .def("copy_assignment_operator", &Record::getCopyAssignmentOperator,
@@ -312,7 +317,8 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("template_argument_list", &Record::getTemplateArgumentList)
     .def("is_abstract", &Record::isAbstract)
     .def("is_copyable", &Record::isCopyable)
-    .def("is_moveable", &Record::isMoveable);
+    .def("is_moveable", &Record::isMoveable)
+    .def("is_template_instantiation", &Record::isTemplateInstantiation);
 
   #define RO_PROP(NAME, VALUE) \
     .def_property_readonly_static(NAME, [](py::object const &){ return VALUE; })

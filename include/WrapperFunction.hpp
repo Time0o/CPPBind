@@ -181,6 +181,9 @@ public:
   bool isConst() const
   { return IsConst_; }
 
+  bool isConstexpr() const
+  { return IsConstexpr_; }
+
   bool isNoexcept() const;
 
   bool isOverloaded() const
@@ -236,6 +239,7 @@ private:
   bool IsDestructor_ = false;
   bool IsStatic_ = false;
   bool IsConst_ = false;
+  bool IsConstexpr_ = false;
   bool IsNoexcept_ = false;
 
   std::optional<TemplateArgumentList> TemplateArgumentList_;

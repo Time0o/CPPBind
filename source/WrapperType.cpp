@@ -15,6 +15,7 @@
 #include "String.hpp"
 #include "TemplateArgument.hpp"
 #include "WrapperType.hpp"
+#include "WrapperRecord.hpp"
 
 namespace cppbind
 {
@@ -124,6 +125,10 @@ WrapperType::isIntegral() const
 }
 
 bool
+WrapperType::isSigned() const
+{ return type()->isSignedIntegerType(); }
+
+bool
 WrapperType::isFloating() const
 { return type()->isFloatingType(); }
 
@@ -166,6 +171,66 @@ WrapperType::isRecordIndirection(bool Recursive) const
 bool
 WrapperType::isConst() const
 { return type().isConstQualified(); }
+
+std::optional<WrapperType>
+WrapperType::proxyFor()
+{
+  if (!IsProxy_) {
+    auto Record(CompilerState().types()->getRecord(unqualified()));
+    if (!Record) {
+      IsProxy_ = false;
+      return std::nullopt;
+    }
+
+    std::size_t NumConstructors = (*Record)->getConstructors().size();
+    std::size_t NumDefaultConstructors = !!(*Record)->getDefaultConstructor();
+
+    if (NumConstructors - NumDefaultConstructors == 0) {
+      IsProxy_ = false;
+      return std::nullopt;
+    }
+
+    std::optional<WrapperType> ProxyType;
+
+    for (auto const *Constructor : (*Record)->getConstructors()) {
+      if (Constructor->isCopyConstructor() || Constructor->isMoveConstructor())
+        continue;
+
+      auto const &Params(Constructor->getParameters());
+
+      if (Params.size() == 0)
+        continue;
+
+      if (!Constructor->isConstexpr() || Params.size() != 1) {
+        IsProxy_ = false;
+        return std::nullopt;
+      }
+
+      auto NextProxyType(Params[0].getType());
+
+      if (!ProxyType) {
+        ProxyType = NextProxyType;
+      } else {
+        if (NextProxyType.isSigned() != ProxyType->isSigned()) {
+          IsProxy_ = false;
+          return std::nullopt;
+        }
+
+        if (NextProxyType.size() > ProxyType->size()) {
+          ProxyType = NextProxyType;
+        }
+      }
+    }
+
+    IsProxy_ = true;
+    ProxyFor_ = ProxyType->type();
+  }
+
+  if (*IsProxy_)
+    return WrapperType(*ProxyFor_);
+
+  return std::nullopt;
+}
 
 WrapperType
 WrapperType::canonical() const

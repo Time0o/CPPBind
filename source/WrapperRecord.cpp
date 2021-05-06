@@ -78,6 +78,17 @@ WrapperRecord::getConstructors() const
 }
 
 std::optional<WrapperFunction const *>
+WrapperRecord::getDefaultConstructor() const
+{
+  for (auto const &F : Functions_) {
+    if (F.isConstructor() && F.getParameters().empty())
+      return &F;
+  }
+
+  return std::nullopt;
+}
+
+std::optional<WrapperFunction const *>
 WrapperRecord::getCopyConstructor() const
 {
   for (auto const &F : Functions_) {

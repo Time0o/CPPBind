@@ -59,6 +59,7 @@ public:
   { return Functions_; }
 
   std::deque<WrapperFunction const *> getConstructors() const;
+  std::optional<WrapperFunction const *> getDefaultConstructor() const;
   std::optional<WrapperFunction const *> getCopyConstructor() const;
   std::optional<WrapperFunction const *> getCopyAssignmentOperator() const;
   std::optional<WrapperFunction const *> getMoveConstructor() const;

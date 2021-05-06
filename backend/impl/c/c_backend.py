@@ -223,7 +223,10 @@ class CBackend(Backend('c')):
         for p in f.parameters():
             t = p.type()
             if t.is_record():
-                t = t.with_const().pointer_to()
+                if t.proxy_for() is not None:
+                    t = t.proxy_for()
+                else:
+                    t = t.with_const().pointer_to()
 
             parameters.append(f"{t.target()} {p.name_target()}")
 

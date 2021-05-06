@@ -97,6 +97,7 @@ WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
   IsDestructor_(llvm::isa<clang::CXXDestructorDecl>(Decl)),
   IsStatic_(Decl->isStatic()),
   IsConst_(Decl->isConst()),
+  IsConstexpr_(Decl->isConstexpr()),
   IsNoexcept_(determineIfNoexcept(Decl)),
   TemplateArgumentList_(determineTemplateArgumentList(Decl)),
   OverloadedOperator_(determineOverloadedOperator(Decl))
