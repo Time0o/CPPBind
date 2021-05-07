@@ -110,8 +110,7 @@ class LuaBackend(Backend('lua')):
             """,
             function_definition=self._function_definition(f)))
 
-    @staticmethod
-    def _lua_includes():
+    def _lua_includes(self):
         lua_includes = ['lua.h', 'lauxlib.h']
 
         if Options.lua_include_dir:
@@ -134,8 +133,7 @@ class LuaBackend(Backend('lua')):
 
         return lua_includes
 
-    @classmethod
-    def _function_definition(cls, f):
+    def _function_definition(self, f):
         return code(
             """
             {header}
@@ -143,30 +141,27 @@ class LuaBackend(Backend('lua')):
               {body}
             }}
             """,
-            header=cls._function_header(f),
-            body=cls._function_body(f))
+            header=self._function_header(f),
+            body=self._function_body(f))
 
-    @classmethod
-    def _function_definitions(cls, functions):
-        return '\n\n'.join(map(cls._function_definition, functions))
+    def _function_definitions(self, functions):
+        return '\n\n'.join(map(self._function_definition, functions))
 
-    @classmethod
-    def _function_header(cls, f):
+    def _function_header(self, f):
         return f"int {f.name_target()}(lua_State *L)"
 
-    @classmethod
-    def _function_body(cls, f):
+    # XXX patch?
+    def _function_body(self, f):
         return code(
             """
             {check_num_parameters}
 
             {forward}
             """,
-            check_num_parameters=cls._function_check_num_parameters(f),
+            check_num_parameters=self._function_check_num_parameters(f),
             forward=f.forward())
 
-    @staticmethod
-    def _function_check_num_parameters(f):
+    def _function_check_num_parameters(self, f):
         num_min = sum(1 for p in f.parameters() if p.default_argument() is None)
         num_max = len(f.parameters())
 
@@ -186,8 +181,7 @@ class LuaBackend(Backend('lua')):
     def _module_name(self):
         return self.input_file().filename()
 
-    @classmethod
-    def _register(cls, constants=[], functions=[], records=[]):
+    def _register(self, constants=[], functions=[], records=[]):
         return code(
             f"""
             void __register(lua_State *L)
@@ -201,19 +195,17 @@ class LuaBackend(Backend('lua')):
               {{register_records}}
             }}}}
             """,
-            register_constants=cls._register_constants(constants),
-            register_functions=cls._register_functions(functions),
-            register_records=cls._register_records(records))
+            register_constants=self._register_constants(constants),
+            register_functions=self._register_functions(functions),
+            register_records=self._register_records(records))
 
-    @classmethod
-    def _register_constants(cls, constants):
+    def _register_constants(self, constants):
         if not constants:
             return "// no constants"
 
         return '\n\n'.join(c.assign() for c in constants)
 
-    @staticmethod
-    def _register_functions(functions):
+    def _register_functions(self, functions):
         if not functions:
             return "// no functions"
 
@@ -234,8 +226,7 @@ class LuaBackend(Backend('lua')):
             """,
             function_entries=',\n'.join(map(function_entry, functions)))
 
-    @staticmethod
-    def _register_records(records):
+    def _register_records(self, records):
         if not records:
             return "// no records"
 
@@ -248,8 +239,7 @@ class LuaBackend(Backend('lua')):
 
         return '\n\n'.join(map(register_record, records))
 
-    @staticmethod
-    def _create_metatables(records):
+    def _create_metatables(self, records):
         create = []
 
         for r in records:
