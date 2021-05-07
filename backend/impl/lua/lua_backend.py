@@ -154,28 +154,33 @@ class LuaBackend(Backend('lua')):
         return self.input_file().filename()
 
     def _register(self, constants=[], functions=[], records=[]):
+        table_num_functions = len(functions)
+
+        table_register = []
+
+        if constants:
+            table_register += self._register_constants(constants)
+
+        if functions:
+            table_register += [self._register_functions(functions)]
+
+        if records:
+            table_register += self._register_records(records)
+
         return code(
-            f"""
+            """
             void __register(lua_State *L)
-            {{{{
-              lua_createtable(L, 0, {len(functions)});
+            {{
+              lua_createtable(L, 0, {table_num_functions});
 
-              {{register_constants}}
-
-              {{register_functions}}
-
-              {{register_records}}
-            }}}}
+              {table_register}
+            }}
             """,
-            register_constants=self._register_constants(constants),
-            register_functions=self._register_functions(functions),
-            register_records=self._register_records(records))
+            table_num_functions=table_num_functions,
+            table_register='\n\n'.join(table_register))
 
     def _register_constants(self, constants):
-        if not constants:
-            return "// no constants"
-
-        return '\n\n'.join(c.assign() for c in constants)
+        return [c.assign() for c in constants]
 
     def _register_functions(self, functions):
         if not functions:
@@ -183,9 +188,11 @@ class LuaBackend(Backend('lua')):
 
         def function_entry(f):
             if f.is_member():
-                return f'{{"{f.name_target(quals=Id.REMOVE_QUALS)}", {f.name_target()}}}'
+                entry = f.name_target(quals=Id.REMOVE_QUALS)
             else:
-                return f'{{"{f.name_target()}", {f.name_target()}}}'
+                entry = f.name_target()
+
+            return f'{{"{entry}", {f.name_target()}}}'
 
         return code(
             """
@@ -199,9 +206,6 @@ class LuaBackend(Backend('lua')):
             function_entries=',\n'.join(map(function_entry, functions)))
 
     def _register_records(self, records):
-        if not records:
-            return "// no records"
-
         def register_record(r):
             return code(
                 f"""
@@ -209,7 +213,7 @@ class LuaBackend(Backend('lua')):
                 lua_setfield(L, -2, "{r.name_target()}");
                 """)
 
-        return '\n\n'.join(map(register_record, records))
+        return map(register_record, records)
 
     def _create_metatables(self, records):
         create = []
