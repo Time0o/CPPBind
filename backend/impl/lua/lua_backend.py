@@ -142,41 +142,13 @@ class LuaBackend(Backend('lua')):
             }}
             """,
             header=self._function_header(f),
-            body=self._function_body(f))
+            body=f.forward())
 
     def _function_definitions(self, functions):
         return '\n\n'.join(map(self._function_definition, functions))
 
     def _function_header(self, f):
         return f"int {f.name_target()}(lua_State *L)"
-
-    # XXX patch?
-    def _function_body(self, f):
-        return code(
-            """
-            {check_num_parameters}
-
-            {forward}
-            """,
-            check_num_parameters=self._function_check_num_parameters(f),
-            forward=f.forward())
-
-    def _function_check_num_parameters(self, f):
-        num_min = sum(1 for p in f.parameters() if p.default_argument() is None)
-        num_max = len(f.parameters())
-
-        if num_min == num_max:
-            return code(
-                f"""
-                if (lua_gettop(L) != {num_min})
-                  return luaL_error(L, "function expects {num_min} arguments");
-                """)
-
-        return code(
-            f"""
-            if (lua_gettop(L) < {num_min} || lua_gettop(L) > {num_max})
-              return luaL_error(L, "function expects between {num_min} and {num_max} arguments");
-            """)
 
     def _module_name(self):
         return self.input_file().filename()

@@ -58,6 +58,10 @@ def _constant_assign(self):
     return self.type().output(args=args).format(outp=self.name(), interm=self.name_target())
 
 
+def _function_check_parameters(self):
+    pass
+
+
 def _function_declare_parameters(self):
     if not self.parameters:
         return
@@ -249,6 +253,8 @@ def _function_perform_return(self):
 def _function_forward(self):
     forward = code(
         """
+        {check_parameters}
+
         {declare_parameters}
 
         {forward_parameters}
@@ -261,6 +267,7 @@ def _function_forward(self):
 
         {perform_return}
         """,
+        check_parameters=self.check_parameters(),
         declare_parameters=self.declare_parameters(),
         forward_parameters=self.forward_parameters(),
         forward_call=self.forward_call(),
@@ -325,6 +332,7 @@ class Patcher:
         Constant.declare = _constant_declare
         Constant.assign = _constant_assign
 
+        Function.check_parameters = _function_check_parameters
         Function.declare_parameters = _function_declare_parameters
         Function.forward_parameters = _function_forward_parameters
         Function.call = _function_call
