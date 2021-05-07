@@ -40,14 +40,11 @@ class LuaBackend(Backend('lua')):
 
             namespace
             {{
-
-            {forward_declarations}
             """,
             lua_includes=self._lua_includes(),
             input_includes='\n'.join(self.includes()),
             type_info_include=type_info.path().include(),
             type_info_type_instances=type_info.type_instances(),
-            forward_declarations=self._function_forward_declarations(),
             lua_util_include=lua_util.path().include()))
 
     def wrap_after(self):
@@ -136,32 +133,6 @@ class LuaBackend(Backend('lua')):
                 lua_includes=lua_includes)
 
         return lua_includes
-
-    def _function_forward_declarations(self):
-        forward_declarations = []
-
-        for r in self.records():
-            forward_declarations.append(code(
-                f"""
-                namespace __{r.name_target()}
-                {{{{
-
-                {{function_declarations}}
-
-                }}}} // namespace __{r.name_target()}
-                """,
-                function_declarations=self._function_declarations(
-                    [f for f in r.functions() if not f.is_destructor()])))
-
-        return '\n\n'.join(forward_declarations)
-
-    @classmethod
-    def _function_declaration(cls, f):
-        return f"int {f.name_target()}(lua_State *L);"
-
-    @classmethod
-    def _function_declarations(cls, functions):
-        return '\n'.join(map(cls._function_declaration, functions))
 
     @classmethod
     def _function_definition(cls, f):
