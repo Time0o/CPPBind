@@ -41,7 +41,9 @@ public:
 
   void overload(std::shared_ptr<IdentifierIndex> II);
 
-  Identifier getName(bool WithTemplatePostfix = false) const;
+  Identifier getName() const;
+
+  Identifier getFormat(bool WithTemplatePostfix = false) const;
 
   WrapperType getType() const
   { return Type_; }

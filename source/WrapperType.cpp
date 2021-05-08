@@ -52,6 +52,14 @@ bool
 WrapperType::operator<(WrapperType const &Other) const
 { return str() < Other.str(); }
 
+Identifier
+WrapperType::getName() const
+{ return Identifier(base().str()); }
+
+std::size_t
+WrapperType::getSize() const
+{ return Size_; }
+
 bool
 WrapperType::isBasic() const
 { return print::qualType(type(), print::QUALIFIED_POLICY).find(' ') == std::string::npos; }
@@ -172,6 +180,14 @@ bool
 WrapperType::isConst() const
 { return type().isConstQualified(); }
 
+WrapperType
+WrapperType::base() const
+{ return pointee(true).unqualified(); }
+
+WrapperType
+WrapperType::canonical() const
+{ return WrapperType(type().getCanonicalType()); }
+
 std::optional<WrapperType>
 WrapperType::proxyFor()
 {
@@ -216,7 +232,7 @@ WrapperType::proxyFor()
           return std::nullopt;
         }
 
-        if (NextProxyType.size() > ProxyType->size()) {
+        if (NextProxyType.getSize() > ProxyType->getSize()) {
           ProxyType = NextProxyType;
         }
       }
@@ -230,36 +246,6 @@ WrapperType::proxyFor()
     return WrapperType(*ProxyFor_);
 
   return std::nullopt;
-}
-
-WrapperType
-WrapperType::canonical() const
-{ return WrapperType(type().getCanonicalType()); }
-
-std::vector<std::string>
-WrapperType::templateArguments() const
-{
-  std::vector<std::string> TArgs;
-  TArgs.reserve(TemplateArgumentList_->size());
-
-  for (auto const &TA : *TemplateArgumentList_)
-    TArgs.push_back(TA.str());
-
-  return TArgs;
-}
-
-std::vector<WrapperType>
-WrapperType::baseTypes() const
-{
-  assert(isRecord());
-
-  std::vector<WrapperType> BaseTypes;
-  BaseTypes.reserve(BaseTypes_.size());
-
-  for (auto const &Type : BaseTypes_)
-    BaseTypes.emplace_back(Type);
-
-  return BaseTypes;
 }
 
 WrapperType
@@ -330,13 +316,9 @@ WrapperType::withoutConst() const
   return WrapperType(TypeCopy);
 }
 
-std::size_t
-WrapperType::size() const
-{ return Size_; }
-
 std::string
-WrapperType::str(bool WithTemplatePostfix) const
-{ return format(WithTemplatePostfix); }
+WrapperType::str() const
+{ return format(); }
 
 std::string
 WrapperType::format(bool WithTemplatePostfix,
@@ -354,7 +336,7 @@ WrapperType::format(bool WithTemplatePostfix,
     StrReplace = Str;
 
   } else {
-    WrapperType BaseType(pointee(true).unqualified());
+    WrapperType BaseType(base());
 
     StrBase = print::qualType(BaseType.type(), print::QUALIFIED_POLICY);
 

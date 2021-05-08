@@ -116,12 +116,11 @@ public:
 
   void overload(std::shared_ptr<IdentifierIndex> II);
 
-  Identifier getName(bool WithTemplatePostfix = false,
-                     bool WithoutOperatorName = false,
-                     bool WithOverloadPostfix = false) const;
+  Identifier getName() const;
 
-  std::deque<Identifier> const &getEnclosingNamespaces() const
-  { return EnclosingNamespaces_; }
+  Identifier getFormat(bool WithTemplatePostfix = false,
+                       bool WithOverloadPostfix = false,
+                       bool WithoutOperatorName = false) const;
 
   std::optional<WrapperParameter const *> getThis() const
   {
@@ -201,9 +200,6 @@ private:
   static Identifier
   determineName(clang::FunctionDecl const *Decl);
 
-  static std::deque<Identifier>
-  determineEnclosingNamespaces(clang::FunctionDecl const *Decl);
-
   static WrapperType
   determineReturnType(clang::FunctionDecl const *Decl);
 
@@ -225,7 +221,6 @@ private:
   WrapperRecord const *Parent_ = nullptr;
 
   Identifier Name_;
-  std::deque<Identifier> EnclosingNamespaces_;
   WrapperType ReturnType_;
   std::deque<WrapperParameter> Parameters_;
 

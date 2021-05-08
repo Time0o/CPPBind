@@ -60,7 +60,8 @@ public:
   : WrapperObject<clang::EnumDecl>(Decl),
     IsScoped_(Decl->isScoped()),
     IsAnonymous_(Decl->getDeclName().isEmpty()),
-    Name_(IsAnonymous_ ? Identifier("") : Identifier(Decl)),
+    Name_(determineName(Decl)),
+    Scope_(determineScope(Decl)),
     Type_(Decl->getTypeForDecl())
   {
     for (auto ConstantDecl : Decl->enumerators())
@@ -69,6 +70,14 @@ public:
 
   Identifier getName() const
   { return Name_; }
+
+  std::optional<Identifier> getScope() const
+  {
+    if (Scope_.isEmpty())
+      return std::nullopt;
+
+    return Scope_;
+  }
 
   WrapperType getType() const
   { return Type_; }
@@ -83,10 +92,35 @@ public:
   { return IsAnonymous_; }
 
 private:
+  Identifier determineName(clang::EnumDecl const *Decl) const
+  { return IsAnonymous_ ? Identifier("") : Identifier(Decl); }
+
+  Identifier determineScope(clang::EnumDecl const *Decl) const
+  {
+    if (!IsAnonymous_) {
+      if (Name_.components().size() < 2)
+        return Identifier("");
+
+      return Name_.qualifiers();
+    }
+
+    auto const *Context = Decl->getDeclContext();
+
+    while (!Context->isTranslationUnit()) {
+      if (llvm::isa<clang::NamedDecl>(Context))
+        return Identifier(llvm::dyn_cast<clang::NamedDecl>(Context));
+
+      Context = Context->getParent();
+    }
+
+    return Identifier("");
+  }
+
   bool IsScoped_;
   bool IsAnonymous_;
 
   Identifier Name_;
+  Identifier Scope_;
   WrapperType Type_;
   std::vector<WrapperEnumConstant> Constants_;
 };

@@ -18,11 +18,12 @@
 #include "Identifier.hpp"
 #include "LLVMFormat.hpp"
 #include "TemplateArgument.hpp"
+#include "WrapperObject.hpp"
 
 namespace cppbind
 {
 
-class WrapperType
+class WrapperType : public WrapperObject<clang::TypeDecl>
 {
   friend std::size_t hash_value(WrapperType const &);
 
@@ -49,6 +50,9 @@ public:
   bool operator>=(WrapperType const &Other) const
   { return !operator<(Other); }
 
+  Identifier getName() const;
+  std::size_t getSize() const;
+
   bool isBasic() const;
   bool isAlias() const;
   bool isTemplateInstantiation(char const *Which = nullptr) const;
@@ -73,11 +77,9 @@ public:
   bool isRecordIndirection(bool Recursive = false) const;
   bool isConst() const;
 
+  WrapperType base() const;
   WrapperType canonical() const;
-  std::vector<WrapperType> baseTypes() const;
   std::optional<WrapperType> proxyFor();
-
-  std::vector<std::string> templateArguments() const;
 
   WrapperType lvalueReferenceTo() const;
   WrapperType rvalueReferenceTo() const;
@@ -95,9 +97,7 @@ public:
   WrapperType withConst() const;
   WrapperType withoutConst() const;
 
-  std::size_t size() const;
-
-  std::string str(bool WithTemplatePostfix = false) const;
+  std::string str() const;
 
   std::string format(bool WithTemplatePostfix = false,
                      std::string const &WithExtraPrefix = "",

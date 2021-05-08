@@ -55,7 +55,11 @@ WrapperRecord::overload(std::shared_ptr<IdentifierIndex> II)
 }
 
 Identifier
-WrapperRecord::getName(bool WithTemplatePostfix) const
+WrapperRecord::getName() const
+{ return getFormat(); }
+
+Identifier
+WrapperRecord::getFormat(bool WithTemplatePostfix) const
 {
   Identifier Name(Name_);
 

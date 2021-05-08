@@ -66,7 +66,12 @@ def _function_declare_parameters(self):
     if not self.parameters:
         return
 
-    using_directives = [f"using namespace {ns};" for ns in self.enclosing_namespaces()]
+    ns = self.namespace()
+
+    if ns is None:
+        using = None
+    else:
+        using = [f"using namespace {sub_ns};" for sub_ns in ns.components()]
 
     def declare_parameter(p):
         decl_name = p.name_interm()
@@ -104,11 +109,11 @@ def _function_declare_parameters(self):
 
     return code(
         """
-        {using_directives}
+        {using}
 
         {declarations}
         """,
-        using_directives='\n'.join(using_directives),
+        using='\n'.join(using),
         declarations='\n'.join(declarations))
 
 

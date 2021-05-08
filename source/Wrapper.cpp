@@ -118,7 +118,7 @@ Wrapper::_addWrapperFunction(WrapperFunction *Function)
     }
   }
 
-  auto FunctionNameTemplated(Function->getName(true, true));
+  auto FunctionNameTemplated(Function->getFormat(true, false, true));
 
   auto It(FunctionNames_.find(FunctionNameTemplated));
   if (It == FunctionNames_.end()) {
@@ -163,7 +163,7 @@ Wrapper::_addWrapperFunction(WrapperFunction *Function)
 bool
 Wrapper::_addWrapperRecord(WrapperRecord *Record)
 {
-  auto RecordNameTemplated(Record->getName(true));
+  auto RecordNameTemplated(Record->getFormat(true));
   auto RecordTypeMangled(Record->getType().mangled());
 
   if (!Record->isDefinition()) {

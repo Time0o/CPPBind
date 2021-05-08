@@ -159,15 +159,10 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def(py::self >= py::self)
     .def(hash(py::self))
     .def("__str__", [](Type const &Self){ return Self.str(); })
-    .def("str", &Type::str,
-         "with_template_postfix"_a = false)
-    .def("format", &Type::format,
-         "with_template_postfix"_a = false,
-         "with_extra_prefix"_a = "",
-         "with_extra_postfix"_a = "",
-         "case"_a = Identifier::ORIG_CASE,
-         "quals"_a = Identifier::KEEP_QUALS)
-    .def("mangled", &Type::mangled)
+    .def("name", &Type::getName)
+    .def("scope", &Type::getScope)
+    .def("namespace", &Type::getNamespace)
+    .def("size", &Type::getSize)
     .def("is_const", &Type::isConst)
     .def("is_basic", &Type::isBasic)
     .def("is_alias", &Type::isAlias)
@@ -194,10 +189,9 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_struct", &Type::isStruct)
     .def("is_record_indirection", &Type::isRecordIndirection,
          "recursive"_a = false)
-    .def("proxy_for", &Type::proxyFor)
+    .def("base", &Type::base)
     .def("canonical", &Type::canonical)
-    .def("template_arguments", &Type::templateArguments)
-    .def("base_types", &Type::baseTypes)
+    .def("proxy_for", &Type::proxyFor)
     .def("lvalue_reference_to", &Type::lvalueReferenceTo)
     .def("rvalue_reference_to", &Type::rvalueReferenceTo)
     .def("referenced", &Type::referenced)
@@ -209,7 +203,14 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("unqualified", &Type::unqualified)
     .def("with_const", &Type::withConst)
     .def("without_const", &Type::withoutConst)
-    .def("size", &Type::size);
+    .def("str", &Type::str)
+    .def("format", &Type::format,
+         "with_template_postfix"_a = false,
+         "with_extra_prefix"_a = "",
+         "with_extra_postfix"_a = "",
+         "case"_a = Identifier::ORIG_CASE,
+         "quals"_a = Identifier::KEEP_QUALS)
+    .def("mangled", &Type::mangled);
 
   py::implicitly_convertible<std::string, Type>();
 
@@ -232,6 +233,8 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
 
   py::class_<Enum>(m, "Enum", py::dynamic_attr())
     .def("name", &Enum::getName)
+    .def("scope", &Enum::getScope)
+    .def("namespace", &Enum::getNamespace)
     .def("type", &Enum::getType)
     .def("constants", &Enum::getConstants)
     .def("is_scoped", &Enum::isScoped)
@@ -239,6 +242,8 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
 
   py::class_<EnumConstant>(m, "EnumConstant", py::dynamic_attr())
     .def("name", &EnumConstant::getName)
+    .def("scope", &EnumConstant::getScope)
+    .def("namespace", &EnumConstant::getNamespace)
     .def("type", &EnumConstant::getType)
     .def("value", &EnumConstant::getValue,
          "as_c_literal"_a = false)
@@ -246,14 +251,17 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
 
   py::class_<Constant>(m, "Constant", py::dynamic_attr())
     .def("name", &Constant::getName)
+    .def("scope", &Constant::getScope)
+    .def("namespace", &Constant::getNamespace)
     .def("type", &Constant::getType);
 
   py::class_<Function>(m, "Function", py::dynamic_attr())
-    .def("name", &Function::getName,
+    .def("name", &Function::getFormat,
          "with_template_postfix"_a = false,
-         "without_operator_name"_a = false,
-         "with_overload_postfix"_a = false)
-    .def("enclosing_namespaces", &Function::getEnclosingNamespaces)
+         "with_overload_postfix"_a = false,
+         "without_operator_name"_a = false)
+    .def("scope", &Function::getScope)
+    .def("namespace", &Function::getNamespace)
     .def("return_type", &Function::getReturnType)
     .def("out_type", &Function::getOutType)
     .def("this", &Function::getThis,
@@ -285,14 +293,18 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
 
   py::class_<Parameter>(m, "Parameter")
     .def("name", &Parameter::getName)
+    .def("scope", &Parameter::getScope)
+    .def("namespace", &Parameter::getNamespace)
     .def("type", &Parameter::getType)
     .def("default_argument", &Parameter::getDefaultArgument)
     .def("is_self", &Parameter::isSelf)
     .def("is_out", &Parameter::isOut);
 
   auto PyRecord = py::class_<Record>(m, "Record", py::dynamic_attr())
-    .def("name", &Record::getName,
+    .def("name", &Record::getFormat,
          "with_template_postfix"_a = false)
+    .def("scope", &Record::getScope)
+    .def("namespace", &Record::getNamespace)
     .def("type", &Record::getType)
     .def("bases",
          py::overload_cast<>(&Record::getBases, py::const_),

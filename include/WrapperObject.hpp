@@ -4,12 +4,14 @@
 #include <cassert>
 #include <cstdlib>
 #include <cxxabi.h>
+#include <optional>
 #include <sstream>
 #include <string>
 
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include "Identifier.hpp"
 #include "Print.hpp"
 
 namespace cppbind
@@ -26,6 +28,35 @@ public:
   WrapperObject(T_DECL const *Decl)
   : Decl_(Decl)
   {}
+
+  virtual ~WrapperObject() = default;
+
+  virtual Identifier getName() const = 0;
+
+  virtual std::optional<Identifier> getScope() const
+  {
+    if (getName().components().size() < 2)
+      return std::nullopt;
+
+    return getName().qualifiers();
+  }
+
+  virtual std::optional<Identifier> getNamespace() const
+  {
+    if (!Decl_)
+      return std::nullopt;
+
+    auto const *Context = Decl_->getDeclContext();
+
+    while (!Context->isTranslationUnit()) {
+      if (Context->isNamespace())
+        return Identifier(llvm::dyn_cast<clang::NamespaceDecl>(Context));
+
+      Context = Context->getParent();
+    }
+
+    return std::nullopt;
+  }
 
   std::string str() const
   {

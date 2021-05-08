@@ -72,7 +72,6 @@ WrapperFunction::WrapperFunction(Identifier const &Name)
 WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
 : WrapperObject<clang::FunctionDecl>(Decl),
   Name_(determineName(Decl)),
-  EnclosingNamespaces_(determineEnclosingNamespaces(Decl)),
   ReturnType_(determineReturnType(Decl)),
   Parameters_(determineParameters(Decl)),
   IsDefinition_(Decl->isThisDeclarationADefinition()),
@@ -84,7 +83,6 @@ WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
 WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
 : WrapperObject<clang::FunctionDecl>(Decl),
   Name_(determineName(Decl)),
-  EnclosingNamespaces_(determineEnclosingNamespaces(Decl)),
   ReturnType_(determineReturnType(Decl)),
   Parameters_(determineParameters(Decl)),
   IsDefinition_(Decl->isThisDeclarationADefinition()),
@@ -129,7 +127,7 @@ WrapperFunction::operator==(WrapperFunction const &Other) const
 void
 WrapperFunction::overload(std::shared_ptr<IdentifierIndex> II)
 {
-  auto NameTemplated(getName(true, true));
+  auto NameTemplated(getFormat(true, false, true));
 
   if (!II->hasOverload(NameTemplated))
     return;
@@ -138,9 +136,13 @@ WrapperFunction::overload(std::shared_ptr<IdentifierIndex> II)
 }
 
 Identifier
-WrapperFunction::getName(bool WithTemplatePostfix,
-                         bool WithoutOperatorName,
-                         bool WithOverloadPostfix) const
+WrapperFunction::getName() const
+{ return getFormat(); }
+
+Identifier
+WrapperFunction::getFormat(bool WithTemplatePostfix,
+                           bool WithOverloadPostfix,
+                           bool WithoutOperatorName) const
 {
   Identifier Name(Name_);
 
@@ -203,25 +205,6 @@ WrapperFunction::getTemplateArgumentList() const
     return std::nullopt;
 
   return TemplateArgumentList_->str();
-}
-
-std::deque<Identifier>
-WrapperFunction::determineEnclosingNamespaces(clang::FunctionDecl const *Decl)
-{
-  std::deque<Identifier> EnclosingNamespaces;
-
-  auto const *Context = Decl->getDeclContext();
-
-  while (!Context->isTranslationUnit()) {
-    if (Context->isNamespace()) {
-      EnclosingNamespaces.emplace_back(
-        llvm::dyn_cast<clang::NamespaceDecl>(Context));
-    }
-
-    Context = Context->getParent();
-  }
-
-  return EnclosingNamespaces;
 }
 
 bool
@@ -481,7 +464,7 @@ WrapperFunction::determineTemplateArgumentList(clang::FunctionDecl const *Decl)
 WrapperFunctionBuilder &
 WrapperFunctionBuilder::setParent(WrapperRecord const *Parent)
 {
-  auto ParentNameTemplated(Parent->getName(true));
+  auto ParentNameTemplated(Parent->getFormat(true));
   auto ParentType(Parent->getType());
 
   Wf_.Parent_ = Parent;

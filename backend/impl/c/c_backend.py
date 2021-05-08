@@ -187,7 +187,7 @@ class CBackend(Backend('c')):
         elif which == 'source':
             types = types_source
 
-        return list(sorted(types, key=lambda t: t.str()))
+        return list(sorted(types, key=lambda t: str(t)))
 
     def _function_declaration(self, f):
         header = self._function_header(f)
