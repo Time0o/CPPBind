@@ -36,10 +36,10 @@ def createmetatable(r):
         if f.is_constructor() or f.is_destructor():
             continue
 
-        entry_name = f'"{f.name_target(quals=Id.REMOVE_QUALS)}"'
-        entry = f"__{r.name_target()}::{f.name_target()}"
+        entry_name = f.name_target(quals=Id.REMOVE_QUALS)
+        entry = f.name_target()
 
-        function_entries.append(f"{{{entry_name}, {entry}}}")
+        function_entries.append(f'{{"{entry_name}", {entry}}}')
 
     if r.is_copyable():
         function_entries.append(f'{{"copy", {BIND_COPY}}}')
@@ -48,6 +48,9 @@ def createmetatable(r):
         function_entries.append(f'{{"move", {BIND_MOVE}}}')
 
     key = f'"METATABLE_{r.type().mangled()}"'
+
+    if not function_entries:
+        return f"{CREATEMETATABLE}(L, {key}, {{}});"
 
     return code(
         """

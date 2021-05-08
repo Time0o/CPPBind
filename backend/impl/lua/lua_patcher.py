@@ -1,16 +1,7 @@
-from cppbind import Constant, Function
+from cppbind import Function
 from patcher import Patcher
 from text import code
 from util import dotdict
-
-
-def _constant_assign(self):
-    return code(
-        f"""
-        lua_pushstring(L, "{self.name_target()}");
-        {self.type().output(outp=self.name())}
-        lua_settable(L, -3);
-        """)
 
 
 def _function_check_parameters(self):
@@ -91,7 +82,6 @@ def _function_finalize_exception(self):
 
 class LuaPatcher(Patcher):
     def patch(self):
-        self._patch(Constant, 'assign', _constant_assign)
         self._patch(Function, 'check_parameters', _function_check_parameters)
         self._patch(Function, 'before_call', _function_before_call)
         self._patch(Function, 'declare_return_value', _function_declare_return_value)

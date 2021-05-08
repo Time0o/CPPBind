@@ -58,10 +58,10 @@ class LuaBackend(Backend('lua')):
             extern "C"
             {{
 
-            LUALIB_API int luaopen_{module_name}(lua_State *L)
+            LUALIB_API int luaopen_{lua_module_name}(lua_State *L)
             {{
-              __register(L);
-              __createmetatables(L);
+              _register(L);
+              _createmetatables(L);
 
               return 1;
             }}
@@ -70,45 +70,27 @@ class LuaBackend(Backend('lua')):
 
             }} // namespace
             """,
+            lua_module_name=self._lua_module_name(),
             register_module=self._register(
                 constants=self.constants(include_definitions=True,
                                          include_enums=True),
                 functions=self.functions(),
                 records=self.records()),
-            create_metatables=self._create_metatables(self.records()),
-            module_name=self._module_name()))
+            create_metatables=self._create_metatables(self.records())))
 
     def wrap_constant(self, c):
         pass
 
     def wrap_record(self, r):
-        self._wrapper_module.append(code(
-            f"""
-            namespace __{r.name_target()}
-            {{{{
+        functions = [f for f in r.functions() if not f.is_destructor()]
 
-            {{function_definitions}}
-
-            {{register}}
-
-            }}}} // namespace __{r.name_target()}
-            """,
-            function_definitions=self._function_definitions(
-                [f for f in r.functions() if not f.is_destructor()]),
-            register=self._register(
-                functions=[f for f in r.functions() if not f.is_instance()])))
+        self._wrapper_module.append(self._function_definitions(functions))
 
     def wrap_function(self, f):
-        self._wrapper_module.append(code(
-            """
-            namespace
-            {{
+        self._wrapper_module.append(self._function_definition(f))
 
-            {function_definition}
-
-            }} // namespace
-            """,
-            function_definition=self._function_definition(f)))
+    def _lua_module_name(self):
+        return self.input_file().filename()
 
     def _lua_includes(self):
         lua_includes = ['lua.h', 'lauxlib.h']
@@ -150,82 +132,88 @@ class LuaBackend(Backend('lua')):
     def _function_header(self, f):
         return f"int {f.name_target()}(lua_State *L)"
 
-    def _module_name(self):
-        return self.input_file().filename()
-
     def _register(self, constants=[], functions=[], records=[]):
-        table_num_functions = len(functions)
-
-        table_register = []
+        register_objects = []
 
         if constants:
-            table_register += self._register_constants(constants)
+            register_objects += self._register_constants(constants)
 
         if functions:
-            table_register += [self._register_functions(functions)]
+            register_objects += [self._register_functions(functions)]
 
         if records:
-            table_register += self._register_records(records)
+            register_objects += self._register_records(records)
 
         return code(
             """
-            void __register(lua_State *L)
+            void _register(lua_State *L)
             {{
-              lua_createtable(L, 0, {table_num_functions});
+              lua_createtable(L, 0, {num_functions});
 
-              {table_register}
+              {register_objects}
             }}
             """,
-            table_num_functions=table_num_functions,
-            table_register='\n\n'.join(table_register))
+            num_functions=len(functions),
+            register_objects='\n\n'.join(register_objects))
 
     def _register_constants(self, constants):
-        return [c.assign() for c in constants]
+        def register_constant(c):
+            return code(
+                f"""
+                lua_pushstring(L, "{c.name_target()}");
+                {c.type().output(outp=c.name())}
+                lua_settable(L, -3);
+                """)
 
-    def _register_functions(self, functions):
-        if not functions:
-            return "// no functions"
-
-        def function_entry(f):
-            if f.is_member():
-                entry = f.name_target(quals=Id.REMOVE_QUALS)
-            else:
-                entry = f.name_target()
-
-            return f'{{"{entry}", {f.name_target()}}}'
-
-        return code(
-            """
-            static luaL_Reg const __functions[] = {{
-              {function_entries},
-              {{nullptr, nullptr}}
-            }};
-
-            luaL_setfuncs(L, __functions, 0);
-            """,
-            function_entries=',\n'.join(map(function_entry, functions)))
+        return [register_constant(c) for c in constants]
 
     def _register_records(self, records):
         def register_record(r):
-            return code(
-                f"""
-                __{r.name_target()}::__register(L);
-                lua_setfield(L, -2, "{r.name_target()}");
-                """)
+            functions = [f for f in r.functions() if not f.is_instance()]
+
+            register = []
+
+            register.append(f"lua_createtable(L, 0, {len(functions)});");
+
+            if functions:
+                register.append(self._register_functions(functions))
+
+            register.append(f'lua_setfield(L, -2, "{r.name_target()}");')
+
+            return '\n\n'.join(register)
 
         return map(register_record, records)
 
-    def _create_metatables(self, records):
-        create = []
+    def _register_functions(self, functions):
+        def register_function(f):
+            if f.is_member():
+                entry_name = f.name_target(quals=Id.REMOVE_QUALS)
+            else:
+                entry_name = f.name_target()
 
-        for r in records:
-            create.append(lua_util.createmetatable(r))
+            entry = f.name_target()
+
+            return f'{{"{entry_name}", {entry}}}'
 
         return code(
             """
-            void __createmetatables(lua_State *L)
             {{
-              {create}
+              static luaL_Reg const _functions[] = {{
+                {register},
+                {{nullptr, nullptr}}
+              }};
+
+              luaL_setfuncs(L, _functions, 0);
             }}
             """,
-            create='\n\n'.join(create))
+            register=',\n'.join(map(register_function, functions)))
+
+    def _create_metatables(self, records):
+        return code(
+            """
+            void _createmetatables(lua_State *L)
+            {{
+              {create_metatables}
+            }}
+            """,
+            create_metatables='\n\n'.join(map(lua_util.createmetatable, records)))
