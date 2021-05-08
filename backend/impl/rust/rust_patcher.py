@@ -17,27 +17,6 @@ def _type_target(self):
     return backend().type_translator().target(self)
 
 
-def _constant_declare(self):
-    c_name = self.name_target(quals=Id.REPLACE_QUALS)
-    c_type = self.type().unqualified().target_c(scoped=False)
-
-    return f"pub static {c_name}: {c_type};"
-
-
-def _constant_assign(self):
-    c_name = self.name_target(quals=Id.REPLACE_QUALS)
-
-    rust_name = self.name_target(case=Id.SNAKE_CASE)
-    rust_type = self.type().unqualified().target()
-
-    return code(
-        f"""
-        pub unsafe fn get_{rust_name}() -> {rust_type} {{
-            c::{c_name}
-        }}
-        """)
-
-
 def _function_declare_parameters(self):
     def declare_parameter(p):
         decl_name = p.name_interm()
@@ -153,8 +132,6 @@ def _function_forward(self):
 class RustPatcher(Patcher):
     def patch(self):
         self._patch(_name, 'fallback_quals', _name_fallback_quals)
-        self._patch(Constant, 'declare', _constant_declare)
-        self._patch(Constant, 'assign', _constant_assign)
         self._patch(EnumConstant, 'name_target', _name(default_case=Id.PASCAL_CASE))
         self._patch(Function, 'declare_parameters', _function_declare_parameters)
         self._patch(Function, 'forward_call', _function_forward_call)

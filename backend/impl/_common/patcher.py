@@ -66,12 +66,12 @@ def _function_declare_parameters(self):
     if not self.parameters:
         return
 
-    ns = self.namespace()
+    namespace = self.namespace()
 
-    if ns is None:
-        using = None
+    if namespace is None:
+        using = []
     else:
-        using = [f"using namespace {sub_ns};" for sub_ns in ns.components()]
+        using = [f"using namespace {ns};" for ns in namespace.components()]
 
     def declare_parameter(p):
         decl_name = p.name_interm()

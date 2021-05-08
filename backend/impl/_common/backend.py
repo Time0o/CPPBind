@@ -97,30 +97,19 @@ class BackendGeneric(metaclass=BackendMeta):
         self._records = wrapper.records()
         self._functions = wrapper.functions()
 
-        self._objects = self._definitions + \
-                        self._enums + \
+        self._objects = self._enums + \
                         self._constants + \
                         self._records + \
                         self._functions
 
-        self._add_scopes()
-
         self._add_types()
-
-    def _add_scopes(self):
-        self._scopes = {}
-
-        for obj in self._objects:
-            if not obj.name():
-                continue
-
-            scope = obj.name().qualifiers()
-
-            self._scopes[scope] = self._scopes.get(scope, []) + [obj]
+        self._add_scopes()
+        self._add_namespaces()
 
     def _add_types(self):
         self._types = set()
         self._type_aliases = set()
+        self._type_aliases_target = None
 
         def add_type(t):
             while t.is_alias():
@@ -156,6 +145,46 @@ class BackendGeneric(metaclass=BackendMeta):
             for t in [f.return_type()] + [p.type() for p in f.parameters()]:
                 add_type(t)
 
+    def _add_to_scope(self, obj):
+        d = self._scopes
+
+        scope = obj.scope()
+
+        if scope is not None:
+            for c in scope.components():
+                if c not in d:
+                    d[c] = {}
+
+                d = d[c]
+
+        d['__objects'] = d.get('__objects', []) + [obj]
+
+    def _add_scopes(self):
+        self._scopes = {}
+
+        for obj in self._objects:
+            self._add_to_scope(obj)
+
+    def _add_to_namespace(self, obj):
+        d = self._namespaces
+
+        namespace = obj.namespace()
+
+        if namespace is not None:
+            for c in namespace.components():
+                if c not in d:
+                    d[c] = {}
+
+                d = d[c]
+
+        d['__objects'] = d.get('__objects', []) + [obj]
+
+    def _add_namespaces(self):
+        self._namespaces = {}
+
+        for obj in self._objects:
+            self._add_to_namespace(obj)
+
     def run(self):
         self.wrap_before()
 
@@ -180,7 +209,6 @@ class BackendGeneric(metaclass=BackendMeta):
         for output_file in self._output_files:
             output_file.write()
 
-
     def input_file(self):
         return self._input_file
 
@@ -193,25 +221,32 @@ class BackendGeneric(metaclass=BackendMeta):
 
         return output_file
 
-    def scopes(self):
-        return self._scopes
-
     def types(self):
         return sorted(self._types)
 
     def type_set(self):
         return self._types
 
-    def type_aliases(self, include_indistinguishable=False):
-        if include_indistinguishable:
-            return sorted(self._type_aliases)
+    def type_aliases(self):
+        if self._type_aliases_target is None:
+            self._type_aliases_target = []
+            for a, t in self._type_aliases:
+                if a.target() != t.target():
+                    self._type_aliases_target.append((a, t))
 
-        aliases = []
-        for a, t in self._type_aliases:
-            if a.target() != t.target():
-                aliases.append((a, t))
+            for a, _ in self._type_aliases_target:
+                self._add_to_scope(a)
+                self._add_to_namespace(a)
 
-        return aliases
+            self._type_aliases_target.sort()
+
+        return self._type_aliases_target
+
+    def scopes(self):
+        return self._scopes
+
+    def namespaces(self):
+        return self._namespaces
 
     def includes(self, relative=None):
         if relative is None:
@@ -251,9 +286,6 @@ class BackendGeneric(metaclass=BackendMeta):
                 functions += r.functions()
 
         return functions
-
-    def functions_can_throw(self):
-        return any(not f.is_noexcept() for f in self.functions(include_members=True))
 
     @abstractmethod
     def patcher(self):
