@@ -23,6 +23,9 @@
 namespace cppbind
 {
 
+class WrapperEnum;
+class WrapperRecord;
+
 class WrapperType : public WrapperObject<clang::TypeDecl>
 {
   friend std::size_t hash_value(WrapperType const &);
@@ -51,6 +54,8 @@ public:
   { return !operator<(Other); }
 
   Identifier getName() const;
+  std::optional<Identifier> getNamespace() const;
+
   std::size_t getSize() const;
 
   bool isBasic() const;
@@ -79,6 +84,8 @@ public:
 
   WrapperType base() const;
   WrapperType canonical() const;
+  std::optional<WrapperEnum const *> asEnum() const;
+  std::optional<WrapperRecord const *> asRecord() const;
   std::optional<WrapperType> proxyFor();
 
   WrapperType lvalueReferenceTo() const;

@@ -37,6 +37,9 @@ CompilerStateRegistry::updateFile(std::string const &File)
   assert(It != FilesByStem_.end());
 
   File_ = It->second;
+
+  TI_->Records_.clear();
+  TI_->Enums_.clear();
 }
 
 std::string

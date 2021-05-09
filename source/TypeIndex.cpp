@@ -8,53 +8,65 @@
 #include "boost/graph/topological_sort.hpp"
 
 #include "TypeIndex.hpp"
+#include "WrapperEnum.hpp"
 #include "WrapperRecord.hpp"
 
 namespace cppbind
 {
 
 void
-TypeIndex::addDeclaration(WrapperRecord const *Record)
-{ Declarations_.insert(Record->getType().mangled()); }
+TypeIndex::addRecordDeclaration(WrapperRecord const *Record)
+{ RecordDeclarations_.insert(Record->getType().mangled()); }
 
 void
-TypeIndex::addDefinition(WrapperRecord const *Record)
+TypeIndex::addRecordDefinition(WrapperRecord const *Record)
 {
   Records_[Record->getType().mangled()] = Record;
 
-  addDeclaration(Record);
+  addRecordDeclaration(Record);
 
-  auto [_, New] = Definitions_.insert(Record->getType().mangled());
+  auto [_, New] = RecordDefinitions_.insert(Record->getType().mangled());
   if (!New)
     return;
 
   addVertex(Record->getType().mangled());
 
   for (auto Base : Record->getBases()) {
-    if (hasDefinition(Base))
-      addDefinition(Base);
+    if (hasRecordDefinition(Base))
+      addRecordDefinition(Base);
   }
 }
 
 void
-TypeIndex::clearDefinitions()
-{ Records_.clear(); }
+TypeIndex::addEnumDefinition(WrapperEnum const *Enum)
+{
+  Enums_[Enum->getType().mangled()] = Enum;
+  EnumDefinitions_.insert(Enum->getType().mangled());
+}
 
 bool
-TypeIndex::hasDeclaration(WrapperRecord const *Record) const
-{ return hasDeclaration(Record->getType()); }
+TypeIndex::hasRecordDeclaration(WrapperRecord const *Record) const
+{ return hasRecordDeclaration(Record->getType()); }
 
 bool
-TypeIndex::hasDeclaration(WrapperType const &Type) const
-{ return Declarations_.find(Type.mangled()) != Declarations_.end(); }
+TypeIndex::hasRecordDeclaration(WrapperType const &Type) const
+{ return RecordDeclarations_.find(Type.mangled()) != RecordDeclarations_.end(); }
 
 bool
-TypeIndex::hasDefinition(WrapperRecord const *Record) const
-{ return hasDefinition(Record->getType()); }
+TypeIndex::hasRecordDefinition(WrapperRecord const *Record) const
+{ return hasRecordDefinition(Record->getType()); }
 
 bool
-TypeIndex::hasDefinition(WrapperType const &Type) const
-{ return Definitions_.find(Type.mangled()) != Definitions_.end(); }
+TypeIndex::hasRecordDefinition(WrapperType const &Type) const
+{ return RecordDefinitions_.find(Type.mangled()) != RecordDefinitions_.end(); }
+
+bool
+TypeIndex::hasEnumDefinition(WrapperEnum const *Enum) const
+{ return hasEnumDefinition(Enum->getType()); }
+
+bool
+TypeIndex::hasEnumDefinition(WrapperType const &Type) const
+{ return EnumDefinitions_.find(Type.mangled()) != EnumDefinitions_.end(); }
 
 std::optional<WrapperRecord const *>
 TypeIndex::getRecord(WrapperType const &Type) const
@@ -67,11 +79,11 @@ TypeIndex::getRecord(WrapperType const &Type) const
 }
 
 std::vector<WrapperRecord const *>
-TypeIndex::getBases(WrapperRecord const *Record, bool Recursive) const
+TypeIndex::getRecordBases(WrapperRecord const *Record, bool Recursive) const
 {
   std::deque<std::string> BaseIDs;
 
-  auto V = G_.vertex(Record->getType().mangled());
+  auto V = RecordGraph_.vertex(Record->getType().mangled());
 
   if (Recursive) {
     struct RecursiveBaseVisitor : public boost::default_bfs_visitor
@@ -88,14 +100,14 @@ TypeIndex::getBases(WrapperRecord const *Record, bool Recursive) const
     };
 
     RecursiveBaseVisitor Visitor(BaseIDs);
-    boost::breadth_first_search(G_.graph(), V, boost::visitor(Visitor));
+    boost::breadth_first_search(RecordGraph_.graph(), V, boost::visitor(Visitor));
 
     BaseIDs.pop_front();
 
   } else {
     typename boost::graph_traits<Graph>::out_edge_iterator It, End;
-    for (std::tie(It, End) = boost::out_edges(V, G_.graph()); It != End; ++It)
-      BaseIDs.push_back(G_.graph()[boost::target(*It, G_.graph())]);
+    for (std::tie(It, End) = boost::out_edges(V, RecordGraph_.graph()); It != End; ++It)
+      BaseIDs.push_back(RecordGraph_.graph()[boost::target(*It, RecordGraph_.graph())]);
   }
 
   std::vector<WrapperRecord const *> Bases;
@@ -109,14 +121,14 @@ TypeIndex::getBases(WrapperRecord const *Record, bool Recursive) const
 }
 
 std::vector<WrapperRecord const *>
-TypeIndex::getBasesFirstOrdering() const
+TypeIndex::getRecordBasesFirstOrdering() const
 {
   std::vector<boost::graph_traits<Graph>::vertex_descriptor> BasesFirstVertices;
-  boost::topological_sort(G_.graph(), std::back_inserter(BasesFirstVertices));
+  boost::topological_sort(RecordGraph_.graph(), std::back_inserter(BasesFirstVertices));
 
   std::vector<WrapperRecord const *> BasesFirst;
   for (auto const &Vertex : BasesFirstVertices) {
-    auto ID(G_.graph()[Vertex]);
+    auto ID(RecordGraph_.graph()[Vertex]);
 
     auto It(Records_.find(ID));
     if (It != Records_.end())
@@ -126,12 +138,22 @@ TypeIndex::getBasesFirstOrdering() const
   return BasesFirst;
 }
 
+std::optional<WrapperEnum const *>
+TypeIndex::getEnum(WrapperType const &Type) const
+{
+  auto It(Enums_.find(Type.mangled()));
+  if (It == Enums_.end())
+    return std::nullopt;
+
+  return It->second;
+}
+
 void
 TypeIndex::addVertex(std::string const &Type)
-{ G_.graph()[boost::add_vertex(Type, G_)] = Type; }
+{ RecordGraph_.graph()[boost::add_vertex(Type, RecordGraph_)] = Type; }
 
 void
 TypeIndex::addEdge(std::string const &SourceType, std::string const &TargetType)
-{ boost::add_edge(G_.vertex(SourceType), G_.vertex(TargetType), G_.graph()); }
+{ boost::add_edge(RecordGraph_.vertex(SourceType), RecordGraph_.vertex(TargetType), RecordGraph_.graph()); }
 
 } // namespace cppbind

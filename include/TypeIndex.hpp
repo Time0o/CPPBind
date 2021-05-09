@@ -9,6 +9,7 @@
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/graph/labeled_graph.hpp"
 
+#include "WrapperEnum.hpp"
 #include "WrapperRecord.hpp"
 #include "WrapperType.hpp"
 
@@ -17,24 +18,28 @@ namespace cppbind
 
 class TypeIndex
 {
+  friend class CompilerStateRegistry;
+
 public:
-  void addDeclaration(WrapperRecord const *Record);
-  void addDefinition(WrapperRecord const *Record);
+  void addRecordDeclaration(WrapperRecord const *Record);
+  void addRecordDefinition(WrapperRecord const *Record);
+  void addEnumDefinition(WrapperEnum const *Enum);
 
-  void clearDefinitions();
-
-  bool hasDeclaration(WrapperRecord const *Record) const;
-  bool hasDeclaration(WrapperType const &Type) const;
-
-  bool hasDefinition(WrapperRecord const *Record) const;
-  bool hasDefinition(WrapperType const &Type) const;
+  bool hasRecordDeclaration(WrapperRecord const *Record) const;
+  bool hasRecordDeclaration(WrapperType const &Type) const;
+  bool hasRecordDefinition(WrapperRecord const *Record) const;
+  bool hasRecordDefinition(WrapperType const &Type) const;
+  bool hasEnumDefinition(WrapperEnum const *Enum) const;
+  bool hasEnumDefinition(WrapperType const &Type) const;
 
   std::optional<WrapperRecord const *> getRecord(WrapperType const &Type) const;
 
-  std::vector<WrapperRecord const *> getBases(WrapperRecord const *Record,
-                                              bool Recursive = false) const;
+  std::vector<WrapperRecord const *> getRecordBases(WrapperRecord const *Record,
+                                                    bool Recursive = false) const;
 
-  std::vector<WrapperRecord const *> getBasesFirstOrdering() const;
+  std::vector<WrapperRecord const *> getRecordBasesFirstOrdering() const;
+
+  std::optional<WrapperEnum const *> getEnum(WrapperType const &Type) const;
 
 private:
   using Graph = boost::adjacency_list<boost::vecS,
@@ -48,10 +53,12 @@ private:
   void addEdge(std::string const &SourceType, std::string const &TargetType);
 
   std::unordered_map<std::string, WrapperRecord const *> Records_;
-  std::unordered_set<std::string> Declarations_;
-  std::set<std::string> Definitions_;
+  std::unordered_set<std::string> RecordDeclarations_;
+  std::set<std::string> RecordDefinitions_;
+  LabeledGraph RecordGraph_;
 
-  LabeledGraph G_;
+  std::unordered_map<std::string, WrapperEnum const *> Enums_;
+  std::set<std::string> EnumDefinitions_;
 };
 
 } // namespace cppbind

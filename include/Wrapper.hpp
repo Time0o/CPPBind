@@ -24,8 +24,6 @@ namespace cppbind
 class Wrapper
 {
 public:
-  Wrapper();
-
   template<typename ...ARGS>
   void addInclude(ARGS &&...Args)
   { Includes_.emplace_back(std::forward<ARGS>(Args)...); }

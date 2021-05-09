@@ -14,8 +14,9 @@
 #include "Print.hpp"
 #include "String.hpp"
 #include "TemplateArgument.hpp"
-#include "WrapperType.hpp"
+#include "WrapperEnum.hpp"
 #include "WrapperRecord.hpp"
+#include "WrapperType.hpp"
 
 namespace cppbind
 {
@@ -54,7 +55,36 @@ WrapperType::operator<(WrapperType const &Other) const
 
 Identifier
 WrapperType::getName() const
-{ return Identifier(base().str()); }
+{
+  if (isAlias() && isBasic())
+    return Identifier(str());
+
+  return Identifier(base().str());
+}
+
+std::optional<Identifier>
+WrapperType::getNamespace() const
+{
+  auto TDT = type()->getAs<clang::TypedefType>();
+  if (!TDT)
+    return std::nullopt;
+
+  auto TDD = TDT->getDecl();
+
+  auto const *Context = TDD->getDeclContext();
+
+  while (!Context->isTranslationUnit()) {
+    if (Context->isNamespace()) {
+      auto NamespaceDecl(llvm::dyn_cast<clang::NamespaceDecl>(Context));
+      if (!NamespaceDecl->isAnonymousNamespace())
+        return Identifier(NamespaceDecl);
+    }
+
+    Context = Context->getParent();
+  }
+
+  return std::nullopt;
+}
 
 std::size_t
 WrapperType::getSize() const
@@ -187,6 +217,14 @@ WrapperType::base() const
 WrapperType
 WrapperType::canonical() const
 { return WrapperType(type().getCanonicalType()); }
+
+std::optional<WrapperEnum const *>
+WrapperType::asEnum() const
+{ return CompilerState().types()->getEnum(*this); }
+
+std::optional<WrapperRecord const *>
+WrapperType::asRecord() const
+{ return CompilerState().types()->getRecord(*this); }
 
 std::optional<WrapperType>
 WrapperType::proxyFor()

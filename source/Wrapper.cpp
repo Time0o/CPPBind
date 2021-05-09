@@ -28,9 +28,6 @@ namespace
 namespace cppbind
 {
 
-Wrapper::Wrapper()
-{ CompilerState().types()->clearDefinitions(); }
-
 void
 Wrapper::overload()
 {
@@ -74,12 +71,16 @@ Wrapper::getRecords() const
 {
   std::vector<WrapperRecord const *> Records;
 
-  return CompilerState().types()->getBasesFirstOrdering();
+  return CompilerState().types()->getRecordBasesFirstOrdering();
 }
 
 bool
 Wrapper::_addWrapperEnum(WrapperEnum *Enum)
-{ return true; }
+{
+  CompilerState().types()->addEnumDefinition(Enum);
+
+  return true;
+}
 
 bool
 Wrapper::_addWrapperConstant(WrapperConstant *Constant)
@@ -172,7 +173,7 @@ Wrapper::_addWrapperRecord(WrapperRecord *Record)
     CompilerState().identifiers()->addDeclaration(RecordNameTemplated,
                                                   IdentifierIndex::RECORD);
 
-    CompilerState().types()->addDeclaration(Record);
+    CompilerState().types()->addRecordDeclaration(Record);
 
     return false;
   }
@@ -180,7 +181,7 @@ Wrapper::_addWrapperRecord(WrapperRecord *Record)
   CompilerState().identifiers()->addDefinition(RecordNameTemplated,
                                                IdentifierIndex::RECORD);
 
-  CompilerState().types()->addDefinition(Record);
+  CompilerState().types()->addRecordDefinition(Record);
 
   auto &Functions(Record->getFunctions());
 
@@ -211,7 +212,7 @@ Wrapper::typeWrapped(WrapperType const &Type) const
 
   RecordType = RecordType.withoutConst();
 
-  return CompilerState().types()->hasDeclaration(RecordType);
+  return CompilerState().types()->hasRecordDeclaration(RecordType);
 }
 
 bool
