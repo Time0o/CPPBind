@@ -1,7 +1,7 @@
 import os
 
 from abc import ABCMeta, abstractmethod
-from cppbind import Options
+from cppbind import Constant, Enum, Function, Record, Type, Options
 from file import File, Path
 from itertools import chain
 
@@ -102,9 +102,8 @@ class BackendGeneric(metaclass=BackendMeta):
                         self._records + \
                         self._functions
 
+        self._add_hierachy()
         self._add_types()
-        self._add_scopes()
-        self._add_namespaces()
 
     def _add_types(self):
         self._types = set()
@@ -145,45 +144,97 @@ class BackendGeneric(metaclass=BackendMeta):
             for t in [f.return_type()] + [p.type() for p in f.parameters()]:
                 add_type(t)
 
-    def _add_to_scope(self, obj):
-        d = self._scopes
-
-        scope = obj.scope()
-
-        if scope is not None:
-            for c in scope.components():
-                if c not in d:
-                    d[c] = {}
-
-                d = d[c]
-
-        d['__objects'] = d.get('__objects', []) + [obj]
-
-    def _add_scopes(self):
-        self._scopes = {}
+    def _add_hierachy(self):
+        self._hierarchy = {}
+        self._init_hierarchy(self._hierarchy)
 
         for obj in self._objects:
-            self._add_to_scope(obj)
+            self._add_to_hierarchy(obj)
 
-    def _add_to_namespace(self, obj):
-        d = self._namespaces
+    def _init_hierarchy(self, h):
+        if '__namespaces' not in h:
+            h['__namespaces'] = {}
 
+        keys = [
+            '__objects',
+            '__types',
+            '__enums',
+            '__constants',
+            '__records',
+            '__functions'
+        ]
+
+        for key in keys:
+            if key not in h:
+                h[key] = []
+
+    def _add_to_hierarchy(self, obj):
+        h = self._hierarchy
         namespace = obj.namespace()
-
         if namespace is not None:
             for c in namespace.components():
-                if c not in d:
-                    d[c] = {}
+                if c not in h['__namespaces']:
+                    h['__namespaces'][c] = {}
 
-                d = d[c]
+                h = h['__namespaces'][c]
+                self._init_hierarchy(h)
 
-        d['__objects'] = d.get('__objects', []) + [obj]
+        self.__add_to_hierarchy(h, obj)
 
-    def _add_namespaces(self):
-        self._namespaces = {}
+    def __add_to_hierarchy(self, h, obj):
+        h['__objects'].append(obj)
 
-        for obj in self._objects:
-            self._add_to_namespace(obj)
+        object_keys = [
+            (Type, '__types'),
+            (Enum, '__enums'),
+            (Constant, '__constants'),
+            (Record, '__records'),
+            (Function, '__functions')
+        ]
+
+        for t, key in object_keys:
+            if isinstance(obj, t):
+                h[key].append(obj)
+                break
+
+    def _add_types(self):
+        self._types = set()
+        self._type_aliases = set()
+        self._type_aliases_target = None
+
+        def add_type(t):
+            while t.is_alias():
+                if t.is_basic():
+                    self._type_aliases.add((t, t.canonical()))
+                    break
+                elif t.is_const():
+                    t = t.without_const()
+                elif t.is_pointer() or t.is_reference():
+                    t = t.pointee()
+
+            if not t.is_void():
+                self._types.add(t.unqualified())
+
+            if t.is_enum():
+                add_type(t.underlying_integer_type())
+            elif t.is_pointer() or t.is_reference():
+                while t.is_pointer() or t.is_reference():
+                    if t.pointee().is_void():
+                        self._types.add(t.pointee().unqualified())
+                        break
+                    else:
+                        t = t.pointee()
+                        self._types.add(t.unqualified())
+
+        for v in self.constants(include_definitions=True, include_enums=True):
+            add_type(v.type())
+
+        for r in self._records:
+            add_type(r.type())
+
+        for f in chain(self._functions, *(r.functions() for r in self._records)):
+            for t in [f.return_type()] + [p.type() for p in f.parameters()]:
+                add_type(t)
 
     def run(self):
         self.wrap_before()
@@ -221,33 +272,6 @@ class BackendGeneric(metaclass=BackendMeta):
 
         return output_file
 
-    def types(self):
-        return sorted(self._types)
-
-    def type_set(self):
-        return self._types
-
-    def type_aliases(self):
-        if self._type_aliases_target is None:
-            self._type_aliases_target = []
-            for a, t in self._type_aliases:
-                if a.target() != t.target():
-                    self._type_aliases_target.append((a, t))
-
-            for a, _ in self._type_aliases_target:
-                self._add_to_scope(a)
-                self._add_to_namespace(a)
-
-            self._type_aliases_target.sort()
-
-        return self._type_aliases_target
-
-    def scopes(self):
-        return self._scopes
-
-    def namespaces(self):
-        return self._namespaces
-
     def includes(self, relative=None):
         if relative is None:
             relative = Options.output_relative_includes
@@ -256,6 +280,29 @@ class BackendGeneric(metaclass=BackendMeta):
 
     def definitions(self):
         return self._definitions
+
+    def objects(self):
+        return self._hierarchy
+
+    def types(self):
+        return sorted(self._types)
+
+    def type_set(self):
+        return self._types
+
+    def type_aliases(self):
+        if self._type_aliases_target is None:
+            self._type_aliases_target = set()
+            for a, t in self._type_aliases:
+                if a.target() != t.target():
+                    self._type_aliases_target.add((a, t))
+
+            for a, _ in self._type_aliases_target:
+                self._add_to_hierarchy(a)
+
+            self._type_aliases_target = list(sorted(self._type_aliases_target))
+
+        return self._type_aliases_target
 
     def enums(self):
         return self._enums

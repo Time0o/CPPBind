@@ -5,8 +5,8 @@ from text import code
 from util import dotdict
 
 
-def _name_fallback_quals():
-    return Id.REMOVE_QUALS
+def _name_fallback_namespace():
+    return 'remove'
 
 
 def _type_target_c(self, scoped=True):
@@ -37,7 +37,7 @@ def _function_forward_parameters(self):
 
 
 def _function_forward_call(self):
-    c_name = self.name_target(quals=Id.REPLACE_QUALS)
+    c_name = self.name_target(namespace='keep', quals=Id.REPLACE_QUALS)
 
     if self.is_copy_constructor():
         c_type_self = self.parent().type().with_const().pointer_to().target_c()
@@ -131,8 +131,7 @@ def _function_forward(self):
 
 class RustPatcher(Patcher):
     def patch(self):
-        self._patch(_name, 'fallback_quals', _name_fallback_quals)
-        self._patch(EnumConstant, 'name_target', _name(default_case=Id.PASCAL_CASE))
+        self._patch(_name, 'fallback_namespace', _name_fallback_namespace)
         self._patch(Function, 'declare_parameters', _function_declare_parameters)
         self._patch(Function, 'forward_call', _function_forward_call)
         self._patch(Function, 'try_catch', _function_try_catch)

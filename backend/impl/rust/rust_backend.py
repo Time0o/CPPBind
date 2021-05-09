@@ -49,9 +49,8 @@ class RustBackend(Backend('rust')):
             rust_typedefs='\n'.join(rust_typedefs)))
 
     def wrap_after(self):
-        c_use = [f"use {t};" for t in self._c_types()]
-
-        c_use += [f"use {self._rust_module()}::internal::{t};"
+        c_use = [f"use {t};" for t in self._c_types()] + \
+                [f"use {self._rust_module()}::internal::{t};"
                   for t in chain(self._rust_record_types(),
                                  self._rust_typedef_types())]
 
@@ -61,9 +60,9 @@ class RustBackend(Backend('rust')):
                 {c_use}
 
                 {c_declarations}
-            }} // mod c
+            }}
 
-            }} // mod internal
+            }}
             """,
             c_use='\n'.join(c_use),
             c_declarations=self._c_declarations()))
@@ -76,13 +75,16 @@ class RustBackend(Backend('rust')):
     def wrap_enum(self, e):
         if e.is_anonymous():
             for c in e.constants():
-                constant_name = self._enum_anonymous_constant_name_rust(c)
+                constant_name = self._enum_constant_name_rust(c, anonymous=True)
 
                 self._wrapper_source.append(
                     f"pub const {constant_name}: {c.type().target()} = {c.value()};")
         else:
-            enum_constants = [f"{c.name_target()} = {c.value()}"
-                              for c in e.constants()]
+            enum_constants = []
+            for c in e.constants():
+                constant_name = self._enum_constant_name_rust(c)
+
+                enum_constants.append(f"{constant_name} = {c.value()}")
 
             self._wrapper_source.append(code(
                 """
@@ -168,54 +170,51 @@ class RustBackend(Backend('rust')):
 
         return True
 
-    def _rust_modules_export(self, scopes=None):
-        if scopes is None:
-            scopes = self.scopes()
+    def _rust_modules_export(self, h=None):
+        if h is None:
+            h = self.objects()
 
-        export = []
+        symbols = []
 
-        for s in scopes:
-            if s == '__objects':
-                symbols = []
-
-                for obj in scopes[s]:
-                    if isinstance(obj, Type):
-                        symbols.append(obj.target())
-                    elif isinstance(obj, Enum):
-                        if obj.is_anonymous():
-                            symbols += self._enum_anonymous_constant_names_rust(obj)
-                        else:
-                            symbols.append(obj.name_target())
-                    elif isinstance(obj, Constant):
-                        symbols.append(self._constant_getter_name_rust(obj))
-                    elif isinstance(obj, Record):
-                        if not obj.is_abstract():
-                            symbols.append(obj.name_target())
-                    elif isinstance(obj, Function):
-                        symbols.append(obj.name_target())
-
-                export += [f"pub use {self._rust_module()}::internal::{symbol};"
-                           for symbol in symbols]
+        for t in h['__types']:
+            symbols.append(t.target())
+        for e in h['__enums']:
+            if e.is_anonymous():
+                for c in e.constants():
+                    symbols.append(self._enum_constant_name_rust(c, anonymous=True))
             else:
-                export.append(code(
-                    """
-                    pub mod {mod_name} {{
-                        {mod_inner}
-                    }} // mod {mod_name}
-                    """,
-                    mod_name=s.format(case=Id.SNAKE_CASE),
-                    mod_inner=self._rust_modules_export(scopes[s])))
+                symbols.append(e.name_target())
+        for c in h['__constants']:
+            symbols.append(self._constant_getter_name_rust(c))
+        for r in h['__records']:
+            if not r.is_abstract():
+                symbols.append(r.name_target())
+        for f in h['__functions']:
+            symbols.append(f.name_target())
+
+        export = [f"pub use {self._rust_module()}::internal::{symbol};"
+                  for symbol in symbols]
+
+        for ns, content in h['__namespaces'].items():
+            export.append(code(
+                """
+                pub mod {mod_name} {{
+                    {mod_inner}
+                }}
+                """,
+                mod_name=ns,
+                mod_inner=self._rust_modules_export(content)))
 
         return '\n'.join(export)
 
-    def _enum_anonymous_constant_name_rust(self, c):
-        return c.name_target(case=Id.SNAKE_CASE_CAP_ALL)
+    def _enum_constant_name_rust(self, c, anonymous=False):
+        if anonymous:
+            return c.name_target(case=Id.SNAKE_CASE_CAP_ALL)
 
-    def _enum_anonymous_constant_names_rust(self, e):
-        return [self._enum_anonymous_constant_name_rust(c) for c in e.constants()]
+        return c.name_target(case=Id.PASCAL_CASE, quals=Id.REMOVE_QUALS)
 
     def _constant_getter_name_c(self, c):
-        return c.name_target(quals=Id.REPLACE_QUALS)
+        return c.name_target(namespace='keep')
 
     def _constant_declaration_c(self, c):
         t = c.type().unqualified().target_c(scoped=False)
@@ -345,7 +344,7 @@ class RustBackend(Backend('rust')):
         return f"{self._function_header_c(f)};"
 
     def _function_header_c(self, f):
-        name = f.name_target(quals=Id.REPLACE_QUALS)
+        name = f.name_target(namespace='keep')
 
         def param_declare(p):
             t = p.type()
@@ -371,8 +370,21 @@ class RustBackend(Backend('rust')):
 
         return f" -> {return_type.target_c()}"
 
+    def _function_definition_rust(self, f):
+        return code(
+            """
+            {header} {{
+                {body}
+            }}
+            """,
+            header=self._function_header_rust(f),
+            body=self._function_body_rust(f))
+
     def _function_header_rust(self, f):
-        name = f.name_target()
+        if f.is_member():
+            name = f.name_target(quals=Id.REMOVE_QUALS)
+        else:
+            name = f.name_target()
 
         def param_declare(p):
             t = p.type()
@@ -396,16 +408,6 @@ class RustBackend(Backend('rust')):
             name = f"{name}<'a>"
 
         return f"pub unsafe fn {name}({params}){return_annotation}"
-
-    def _function_definition_rust(self, f):
-        return code(
-            """
-            {header} {{
-                {body}
-            }}
-            """,
-            header=self._function_header_rust(f),
-            body=self._function_body_rust(f))
 
     def _function_body_rust(self, f):
         return f.forward()

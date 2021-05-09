@@ -9,15 +9,15 @@ fn main() {
     }
 
     {
-        let obj = test::toplevel::NestedPublic::new();
+        let obj = test::ToplevelNestedPublic::new();
 
-        let t: test::toplevel::nested_public::T = 0;
-        let e: test::toplevel::nested_public::E = test::toplevel::nested_public::E::V;
+        let t: test::ToplevelNestedPublicT = 0;
+        let e: test::ToplevelNestedPublicE = test::ToplevelNestedPublicE::V;
         test::Toplevel::func(&obj, t, e);
     }
 
     {
-        let _obj = test::toplevel::nested_public::NestedNestedPublic::new();
+        let _obj = test::ToplevelNestedPublicNestedNestedPublic::new();
     }
 
     }

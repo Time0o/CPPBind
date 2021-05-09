@@ -6,16 +6,21 @@ from util import dotdict
 
 
 def _name(get=lambda self: self.name(),
+          default_namespace=None,
           default_case=None,
           default_quals=None,
           default_prefix=None,
           default_postfix=None):
 
     def name_closure(self,
+                     namespace=default_namespace,
                      case=default_case,
                      quals=default_quals,
                      prefix=default_prefix,
                      postfix=default_postfix):
+
+        if namespace is None:
+            namespace = _name.fallback_namespace()
 
         if case is None:
             case = _name.fallback_case()
@@ -23,7 +28,12 @@ def _name(get=lambda self: self.name(),
         if quals is None:
             quals = _name.fallback_quals()
 
-        name = get(self).format(case=case, quals=quals)
+        name = get(self)
+
+        if namespace == 'remove' and self.namespace() is not None:
+            name = name.unqualified(remove=len(self.namespace().components()))
+
+        name = name.format(case=case, quals=quals)
 
         if prefix is not None:
             name = prefix + name
@@ -327,6 +337,7 @@ class Patcher:
         if Patcher._init:
             return
 
+        _name.fallback_namespace = lambda: 'keep'
         _name.fallback_case = lambda: Id.SNAKE_CASE
         _name.fallback_quals = lambda: Id.REPLACE_QUALS
 
@@ -356,12 +367,14 @@ class Patcher:
         Function.handle_exception = _function_handle_exception
         Function.finalize_exception = _function_finalize_exception
 
-        Constant.name_target = _name(default_case=Id.SNAKE_CASE_CAP_ALL)
-
         Definition.name_target = _name(default_case=Id.SNAKE_CASE_CAP_ALL)
+
+        Type.name_target = _name(default_case=Id.PASCAL_CASE)
 
         Enum.name_target = _name(default_case=Id.PASCAL_CASE)
         EnumConstant.name_target = _name(default_case=Id.SNAKE_CASE_CAP_ALL)
+
+        Constant.name_target = _name(default_case=Id.SNAKE_CASE_CAP_ALL)
 
         Function.name_target = \
             _name(get=lambda f: f.name(with_template_postfix=True,

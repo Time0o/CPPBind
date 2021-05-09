@@ -32,19 +32,18 @@ class RustTypeTranslator(TypeTranslator('rust')):
 
     @classmethod
     def _rust_type_fundamental(cls, t):
-        if t.is_alias():
-            return t.format(case=Id.PASCAL_CASE, quals=Id.REMOVE_QUALS)
-
         if t.is_boolean():
             return 'bool'
 
         return cls._c_type_fundamental(t)
 
     @classmethod
+    def _enum(cls, t):
+        return t.as_enum().name_target()
+
+    @classmethod
     def _record(cls, t):
-        return t.unqualified().format(with_template_postfix=True,
-                                      case=Id.PASCAL_CASE,
-                                      quals=Id.REMOVE_QUALS)
+        return t.as_record().name_target()
 
     @classmethod
     def _pointer_to(cls, t, what):
@@ -79,7 +78,7 @@ class RustTypeTranslator(TypeTranslator('rust')):
 
     @rule(lambda t: t.is_alias() and t.is_basic())
     def target(cls, t, args):
-        return t.format(case=Id.PASCAL_CASE, quals=Id.REMOVE_QUALS)
+        return t.name_target()
 
     @rule(lambda t: t.is_void())
     def target(cls, t, args):
@@ -109,7 +108,7 @@ class RustTypeTranslator(TypeTranslator('rust')):
 
     @rule(lambda t: t.is_enum())
     def target(cls, t, args):
-        return t.format(case=Id.PASCAL_CASE, quals=Id.REMOVE_QUALS)
+        return t.as_enum().name_target()
 
     @rule(lambda t: t.is_fundamental())
     def target(cls, t, args):
