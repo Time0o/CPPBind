@@ -20,7 +20,8 @@ class WrapperEnumConstant : public WrapperObject<clang::EnumConstantDecl>
 {
 public:
   WrapperEnumConstant(clang::EnumConstantDecl const *Decl)
-  : Name_(Identifier(Decl)),
+  : WrapperObject<clang::EnumConstantDecl>(Decl),
+    Name_(Identifier(Decl)),
     Type_(Decl->getType()),
     Value_(Decl->getInitVal().toString(10))
   {}
