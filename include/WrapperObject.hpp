@@ -49,8 +49,11 @@ public:
     auto const *Context = Decl_->getDeclContext();
 
     while (!Context->isTranslationUnit()) {
-      if (Context->isNamespace())
-        return Identifier(llvm::dyn_cast<clang::NamespaceDecl>(Context));
+      if (Context->isNamespace()) {
+        auto NamespaceDecl(llvm::dyn_cast<clang::NamespaceDecl>(Context));
+        if (!NamespaceDecl->isAnonymousNamespace())
+          return Identifier(NamespaceDecl);
+      }
 
       Context = Context->getParent();
     }
