@@ -1,5 +1,5 @@
-from cppbind import Function
-from patcher import Patcher
+from cppbind import Function, Identifier as Id, Record
+from patcher import Patcher, _name
 from text import code
 from util import dotdict
 
@@ -87,4 +87,5 @@ class LuaPatcher(Patcher):
         self._patch(Function, 'declare_return_value', _function_declare_return_value)
         self._patch(Function, 'perform_return', _function_perform_return)
         self._patch(Function, 'handle_exception', _function_handle_exception)
+        self._patch(Function, 'finalize_exception', _function_finalize_exception)
         self._patch(Function, 'finalize_exception', _function_finalize_exception)

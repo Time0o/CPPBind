@@ -1,15 +1,15 @@
-local test = require 'test_identifiers'
+local test = require 'test.identifiers'
 
-test.test_a_func()
-test.test_func_b()
+test.test.a_func()
+test.test.func_b()
 
-test.test_func_1()
-test.test_too_func_2_furious()
+test.test.func_1()
+test.test.too_func_2_furious()
 
-test.test_foo_bar()
-test.test_bar_foo()
+test.test.foo_bar()
+test.test.bar_foo()
 
-test.test_l4()
-test.test_l4_re()
-test.test_l4_virtio()
-test.test_l4_func()
+test.test.l4()
+test.test.l4_re()
+test.test.l4_virtio()
+test.test.l4_func()

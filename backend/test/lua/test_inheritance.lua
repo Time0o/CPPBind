@@ -1,11 +1,11 @@
-local test = require 'test_inheritance'
+local test = require 'test.inheritance'
 
-assert(test.TestBaseAbstract == nil)
-assert(test.TestDerived.func_protected == nil)
-assert(test.TestDerived.func_private == nil)
+assert(test.test.BaseAbstract == nil)
+assert(test.test.Derived.func_protected == nil)
+assert(test.test.Derived.func_private == nil)
 
 do
-  local derived = test.TestDerived.new()
+  local derived = test.test.Derived.new()
 
   assert(derived:func_1() == 1)
   assert(derived:func_2() == 3)
@@ -13,15 +13,15 @@ do
 end
 
 do
-  local base_1 = test.TestBase1.new()
+  local base_1 = test.test.Base1.new()
   assert(base_1:func_1() == 1)
 
-  local base_2 = test.TestBase2.new()
+  local base_2 = test.test.Base2.new()
   assert(base_2:func_2() == 2)
 
-  local base_protected = test.TestBaseProtected.new()
+  local base_protected = test.test.BaseProtected.new()
   assert(base_protected:func_protected() == true)
 
-  local base_private = test.TestBasePrivate.new()
+  local base_private = test.test.BasePrivate.new()
   assert(base_private:func_private() == true)
 end
