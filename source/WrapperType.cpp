@@ -226,6 +226,18 @@ std::optional<WrapperRecord const *>
 WrapperType::asRecord() const
 { return CompilerState().types()->getRecord(*this); }
 
+std::vector<std::string>
+WrapperType::templateArguments() const
+{
+  std::vector<std::string> TArgs;
+  TArgs.reserve(TemplateArgumentList_->size());
+
+  for (auto const &TA : *TemplateArgumentList_)
+    TArgs.push_back(TA.str());
+
+  return TArgs;
+}
+
 std::optional<WrapperType>
 WrapperType::proxyFor()
 {
