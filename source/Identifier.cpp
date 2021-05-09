@@ -264,26 +264,22 @@ Identifier::qualified(Identifier const &Qualifiers) const
 }
 
 Identifier
-Identifier::unqualified() const
+Identifier::unqualified(int Remove) const
 {
   auto Unqualified(*this);
 
-  if (Components_.size() > 1u) {
-    Unqualified.Components_.erase(Unqualified.Components_.begin(),
-                                  Unqualified.Components_.end() - 1);
-  }
+  if (Components_.size() <= 1u)
+    return Unqualified;
+
+  if (Remove == -1)
+    Remove = static_cast<int>(Components_.size() - 1);
+  else
+    Remove = std::min(Remove, static_cast<int>(Components_.size() - 1));
+
+  Unqualified.Components_.erase(Unqualified.Components_.begin(),
+                                Unqualified.Components_.begin() + Remove);
 
   return Unqualified;
-}
-
-Identifier
-Identifier::unscoped() const
-{
-  auto Str(str());
-
-  string::replaceAll(Str, "::", "_");
-
-  return Identifier(Str);
 }
 
 std::string
@@ -299,7 +295,12 @@ Identifier::format(Identifier::Case Case, Identifier::Quals Quals) const
     Id = Id.unqualified();
     break;
   case REPLACE_QUALS:
-    Id = Id.unscoped();
+    {
+      auto Str(str());
+      string::replaceAll(Str, "::", "_");
+
+      Id = Identifier(Str);
+    }
     break;
   }
 

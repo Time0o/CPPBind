@@ -130,8 +130,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("components", &Identifier::components)
     .def("qualifiers", &Identifier::qualifiers)
     .def("qualified", &Identifier::qualified, "qualifiers"_a)
-    .def("unqualified", &Identifier::unqualified)
-    .def("unscoped", &Identifier::unscoped);
+    .def("unqualified", &Identifier::unqualified, "remove"_a = -1);
 
   py::implicitly_convertible<std::string, Identifier>();
 

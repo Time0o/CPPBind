@@ -48,6 +48,8 @@ public:
 
   class Component
   {
+    friend class Identifier;
+
   public:
     explicit Component(std::string const &Name);
 
@@ -140,10 +142,10 @@ public:
   { return Components_.empty(); }
 
   std::vector<Identifier> components() const;
+
   Identifier qualifiers() const;
   Identifier qualified(Identifier const &Qualifiers) const;
-  Identifier unqualified() const;
-  Identifier unscoped() const;
+  Identifier unqualified(int Remove = -1) const;
 
   std::string str() const;
 
