@@ -48,12 +48,6 @@ public:
   WrapperType getType() const
   { return Type_; }
 
-  std::deque<WrapperRecord const *> const &getBases() const
-  { return Bases_; }
-
-  std::deque<WrapperRecord const *> &getBases()
-  { return Bases_; }
-
   std::deque<WrapperFunction> const &getFunctions() const
   { return Functions_; }
 
@@ -71,6 +65,9 @@ public:
   std::optional<std::string> getTemplateArgumentList() const;
 
   bool isDefinition() const
+  { return IsDefinition_; }
+
+  bool isComplete() const
   { return IsDefinition_; }
 
   bool isAbstract() const
@@ -122,8 +119,6 @@ private:
 
   Identifier Name_;
   WrapperType Type_;
-
-  std::deque<WrapperRecord const *> Bases_;
 
   std::deque<WrapperFunction> Functions_;
 

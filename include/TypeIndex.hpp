@@ -42,20 +42,21 @@ public:
   std::optional<WrapperEnum const *> getEnum(WrapperType const &Type) const;
 
 private:
-  using Graph = boost::adjacency_list<boost::vecS,
-                                      boost::vecS,
-                                      boost::directedS,
-                                      std::string>;
+  using TypeGraph = boost::adjacency_list<boost::vecS,
+                                          boost::vecS,
+                                          boost::directedS,
+                                          std::string>;
 
-  using LabeledGraph = boost::labeled_graph<Graph, std::string>;
+  using LabeledTypeGraph = boost::labeled_graph<TypeGraph, std::string>;
 
-  void addVertex(std::string const &Type);
-  void addEdge(std::string const &SourceType, std::string const &TargetType);
+  void addRecordToGraph(WrapperRecord const *Record);
+  void addRecordGraphVertex(std::string const &Type);
+  void addRecordGraphEdge(std::string const &SourceType, std::string const &TargetType);
 
   std::unordered_map<std::string, WrapperRecord const *> Records_;
   std::unordered_set<std::string> RecordDeclarations_;
   std::set<std::string> RecordDefinitions_;
-  LabeledGraph RecordGraph_;
+  LabeledTypeGraph RecordGraph_;
 
   std::unordered_map<std::string, WrapperEnum const *> Enums_;
   std::set<std::string> EnumDefinitions_;

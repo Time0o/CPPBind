@@ -99,6 +99,7 @@ private:
 
   std::deque<WrapperInclude> Includes_;
   std::deque<WrapperDefinition> Definitions_;
+
   std::deque<WrapperEnum> Enums_;
   std::deque<WrapperConstant> Constants_;
 

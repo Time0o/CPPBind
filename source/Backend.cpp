@@ -188,9 +188,10 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_struct", &Type::isStruct)
     .def("is_record_indirection", &Type::isRecordIndirection,
          "recursive"_a = false)
-    .def("base", &Type::base)
+    .def("basic", &Type::basic)
     .def("canonical", &Type::canonical)
     .def("proxy_for", &Type::proxyFor)
+    .def("base_types", &Type::baseTypes)
     .def("as_enum", &Type::asEnum)
     .def("as_record", &Type::asRecord)
     .def("template_arguments", &Type::templateArguments)
@@ -308,9 +309,6 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("scope", &Record::getScope)
     .def("namespace", &Record::getNamespace)
     .def("type", &Record::getType)
-    .def("bases",
-         py::overload_cast<>(&Record::getBases, py::const_),
-         py::return_value_policy::reference_internal)
     .def("functions",
          py::overload_cast<>(&Record::getFunctions, py::const_),
          py::return_value_policy::reference_internal)
@@ -329,6 +327,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("destructor", &Record::getDestructor,
          py::return_value_policy::reference_internal)
     .def("template_argument_list", &Record::getTemplateArgumentList)
+    .def("is_complete", &Record::isComplete)
     .def("is_abstract", &Record::isAbstract)
     .def("is_copyable", &Record::isCopyable)
     .def("is_moveable", &Record::isMoveable)

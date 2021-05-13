@@ -82,9 +82,10 @@ public:
   bool isRecordIndirection(bool Recursive = false) const;
   bool isConst() const;
 
-  WrapperType base() const;
+  WrapperType basic() const;
   WrapperType canonical() const;
   std::optional<WrapperType> proxyFor();
+  std::vector<WrapperType> baseTypes() const;
   std::optional<WrapperEnum const *> asEnum() const;
   std::optional<WrapperRecord const *> asRecord() const;
 

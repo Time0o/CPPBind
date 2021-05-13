@@ -109,7 +109,7 @@ class RustBackend(Backend('rust')):
         return f"{self.input_file().filename()}_c"
 
     def _c_types(self):
-        type_set = self.type_set()
+        type_set = self.types(as_set=True)
 
         type_set.add(Type('void'))
         type_set.add(Type('char'))

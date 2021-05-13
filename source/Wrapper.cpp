@@ -167,32 +167,31 @@ Wrapper::_addWrapperRecord(WrapperRecord *Record)
   auto RecordNameTemplated(Record->getFormat(true));
   auto RecordTypeMangled(Record->getType().mangled());
 
-  if (!Record->isDefinition()) {
+  if (Record->isDefinition()) {
+    CompilerState().identifiers()->addDefinition(RecordNameTemplated,
+                                                 IdentifierIndex::RECORD);
+
+    CompilerState().types()->addRecordDefinition(Record);
+
+    auto &Functions(Record->getFunctions());
+
+    auto It(Functions.begin());
+    while (It != Functions.end()) {
+      log::debug("considering member {0}", *It);
+
+      if (!_addWrapperFunction(&(*It)))
+        It = Functions.erase(It);
+      else
+        ++It;
+    }
+
+  } else {
     log::debug("not a definition");
 
     CompilerState().identifiers()->addDeclaration(RecordNameTemplated,
                                                   IdentifierIndex::RECORD);
 
     CompilerState().types()->addRecordDeclaration(Record);
-
-    return false;
-  }
-
-  CompilerState().identifiers()->addDefinition(RecordNameTemplated,
-                                               IdentifierIndex::RECORD);
-
-  CompilerState().types()->addRecordDefinition(Record);
-
-  auto &Functions(Record->getFunctions());
-
-  auto It(Functions.begin());
-  while (It != Functions.end()) {
-    log::debug("considering member {0}", *It);
-
-    if (!_addWrapperFunction(&(*It)))
-      It = Functions.erase(It);
-    else
-      ++It;
   }
 
   return true;

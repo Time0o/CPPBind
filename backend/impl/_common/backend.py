@@ -105,45 +105,6 @@ class BackendGeneric(metaclass=BackendMeta):
         self._add_hierachy()
         self._add_types()
 
-    def _add_types(self):
-        self._types = set()
-        self._type_aliases = set()
-        self._type_aliases_target = None
-
-        def add_type(t):
-            while t.is_alias():
-                if t.is_basic():
-                    self._type_aliases.add((t, t.canonical()))
-                    break
-                elif t.is_const():
-                    t = t.without_const()
-                elif t.is_pointer() or t.is_reference():
-                    t = t.pointee()
-
-            if not t.is_void():
-                self._types.add(t.unqualified())
-
-            if t.is_enum():
-                add_type(t.underlying_integer_type())
-            elif t.is_pointer() or t.is_reference():
-                while t.is_pointer() or t.is_reference():
-                    if t.pointee().is_void():
-                        self._types.add(t.pointee().unqualified())
-                        break
-                    else:
-                        t = t.pointee()
-                        self._types.add(t.unqualified())
-
-        for v in self.constants(include_definitions=True, include_enums=True):
-            add_type(v.type())
-
-        for r in self._records:
-            add_type(r.type())
-
-        for f in chain(self._functions, *(r.functions() for r in self._records)):
-            for t in [f.return_type()] + [p.type() for p in f.parameters()]:
-                add_type(t)
-
     def _add_hierachy(self):
         self._hierarchy = {}
         self._init_hierarchy(self._hierarchy)
@@ -229,10 +190,10 @@ class BackendGeneric(metaclass=BackendMeta):
         for v in self.constants(include_definitions=True, include_enums=True):
             add_type(v.type())
 
-        for r in self._records:
+        for r in self.records(include_abstract=True):
             add_type(r.type())
 
-        for f in chain(self._functions, *(r.functions() for r in self._records)):
+        for f in chain(self._functions, *(r.functions() for r in self.records(include_abstract=True))):
             for t in [f.return_type()] + [p.type() for p in f.parameters()]:
                 add_type(t)
 
@@ -284,11 +245,11 @@ class BackendGeneric(metaclass=BackendMeta):
     def objects(self):
         return self._hierarchy
 
-    def types(self):
-        return sorted(self._types)
+    def types(self, as_set=False):
+        if as_set:
+            return self._types
 
-    def type_set(self):
-        return self._types
+        return sorted(self._types)
 
     def type_aliases(self):
         if self._type_aliases_target is None:
@@ -319,11 +280,19 @@ class BackendGeneric(metaclass=BackendMeta):
 
         return constants
 
-    def records(self, include_abstract=False):
-        if not include_abstract:
-            return [r for r in self._records if not r.is_abstract()]
+    def records(self, include_incomplete=False, include_abstract=False):
+        records_ = []
 
-        return self._records
+        for r in self._records:
+            if not include_incomplete and not r.is_complete():
+                continue
+
+            if not include_abstract and r.is_abstract():
+                continue
+
+            records_.append(r)
+
+        return records_
 
     def functions(self, include_members=False):
         functions = self._functions[:]

@@ -38,10 +38,24 @@ def type_instances():
 
         types[(t.without_const(), t_bases)] = True
 
-    for r in backend().records(include_abstract=True):
-        add_type(r.type(), (b.type() for b in r.bases()))
+    record_list = backend().records(include_incomplete=True, include_abstract=True)
+    record_set = {r.type(): r for r in record_list}
 
-    for t in backend().types():
+    type_list = backend().types()
+    type_set = backend().types(as_set=True)
+
+    for r in record_list:
+        if r.type() not in type_set:
+            continue
+
+        base_types = []
+        for t in r.type().base_types():
+            if t in record_set and t in type_set:
+                base_types.append(t)
+
+        add_type(r.type(), base_types)
+
+    for t in type_list:
         if (t.is_pointer() or t.is_reference()) and not t.pointee().is_record():
             add_type(t.pointee())
 

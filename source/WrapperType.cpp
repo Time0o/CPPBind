@@ -59,7 +59,7 @@ WrapperType::getName() const
   if (isAlias() && isBasic())
     return Identifier(str());
 
-  return Identifier(base().str());
+  return Identifier(basic().str());
 }
 
 std::optional<Identifier>
@@ -211,7 +211,7 @@ WrapperType::isConst() const
 { return type().isConstQualified(); }
 
 WrapperType
-WrapperType::base() const
+WrapperType::basic() const
 { return pointee(true).unqualified(); }
 
 WrapperType
@@ -296,6 +296,20 @@ WrapperType::proxyFor()
     return WrapperType(*ProxyFor_);
 
   return std::nullopt;
+}
+
+std::vector<WrapperType>
+WrapperType::baseTypes() const
+{
+  assert(isRecord());
+
+  std::vector<WrapperType> BaseTypes;
+  BaseTypes.reserve(BaseTypes_.size());
+
+  for (auto const &Type : BaseTypes_)
+    BaseTypes.emplace_back(Type);
+
+  return BaseTypes;
 }
 
 WrapperType
@@ -386,7 +400,7 @@ WrapperType::format(bool WithTemplatePostfix,
     StrReplace = Str;
 
   } else {
-    WrapperType BaseType(base());
+    WrapperType BaseType(basic());
 
     StrBase = print::qualType(BaseType.type(), print::QUALIFIED_POLICY);
 

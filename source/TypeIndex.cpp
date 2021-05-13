@@ -16,25 +16,24 @@ namespace cppbind
 
 void
 TypeIndex::addRecordDeclaration(WrapperRecord const *Record)
-{ RecordDeclarations_.insert(Record->getType().mangled()); }
+{
+  auto RecordTypeMangled(Record->getType().mangled());
+
+  Records_[RecordTypeMangled] = Record;
+
+  auto [_, New] = RecordDeclarations_.insert(RecordTypeMangled);
+  if (New)
+    addRecordToGraph(Record);
+}
 
 void
 TypeIndex::addRecordDefinition(WrapperRecord const *Record)
 {
-  Records_[Record->getType().mangled()] = Record;
-
   addRecordDeclaration(Record);
 
-  auto [_, New] = RecordDefinitions_.insert(Record->getType().mangled());
-  if (!New)
-    return;
+  auto RecordTypeMangled(Record->getType().mangled());
 
-  addVertex(Record->getType().mangled());
-
-  for (auto Base : Record->getBases()) {
-    if (hasRecordDefinition(Base))
-      addRecordDefinition(Base);
-  }
+  RecordDefinitions_.insert(RecordTypeMangled);
 }
 
 void
@@ -92,7 +91,7 @@ TypeIndex::getRecordBases(WrapperRecord const *Record, bool Recursive) const
       : BaseIDs_(BaseIDs)
       {}
 
-      void discover_vertex(Graph::vertex_descriptor const &V, Graph const &G) const
+      void discover_vertex(TypeGraph::vertex_descriptor const &V, TypeGraph const &G) const
       { BaseIDs_.push_back(G[V]); }
 
     private:
@@ -105,7 +104,7 @@ TypeIndex::getRecordBases(WrapperRecord const *Record, bool Recursive) const
     BaseIDs.pop_front();
 
   } else {
-    typename boost::graph_traits<Graph>::out_edge_iterator It, End;
+    typename boost::graph_traits<TypeGraph>::out_edge_iterator It, End;
     for (std::tie(It, End) = boost::out_edges(V, RecordGraph_.graph()); It != End; ++It)
       BaseIDs.push_back(RecordGraph_.graph()[boost::target(*It, RecordGraph_.graph())]);
   }
@@ -123,7 +122,7 @@ TypeIndex::getRecordBases(WrapperRecord const *Record, bool Recursive) const
 std::vector<WrapperRecord const *>
 TypeIndex::getRecordBasesFirstOrdering() const
 {
-  std::vector<boost::graph_traits<Graph>::vertex_descriptor> BasesFirstVertices;
+  std::vector<boost::graph_traits<TypeGraph>::vertex_descriptor> BasesFirstVertices;
   boost::topological_sort(RecordGraph_.graph(), std::back_inserter(BasesFirstVertices));
 
   std::vector<WrapperRecord const *> BasesFirst;
@@ -149,11 +148,27 @@ TypeIndex::getEnum(WrapperType const &Type) const
 }
 
 void
-TypeIndex::addVertex(std::string const &Type)
+TypeIndex::addRecordToGraph(WrapperRecord const *Record)
+{
+  auto RecordType(Record->getType());
+  auto RecordTypeMangled(RecordType.mangled());
+
+  addRecordGraphVertex(RecordTypeMangled);
+
+  for (auto BaseType : RecordType.baseTypes()) {
+    auto BaseTypeMangled(BaseType.mangled());
+
+    addRecordGraphVertex(BaseTypeMangled);
+    addRecordGraphEdge(RecordTypeMangled, BaseTypeMangled);
+  }
+}
+
+void
+TypeIndex::addRecordGraphVertex(std::string const &Type)
 { RecordGraph_.graph()[boost::add_vertex(Type, RecordGraph_)] = Type; }
 
 void
-TypeIndex::addEdge(std::string const &SourceType, std::string const &TargetType)
+TypeIndex::addRecordGraphEdge(std::string const &SourceType, std::string const &TargetType)
 { boost::add_edge(RecordGraph_.vertex(SourceType), RecordGraph_.vertex(TargetType), RecordGraph_.graph()); }
 
 } // namespace cppbind
