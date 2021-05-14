@@ -60,7 +60,7 @@ list(GET CLANG_VERSION_LIST 0 CLANG_VERSION_MAJOR)
 list(GET CLANG_VERSION_LIST 1 CLANG_VERSION_MINOR)
 list(GET CLANG_VERSION_LIST 2 CLANG_VERSION_PATCH)
 
-set(CLANG_VERSION_MAJOR_MIN 8)
+set(CLANG_VERSION_MAJOR_MIN 10)
 
 if (CLANG_VERSION_MAJOR LESS CLANG_VERSION_MAJOR_MIN)
   message(FATAL_ERROR "Clang version < ${CLANG_VERSION_MAJOR_MIN} not supported")
@@ -74,25 +74,7 @@ if (CMAKE_BUILD_TYPE STREQUAL Debug AND COVERAGE)
 endif()
 
 # libraries
-if (CLANG_VERSION_MAJOR LESS 9)
-  set(CLANG_LIBRARIES
-      clangTooling
-      clangFrontend
-      clangDriver
-      clangSerialization
-      clangCodeGen
-      clangParse
-      clangSema
-      clangAnalysis
-      clangEdit
-      clangAST
-      clangASTMatchers
-      clangDynamicASTMatchers
-      clangLex
-      clangBasic)
-else()
-  set(CLANG_LIBRARIES clang-cpp)
-endif()
+set(CLANG_LIBRARIES clang-cpp)
 
 # include paths
 set(ENV{CLANGXX} ${CMAKE_CXX_COMPILER})
