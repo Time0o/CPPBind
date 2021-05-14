@@ -1,21 +1,6 @@
-from cppbind import Constant, Enum, Function, Identifier as Id, Type
+from cppbind import Enum, Function, Identifier as Id, Type, Variable
 from patcher import Patcher, _name
 from text import code
-
-
-def _constant_name_target(self):
-    return self.name().format(case=Id.SNAKE_CASE_CAP_ALL,
-                              quals=Id.REPLACE_QUALS)
-
-
-def _constant_declare(self):
-    return f"extern {self.type().target()} {self.name_target()};"
-
-
-def _constant_assign(self):
-    return self.type().output(
-        outp=self.name(),
-        interm=f"{self.type().target()} {self.name_target()}")
 
 
 def _function_before_call(self):
@@ -71,10 +56,9 @@ def _function_handle_exception(self, what):
 
 class CPatcher(Patcher):
    def patch(self):
-        self._patch(Constant, 'name_target', _constant_name_target)
-        self._patch(Constant, 'declare', _constant_declare)
-        self._patch(Constant, 'assign', _constant_assign)
         self._patch(Enum, 'name_target', _name(default_case=Id.SNAKE_CASE))
+        self._patch(Variable, 'name_target', _name(default_case=Id.SNAKE_CASE_CAP_ALL,
+                                                   default_quals=Id.REPLACE_QUALS))
         self._patch(Function, 'before_call', _function_before_call)
         self._patch(Function, 'declare_return_value', _function_declare_return_value)
         self._patch(Function, 'perform_return', _function_perform_return)

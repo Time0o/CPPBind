@@ -229,7 +229,7 @@ CreateWrapperConsumer::handleEnum(clang::EnumDecl const *Decl)
 
 void
 CreateWrapperConsumer::handleVariable(clang::VarDecl const *Decl)
-{ Wrapper_->addWrapperConstant(Decl); }
+{ Wrapper_->addWrapperVariable(Decl); }
 
 void
 CreateWrapperConsumer::handleFunction(clang::FunctionDecl const *Decl)

@@ -1,7 +1,7 @@
 import os
 
 from abc import ABCMeta, abstractmethod
-from cppbind import Constant, Enum, Function, Record, Type, Options
+from cppbind import Enum, Function, Options, Record, Type, Variable
 from file import File, Path
 from itertools import chain
 
@@ -92,13 +92,14 @@ class BackendGeneric(metaclass=BackendMeta):
 
         self._includes = wrapper.includes()
         self._definitions = wrapper.definitions()
+
         self._enums = wrapper.enums()
-        self._constants = wrapper.constants()
-        self._records = wrapper.records()
+        self._variables = wrapper.variables()
         self._functions = wrapper.functions()
+        self._records = wrapper.records()
 
         self._objects = self._enums + \
-                        self._constants + \
+                        self._variables + \
                         self._records + \
                         self._functions
 
@@ -120,7 +121,7 @@ class BackendGeneric(metaclass=BackendMeta):
             '__objects',
             '__types',
             '__enums',
-            '__constants',
+            '__variables',
             '__records',
             '__functions'
         ]
@@ -148,7 +149,7 @@ class BackendGeneric(metaclass=BackendMeta):
         object_keys = [
             (Type, '__types'),
             (Enum, '__enums'),
-            (Constant, '__constants'),
+            (Variable, '__variables'),
             (Record, '__records'),
             (Function, '__functions')
         ]
@@ -187,7 +188,7 @@ class BackendGeneric(metaclass=BackendMeta):
                         t = t.pointee()
                         self._types.add(t.unqualified())
 
-        for v in self.constants(include_definitions=True, include_enums=True):
+        for v in self.variables(include_definitions=True, include_enums=True):
             add_type(v.type())
 
         for r in self.records(include_abstract=True):
@@ -200,14 +201,11 @@ class BackendGeneric(metaclass=BackendMeta):
     def run(self):
         self.wrap_before()
 
-        for d in self._definitions:
-            self.wrap_definition(d)
-
         for e in self._enums:
             self.wrap_enum(e)
 
-        for c in self._constants:
-            self.wrap_constant(c)
+        for c in self._variables:
+            self.wrap_variable(c)
 
         for r in self._records:
             if not r.is_abstract():
@@ -268,20 +266,20 @@ class BackendGeneric(metaclass=BackendMeta):
     def enums(self):
         return self._enums
 
-    def constants(self, include_definitions=False, include_enums=False):
-        constants = self._constants[:]
+    def variables(self, include_definitions=False, include_enums=False):
+        variables = self._variables[:]
 
         if include_definitions:
-            constants += [d.as_constant() for d in self._definitions]
+            variables += [d.as_variable() for d in self._definitions]
 
         if include_enums:
             for e in self._enums:
-                constants += [c.as_constant() for c in e.constants()]
+                variables += [c.as_variable() for c in e.constants()]
 
-        return constants
+        return variables
 
     def records(self, include_incomplete=False, include_abstract=False):
-        records_ = []
+        records = []
 
         for r in self._records:
             if not include_incomplete and not r.is_complete():
@@ -290,9 +288,9 @@ class BackendGeneric(metaclass=BackendMeta):
             if not include_abstract and r.is_abstract():
                 continue
 
-            records_.append(r)
+            records.append(r)
 
-        return records_
+        return records
 
     def functions(self, include_members=False):
         functions = self._functions[:]
@@ -319,23 +317,20 @@ class BackendGeneric(metaclass=BackendMeta):
     def wrap_after(self):
         pass
 
-    def wrap_definition(self, d):
-        self.wrap_constant(d.as_constant())
-
     def wrap_enum(self, e):
         for c in e.constants():
-            self.wrap_constant(c.as_constant())
+            self.wrap_variable(c.as_variable())
 
     @abstractmethod
-    def wrap_constant(self, c):
-        pass
-
-    @abstractmethod
-    def wrap_record(self, r):
+    def wrap_variable(self, v):
         pass
 
     @abstractmethod
     def wrap_function(self, f):
+        pass
+
+    @abstractmethod
+    def wrap_record(self, r):
         pass
 
 

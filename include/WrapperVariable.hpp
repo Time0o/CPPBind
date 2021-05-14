@@ -1,5 +1,5 @@
-#ifndef GUARD_WRAPPER_CONSTANT_H
-#define GUARD_WRAPPER_CONSTANT_H
+#ifndef GUARD_WRAPPER_VARIABLE_H
+#define GUARD_WRAPPER_VARIABLE_H
 
 #include "Identifier.hpp"
 #include "LLVMFormat.hpp"
@@ -11,15 +11,15 @@
 namespace cppbind
 {
 
-class WrapperConstant : public WrapperObject<clang::ValueDecl>
+class WrapperVariable : public WrapperObject<clang::ValueDecl>
 {
 public:
-  WrapperConstant(Identifier const &Name, WrapperType const &Type)
+  WrapperVariable(Identifier const &Name, WrapperType const &Type)
   : Name_(Name),
     Type_(Type)
   {}
 
-  explicit WrapperConstant(clang::ValueDecl const *Decl)
+  explicit WrapperVariable(clang::ValueDecl const *Decl)
   : WrapperObject<clang::ValueDecl>(Decl),
     Name_(Decl),
     Type_(Decl->getType())
@@ -38,6 +38,6 @@ private:
 
 } // namespace cppbind
 
-namespace llvm { LLVM_FORMAT_PROVIDER(cppbind::WrapperConstant); }
+namespace llvm { LLVM_FORMAT_PROVIDER(cppbind::WrapperVariable); }
 
-#endif // GUARD_WRAPPER_CONSTANT_H
+#endif // GUARD_WRAPPER_VARIABLE_H

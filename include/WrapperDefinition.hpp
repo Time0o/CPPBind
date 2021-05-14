@@ -4,8 +4,8 @@
 #include <string>
 
 #include "Identifier.hpp"
-#include "WrapperConstant.hpp"
 #include "WrapperType.hpp"
+#include "WrapperVariable.hpp"
 
 namespace cppbind
 {
@@ -24,8 +24,8 @@ public:
   std::string getArg() const
   { return Arg_; }
 
-  WrapperConstant getAsConstant(WrapperType const &Type = WrapperType("int")) const
-  { return WrapperConstant(Name_, Type); }
+  WrapperVariable getAsVariable(WrapperType const &Type = WrapperType("int")) const
+  { return WrapperVariable(Name_, Type); }
 
   std::string str() const
   { return "#define " + Name_.str() + " " + Arg_; }

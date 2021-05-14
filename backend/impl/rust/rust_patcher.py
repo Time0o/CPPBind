@@ -1,5 +1,5 @@
 from backend import backend
-from cppbind import Constant, EnumConstant, Function, Identifier as Id, Type
+from cppbind import EnumConstant, Function, Identifier as Id, Type
 from patcher import Patcher, _name
 from text import code
 from util import dotdict

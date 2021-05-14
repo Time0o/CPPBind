@@ -7,9 +7,9 @@
 
 #include "Identifier.hpp"
 #include "LLVMFormat.hpp"
-#include "WrapperConstant.hpp"
 #include "WrapperObject.hpp"
 #include "WrapperType.hpp"
+#include "WrapperVariable.hpp"
 
 #include "clang/AST/Decl.h"
 
@@ -45,8 +45,8 @@ public:
     return CLiteral;
   }
 
-  WrapperConstant getAsConstant() const
-  { return WrapperConstant(Name_, Type_); }
+  WrapperVariable getAsVariable() const
+  { return WrapperVariable(Name_, Type_); }
 
 private:
   Identifier Name_;

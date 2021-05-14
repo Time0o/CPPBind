@@ -10,13 +10,13 @@
 #include "Identifier.hpp"
 #include "Logging.hpp"
 #include "Options.hpp"
-#include "WrapperConstant.hpp"
 #include "WrapperDefinition.hpp"
 #include "WrapperEnum.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperInclude.hpp"
 #include "WrapperRecord.hpp"
 #include "WrapperType.hpp"
+#include "WrapperVariable.hpp"
 
 namespace cppbind
 {
@@ -41,10 +41,10 @@ public:
   }
 
   template<typename ...ARGS>
-  void addWrapperConstant(ARGS &&...Args)
+  void addWrapperVariable(ARGS &&...Args)
   {
-    addWrapperObject(&Wrapper::_addWrapperConstant,
-                     Constants_,
+    addWrapperObject(&Wrapper::_addWrapperVariable,
+                     Variables_,
                      std::forward<ARGS>(Args)...);
   }
 
@@ -69,7 +69,7 @@ public:
   std::vector<WrapperInclude const *> getIncludes() const;
   std::vector<WrapperDefinition const *> getDefinitions() const;
   std::vector<WrapperEnum const *> getEnums() const;
-  std::vector<WrapperConstant const *> getConstants() const;
+  std::vector<WrapperVariable const *> getVariables() const;
   std::vector<WrapperFunction const *> getFunctions() const;
   std::vector<WrapperRecord const *> getRecords() const;
 
@@ -90,7 +90,7 @@ private:
   }
 
   bool _addWrapperEnum(WrapperEnum *Enum);
-  bool _addWrapperConstant(WrapperConstant *Constant);
+  bool _addWrapperVariable(WrapperVariable *Variable);
   bool _addWrapperFunction(WrapperFunction *Function);
   bool _addWrapperRecord(WrapperRecord *Record);
 
@@ -101,7 +101,7 @@ private:
   std::deque<WrapperDefinition> Definitions_;
 
   std::deque<WrapperEnum> Enums_;
-  std::deque<WrapperConstant> Constants_;
+  std::deque<WrapperVariable> Variables_;
 
   std::deque<WrapperFunction> Functions_;
   std::unordered_map<Identifier, std::deque<WrapperFunction const *>> FunctionNames_;

@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from backend import backend
-from cppbind import Constant, Definition, Enum, EnumConstant, Function, Identifier as Id, Options, Parameter, Record, Type
+from cppbind import Definition, Enum, EnumConstant, Function, Identifier as Id, Options, Parameter, Record, Type, Variable
 from text import code
 from util import dotdict
 
@@ -56,16 +56,6 @@ def _type_input(self, inp, interm=None, args=None):
 
 def _type_output(self, outp, interm=None, args=None):
     return backend().type_translator().output(self, args).format(outp=outp, interm=interm)
-
-
-def _constant_declare(self):
-    return f"{self.type().target()} {self.name_target()}"
-
-
-def _constant_assign(self):
-    args = dotdict({ 'c': self })
-
-    return self.type().output(args=args).format(outp=self.name(), interm=self.name_target())
 
 
 def _function_check_parameters(self):
@@ -337,16 +327,16 @@ class Patcher:
         if Patcher._init:
             return
 
-        _name.fallback_namespace = lambda: 'keep'
-        _name.fallback_case = lambda: Id.SNAKE_CASE
-        _name.fallback_quals = lambda: Id.REPLACE_QUALS
+        Patcher._patch_global_actions()
+        Patcher._patch_global_names()
 
+        Patcher._init = True
+
+    @staticmethod
+    def _patch_global_actions():
         Type.target = _type_target
         Type.input = _type_input
         Type.output = _type_output
-
-        Constant.declare = _constant_declare
-        Constant.assign = _constant_assign
 
         Function.check_parameters = _function_check_parameters
         Function.declare_parameters = _function_declare_parameters
@@ -367,6 +357,12 @@ class Patcher:
         Function.handle_exception = _function_handle_exception
         Function.finalize_exception = _function_finalize_exception
 
+    @staticmethod
+    def _patch_global_names():
+        _name.fallback_namespace = lambda: 'keep'
+        _name.fallback_case = lambda: Id.SNAKE_CASE
+        _name.fallback_quals = lambda: Id.REPLACE_QUALS
+
         Definition.name_target = _name(default_case=Id.SNAKE_CASE_CAP_ALL)
 
         Type.name_target = _name(default_case=Id.PASCAL_CASE)
@@ -374,7 +370,7 @@ class Patcher:
         Enum.name_target = _name(default_case=Id.PASCAL_CASE)
         EnumConstant.name_target = _name(default_case=Id.SNAKE_CASE_CAP_ALL)
 
-        Constant.name_target = _name(default_case=Id.SNAKE_CASE_CAP_ALL)
+        Variable.name_target = _name(default_case=Id.SNAKE_CASE_CAP_ALL)
 
         Function.name_target = \
             _name(get=lambda f: f.name(with_template_postfix=True,
@@ -388,10 +384,8 @@ class Patcher:
           _name(get=lambda r: r.name(with_template_postfix=True),
                 default_case=Id.PASCAL_CASE)
 
-        Patcher._init = True
-
     def _patch(self, cls, attr, fn):
-        self._orig[fn.__name__] = (cls, attr, getattr(cls, attr, None))
+        self._orig[f'{cls.__name__}.{fn.__name__}'] = (cls, attr, getattr(cls, attr, None))
 
         setattr(cls, attr, fn)
 

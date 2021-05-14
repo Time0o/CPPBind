@@ -50,9 +50,9 @@ std::vector<WrapperEnum const *>
 Wrapper::getEnums() const
 { return dequeToVector(Enums_); }
 
-std::vector<WrapperConstant const *>
-Wrapper::getConstants() const
-{ return dequeToVector(Constants_); }
+std::vector<WrapperVariable const *>
+Wrapper::getVariables() const
+{ return dequeToVector(Variables_); }
 
 std::vector<WrapperFunction const *>
 Wrapper::getFunctions() const
@@ -83,12 +83,12 @@ Wrapper::_addWrapperEnum(WrapperEnum *Enum)
 }
 
 bool
-Wrapper::_addWrapperConstant(WrapperConstant *Constant)
+Wrapper::_addWrapperVariable(WrapperVariable *Variable)
 {
-  if (!checkTypeWrapped(Constant->getType()))
+  if (!checkTypeWrapped(Variable->getType()))
     return false;
 
-  CompilerState().identifiers()->addDefinition(Constant->getName(),
+  CompilerState().identifiers()->addDefinition(Variable->getName(),
                                                IdentifierIndex::CONST);
 
   return true;

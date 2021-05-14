@@ -37,6 +37,8 @@ class CBackend(Backend('c')):
 
             #include "cppbind/c/c_bind_error_c.h"
 
+            {definitions}
+
             {typedefs}
 
             {record_declarations}
@@ -44,6 +46,7 @@ class CBackend(Backend('c')):
             {record_definitions}
             """,
             header_guard=self._header_guard(),
+            definitions='\n'.join(str(d) for d in self.definitions()),
             typedefs='\n'.join(self._typedefs()),
             record_declarations='\n'.join(self._record_declarations()),
             record_definitions='\n\n'.join(self._record_definitions('header'))))
@@ -59,7 +62,7 @@ class CBackend(Backend('c')):
             #include "cppbind/c/c_bind_error_cc.h"
             #include "cppbind/c/c_util_cc.h"
 
-            {input_includes}
+            {wrapper_includes}
 
             extern "C" {{
 
@@ -67,7 +70,7 @@ class CBackend(Backend('c')):
 
             {record_definitions}
             """,
-            input_includes='\n'.join(self.includes()),
+            wrapper_includes='\n'.join(self.includes()),
             wrapper_header_include=self._wrapper_header.include(),
             record_definitions='\n\n'.join(self._record_definitions('source'))))
 
@@ -105,17 +108,17 @@ class CBackend(Backend('c')):
 
         self._wrapper_header.append(enum_definition)
 
-    def wrap_constant(self, c):
-        self._wrapper_header.append(c.declare())
-        self._wrapper_source.append(c.assign())
-
-    def wrap_record(self, r):
-        for f in r.functions():
-            self.wrap_function(f)
+    def wrap_variable(self, v):
+        self._wrapper_header.append(self._variable_declaration(v))
+        self._wrapper_source.append(self._variable_definition(v))
 
     def wrap_function(self, f):
         self._wrapper_header.append(self._function_declaration(f))
         self._wrapper_source.append(self._function_definition(f))
+
+    def wrap_record(self, r):
+        for f in r.functions():
+            self.wrap_function(f)
 
     def _header_guard(self):
         guard_id = self.input_file().filename().upper()
@@ -132,6 +135,65 @@ class CBackend(Backend('c')):
                 typedefs.append(f"typedef {t_target} {a_target};")
 
         return typedefs
+
+    def _variable_declaration(self, v):
+        return f"extern {v.type().target()} {v.name_target()};"
+
+    def _variable_definition(self, v):
+          return v.type().output(outp=v.name(),
+                                 interm=f"{v.type().target()} {v.name_target()}")
+
+    def _function_declaration(self, f):
+        header = self._function_header(f)
+
+        return code(f"{header};")
+
+    def _function_definition(self, f):
+        return code(
+            """
+            {header}
+            {{
+              {body}
+            }}
+            """,
+            header=self._function_header(f),
+            body=self._function_body(f))
+
+    def _function_header(self, f):
+        # name
+        name = f.name_target()
+
+        # return type
+        return_type = f.return_type()
+
+        if return_type.is_record_indirection():
+            return_type = return_type.pointee().without_const()
+
+        return_type = return_type.target()
+
+        # parameters
+        parameters = []
+
+        for p in f.parameters():
+            t = p.type()
+            if t.is_record():
+                if t.proxy_for() is not None:
+                    t = t.proxy_for()
+                else:
+                    t = t.with_const().pointer_to()
+
+            parameters.append(f"{t.target()} {p.name_target()}")
+
+        if not parameters:
+            parameters = "void"
+        else:
+            parameters = ', '.join(parameters)
+
+        # assemble
+        return f"{return_type} {name}({parameters})"
+
+    def _function_body(self, f):
+        return f.forward()
 
     def _record_declarations(self):
         return [self._record_declaration(t) for t in self._record_types()]
@@ -189,54 +251,3 @@ class CBackend(Backend('c')):
 
         return list(sorted(types, key=lambda t: str(t)))
 
-    def _function_declaration(self, f):
-        header = self._function_header(f)
-
-        return code(f"{header};")
-
-    def _function_definition(self, f):
-        return code(
-            """
-            {header}
-            {{
-              {body}
-            }}
-            """,
-            header=self._function_header(f),
-            body=self._function_body(f))
-
-    def _function_header(self, f):
-        # name
-        name = f.name_target()
-
-        # return type
-        return_type = f.return_type()
-
-        if return_type.is_record_indirection():
-            return_type = return_type.pointee().without_const()
-
-        return_type = return_type.target()
-
-        # parameters
-        parameters = []
-
-        for p in f.parameters():
-            t = p.type()
-            if t.is_record():
-                if t.proxy_for() is not None:
-                    t = t.proxy_for()
-                else:
-                    t = t.with_const().pointer_to()
-
-            parameters.append(f"{t.target()} {p.name_target()}")
-
-        if not parameters:
-            parameters = "void"
-        else:
-            parameters = ', '.join(parameters)
-
-        # assemble
-        return f"{return_type} {name}({parameters})"
-
-    def _function_body(self, f):
-        return f.forward()

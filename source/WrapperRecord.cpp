@@ -19,7 +19,6 @@
 #include "WrapperObject.hpp"
 #include "WrapperRecord.hpp"
 #include "WrapperType.hpp"
-#include "WrapperConstant.hpp"
 
 namespace cppbind
 {

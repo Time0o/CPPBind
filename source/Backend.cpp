@@ -16,11 +16,11 @@
 #include "Logging.hpp"
 #include "Options.hpp"
 #include "Wrapper.hpp"
-#include "WrapperConstant.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperInclude.hpp"
 #include "WrapperRecord.hpp"
 #include "WrapperType.hpp"
+#include "WrapperVariable.hpp"
 
 namespace cppbind
 {
@@ -72,7 +72,7 @@ using Include = WrapperInclude;
 using Definition = WrapperDefinition;
 using Enum = WrapperEnum;
 using EnumConstant = WrapperEnumConstant;
-using Constant = WrapperConstant;
+using Variable = WrapperVariable;
 using Function = WrapperFunction;
 using Parameter = WrapperParameter;
 using Record = WrapperRecord;
@@ -140,7 +140,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
          py::return_value_policy::reference_internal)
     .def("enums", &Wrapper::getEnums,
          py::return_value_policy::reference_internal)
-    .def("constants", &Wrapper::getConstants,
+    .def("variables", &Wrapper::getVariables,
          py::return_value_policy::reference_internal)
     .def("functions", &Wrapper::getFunctions,
          py::return_value_policy::reference_internal)
@@ -231,7 +231,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("str", &Definition::str)
     .def("name", &Definition::getName)
     .def("arg", &Definition::getArg)
-    .def("as_constant", &Definition::getAsConstant,
+    .def("as_variable", &Definition::getAsVariable,
          "type"_a = WrapperType("int"));
 
   py::class_<Enum>(m, "Enum", py::dynamic_attr())
@@ -250,13 +250,13 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("type", &EnumConstant::getType)
     .def("value", &EnumConstant::getValue,
          "as_c_literal"_a = false)
-    .def("as_constant", &EnumConstant::getAsConstant);
+    .def("as_variable", &EnumConstant::getAsVariable);
 
-  py::class_<Constant>(m, "Constant", py::dynamic_attr())
-    .def("name", &Constant::getName)
-    .def("scope", &Constant::getScope)
-    .def("namespace", &Constant::getNamespace)
-    .def("type", &Constant::getType);
+  py::class_<Variable>(m, "Variable", py::dynamic_attr())
+    .def("name", &Variable::getName)
+    .def("scope", &Variable::getScope)
+    .def("namespace", &Variable::getNamespace)
+    .def("type", &Variable::getType);
 
   py::class_<Function>(m, "Function", py::dynamic_attr())
     .def("name", &Function::getFormat,

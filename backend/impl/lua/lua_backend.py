@@ -1,7 +1,7 @@
 import lua_util
 import type_info
 from backend import Backend
-from cppbind import Constant, Enum, Function, Identifier as Id, Options, Record, Type
+from cppbind import Enum, Function, Identifier as Id, Options, Record, Type
 from lua_patcher import LuaPatcher
 from lua_type_translator import LuaTypeTranslator
 from text import code
@@ -74,16 +74,16 @@ class LuaBackend(Backend('lua')):
             register_module=self._lua_module_register(),
             create_metatables=self._create_metatables(self.records())))
 
-    def wrap_constant(self, c):
+    def wrap_variable(self, v):
         pass
+
+    def wrap_function(self, f):
+        self._wrapper_module.append(self._function_definition(f))
 
     def wrap_record(self, r):
         functions = [f for f in r.functions() if not f.is_destructor()]
 
         self._wrapper_module.append(self._function_definitions(functions))
-
-    def wrap_function(self, f):
-        self._wrapper_module.append(self._function_definition(f))
 
     def _lua_includes(self):
         lua_includes = ['lua.h', 'lauxlib.h']
@@ -145,13 +145,13 @@ class LuaBackend(Backend('lua')):
         register = [self._register_createtable(h['__functions'])]
 
         for e in h['__enums']:
-            register += self._register_constants(c for c in e.constants())
-        if h['__constants']:
-            register += self._register_constants(h['__constants'])
-        if h['__records']:
-            register += self._register_records(h['__records'])
+            register += self._register_variables(c for c in e.constants())
+        if h['__variables']:
+            register += self._register_variables(h['__variables'])
         if h['__functions']:
             register.append(self._register_functions(h['__functions']))
+        if h['__records']:
+            register += self._register_records(h['__records'])
 
         if '__namespaces' in h:
             for ns, content in h['__namespaces'].items():
@@ -165,29 +165,14 @@ class LuaBackend(Backend('lua')):
 
         return '\n\n'.join(register)
 
-    def _register_constants(self, constants):
-        def register_constant(c):
+    def _register_variables(self, variables):
+        def register_variable(c):
             register = [c.type().output(outp=c.name()),
                         self._register_setfield(c.name_target(namespace='remove'))]
 
             return '\n'.join(register)
 
-        return [register_constant(c) for c in constants]
-
-    def _register_records(self, records):
-        def register_record(r):
-            static_functions = [f for f in r.functions() if not f.is_instance()]
-
-            register = [self._register_createtable(static_functions)]
-
-            if static_functions:
-                register.append(self._register_functions(static_functions))
-
-            register.append(self._register_setfield(r.name_target(namespace='remove')))
-
-            return '\n\n'.join(register)
-
-        return map(register_record, [r for r in records if not r.is_abstract()])
+        return [register_variable(c) for c in variables]
 
     def _register_functions(self, functions):
         def register_function(f):
@@ -212,6 +197,21 @@ class LuaBackend(Backend('lua')):
             }}
             """,
             register=',\n'.join(map(register_function, functions)))
+
+    def _register_records(self, records):
+        def register_record(r):
+            static_functions = [f for f in r.functions() if not f.is_instance()]
+
+            register = [self._register_createtable(static_functions)]
+
+            if static_functions:
+                register.append(self._register_functions(static_functions))
+
+            register.append(self._register_setfield(r.name_target(namespace='remove')))
+
+            return '\n\n'.join(register)
+
+        return map(register_record, [r for r in records if not r.is_abstract()])
 
     def _register_createtable(self, functions):
         return f"lua_createtable(L, 0, {len(functions)});"

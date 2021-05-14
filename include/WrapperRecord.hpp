@@ -18,7 +18,6 @@
 #include "WrapperFunction.hpp"
 #include "WrapperObject.hpp"
 #include "WrapperType.hpp"
-#include "WrapperConstant.hpp"
 
 namespace cppbind
 {
