@@ -10,15 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        CXX: [clang++-8, clang++-9, clang++-10]
+        CXX: [clang++-8, clang++-10]
         include:
         - CC: clang-8
           CXX: clang++-8
           LLVM_DEPENDENCIES: clang-8 llvm-8-dev libclang-8-dev
-
-        - CC: clang-9
-          CXX: clang++-9
-          LLVM_DEPENDENCIES: clang-9 llvm-9-dev libclang-9-dev
 
         - CC: clang-10
           CXX: clang++-10
