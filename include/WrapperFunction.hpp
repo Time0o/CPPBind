@@ -43,6 +43,7 @@ namespace cppbind
 
 class IdentifierIndex;
 class WrapperRecord;
+class WrapperVariable;
 
 class WrapperParameter : public WrapperObject<clang::ParmVarDecl>
 {
@@ -122,6 +123,12 @@ public:
                        bool WithOverloadPostfix = false,
                        bool WithoutOperatorName = false) const;
 
+  WrapperRecord const *getParent() const
+  { return Parent_; }
+
+  WrapperVariable const *getPropertyFor() const
+  { return PropertyFor_; }
+
   std::optional<WrapperParameter const *> getThis() const
   {
     if (!isInstance())
@@ -137,9 +144,6 @@ public:
   { return Parameters_; }
 
   WrapperType getReturnType() const;
-
-  WrapperRecord const *getParent() const
-  { return Parent_; }
 
   std::optional<std::string> getOverloadedOperator() const;
 
@@ -171,6 +175,12 @@ public:
 
   bool isDestructor() const
   { return IsDestructor_; }
+
+  bool isGetter() const
+  { return IsGetter_; }
+
+  bool isSetter() const
+  { return IsSetter_; }
 
   bool isStatic() const
   { return IsStatic_; }
@@ -217,6 +227,7 @@ private:
   determineOverloadedOperator(clang::FunctionDecl const *Decl);
 
   WrapperRecord const *Parent_ = nullptr;
+  WrapperVariable const *PropertyFor_ = nullptr;
 
   Identifier Name_;
   WrapperType ReturnType_;
@@ -230,6 +241,8 @@ private:
   bool IsMoveConstructor_ = false;
   bool IsMoveAssignmentOperator_ = false;
   bool IsDestructor_ = false;
+  bool IsGetter_ = false;
+  bool IsSetter_ = false;
   bool IsStatic_ = false;
   bool IsConst_ = false;
   bool IsConstexpr_ = false;
@@ -252,9 +265,12 @@ public:
 
   WrapperFunctionBuilder &setName(Identifier const &Name);
   WrapperFunctionBuilder &setParent(WrapperRecord const *Parent);
+  WrapperFunctionBuilder &setPropertyFor(WrapperVariable const *PropertyFor);
   WrapperFunctionBuilder &setReturnType(WrapperType const &ReturnType);
   WrapperFunctionBuilder &setIsConstructor(bool Val = true);
   WrapperFunctionBuilder &setIsDestructor(bool Val = true);
+  WrapperFunctionBuilder &setIsGetter(bool Val = true);
+  WrapperFunctionBuilder &setIsSetter(bool Val = true);
   WrapperFunctionBuilder &setIsStatic(bool Val = true);
   WrapperFunctionBuilder &setIsConst(bool Val = true);
   WrapperFunctionBuilder &setIsNoexcept(bool Val = true);

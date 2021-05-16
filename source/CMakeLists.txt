@@ -16,6 +16,7 @@ add_executable(${CPPBIND}
                "WrapperFunction.cpp"
                "WrapperInclude.cpp"
                "WrapperRecord.cpp"
-               "WrapperType.cpp")
+               "WrapperType.cpp"
+               "WrapperVariable.cpp")
 
 target_basic_config(${CPPBIND})

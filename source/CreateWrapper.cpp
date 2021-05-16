@@ -175,11 +175,7 @@ CreateWrapperConsumer::matchEnum()
 
 std::string
 CreateWrapperConsumer::matchVariable()
-{
-  // XXX non const variables
-  return llvm::formatv("allOf(hasType(isConstQualified()), {0})",
-                       matchToplevelOrNested());
-}
+{ return matchToplevel(); }
 
 std::string
 CreateWrapperConsumer::matchFunction()

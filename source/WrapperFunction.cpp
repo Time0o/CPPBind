@@ -493,9 +493,30 @@ WrapperFunctionBuilder::setName(Identifier const &Name)
 }
 
 WrapperFunctionBuilder &
+WrapperFunctionBuilder::setPropertyFor(WrapperVariable const *PropertyFor)
+{
+  Wf_.PropertyFor_ = PropertyFor;
+  return *this;
+}
+
+WrapperFunctionBuilder &
 WrapperFunctionBuilder::setReturnType(WrapperType const &ReturnType)
 {
   Wf_.ReturnType_ = ReturnType;
+  return *this;
+}
+
+WrapperFunctionBuilder &
+WrapperFunctionBuilder::setIsGetter(bool Val)
+{
+  Wf_.IsGetter_ = Val;
+  return *this;
+}
+
+WrapperFunctionBuilder &
+WrapperFunctionBuilder::setIsSetter(bool Val)
+{
+  Wf_.IsSetter_ = Val;
   return *this;
 }
 
