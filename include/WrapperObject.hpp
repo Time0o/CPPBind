@@ -33,6 +33,20 @@ public:
 
   virtual Identifier getName() const = 0;
 
+  virtual Identifier getNonScopedName() const
+  { return getName().unqualified(); }
+
+  virtual Identifier getNonNamespacedName() const
+  {
+    auto Name(getName());
+    auto Namespace(getNamespace());
+
+    if (!Namespace)
+      return Name;
+
+    return Name.unqualified(Namespace->components().size());
+  }
+
   virtual std::optional<Identifier> getScope() const
   {
     if (getName().components().size() < 2)
