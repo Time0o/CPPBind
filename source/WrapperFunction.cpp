@@ -180,15 +180,6 @@ WrapperType
 WrapperFunction::getReturnType() const
 { return ReturnType_; }
 
-std::optional<WrapperType>
-WrapperFunction::getOutType() const
-{
-  if (Parameters_.empty() || !Parameters_.back().isOut())
-    return std::nullopt;
-
-  return Parameters_.back().getType();
-}
-
 std::optional<std::string>
 WrapperFunction::getOverloadedOperator() const
 {

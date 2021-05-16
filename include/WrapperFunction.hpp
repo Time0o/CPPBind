@@ -138,8 +138,6 @@ public:
 
   WrapperType getReturnType() const;
 
-  std::optional<WrapperType> getOutType() const;
-
   WrapperRecord const *getParent() const
   { return Parent_; }
 

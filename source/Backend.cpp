@@ -266,7 +266,6 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("scope", &Function::getScope)
     .def("namespace", &Function::getNamespace)
     .def("return_type", &Function::getReturnType)
-    .def("out_type", &Function::getOutType)
     .def("this", &Function::getThis,
          py::return_value_policy::reference_internal)
     .def("parameters",
