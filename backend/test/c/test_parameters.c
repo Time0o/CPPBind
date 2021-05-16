@@ -24,7 +24,7 @@ int main()
          == TEST_MAX_LARGE_SIGNED_INT);
 
   /* floating point parameters */
-  assert(fabs(test_add_double(0.1, 0.2) - 0.3) < TEST_EPSILON_DOUBLE);
+  assert(fabs(test_add_double(0.1, 0.2) - 0.3) < test_get_epsilon_double());
 
   /* boolean parameters */
   assert(test_not_bool(1) == 0);

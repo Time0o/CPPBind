@@ -7,13 +7,14 @@ namespace cppbind
 {
 
 WrapperFunction
-WrapperVariable::getGetter() const
+WrapperVariable::getGetter()
 {
   auto T(getType());
 
   T = T.unqualified();
 
   return WrapperFunctionBuilder(prefixedName("get"))
+         .setNamespace(getNamespace())
          .setReturnType(T)
          .setPropertyFor(this)
          .setIsGetter()
@@ -22,7 +23,7 @@ WrapperVariable::getGetter() const
 }
 
 WrapperFunction
-WrapperVariable::getSetter() const
+WrapperVariable::getSetter()
 {
   if (!isAssignable())
     throw log::exception("tried to create setter for constant variable {0}", getName());
@@ -35,6 +36,7 @@ WrapperVariable::getSetter() const
   T = T.unqualified();
 
   return WrapperFunctionBuilder(prefixedName("set"))
+         .setNamespace(getNamespace())
          .pushParameter(Identifier("val"), T)
          .setPropertyFor(this)
          .setIsSetter()
@@ -43,20 +45,29 @@ WrapperVariable::getSetter() const
 }
 
 bool
+WrapperVariable::isConst() const
+{ return Type_.isConst(); }
+
+bool
+WrapperVariable::isConstexpr() const
+{ return IsConstexpr_; }
+
+bool
 WrapperVariable::isAssignable() const
 { return !Type_.isConst() && !(Type_.isReference() && Type_.referenced().isConst()); }
 
 Identifier
-WrapperVariable::prefixedName(std::string const &Prefix) const
+WrapperVariable::prefixedName(std::string const &Prefix)
 {
-  Identifier PrefixedName(Prefix + "_" + getNonNamespacedName().str());
-
+  auto Name(getName());
   auto Namespace(getNamespace());
 
-  if (Namespace)
-    PrefixedName = PrefixedName.qualified(*Namespace);
+  if (!Namespace)
+    return Identifier(Prefix + "_" + Name.str());
 
-  return PrefixedName;
+  Name = Name.unqualified(Namespace->components().size());
+
+  return Identifier(Prefix + "_" + Name.str()).qualified(*Namespace);
 }
 
 } // namespace cppbind

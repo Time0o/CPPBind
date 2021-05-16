@@ -63,7 +63,7 @@ WrapperType::getName() const
 }
 
 std::optional<Identifier>
-WrapperType::getNamespace() const
+WrapperType::getNamespace()
 {
   auto TDT = type()->getAs<clang::TypedefType>();
   if (!TDT)

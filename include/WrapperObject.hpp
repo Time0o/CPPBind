@@ -23,7 +23,9 @@ class WrapperObject
   friend struct llvm::format_provider<WrapperObject<T_DECL>>;
 
 public:
-  WrapperObject() = default;
+  WrapperObject()
+  : Decl_(nullptr)
+  {}
 
   WrapperObject(T_DECL const *Decl)
   : Decl_(Decl)
@@ -33,46 +35,30 @@ public:
 
   virtual Identifier getName() const = 0;
 
-  virtual Identifier getNonScopedName() const
-  { return getName().unqualified(); }
-
-  virtual Identifier getNonNamespacedName() const
+  virtual std::optional<Identifier> getNamespace()
   {
-    auto Name(getName());
-    auto Namespace(getNamespace());
+    if (CachedNamespaceValid_)
+      return CachedNamespace_;
 
-    if (!Namespace)
-      return Name;
+    if (Decl_) {
+      auto const *Context = Decl_->getDeclContext();
 
-    return Name.unqualified(Namespace->components().size());
-  }
+      while (!Context->isTranslationUnit()) {
+        if (Context->isNamespace()) {
+          auto NamespaceDecl(llvm::dyn_cast<clang::NamespaceDecl>(Context));
+          if (!NamespaceDecl->isAnonymousNamespace()) {
+            CachedNamespace_ = Identifier(NamespaceDecl);
+            break;
+          }
+        }
 
-  virtual std::optional<Identifier> getScope() const
-  {
-    if (getName().components().size() < 2)
-      return std::nullopt;
-
-    return getName().qualifiers();
-  }
-
-  virtual std::optional<Identifier> getNamespace() const
-  {
-    if (!Decl_)
-      return std::nullopt;
-
-    auto const *Context = Decl_->getDeclContext();
-
-    while (!Context->isTranslationUnit()) {
-      if (Context->isNamespace()) {
-        auto NamespaceDecl(llvm::dyn_cast<clang::NamespaceDecl>(Context));
-        if (!NamespaceDecl->isAnonymousNamespace())
-          return Identifier(NamespaceDecl);
+        Context = Context->getParent();
       }
-
-      Context = Context->getParent();
     }
 
-    return std::nullopt;
+    CachedNamespaceValid_ = true;
+
+    return CachedNamespace_;
   }
 
   std::string str() const
@@ -85,6 +71,10 @@ public:
 
     return SS.str();
   }
+
+protected:
+  std::optional<Identifier> CachedNamespace_;
+  bool CachedNamespaceValid_ = false;
 
 private:
   static std::string declName(T_DECL const *Decl)
@@ -115,7 +105,7 @@ private:
     return print::sourceLocation(Decl->getLocation());
   }
 
-  T_DECL const *Decl_ = nullptr;
+  T_DECL const *Decl_;
 };
 
 } // namespace cppbind

@@ -15,4 +15,9 @@ assert(test.test.ENUM_IN_ANONYMOUS_NAMESPACE_2 == 2)
 assert(test.test.UNSIGNED_CONSTEXPR == 1)
 assert(test.test.DOUBLE_CONSTEXPR == 1.0)
 
+assert(test.test.INT_VAR == 1)
+
+test.test.INT_VAR = 2
+assert(test.test.INT_VAR == 2)
+
 -- XXX macros

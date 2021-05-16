@@ -171,6 +171,10 @@ def _function_forward_call(self):
             call = self.construct(parameters)
     elif self.is_destructor():
         call = self.destruct()
+    elif self.is_getter():
+        call = self.get()
+    elif self.is_setter():
+        call = self.set(parameters)
     else:
         call = self.call(parameters)
 
@@ -225,6 +229,18 @@ def _function_move(self, parameters):
 
 def _function_destruct(self):
     return f"delete {self.this().name_interm()};"
+
+
+def _function_get(self):
+    p = self.property_for()
+
+    return f"{p.name()};"
+
+
+def _function_set(self, parameters):
+    p = self.property_for()
+
+    return p.type().input(inp=parameters, interm=p.name())
 
 
 def _function_before_call(self):
@@ -346,6 +362,8 @@ class Patcher:
         Function.copy = _function_copy
         Function.move = _function_move
         Function.destruct = _function_destruct
+        Function.get = _function_get
+        Function.set = _function_set
         Function.before_call = _function_before_call
         Function.after_call = _function_after_call
         Function.forward_call = _function_forward_call

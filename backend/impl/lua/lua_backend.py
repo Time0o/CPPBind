@@ -166,9 +166,15 @@ class LuaBackend(Backend('lua')):
         return '\n\n'.join(register)
 
     def _register_variables(self, variables):
-        def register_variable(c):
-            register = [c.type().output(outp=c.name()),
-                        self._register_setfield(c.name_target(namespace='remove'))]
+        def register_variable(v):
+            variable = v.name()
+            if v.type().is_lvalue_reference() and not v.type().is_record_indirection():
+                variable = f"&{variable}"
+
+            register = [
+                v.type().output(outp=variable),
+                self._register_setfield(v.name_target(namespace='remove'))
+            ]
 
             return '\n'.join(register)
 

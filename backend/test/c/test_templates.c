@@ -21,7 +21,7 @@ int main()
 
   /* default template arguments */
   assert(test_pi_int() == 3);
-  assert(test_pi_double() == TEST_PI);
+  assert(test_pi_double() == test_get_pi());
 
   /* template parameter packs */
   assert(test_sum_int_int(1, 2) == 3);

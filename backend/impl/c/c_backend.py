@@ -90,9 +90,6 @@ class CBackend(Backend('c')):
             } // extern "C"
             """))
 
-    def wrap_definition(self, d):
-        self._wrapper_header.append(str(d))
-
     def wrap_enum(self, e):
         enum_constants = [f"{c.name_target()} = {c.value(as_c_literal=True)}"
                           for c in e.constants()]
@@ -109,8 +106,10 @@ class CBackend(Backend('c')):
         self._wrapper_header.append(enum_definition)
 
     def wrap_variable(self, v):
-        self._wrapper_header.append(self._variable_declaration(v))
-        self._wrapper_source.append(self._variable_definition(v))
+        self.wrap_function(v.getter())
+
+        if v.is_assignable():
+            self.wrap_function(v.setter())
 
     def wrap_function(self, f):
         self._wrapper_header.append(self._function_declaration(f))
@@ -135,13 +134,6 @@ class CBackend(Backend('c')):
                 typedefs.append(f"typedef {t_target} {a_target};")
 
         return typedefs
-
-    def _variable_declaration(self, v):
-        return f"extern {v.type().target()} {v.name_target()};"
-
-    def _variable_definition(self, v):
-          return v.type().output(outp=v.name(),
-                                 interm=f"{v.type().target()} {v.name_target()}")
 
     def _function_declaration(self, f):
         header = self._function_header(f)

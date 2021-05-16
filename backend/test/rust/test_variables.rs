@@ -41,6 +41,18 @@ fn main() {
     unsafe {
         assert!(test::get_unsigned_constexpr() == 1);
         assert!(test::get_double_constexpr() == 1.0);
+
+        assert!(test::get_int_var() == 1);
+
+        test::set_int_var(2);
+        assert!(test::get_int_var() == 2);
+
+        let int_ref = test::get_int_ref();
+        assert!(*int_ref == 2);
+
+        *int_ref = 3;
+        assert!(*test::get_int_ref() == 3);
+        assert!(*test::get_int_const_ref() == 3);
     }
 
     // XXX macros

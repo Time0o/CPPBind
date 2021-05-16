@@ -33,20 +33,16 @@ public:
   WrapperType getType() const
   { return Type_; }
 
-  WrapperFunction getGetter() const;
-  WrapperFunction getSetter() const;
+  WrapperFunction getGetter();
+  WrapperFunction getSetter();
 
-  bool isConst() const
-  { return Type_.isConst(); }
-
-  bool isConstexpr() const
-  { return IsConstexpr_; }
-
+  bool isConst() const;
+  bool isConstexpr() const;
   bool isAssignable() const;
 
 private:
   Identifier Name_;
-  Identifier prefixedName(std::string const &Prefix) const;
+  Identifier prefixedName(std::string const &Prefix);
 
   WrapperType Type_;
 

@@ -264,6 +264,7 @@ public:
   {}
 
   WrapperFunctionBuilder &setName(Identifier const &Name);
+  WrapperFunctionBuilder &setNamespace(std::optional<Identifier> const &Namespace);
   WrapperFunctionBuilder &setParent(WrapperRecord const *Parent);
   WrapperFunctionBuilder &setPropertyFor(WrapperVariable const *PropertyFor);
   WrapperFunctionBuilder &setReturnType(WrapperType const &ReturnType);

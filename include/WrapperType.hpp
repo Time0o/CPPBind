@@ -54,7 +54,7 @@ public:
   { return !operator<(Other); }
 
   Identifier getName() const;
-  std::optional<Identifier> getNamespace() const;
+  std::optional<Identifier> getNamespace();
 
   std::size_t getSize() const;
 

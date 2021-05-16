@@ -93,8 +93,11 @@ class RustBackend(Backend('rust')):
                 enum_name=e.name_target(),
                 enum_constants=',\n'.join(enum_constants)))
 
-    def wrap_variable(self, c):
-        self._wrapper_source.append(self._variable_getter_definition_rust(c))
+    def wrap_variable(self, v):
+        self.wrap_function(v.getter())
+
+        if v.is_assignable():
+            self.wrap_function(v.setter())
 
     def wrap_function(self, f):
         self._wrapper_source.append(self._function_definition_rust(f))
@@ -123,10 +126,17 @@ class RustBackend(Backend('rust')):
         return list(sorted(type_imports))
 
     def _c_declarations(self):
-        c_declarations = \
-            ['pub fn bind_error_what() -> *const c_char;', 'pub fn bind_error_reset();'] + \
-            [self._variable_declaration_c(c) for c in self.variables()] + \
-            [self._function_declaration_c(f) for f in self.functions(include_members=True)]
+        c_declarations = ['pub fn bind_error_what() -> *const c_char;',
+                          'pub fn bind_error_reset();']
+
+        for v in self.variables():
+            c_declarations.append(self._function_declaration_c(v.getter()))
+
+            if v.is_assignable():
+                c_declarations.append(self._function_declaration_c(v.setter()))
+
+        for f in self.functions(include_members=True):
+            c_declarations.append(self._function_declaration_c(f))
 
         return code(
             """
@@ -182,7 +192,10 @@ class RustBackend(Backend('rust')):
             else:
                 symbols.append(e.name_target())
         for v in h['__variables']:
-            symbols.append(self._variable_getter_name_rust(v))
+            symbols.append(v.getter().name_target())
+
+            if v.is_assignable():
+                symbols.append(v.setter().name_target())
         for f in h['__functions']:
             symbols.append(f.name_target())
         for r in h['__records']:
@@ -209,27 +222,6 @@ class RustBackend(Backend('rust')):
             return c.name_target(case=Id.SNAKE_CASE_CAP_ALL)
 
         return c.name_target(case=Id.PASCAL_CASE, quals=Id.REMOVE_QUALS)
-
-    def _variable_getter_name_c(self, v):
-        return v.name_target(namespace='keep')
-
-    def _variable_declaration_c(self, v):
-        t = v.type().unqualified().target_c(scoped=False)
-
-        return f"pub static {self._variable_getter_name_c(v)}: {t};"
-
-    def _variable_getter_name_rust(self, v):
-        return f"get_{v.name_target(case=Id.SNAKE_CASE)}"
-
-    def _variable_getter_definition_rust(self, v):
-        t = v.type().unqualified().target()
-
-        return code(
-            f"""
-            pub unsafe fn {self._variable_getter_name_rust(v)}() -> {t} {{
-                c::{self._variable_getter_name_c(v)}
-            }}
-            """)
 
     def _record_definition_rust(self, r):
         record_name = r.name_target()

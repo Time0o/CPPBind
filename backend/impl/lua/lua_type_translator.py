@@ -152,8 +152,7 @@ class LuaTypeTranslator(TypeTranslator('lua')):
             {lua_util.setmetatable(t)};
             """)
 
-    @output_rule(lambda t: t.is_pointer() or \
-                        t.is_reference() and t.referenced().is_record())
+    @output_rule(lambda t: t.is_pointer() or t.is_record_indirection())
     def output(cls, t, args):
         return code(
             f"""

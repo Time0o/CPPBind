@@ -493,6 +493,14 @@ WrapperFunctionBuilder::setName(Identifier const &Name)
 }
 
 WrapperFunctionBuilder &
+WrapperFunctionBuilder::setNamespace(std::optional<Identifier> const &Namespace)
+{
+  Wf_.CachedNamespace_ = Namespace;
+  Wf_.CachedNamespaceValid_ = true;
+  return *this;
+}
+
+WrapperFunctionBuilder &
 WrapperFunctionBuilder::setPropertyFor(WrapperVariable const *PropertyFor)
 {
   Wf_.PropertyFor_ = PropertyFor;
