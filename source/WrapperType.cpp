@@ -339,7 +339,7 @@ WrapperType::pointee(bool Recursive) const
     return WrapperType(type()->getPointeeType());
 
   WrapperType Pointee(*this);
-  while (Pointee.isPointer())
+  while (Pointee.isReference() || Pointee.isPointer())
     Pointee = Pointee.pointee();
 
   return Pointee;
