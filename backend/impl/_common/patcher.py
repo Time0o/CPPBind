@@ -240,7 +240,9 @@ def _function_get(self):
 def _function_set(self, parameters):
     p = self.property_for()
 
-    return p.type().input(inp=parameters, interm=p.name())
+    args = dotdict({ 'f': self })
+
+    return p.type().input(inp=parameters, interm=p.name(), args=args)
 
 
 def _function_before_call(self):
