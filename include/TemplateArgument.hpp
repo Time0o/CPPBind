@@ -2,9 +2,11 @@
 #define GUARD_TEMPLATE_ARGUMENT_H
 
 #include <deque>
-#include <sstream>
+#include <stdexcept>
 #include <string>
 
+#include "clang/AST/Decl.h"
+#include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclTemplate.h"
 
 #include "Identifier.hpp"
@@ -12,6 +14,14 @@
 
 namespace cppbind
 {
+
+class NotATemplateSpecialization : public std::invalid_argument
+{
+public:
+  NotATemplateSpecialization()
+  : std::invalid_argument("not a template specialization")
+  {}
+};
 
 class TemplateArgument
 {
@@ -26,15 +36,7 @@ public:
   bool operator!=(TemplateArgument const &Other) const
   { return !operator==(Other); }
 
-  std::string str() const
-  {
-    std::string Str;
-    llvm::raw_string_ostream SS(Str);
-
-    Arg_.dump(SS);
-
-    return SS.str();
-  }
+  std::string str(bool AsPostfix = false) const;
 
 private:
   clang::TemplateArgument Arg_;
@@ -43,25 +45,28 @@ private:
 class TemplateArgumentList
 {
 public:
-  TemplateArgumentList(clang::TemplateArgumentList const &Args)
-  {
-    for (auto const &Arg : Args.asArray()) {
-      if (Arg.getKind() == clang::TemplateArgument::Pack) {
-        for (auto const &PackArg : Arg.getPackAsArray())
-          Args_.emplace_back(PackArg);
-      } else {
-        Args_.emplace_back(Arg);
-      }
-    }
-  }
+  TemplateArgumentList(clang::FunctionDecl const *Decl)
+  : Args_(determineArgs(determineArgList(Decl)))
+  {}
 
-  TemplateArgumentList(clang::ClassTemplateSpecializationDecl const *Decl)
-  : TemplateArgumentList(Decl->getTemplateArgs())
-
+  TemplateArgumentList(clang::CXXRecordDecl const *Decl)
+  : Args_(determineArgs(determineArgList(Decl)))
   {}
 
   static bool contains(std::string const &What)
   { return What.find('<') != std::string::npos; }
+
+  static std::string extract(std::string const &What)
+  {
+    auto Beg(What.find('<'));
+
+    if (Beg == std::string::npos)
+      return "";
+
+    auto End(What.rfind('>'));
+
+    return What.substr(Beg + 1, End - 1 - Beg);
+  }
 
   static std::string strip(std::string const &What)
   { return What.substr(0, What.find('<')); }
@@ -81,31 +86,18 @@ public:
   std::deque<TemplateArgument>::const_iterator end() const
   { return Args_.end(); }
 
-  std::string str(bool AsPostfix = false) const
-  {
-    std::ostringstream SS;
-
-    if (AsPostfix) {
-      for (auto const &Arg : Args_)
-        SS << "_" << Arg.str();
-
-      auto Str(SS.str());
-
-      string::replaceAll(Str, " ", "_");
-
-      return Identifier(Str).format(Identifier::ORIG_CASE,
-                                    Identifier::REPLACE_QUALS);
-    } else {
-      SS << "<" << Args_.front().str();
-      for (std::size_t i = 1; i < Args_.size(); ++i)
-        SS << ", " << Args_[i].str();
-      SS << ">";
-
-      return SS.str();
-    }
-  }
+  std::string str(bool AsPostfix = false) const;
 
 private:
+  static std::pair<clang::TemplateArgumentList const *, int> determineArgList(
+    clang::FunctionDecl const *Decl);
+
+  static std::pair<clang::TemplateArgumentList const *, int> determineArgList(
+    clang::CXXRecordDecl const *Decl);
+
+  static std::deque<TemplateArgument> determineArgs(
+    std::pair<clang::TemplateArgumentList const *, int> const &ArgList);
+
   std::deque<TemplateArgument> Args_;
 };
 

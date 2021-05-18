@@ -379,11 +379,11 @@ WrapperRecord::determineIfMoveable(clang::CXXRecordDecl const *Decl)
 std::optional<TemplateArgumentList>
 WrapperRecord::determineTemplateArgumentList(clang::CXXRecordDecl const *Decl)
 {
-  if (!llvm::isa<clang::ClassTemplateSpecializationDecl>(Decl))
+  try {
+    return TemplateArgumentList(Decl);
+  } catch (NotATemplateSpecialization const &) {
     return std::nullopt;
-
-  return TemplateArgumentList(
-    llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(Decl)->getTemplateArgs());
+  }
 }
 
 WrapperFunction

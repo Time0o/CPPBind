@@ -35,6 +35,8 @@ unsigned replaceAll(std::string &Str,
                     std::string const &Pat,
                     std::string const &Subst);
 
+std::string removeQualifiers(std::string &Str);
+
 } // namespace string
 
 } // namespace cppbind

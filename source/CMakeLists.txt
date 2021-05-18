@@ -10,6 +10,7 @@ add_executable(${CPPBIND}
                "Options.cpp"
                "Print.cpp"
                "String.cpp"
+               "TemplateArgument.cpp"
                "TmpFile.cpp"
                "TypeIndex.cpp"
                "Wrapper.cpp"

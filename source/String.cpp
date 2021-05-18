@@ -167,6 +167,18 @@ std::string indent(std::string const &Str)
   return Out.str();
 }
 
+std::string removeQualifiers(std::string &Str)
+{
+  auto Pos = Str.rfind("::");
+
+  if (Pos == std::string::npos)
+    return Str;
+
+  Str = Str.substr(Pos + 2);
+
+  return Str;
+}
+
 } // namespace string
 
 } // namespace cppbind

@@ -442,14 +442,11 @@ WrapperFunction::determineOverloadedOperator(clang::FunctionDecl const *Decl)
 std::optional<TemplateArgumentList>
 WrapperFunction::determineTemplateArgumentList(clang::FunctionDecl const *Decl)
 {
-  if (!Decl->isTemplateInstantiation())
+  try {
+    return TemplateArgumentList(Decl);
+  } catch (NotATemplateSpecialization const &) {
     return std::nullopt;
-
-  auto Args = Decl->getTemplateSpecializationArgs();
-  if (!Args)
-    return std::nullopt;
-
-  return TemplateArgumentList(*Args);
+  }
 }
 
 WrapperFunctionBuilder &
