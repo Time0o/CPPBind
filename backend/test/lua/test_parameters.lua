@@ -17,7 +17,7 @@ assert(test.test.add_large_signed_int(test.test.MAX_LARGE_SIGNED_INT - 1, 1)
        == test.test.MAX_LARGE_SIGNED_INT)
 
 -- floating point parameters
-assert(math.abs(test.test.add_double(0.1, 0.2) - 0.3) < test.test.EPSILON_DOUBLE)
+assert(math.abs(test.test.add_double(0.1, 0.2) - 0.3) < test.test.get_epsilon_double())
 
 -- boolean parameters
 assert(test.test.not_bool(false) == true)

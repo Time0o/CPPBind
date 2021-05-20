@@ -1,10 +1,10 @@
 local test = require 'test.default_arguments'
 
-assert(test.test.pow_default_arguments() == test.test.E)
+assert(test.test.pow_default_arguments() == test.test.get_e())
 assert(test.test.pow_default_arguments(10.0) == 10.0)
-assert(test.test.pow_default_arguments(test.test.E, 2) == test.test.E * test.test.E)
-assert(test.test.pow_default_arguments(test.test.E, 2, true) == 7.0)
-assert(test.test.pow_default_arguments(test.test.E, 2, true, test.test.ROUND_UPWARD) == 8.0)
+assert(test.test.pow_default_arguments(test.test.get_e(), 2) == test.test.get_e() * test.test.get_e())
+assert(test.test.pow_default_arguments(test.test.get_e(), 2, true) == 7.0)
+assert(test.test.pow_default_arguments(test.test.get_e(), 2, true, test.test.ROUND_UPWARD) == 8.0)
 
 assert(test.test.default_large_signed() == test.test.LARGE_SIGNED)
 assert(test.test.default_constexpr_function_call() == 1)

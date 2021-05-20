@@ -74,8 +74,14 @@ class LuaBackend(Backend('lua')):
             register_module=self._lua_module_register(),
             create_metatables=self._create_metatables(self.records())))
 
-    def wrap_variable(self, v):
+    def wrap_enum(self, e):
         pass
+
+    def wrap_variable(self, v):
+        self.wrap_function(v.getter())
+
+        if v.is_assignable():
+            self.wrap_function(v.setter())
 
     def wrap_function(self, f):
         self._wrapper_module.append(self._function_definition(f))
@@ -147,7 +153,12 @@ class LuaBackend(Backend('lua')):
         for e in h['__enums']:
             register += self._register_variables(c for c in e.constants())
         if h['__variables']:
-            register += self._register_variables(h['__variables'])
+            getters = [v.getter() for v in h['__variables']]
+            register.append(self._register_functions(getters))
+
+            setters = [v.setter() for v in h['__variables'] if v.is_assignable()]
+            if setters:
+                register.append(self._register_functions(setters))
         if h['__functions']:
             register.append(self._register_functions(h['__functions']))
         if h['__records']:

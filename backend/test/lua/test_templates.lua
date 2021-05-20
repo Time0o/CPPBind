@@ -16,7 +16,7 @@ assert(test.test.inc_int_3(1) == 4)
 
 -- default template arguments
 assert(test.test.pi_int() == 3)
-assert(test.test.pi_double() == test.test.PI)
+assert(test.test.pi_double() == test.test.get_pi())
 
 -- template parameter packs
 assert(test.test.sum_int_int(1, 2) == 3)
