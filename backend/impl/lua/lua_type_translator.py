@@ -154,9 +154,11 @@ class LuaTypeTranslator(TypeTranslator('lua')):
 
     @output_rule(lambda t: t.is_pointer() or t.is_record_indirection())
     def output(cls, t, args):
+        owning = False if args is None else args.f.is_constructor()
+
         return code(
             f"""
-            {lua_util.pushpointer('{outp}', owning=args.f.is_constructor())};
+            {lua_util.pushpointer('{outp}', owning=owning)};
             {lua_util.setmetatable(t.pointee())};
             """)
 
