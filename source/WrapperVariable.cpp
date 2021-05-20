@@ -1,6 +1,7 @@
 #include "Identifier.hpp"
 #include "Logging.hpp"
 #include "WrapperFunction.hpp"
+#include "WrapperRecord.hpp"
 #include "WrapperVariable.hpp"
 
 namespace cppbind
@@ -54,7 +55,19 @@ WrapperVariable::isConstexpr() const
 
 bool
 WrapperVariable::isAssignable() const
-{ return !Type_.isConst() && !(Type_.isReference() && Type_.referenced().isConst()); }
+{
+  auto T = Type_.isReference() ? Type_.referenced() : Type_;
+
+  if (T.isConst())
+    return false;
+
+  if (!T.isRecord())
+    return true;
+
+  auto Record = T.asRecord();
+
+  return Record && (*Record)->getCopyAssignmentOperator();
+}
 
 Identifier
 WrapperVariable::prefixedName(std::string const &Prefix)
