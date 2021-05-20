@@ -32,14 +32,14 @@ public:
   bool hasEnumDefinition(WrapperEnum const *Enum) const;
   bool hasEnumDefinition(WrapperType const &Type) const;
 
-  std::optional<WrapperRecord const *> getRecord(WrapperType const &Type) const;
+  WrapperRecord const * getRecord(WrapperType const &Type) const;
 
   std::vector<WrapperRecord const *> getRecordBases(WrapperRecord const *Record,
                                                     bool Recursive = false) const;
 
   std::vector<WrapperRecord const *> getRecordBasesFirstOrdering() const;
 
-  std::optional<WrapperEnum const *> getEnum(WrapperType const &Type) const;
+  WrapperEnum const * getEnum(WrapperType const &Type) const;
 
 private:
   using TypeGraph = boost::adjacency_list<boost::vecS,

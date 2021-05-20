@@ -218,11 +218,11 @@ WrapperType
 WrapperType::canonical() const
 { return WrapperType(type().getCanonicalType()); }
 
-std::optional<WrapperEnum const *>
+WrapperEnum const *
 WrapperType::asEnum() const
 { return CompilerState().types()->getEnum(*this); }
 
-std::optional<WrapperRecord const *>
+WrapperRecord const *
 WrapperType::asRecord() const
 { return CompilerState().types()->getRecord(*this); }
 
@@ -248,8 +248,8 @@ WrapperType::proxyFor()
       return std::nullopt;
     }
 
-    std::size_t NumConstructors = (*Record)->getConstructors().size();
-    std::size_t NumDefaultConstructors = !!(*Record)->getDefaultConstructor();
+    std::size_t NumConstructors = Record->getConstructors().size();
+    std::size_t NumDefaultConstructors = !!Record->getDefaultConstructor();
 
     if (NumConstructors - NumDefaultConstructors == 0) {
       IsProxy_ = false;
@@ -258,7 +258,7 @@ WrapperType::proxyFor()
 
     std::optional<WrapperType> ProxyType;
 
-    for (auto const *Constructor : (*Record)->getConstructors()) {
+    for (auto const *Constructor : Record->getConstructors()) {
       if (Constructor->isCopyConstructor() || Constructor->isMoveConstructor())
         continue;
 

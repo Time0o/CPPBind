@@ -67,12 +67,12 @@ bool
 TypeIndex::hasEnumDefinition(WrapperType const &Type) const
 { return EnumDefinitions_.find(Type.mangled()) != EnumDefinitions_.end(); }
 
-std::optional<WrapperRecord const *>
+WrapperRecord const *
 TypeIndex::getRecord(WrapperType const &Type) const
 {
   auto It(Records_.find(Type.mangled()));
   if (It == Records_.end())
-    return std::nullopt;
+    return nullptr;
 
   return It->second;
 }
@@ -137,12 +137,12 @@ TypeIndex::getRecordBasesFirstOrdering() const
   return BasesFirst;
 }
 
-std::optional<WrapperEnum const *>
+WrapperEnum const *
 TypeIndex::getEnum(WrapperType const &Type) const
 {
   auto It(Enums_.find(Type.mangled()));
   if (It == Enums_.end())
-    return std::nullopt;
+    return nullptr;
 
   return It->second;
 }

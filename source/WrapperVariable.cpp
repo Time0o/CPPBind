@@ -66,7 +66,7 @@ WrapperVariable::isAssignable() const
 
   auto Record = T.asRecord();
 
-  return Record && (*Record)->getCopyAssignmentOperator();
+  return Record && Record->getCopyAssignmentOperator();
 }
 
 Identifier

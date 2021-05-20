@@ -86,8 +86,9 @@ public:
   WrapperType canonical() const;
   std::optional<WrapperType> proxyFor();
   std::vector<WrapperType> baseTypes() const;
-  std::optional<WrapperEnum const *> asEnum() const;
-  std::optional<WrapperRecord const *> asRecord() const;
+
+  WrapperEnum const * asEnum() const;
+  WrapperRecord const * asRecord() const;
 
   std::vector<std::string> templateArguments() const;
 
