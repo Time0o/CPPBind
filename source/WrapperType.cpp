@@ -404,12 +404,17 @@ WrapperType::format(bool WithTemplatePostfix,
 
     StrBase = print::qualType(BaseType.type(), print::QUALIFIED_POLICY);
 
-    if (WithTemplatePostfix && BaseType.isTemplateInstantiation()) {
-      StrReplace = TemplateArgumentList::strip(StrBase)
-                 + BaseType.templatePostfix();
-    } else {
-      StrBase = TemplateArgumentList::strip(StrBase);
+    if (BaseType.isAlias() && BaseType.isBasic()) {
       StrReplace = StrBase;
+
+    } else {
+      if (WithTemplatePostfix && BaseType.isTemplateInstantiation()) {
+        StrReplace = TemplateArgumentList::strip(StrBase)
+                   + BaseType.templatePostfix();
+      } else {
+        StrBase = TemplateArgumentList::strip(StrBase);
+        StrReplace = StrBase;
+      }
     }
   }
 
