@@ -237,12 +237,10 @@ def _function_get(self):
     return f"{p.name()};"
 
 
-def _function_set(self, parameters):
+def _function_set(self, val):
     p = self.property_for()
 
-    args = dotdict({ 'f': self })
-
-    return p.type().input(inp=parameters, interm=p.name(), args=args)
+    return f"{p.name()} = {val};"
 
 
 def _function_before_call(self):
