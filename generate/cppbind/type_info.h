@@ -7,88 +7,45 @@
 #include <typeinfo>
 #include <utility>
 
+#include "cppbind/util.h"
+
 namespace cppbind
 {
 
 namespace type_info
 {
 
-template<typename T_KEY, typename T_VAL>
-class simple_map
-{
-  enum : std::size_t { TABLE_SIZE = 100 };
-
-  struct node
-  {
-    node(T_KEY key, T_VAL val)
-    : key(key),
-      val(val),
-      next(nullptr)
-    {}
-
-    T_KEY key;
-    T_VAL val;
-
-    node *next;
-  };
-
-public:
-  simple_map()
-  : table()
-  {}
-
-  ~simple_map()
-  {
-    for (std::size_t offs = 0; offs < TABLE_SIZE; ++offs) {
-      node *head = table[offs];
-      while (head) {
-        node *next = head->next;
-        delete head;
-        head = next;
-      }
-    }
-  }
-
-  void insert(T_KEY const &key, T_VAL const &val)
-  {
-    std::size_t offs = table_offs(key);
-
-    node *next = table[offs];
-    node *head = new node(key, val);
-    head->next = next;
-    table[offs] = head;
-  }
-
-  T_VAL const *find(T_KEY const &key) const
-  {
-    std::size_t offs = table_offs(key);
-
-    node *head = table[offs];
-    while (head) {
-      if (head->key == key)
-        return &head->val;
-    }
-
-    return nullptr;
-  }
-
-private:
-  static std::size_t table_offs(T_KEY const &key)
-  { return reinterpret_cast<std::size_t>(key) % TABLE_SIZE; }
-
-  node *table[TABLE_SIZE];
-};
-
 class type
 {
 public:
-  template<typename T>
-  static void add(type const *obj)
-  { lookup().insert(id<T>(), obj); }
+  using id = std::size_t;
+  using map = util::simple_map<id, type const *>;
+
+  type(id id)
+  : _id(id)
+  {
+    if (!by_id().find(id))
+      by_id().insert(id, this);
+  }
 
   template<typename T>
-  static type const *get()
-  { return *lookup().find(id<T>()); }
+  static id opaque()
+  { return opaque_cv<typename std::remove_cv<T>::type>(); }
+
+  template<typename T>
+  static constexpr id opaque_cv()
+  { return util::string_hash(__PRETTY_FUNCTION__); } // XXX guarantee uniqueness
+
+  template<typename T>
+  static type const *lookup()
+  {
+    auto t = by_id().find(opaque<T>());
+    assert(t);
+
+    return *t;
+  }
+
+  id identifier() const { return _id; }
 
   virtual void *copy(void const *obj) const = 0;
   virtual void *move(void *obj) const = 0;
@@ -98,34 +55,21 @@ public:
   virtual void *cast(type const *to, void *obj) const = 0;
 
 private:
-  template<typename T>
-  static std::uintptr_t id()
-  { return id_cv<typename std::remove_cv<T>::type>(); }
-
-  template<typename T>
-  static std::uintptr_t id_cv()
+  static map &by_id()
   {
-    static int id;
-    return reinterpret_cast<std::uintptr_t>(&id);
+    static map _by_id;
+    return _by_id;
   }
 
-  using map = simple_map<std::uintptr_t, type const *>;
-
-  static map &lookup()
-  {
-    static map lookup_instance;
-    return lookup_instance;
-  }
+  id _id;
 };
 
 template<typename T, typename ...BS>
 class type_instance : public type
 {
 public:
-  type_instance()
+  type_instance() : type(type::opaque<T>())
   {
-    type::add<T>(this);
-
     add_cast<T>();
     add_base_casts();
   }
@@ -141,9 +85,9 @@ public:
 
   void const *cast(type const *to, void const *obj) const override
   {
-    auto const *cast = _casts.find(to);
+    auto const *cast = _casts.find(to->identifier());
     if (!cast)
-        throw std::bad_cast();
+      throw std::bad_cast();
 
     return (*cast)(obj);
   }
@@ -199,12 +143,12 @@ private:
 
   template<typename B>
   void add_cast()
-  { _casts.insert(type::get<B>(), cast<B>); }
+  { _casts.insert(type::opaque<B>(), cast<B>); }
 
   void add_base_casts()
   { [](...){}((add_cast<BS>(), 0)...); }
 
-  simple_map<type const *, void const *(*)(void const *)> _casts;
+  util::simple_map<type::id, void const *(*)(void const *)> _casts;
 };
 
 class typed_ptr
@@ -222,7 +166,7 @@ public:
 
   template<typename T>
   typed_ptr(T *obj, bool owning = false)
-  : typed_ptr(type::get<T>(),
+  : typed_ptr(type::lookup<T>(),
               std::is_const<T>::value,
               static_cast<void const *>(obj),
               owning)
@@ -260,9 +204,9 @@ public:
   cast() const
   {
     if (_const)
-      return static_cast<T *>(_type->cast(type::get<T>(), _obj));
+      return static_cast<T *>(_type->cast(type::lookup<T>(), _obj));
 
-    return static_cast<T *>(_type->cast(type::get<T>(), const_cast<void *>(_obj)));
+    return static_cast<T *>(_type->cast(type::lookup<T>(), const_cast<void *>(_obj)));
   }
 
   template<typename T>
@@ -272,7 +216,7 @@ public:
     if (_const)
       throw std::bad_cast();
 
-    return static_cast<T *>(_type->cast(type::get<T>(), const_cast<void *>(_obj)));
+    return static_cast<T *>(_type->cast(type::lookup<T>(), const_cast<void *>(_obj)));
   }
 
 private:
