@@ -188,9 +188,10 @@ T tofloating(lua_State *L, int arg)
 template<typename T>
 void pushintegral(lua_State *L, T val)
 {
-  if (val < std::numeric_limits<lua_Integer>::min() ||
-      val > std::numeric_limits<lua_Integer>::max())
-    luaL_error(L, "result not representable by lua_Integer");
+  // XXX
+  //if (val < std::numeric_limits<lua_Integer>::min() ||
+  //    val > std::numeric_limits<lua_Integer>::max())
+  //  luaL_error(L, "result not representable by lua_Integer");
 
   lua_pushinteger(L, val);
 }
@@ -209,10 +210,14 @@ void pushfloating(lua_State *L, T val)
 
 } // namespace cppbind
 
+// XXX
+//#define cppbind_lua_pushintegral_constexpr(L, VAL) \
+//  static_assert(VAL >= std::numeric_limits<lua_Integer>::min() && \
+//                VAL <= std::numeric_limits<lua_Integer>::max(), \
+//                "parameter not representable by lua_Integer"); \
+//  lua_pushinteger(L, VAL);
+
 #define cppbind_lua_pushintegral_constexpr(L, VAL) \
-  static_assert(VAL >= std::numeric_limits<lua_Integer>::min() && \
-                VAL <= std::numeric_limits<lua_Integer>::max(), \
-                "parameter not representable by lua_Integer"); \
   lua_pushinteger(L, VAL);
 
 #define cppbind_lua_pushfloating_constexpr(L, VAL) \
