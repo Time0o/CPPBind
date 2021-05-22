@@ -20,7 +20,12 @@ class LuaTypeTranslator(TypeTranslator('lua')):
             return 'boolean'
         elif t.is_c_string():
             return 'string'
-        elif t.is_record() or t.is_referenced() or t.is_pointer():
+        elif t.is_record():
+            if t.proxy_for() is not None:
+                return 'integer'
+            else:
+                return 'userdata'
+        elif t.is_referenced() or t.is_pointer():
             return 'userdata'
         else:
             raise ValueError(f"no lua type specified for type '{t}'")
@@ -33,7 +38,12 @@ class LuaTypeTranslator(TypeTranslator('lua')):
             return 'LUA_TBOOLEAN'
         elif t.is_c_string():
             return 'LUA_TSTRING'
-        elif t.is_record() or t.is_reference() or t.is_pointer():
+        elif t.is_record():
+            if t.proxy_for() is not None:
+                return 'LUA_TNUMBER'
+            else:
+                return 'LUA_TUSERDATA'
+        elif t.is_reference() or t.is_pointer():
             return 'LUA_TUSERDATA'
         else:
             raise ValueError(f"no lua type encoding specified for type '{t}'")
@@ -72,6 +82,13 @@ class LuaTypeTranslator(TypeTranslator('lua')):
 
     @input_rule(lambda t: t.is_record())
     def input(cls, t, args):
+        if t.proxy_for() is not None:
+            return code(
+                f"""
+                {{interm}}_proxy = {t}({lua_util.tointegral(t.proxy_for(), args.i + 1)});
+                {{interm}} = &{{interm}}_proxy;
+                """)
+
         return f"{{interm}} = {lua_util.topointer(t, args.i + 1)};"
 
     @rule(lambda t: t.is_pointer() and not \

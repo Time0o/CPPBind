@@ -74,36 +74,47 @@ def _function_declare_parameters(self):
         using = [f"using namespace {ns};" for ns in namespace.components()]
 
     def declare_parameter(p):
-        decl_name = p.name_interm()
-        decl_type = p.type()
+        t_orig = p.type()
+        t = p.type()
 
-        if decl_type.is_record():
-            decl_type = decl_type.with_const().pointer_to()
-        elif decl_type.is_reference():
-            decl_type = decl_type.referenced().pointer_to()
+        if t.is_record():
+            t = t.with_const().pointer_to()
+        elif t.is_reference():
+            t = t.referenced().pointer_to()
 
-        if decl_type.is_const():
-            decl_type = decl_type.without_const()
+        if t.is_const():
+            t = decl_type.without_const()
 
-        decl = f"{decl_type} {decl_name}"
+        decl = f"{t} {p.name_interm()}"
 
         if p.default_argument() is not None:
             default = f"{p.default_argument()}"
 
-            if p.type().is_record() or \
-               p.type().is_reference() and p.type().referenced().is_record():
+            if t_orig.is_record() or \
+               t_orig.is_reference() and t_orig.referenced().is_record():
                 decl = code(
                     f"""
-                    {decl_type.pointee()} {decl_name}_default = {default};
-                    {decl} = &{decl_name}_default;
+                    {t.pointee()} {p.name_interm()}_default = {default};
+                    {decl} = &{p.name_interm()}_default;
                     """)
             else:
-                if p.type().is_scoped_enum():
-                    default = f"static_cast<{p.type()}>({default})"
+                if t_orig.is_scoped_enum():
+                    default = f"static_cast<{t_orig}>({default})"
 
-                decl = f"{decl} = {default}"
+                decl = f"{decl} = {default};"
+        else:
+            decl = f"{decl};"
 
-        return f"{decl};"
+        if t_orig.is_record() and t_orig.proxy_for() is not None:
+            decl = code(
+                """
+                {decl_proxy}
+                {decl}
+                """,
+                decl_proxy=f"{t_orig} {p.name_interm()}_proxy;",
+                decl=decl)
+
+        return decl
 
     declarations = [declare_parameter(p) for p in self.parameters()]
 
