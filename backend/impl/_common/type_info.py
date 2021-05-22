@@ -27,6 +27,11 @@ def path():
 
 
 def type_instances():
+    be_records = backend().records(include_incomplete=True,
+                                   include_abstract=True)
+
+    be_types = backend().types(as_set=True)
+
     types = OrderedDict()
 
     def add_type(t, t_bases=None):
@@ -36,31 +41,22 @@ def type_instances():
         if t_bases is not None:
             t_bases = tuple(t_bases)
 
-        types[(t.without_const(), t_bases)] = True
+        types[t.unqualified().mangled()] = ((t.unqualified(), t_bases))
 
-    record_list = backend().records(include_incomplete=True, include_abstract=True)
-    record_set = {r.type(): r for r in record_list}
+    for r in be_records:
+        t = r.type()
 
-    type_list = backend().types()
-    type_set = backend().types(as_set=True)
+        if t in be_types:
+            add_type(t, t.base_types())
 
-    for r in record_list:
-        if r.type() not in type_set:
-            continue
-
-        base_types = []
-        for t in r.type().base_types():
-            if t in record_set and t in type_set:
-                base_types.append(t)
-
-        add_type(r.type(), base_types)
-
-    for t in type_list:
-        if (t.is_pointer() or t.is_reference()) and not t.pointee().is_record():
+    for t in be_types:
+        if t.is_record():
+            add_type(t)
+        elif t.is_pointer() or t.is_reference():
             add_type(t.pointee())
 
     tis = []
-    for t, t_bases in types.keys():
+    for mangled, (t, t_bases) in types.items():
         template_params = [t]
 
         if t_bases is not None:
@@ -68,7 +64,7 @@ def type_instances():
 
         template_params = ', '.join(map(str, template_params))
 
-        tis.append(f"type_instance<{template_params}> {t.mangled()};")
+        tis.append(f"type_instance<{template_params}> {mangled};")
 
     return code(
         """
