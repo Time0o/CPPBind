@@ -110,6 +110,8 @@ class BackendGeneric(metaclass=BackendMeta):
         self._hierarchy = {}
         self._init_hierarchy(self._hierarchy)
 
+        self._hierarchy['__definitions'] = self._definitions
+
         for obj in self._objects:
             self._add_to_hierarchy(obj)
 
@@ -120,6 +122,7 @@ class BackendGeneric(metaclass=BackendMeta):
         keys = [
             '__objects',
             '__types',
+            '__definitions',
             '__enums',
             '__variables',
             '__records',
@@ -201,6 +204,9 @@ class BackendGeneric(metaclass=BackendMeta):
     def run(self):
         self.wrap_before()
 
+        for d in self._definitions:
+            self.wrap_definition(d)
+
         for e in self._enums:
             self.wrap_enum(e)
 
@@ -222,6 +228,12 @@ class BackendGeneric(metaclass=BackendMeta):
     def input_file(self):
         return self._input_file
 
+    def input_includes(self, relative=None):
+        if relative is None:
+            relative = Options.output_relative_includes
+
+        return [inc.str(relative=relative) for inc in self._includes]
+
     def output_file(self, output_path):
         output_dir = os.path.abspath(Options.output_directory)
 
@@ -230,15 +242,6 @@ class BackendGeneric(metaclass=BackendMeta):
         self._output_files.append(output_file)
 
         return output_file
-
-    def includes(self, relative=None):
-        if relative is None:
-            relative = Options.output_relative_includes
-
-        return [inc.str(relative=relative) for inc in self._includes]
-
-    def definitions(self):
-        return self._definitions
 
     def objects(self):
         return self._hierarchy
@@ -262,6 +265,9 @@ class BackendGeneric(metaclass=BackendMeta):
             self._type_aliases_target = list(sorted(self._type_aliases_target))
 
         return self._type_aliases_target
+
+    def definitions(self):
+        return self._definitions
 
     def enums(self):
         return self._enums
@@ -316,6 +322,9 @@ class BackendGeneric(metaclass=BackendMeta):
     @abstractmethod
     def wrap_after(self):
         pass
+
+    def wrap_definition(self, d):
+        self.wrap_variable(d.as_variable())
 
     def wrap_enum(self, e):
         for c in e.constants():

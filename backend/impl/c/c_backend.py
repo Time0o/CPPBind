@@ -37,8 +37,6 @@ class CBackend(Backend('c')):
 
             #include "cppbind/c/c_bind_error_c.h"
 
-            {definitions}
-
             {typedefs}
 
             {record_declarations}
@@ -46,7 +44,6 @@ class CBackend(Backend('c')):
             {record_definitions}
             """,
             header_guard=self._header_guard(),
-            definitions='\n'.join(str(d) for d in self.definitions()),
             typedefs='\n'.join(self._typedefs()),
             record_declarations='\n'.join(self._record_declarations()),
             record_definitions='\n\n'.join(self._record_definitions('header'))))
@@ -62,16 +59,16 @@ class CBackend(Backend('c')):
             #include "cppbind/c/c_bind_error_cc.h"
             #include "cppbind/c/c_util_cc.h"
 
-            {wrapper_includes}
+            {input_includes}
 
             extern "C" {{
 
-            {wrapper_header_include}
+            {input_header_include}
 
             {record_definitions}
             """,
-            wrapper_includes='\n'.join(self.includes()),
-            wrapper_header_include=self._wrapper_header.include(),
+            input_includes='\n'.join(self.input_includes()),
+            input_header_include=self._wrapper_header.include(),
             record_definitions='\n\n'.join(self._record_definitions('source'))))
 
     def wrap_after(self):

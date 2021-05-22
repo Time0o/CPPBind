@@ -30,22 +30,22 @@ class LuaBackend(Backend('lua')):
 
             {lua_includes}
 
+            {lua_util_include}
+
             {input_includes}
 
             {type_info_include}
 
             {type_info_type_instances}
 
-            {lua_util_include}
-
             namespace
             {{
             """,
             lua_includes=self._lua_includes(),
-            input_includes='\n'.join(self.includes()),
+            lua_util_include=lua_util.path().include(),
+            input_includes='\n'.join(self.input_includes()),
             type_info_include=type_info.path().include(),
-            type_info_type_instances=type_info.type_instances(),
-            lua_util_include=lua_util.path().include()))
+            type_info_type_instances=type_info.type_instances()))
 
     def wrap_after(self):
         ## XXX support different Lua versions
@@ -73,6 +73,9 @@ class LuaBackend(Backend('lua')):
             lua_module_name=self._lua_module_name(),
             register_module=self._lua_module_register(),
             create_metatables=self._create_metatables(self.records())))
+
+    def wrap_definition(self, d):
+        self.wrap_variable(d.as_variable())
 
     def wrap_enum(self, e):
         pass
@@ -151,16 +154,21 @@ class LuaBackend(Backend('lua')):
         register = [self._register_createtable(h['__functions'])]
 
         for e in h['__enums']:
-            register += self._register_variables(c for c in e.constants())
-        if h['__variables']:
-            getters = [v.getter() for v in h['__variables']]
+            register += self._register_constants(c for c in e.constants())
+
+        if h['__variables'] or h['__definitions']:
+            variables = h['__variables'] + [d.as_variable() for d in h['__definitions']]
+
+            getters = [v.getter() for v in variables]
             register.append(self._register_functions(getters))
 
-            setters = [v.setter() for v in h['__variables'] if v.is_assignable()]
+            setters = [v.setter() for v in variables if v.is_assignable()]
             if setters:
                 register.append(self._register_functions(setters))
+
         if h['__functions']:
             register.append(self._register_functions(h['__functions']))
+
         if h['__records']:
             register += self._register_records(h['__records'])
 
@@ -176,7 +184,7 @@ class LuaBackend(Backend('lua')):
 
         return '\n\n'.join(register)
 
-    def _register_variables(self, variables):
+    def _register_constants(self, variables):
         def register_variable(v):
             variable = v.name()
             if v.type().is_lvalue_reference() and not v.type().is_record_indirection():

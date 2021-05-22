@@ -69,6 +69,9 @@ class RustBackend(Backend('rust')):
 
         self._wrapper_source.append(self._rust_modules_export())
 
+    def wrap_definition(self, d):
+        self.wrap_variable(d.as_variable())
+
     def wrap_enum(self, e):
         if e.is_anonymous():
             for c in e.constants():
@@ -129,7 +132,7 @@ class RustBackend(Backend('rust')):
         c_declarations = ['pub fn bind_error_what() -> *const c_char;',
                           'pub fn bind_error_reset();']
 
-        for v in self.variables():
+        for v in self.variables(include_definitions=True):
             c_declarations.append(self._function_declaration_c(v.getter()))
 
             if v.is_assignable():
@@ -185,19 +188,23 @@ class RustBackend(Backend('rust')):
 
         for t in h['__types']:
             symbols.append(t.target())
+
         for e in h['__enums']:
             if e.is_anonymous():
                 for c in e.constants():
                     symbols.append(self._enum_constant_name_rust(c, anonymous=True))
             else:
                 symbols.append(e.name_target())
-        for v in h['__variables']:
+
+        for v in h['__variables'] + [d.as_variable() for d in h['__definitions']]:
             symbols.append(v.getter().name_target())
 
             if v.is_assignable():
                 symbols.append(v.setter().name_target())
+
         for f in h['__functions']:
             symbols.append(f.name_target())
+
         for r in h['__records']:
             if not r.is_abstract():
                 symbols.append(r.name_target())

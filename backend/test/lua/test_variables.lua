@@ -20,4 +20,5 @@ assert(test.test.get_int_var() == 1)
 test.test.set_int_var(2)
 assert(test.test.get_int_var() == 2)
 
--- XXX macros
+assert(test.get_macro_const() == 1)
+assert(test.get_macro_expr() == ~(1 << 3))

@@ -24,7 +24,8 @@ public:
   std::string getArg() const
   { return Arg_; }
 
-  WrapperVariable getAsVariable(WrapperType const &Type = WrapperType("int")) const
+  WrapperVariable getAsVariable(
+    WrapperType const &Type = WrapperType("int").withConst()) const
   { return WrapperVariable(Name_, Type); }
 
   std::string str() const

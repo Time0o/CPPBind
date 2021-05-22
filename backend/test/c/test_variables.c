@@ -45,8 +45,8 @@ int main()
   assert(*test_get_int_ref() == 3);
   assert(*test_get_int_const_ref() == 3);
 
-  assert(MACRO_CONST == 1);
-  assert(MACRO_EXPR == ~(1 << 3));
+  assert(get_macro_const() == 1);
+  assert(get_macro_expr() == ~(1 << 3));
 
   return 0;
 }

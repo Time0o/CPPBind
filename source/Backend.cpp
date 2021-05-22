@@ -231,7 +231,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("name", &Definition::getName)
     .def("arg", &Definition::getArg)
     .def("as_variable", &Definition::getAsVariable,
-         "type"_a = WrapperType("int"));
+         "type"_a = WrapperType("int").withConst());
 
   py::class_<Enum>(m, "Enum", py::dynamic_attr())
     .def("name", &Enum::getName)
