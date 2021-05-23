@@ -171,3 +171,7 @@ class RustTypeTranslator(TypeTranslator('rust')):
     @rule(lambda _: True)
     def output(cls, t, args):
         return "{outp}"
+
+    @rule(lambda _: True)
+    def helper(cls, t, args):
+        pass

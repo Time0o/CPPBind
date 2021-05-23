@@ -38,10 +38,12 @@ def type_instances():
         if t.is_void():
             return
 
+        t = t.canonical().unqualified()
+
         if t_bases is not None:
             t_bases = tuple(t_bases)
 
-        types[t.unqualified().mangled()] = ((t.unqualified(), t_bases))
+        types[str(t)] = (t.mangled(), t, t_bases)
 
     for r in be_records:
         t = r.type()
@@ -55,8 +57,12 @@ def type_instances():
         elif t.is_pointer() or t.is_reference():
             add_type(t.pointee())
 
+        t_helper = t.helper()
+        if t_helper:
+            types[t_helper] = (f"HELPER_{t.mangled()}", t_helper, None)
+
     tis = []
-    for mangled, (t, t_bases) in types.items():
+    for t_mangled, t, t_bases in types.values():
         template_params = [t]
 
         if t_bases is not None:
@@ -64,7 +70,7 @@ def type_instances():
 
         template_params = ', '.join(map(str, template_params))
 
-        tis.append(f"type_instance<{template_params}> {mangled};")
+        tis.append(f"type_instance<{template_params}> {t_mangled};")
 
     return code(
         """

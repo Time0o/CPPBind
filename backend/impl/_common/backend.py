@@ -215,30 +215,6 @@ class BackendGeneric(metaclass=BackendMeta):
     def type_translator(self):
         pass
 
-    def run(self):
-        self.wrap_before()
-
-        for d in self._definitions:
-            self.wrap_definition(d)
-
-        for e in self._enums:
-            self.wrap_enum(e)
-
-        for c in self._variables:
-            self.wrap_variable(c)
-
-        for r in self._records:
-            if not r.is_abstract():
-                self.wrap_record(r)
-
-        for f in self._functions:
-            self.wrap_function(f)
-
-        self.wrap_after()
-
-        for output_file in self._output_files:
-            output_file.write()
-
     def input_file(self):
         return self._input_file
 
@@ -320,6 +296,30 @@ class BackendGeneric(metaclass=BackendMeta):
             records.append(r)
 
         return records
+
+    def run(self):
+        self.wrap_before()
+
+        for d in self._definitions:
+            self.wrap_definition(d)
+
+        for e in self._enums:
+            self.wrap_enum(e)
+
+        for c in self._variables:
+            self.wrap_variable(c)
+
+        for r in self._records:
+            if not r.is_abstract():
+                self.wrap_record(r)
+
+        for f in self._functions:
+            self.wrap_function(f)
+
+        self.wrap_after()
+
+        for output_file in self._output_files:
+            output_file.write()
 
     @abstractmethod
     def wrap_before(self):

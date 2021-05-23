@@ -58,6 +58,10 @@ def _type_output(self, outp, interm=None, args=None):
     return backend().type_translator().output(self, args).format(outp=outp, interm=interm)
 
 
+def _type_helper(self, args=None):
+    return backend().type_translator().helper(self, args)
+
+
 def _function_check_parameters(self):
     pass
 
@@ -364,6 +368,7 @@ class Patcher:
         Type.target = _type_target
         Type.input = _type_input
         Type.output = _type_output
+        Type.helper = _type_helper
 
         Function.check_parameters = _function_check_parameters
         Function.declare_parameters = _function_declare_parameters
