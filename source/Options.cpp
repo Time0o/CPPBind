@@ -64,8 +64,8 @@ void OptionsRegistry::init()
                   "postfix must create valid identifiers")
     .done();
 
-  Options().add<std::string>("output-custom-type-translation-rules")
-    .setDescription("Python script containing extra type translation rules", "path")
+  Options().add<std::string>("output-custom-type-translation-rules-directory")
+    .setDescription("Directory containing extra type translation rules", "path")
     .setDefault("")
     .done();
 

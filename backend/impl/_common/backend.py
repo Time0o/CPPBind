@@ -201,6 +201,20 @@ class BackendGeneric(metaclass=BackendMeta):
             for t in [f.return_type()] + [p.type() for p in f.parameters()]:
                 add_type(t)
 
+    @staticmethod
+    def name():
+        global state
+
+        return state._current_name
+
+    @abstractmethod
+    def patcher(self):
+        pass
+
+    @abstractmethod
+    def type_translator(self):
+        pass
+
     def run(self):
         self.wrap_before()
 
@@ -284,6 +298,15 @@ class BackendGeneric(metaclass=BackendMeta):
 
         return variables
 
+    def functions(self, include_members=False):
+        functions = self._functions[:]
+
+        if include_members:
+            for r in self.records(include_abstract=False):
+                functions += r.functions()
+
+        return functions
+
     def records(self, include_incomplete=False, include_abstract=False):
         records = []
 
@@ -297,23 +320,6 @@ class BackendGeneric(metaclass=BackendMeta):
             records.append(r)
 
         return records
-
-    def functions(self, include_members=False):
-        functions = self._functions[:]
-
-        if include_members:
-            for r in self.records(include_abstract=False):
-                functions += r.functions()
-
-        return functions
-
-    @abstractmethod
-    def patcher(self):
-        pass
-
-    @abstractmethod
-    def type_translator(self):
-        pass
 
     @abstractmethod
     def wrap_before(self):

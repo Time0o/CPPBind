@@ -1,7 +1,7 @@
 import os
 from abc import ABCMeta
 from collections import deque
-from cppbind import Options
+from cppbind import Identifier as Id, Options
 from functools import wraps
 from util import is_iterable
 
@@ -113,17 +113,25 @@ def TypeTranslator(be):
             mro = cls.mro()
 
             if len(mro) == 3:
-                TypeTranslatorMeta.add_custom_rules(mro[0])
+                TypeTranslatorMeta.add_custom_rules(cls, name)
 
         @staticmethod
-        def add_custom_rules(cls):
-            custom_rules_file = Options.output_custom_type_translation_rules
-            if not custom_rules_file:
+        def add_custom_rules(cls, name):
+            custom_rules_dir = Options.output_custom_type_translation_rules_directory
+            if not custom_rules_dir:
+                return
+
+            custom_rules_file = f"{(Id(name).format(case=Id.SNAKE_CASE))}.py"
+
+            custom_rules_path = os.path.join(custom_rules_dir, custom_rules_file)
+
+            if not os.path.exists(custom_rules_path):
                 return
 
             cls._rule_lookup.prepend_rules()
 
-            custom_rules_mod, _ = os.path.splitext(custom_rules_file)
+            custom_rules_mod, _ = os.path.splitext(custom_rules_path)
+            custom_rules_mod = custom_rules_mod.replace('/', '.')
 
             from importlib import import_module
             import_module(custom_rules_mod)
