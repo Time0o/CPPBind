@@ -386,29 +386,4 @@ WrapperRecord::determineTemplateArgumentList(clang::CXXRecordDecl const *Decl)
   }
 }
 
-WrapperFunction
-WrapperRecord::implicitDefaultConstructor(
-  clang::CXXRecordDecl const *Decl) const
-{
-  auto ConstructorName(Identifier(Identifier::NEW).qualified(Identifier(Decl)));
-
-  return WrapperFunctionBuilder(ConstructorName)
-         .setIsConstructor()
-         .setParent(this) // XXX
-         .build();
-}
-
-WrapperFunction
-WrapperRecord::implicitDestructor(
-  clang::CXXRecordDecl const *Decl) const
-{
-  auto DestructorName(Identifier(Identifier::DELETE).qualified(Identifier(Decl)));
-
-  return WrapperFunctionBuilder(DestructorName)
-         .setIsDestructor()
-         .setIsNoexcept() // XXX unless base class destructor can throw
-         .setParent(this) // XXX
-         .build();
-}
-
 } // namespace cppbind

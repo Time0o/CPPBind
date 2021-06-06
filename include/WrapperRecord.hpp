@@ -110,12 +110,6 @@ private:
   static std::optional<TemplateArgumentList>
   determineTemplateArgumentList(clang::CXXRecordDecl const *Decl);
 
-  WrapperFunction implicitDefaultConstructor(
-    clang::CXXRecordDecl const *Decl) const;
-
-  WrapperFunction implicitDestructor(
-    clang::CXXRecordDecl const *Decl) const;
-
   Identifier Name_;
   WrapperType Type_;
 
