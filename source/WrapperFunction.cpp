@@ -463,7 +463,7 @@ WrapperFunctionBuilder::setParent(WrapperRecord const *Parent)
   if (Wf_.isInstance()) {
     WrapperType SelfType;
 
-    if (Wf_.isConst())
+    if (Wf_.isDestructor() || Wf_.isConst())
       SelfType = ParentType.withConst().pointerTo();
     else
       SelfType = ParentType.pointerTo();

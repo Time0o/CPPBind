@@ -22,16 +22,6 @@ class CTypeTranslator(TypeTranslator('c')):
 
         return fmt()
 
-    @classmethod
-    def _c_input_assert(cls, inp, assertions):
-        return code(
-            """
-            {assertions}
-            {{interm}} = {inp};
-            """,
-            assertions='\n'.join(assertions),
-            inp=inp)
-
     @rule(lambda t: t.is_alias() and t.is_basic())
     def target(cls, t, args):
         return cls._c_type(t)
@@ -91,23 +81,11 @@ class CTypeTranslator(TypeTranslator('c')):
                 {{interm}} = &_{{interm}};
                 """)
 
-        return cls._c_input_assert(c_util.struct_cast(t.with_const(), '{inp}'),
-                                   ["assert({inp}->is_initialized);"])
+        return f"{{interm}} = {c_util.struct_cast(t.with_const(), '{inp}')};"
 
     @rule(lambda t: t.is_record_indirection())
     def input(cls, t, args):
-        assertions = []
-
-        if args.f.is_destructor():
-            assertions.append("if (!{inp}->is_initialized) return;")
-        else:
-            assertions.append("assert({inp}->is_initialized);")
-
-        if not t.pointee().is_const() and not args.f.is_destructor():
-            assertions.append("assert(!{inp}->is_const);")
-
-        return cls._c_input_assert(c_util.struct_cast(t.pointee(), '{inp}'),
-                                   assertions)
+        return f"{{interm}} = {c_util.struct_cast(t.pointee(), '{inp}')};"
 
     @rule(lambda t: t.is_pointer() or t.is_reference() and \
                     t.pointee().is_record_indirection())
@@ -133,31 +111,14 @@ class CTypeTranslator(TypeTranslator('c')):
 
     @rule(lambda t: t.is_record())
     def output(cls, t, args):
-        return code(
-            f"""
-            {cls._c_type(t)} {Id.TMP};
-            {c_util.make_owning_struct_args(f'&{Id.TMP}', t, '{outp}')};
-            {{interm}} = {Id.TMP};
-            """)
+        return f"{{interm}} = {c_util.make_owning_struct(t, '{outp}')};"
 
     @rule(lambda t: t.is_record_indirection())
     def output(cls, t, args):
         if args.f.is_constructor():
-            return code(
-                f"""
-                static_cast<void>({{outp}});
-
-                {cls._c_type(t.pointee())} {Id.TMP};
-                {c_util.make_owning_struct_mem(f'&{Id.TMP}', t.pointee(), Id.BUF)};
-                {{interm}} = {Id.TMP};
-                """)
+            return "{interm} = {outp};"
         else:
-            return code(
-                f"""
-                {cls._c_type(t.pointee().without_const())} {Id.TMP};
-                {c_util.make_non_owning_struct(f'&{Id.TMP}', '{outp}')};
-                {{interm}} = {Id.TMP};
-                """)
+            return f"{{interm}} = {c_util.make_non_owning_struct(t.pointee(), '{outp}')};"
 
     @rule(lambda t: t.is_pointer() or t.is_reference())
     def output(cls, t, args):
