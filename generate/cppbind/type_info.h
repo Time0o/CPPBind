@@ -155,64 +155,67 @@ private:
 class typed_ptr
 {
 public:
-  typed_ptr(type const *type_,
-            bool const_,
+  typed_ptr(type const *type,
             void const *obj,
-            bool owning = false)
-  : _type(type_),
-    _const(const_),
+            bool is_const,
+            bool is_owning = false)
+  : _type(type),
     _obj(obj),
-    _owning(owning)
+    _is_const(is_const),
+    _is_owning(is_owning),
+    _is_deleted(false)
   {}
 
   template<typename T>
-  typed_ptr(T *obj, bool owning = false)
+  typed_ptr(T *obj, bool is_owning = false)
   : typed_ptr(type::lookup<T>(),
-              std::is_const<T>::value,
               static_cast<void const *>(obj),
-              owning)
+              std::is_const<T>::value,
+              is_owning)
   {}
 
   ~typed_ptr()
   {
-    if (_owning)
+    if (_is_owning && !_is_deleted) {
       _type->destroy(_obj);
+      _is_deleted = true;
+    }
   }
 
   void *copy(void *mem = nullptr) const
   {
     auto obj_copied = _type->copy(_obj);
 
-    auto ptr_copied = mem ? new (mem) typed_ptr(_type, false, obj_copied, true)
-                          : new typed_ptr(_type, false, obj_copied, true);
+    auto ptr_copied = mem ? new (mem) typed_ptr(_type, obj_copied, false, true)
+                          : new typed_ptr(_type, obj_copied, false, true);
 
     return static_cast<void *>(ptr_copied);
   }
 
   void *move(void *mem = nullptr) const
   {
-    if (_const)
+    if (_is_const)
       return copy();
 
     auto obj_moved = _type->move(const_cast<void *>(_obj));
 
-    auto ptr_moved = mem ? new (mem) typed_ptr(_type, false, obj_moved, true)
-                         : new typed_ptr(_type, false, obj_moved, true);
+    auto ptr_moved = mem ? new (mem) typed_ptr(_type, obj_moved, false, true)
+                         : new typed_ptr(_type, obj_moved, false, true);
 
     return static_cast<void *>(ptr_moved);
   }
 
   void own()
-  { _owning = true; }
+  { _is_owning = true; }
 
   void disown()
-  { _owning = false; }
+  { _is_owning = false; }
 
   template<typename T>
   typename std::enable_if<std::is_const<T>::value, T *>::type
   cast() const
   {
-    if (_const)
+    if (_is_const)
       return static_cast<T *>(_type->cast(type::lookup<T>(), _obj));
 
     return static_cast<T *>(_type->cast(type::lookup<T>(), const_cast<void *>(_obj)));
@@ -222,7 +225,7 @@ public:
   typename std::enable_if<!std::is_const<T>::value, T *>::type
   cast() const
   {
-    if (_const)
+    if (_is_const)
       throw std::bad_cast();
 
     return static_cast<T *>(_type->cast(type::lookup<T>(), const_cast<void *>(_obj)));
@@ -230,9 +233,10 @@ public:
 
 private:
   type const *_type;
-  bool _const;
   void const *_obj;
-  bool _owning;
+  bool _is_const;
+  bool _is_owning;
+  bool _is_deleted;
 };
 
 template<typename T>

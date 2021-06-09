@@ -17,22 +17,25 @@ do
   assert(a_class:get_state() == 0)
 end
 
+collectgarbage()
+collectgarbage()
+
+assert(test.test.AClass.get_num_destroyed() == 1)
+
 do
   local a_class = test.test.AClass.new_2(1)
   assert(a_class:get_state() == 1)
 
   a_class:set_state(2)
   assert(a_class:get_state() == 2)
+
+  a_class:delete()
 end
+
+assert(test.test.AClass.get_num_destroyed() == 2)
 
 test.test.AClass.set_static_state(1)
 assert(test.test.AClass.get_static_state() == 1)
-
--- destruction
-collectgarbage()
-collectgarbage()
-
-assert(test.test.AClass.get_num_destroyed() == 2)
 
 -- copying and moving
 do

@@ -93,6 +93,9 @@ inline void createmetatable(
   lua_setfield(L, -2, "disown");
 
   lua_pushcfunction(L, bind_delete);
+  lua_setfield(L, -2, "delete");
+
+  lua_pushcfunction(L, bind_delete);
   lua_setfield(L, -2, "__gc");
 
   lua_pushvalue(L, -1);
