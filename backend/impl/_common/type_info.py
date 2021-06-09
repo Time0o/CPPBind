@@ -82,10 +82,11 @@ def type_instances():
         tis='\n'.join(tis))
 
 
-def make_typed(arg, owning=False):
+def make_typed(arg, mem=None, owning=False):
+    mem = mem if mem is not None else 'nullptr'
     owning = 'true' if owning else 'false'
 
-    return f"{MAKE_TYPED}({arg}, {owning})"
+    return f"{MAKE_TYPED}({arg}, {mem}, {owning})"
 
 
 def get_typed(arg):

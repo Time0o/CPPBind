@@ -64,6 +64,10 @@ def createmetatable(r):
         function_entries=',\n'.join(function_entries))
 
 
+def setmetatable(t):
+    return f'{SETMETATABLE}(L, "METATABLE_{t.without_const().mangled()}")'
+
+
 def tointegral(t, i):
     return f"{TOINTEGRAL}<{t}>(L, {i})"
 
@@ -73,7 +77,7 @@ def tofloating(t, i):
 
 
 def topointer(t, i):
-    return f"{ti.typed_pointer_cast(t, f'*static_cast<void **>(lua_touserdata(L, {i}))')}"
+    return f"{ti.typed_pointer_cast(t, f'lua_touserdata(L, {i})')}"
 
 
 def pushintegral(arg, constexpr=False):
@@ -91,8 +95,4 @@ def pushfloating(arg, constexpr=False):
 
 
 def pushpointer(arg, owning=False):
-    return f"*static_cast<void **>(lua_newuserdata(L, sizeof(void *))) = {ti.make_typed(arg, owning)}"
-
-
-def setmetatable(t):
-    return f'{SETMETATABLE}(L, "METATABLE_{t.without_const().mangled()}");'
+    return f"{ti.make_typed(arg, mem='lua_newuserdata(L, sizeof(cppbind::type_info::typed_ptr))', owning=owning)}"

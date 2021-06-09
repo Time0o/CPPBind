@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <memory>
 #include <type_traits>
 #include <typeinfo>
 #include <utility>
@@ -178,19 +179,27 @@ public:
       _type->destroy(_obj);
   }
 
-  void *copy() const
+  void *copy(void *mem = nullptr) const
   {
     auto obj_copied = _type->copy(_obj);
-    return static_cast<void *>(new typed_ptr(_type, false, obj_copied, true));
+
+    auto ptr_copied = mem ? new (mem) typed_ptr(_type, false, obj_copied, true)
+                          : new typed_ptr(_type, false, obj_copied, true);
+
+    return static_cast<void *>(ptr_copied);
   }
 
-  void *move() const
+  void *move(void *mem = nullptr) const
   {
     if (_const)
       return copy();
 
     auto obj_moved = _type->move(const_cast<void *>(_obj));
-    return static_cast<void *>(new typed_ptr(_type, false, obj_moved, true));
+
+    auto ptr_moved = mem ? new (mem) typed_ptr(_type, false, obj_moved, true)
+                         : new typed_ptr(_type, false, obj_moved, true);
+
+    return static_cast<void *>(ptr_moved);
   }
 
   void own()
@@ -226,10 +235,12 @@ private:
   bool _owning;
 };
 
-template<typename T, typename ...ARGS>
-void *make_typed(T *obj, ARGS &&...args)
+template<typename T>
+void *make_typed(T *obj, void *mem = nullptr, bool owning = false)
 {
-  auto ptr = new typed_ptr(obj, std::forward<ARGS>(args)...);
+  auto ptr = mem ? new (mem) typed_ptr(obj, owning)
+                 : new typed_ptr(obj, owning);
+
   return static_cast<void *>(ptr);
 }
 

@@ -31,7 +31,7 @@ inline type_info::typed_ptr *_self(lua_State *L, bool return_self = false)
   if (return_self)
     lua_pushvalue(L, 1);
 
-  return cppbind::type_info::get_typed(*static_cast<void **>(userdata));
+  return cppbind::type_info::get_typed(userdata);
 }
 
 inline int bind_own(lua_State *L)
@@ -48,7 +48,7 @@ inline int bind_disown(lua_State *L)
 
 inline int bind_copy(lua_State *L)
 {
-  *static_cast<void **>(lua_newuserdata(L, sizeof(void *))) = _self(L)->copy();
+  _self(L)->copy(lua_newuserdata(L, sizeof(cppbind::type_info::typed_ptr)));
 
   lua_getmetatable(L, 1);
   lua_setmetatable(L, -2);
@@ -58,7 +58,7 @@ inline int bind_copy(lua_State *L)
 
 inline int bind_move(lua_State *L)
 {
-  *static_cast<void **>(lua_newuserdata(L, sizeof(void *))) = _self(L)->move();
+  _self(L)->move(lua_newuserdata(L, sizeof(cppbind::type_info::typed_ptr)));
 
   lua_getmetatable(L, 1);
   lua_setmetatable(L, -2);
@@ -68,7 +68,7 @@ inline int bind_move(lua_State *L)
 
 inline int bind_delete(lua_State *L)
 {
-  delete _self(L);
+  _self(L)->~typed_ptr();
   return 0;
 }
 
