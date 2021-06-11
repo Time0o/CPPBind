@@ -72,31 +72,10 @@ inline int bind_delete(lua_State *L)
   return 0;
 }
 
-inline void createmetatable_generic(lua_State *L)
-{
-  lua_pushstring(L, "METATABLE_GENERIC");
-
-  lua_newtable(L);
-
-  lua_pushcfunction(L, bind_own);
-  lua_setfield(L, -2, "own");
-
-  lua_pushcfunction(L, bind_disown);
-  lua_setfield(L, -2, "disown");
-
-  lua_pushcfunction(L, bind_delete);
-  lua_setfield(L, -2, "__gc");
-
-  lua_pushvalue(L, -1);
-  lua_setfield(L, -2, "__index");
-
-  lua_settable(L, LUA_REGISTRYINDEX);
-}
-
 inline void createmetatable(
   lua_State *L,
   char const *key,
-  std::initializer_list<std::pair<char const *, int(*)(lua_State *L)>> functions)
+  std::initializer_list<std::pair<char const *, int(*)(lua_State *L)>> functions = {})
 {
   lua_pushstring(L, key);
 
@@ -122,32 +101,27 @@ inline void createmetatable(
   lua_settable(L, LUA_REGISTRYINDEX);
 }
 
-inline void getmetatable(lua_State *L, char const *key)
+inline void setmetatable(lua_State *L, char const *key)
 {
   static bool initialized = false;
 
   if (!initialized) {
-    createmetatable_generic(L);
+    createmetatable(L, "METATABLE_GENERIC");
     initialized = true;
   }
 
   lua_pushstring(L, key);
   lua_gettable(L, LUA_REGISTRYINDEX);
 
-  if (lua_istable(L, -1))
-    return;
+  if (!lua_istable(L, -1)) {
+    lua_pop(L, 1);
 
-  lua_pop(L, 1);
+    lua_pushstring(L, "METATABLE_GENERIC");
+    lua_gettable(L, LUA_REGISTRYINDEX);
 
-  lua_pushstring(L, "METATABLE_GENERIC");
-  lua_gettable(L, LUA_REGISTRYINDEX);
+    assert(lua_istable(L, -1));
+  }
 
-  assert(lua_istable(L, -1));
-}
-
-inline void setmetatable(lua_State *L, char const *key)
-{
-  getmetatable(L, key);
   lua_setmetatable(L, -2);
 }
 
