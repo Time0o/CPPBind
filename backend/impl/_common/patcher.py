@@ -102,9 +102,6 @@ def _function_declare_parameters(self):
                     {decl} = &{p.name_interm()}_default;
                     """)
             else:
-                if t_orig.is_scoped_enum():
-                    default = f"static_cast<{t_orig}>({default})"
-
                 decl = f"{decl} = {default};"
         else:
             decl = f"{decl};"
