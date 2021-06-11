@@ -33,10 +33,11 @@ def _function_declare_return_value(self):
 
 
 def _function_perform_return(self):
-    ref_returns = []
+    extra_returns = []
 
-    for p in self.parameters():
-        t = p.type()
+    for i, p in enumerate(self.parameters()):
+        t_orig = p.type()
+        t = t_orig
 
         if t.is_pointer():
             t = t.pointee()
@@ -53,23 +54,34 @@ def _function_perform_return(self):
 
         args = dotdict({ 'f': self })
 
-        ref_returns.append(t.output(outp=f"*{p.name_interm()}", args=args))
+        ret = t.output(outp=f"*{p.name_interm()}", args=args)
 
-    num_returns = len(ref_returns)
-    if not self.return_type().is_void():
-        num_returns += 1
+        if t_orig.is_pointer():
+            ret = code(
+                """
+                if ({guard})
+                   {ret}
+                """,
+                guard=f'!lua_isuserdata(L, {i+1}) && {p.name_interm()}',
+                ret=ret)
 
-    if not ref_returns:
+        extra_returns.append(ret)
+
+    num_returns = 0 if self.return_type().is_void() else 1
+
+    if not extra_returns:
         return f"return {num_returns};"
 
     return code(
         """
-        {ref_returns}
+        int __top = lua_gettop(L);
 
-        return {num_returns};
+        {extra_returns}
+
+        return {num_returns} + (lua_gettop(L) - __top);
         """,
-        num_returns=num_returns,
-        ref_returns='\n'.join(ref_returns))
+        extra_returns='\n'.join(extra_returns),
+        num_returns=num_returns)
 
 
 def _function_handle_exception(self, what):

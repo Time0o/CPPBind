@@ -53,9 +53,19 @@ class LuaTypeTranslator(TypeTranslator('lua')):
         if args.p.default_argument() is not None:
             return f"if (lua_gettop(L) < {args.i+1}) goto function_call;"
 
-    @rule(lambda _: True)
+    @classmethod
     def _lua_input_check_type(cls, t, args):
         return f"luaL_checktype(L, {args.i+1}, {cls._lua_type_encoding(t)});"
+
+    @classmethod
+    def _lua_input_indirect(cls, t, args):
+        return code(
+            """
+            {input_tmp}
+            {input_interm}
+            """,
+            input_tmp=cls.input(t, args).format(interm=f"static {t.without_const()} {Id.TMP}"),
+            input_interm=f"{{interm}} = &{Id.TMP};")
 
     input_before = [
         _lua_input_skip_defaulted.__func__,
@@ -91,45 +101,32 @@ class LuaTypeTranslator(TypeTranslator('lua')):
 
         return f"{{interm}} = {lua_util.topointer(t, args.i + 1)};"
 
-    @rule(lambda t: t.is_pointer() and not \
-                (t.pointee().is_void() or \
-                 t.pointee().is_record() or \
-                 t.pointee().is_pointer()))
+    @rule(lambda t: t.is_pointer() and t.pointee().is_fundamental())
     def input(cls, t, args):
         isuserdata = f"lua_isuserdata(L, {args.i+1})"
         touserdata = f"{{interm}} = {lua_util.topointer(t.pointee(), args.i + 1)};"
 
-        _interm = f"{t.pointee().without_const()} _{{interm}}"
-        _input = cls.input(t.pointee(), args).format(interm="_{interm}")
-
         return code(
             """
-            {_interm};
             if ({isuserdata}) {{{{
               {touserdata}
             }}}} else {{{{
-              {_input}
-              {{interm}} = &_{{interm}};
+              {indirect}
             }}}}
             """,
             isuserdata=isuserdata,
             touserdata=touserdata,
-            _interm=_interm,
-            _input=_input)
+            indirect=cls._lua_input_indirect(t.pointee(), args))
 
-    @rule(lambda t: t.is_reference() and not \
-                (t.pointee().is_void() or \
-                 t.pointee().is_record() or \
-                 t.pointee().is_pointer()))
+    @rule(lambda t: t.is_reference() and t.pointee().is_fundamental())
     def input(cls, t, args):
-        _input = cls.input(t.referenced(), args).format(interm="auto _{interm}")
-
         return code(
             """
-            {_input}
-            {{interm}} = &_{{interm}};
+            {{{{
+              {indirect}
+            }}}}
             """,
-            _input=_input)
+            indirect=cls._lua_input_indirect(t.referenced(), args))
 
     @input_rule(lambda t: t.is_pointer() or t.is_reference())
     def input(cls, t, args):

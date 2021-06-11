@@ -35,10 +35,21 @@ do
   local iptr1 = test.test.util.int_new(1):own()
   local iptr2 = test.test.util.int_new(2):own()
 
-  local iptr_res, iptr1_res = test.test.add_pointer(iptr1, iptr2)
-  assert(iptr1_res == 3)
-  assert(test.test.util.int_deref(iptr1) == 3)
+  local iptr_res, _ = test.test.add_pointer(iptr1, iptr2)
+
+  assert(_ == nil)
+
   assert(test.test.util.int_deref(iptr_res) == 3)
+  assert(test.test.util.int_deref(iptr1) == 3)
+end
+
+do
+  local i1 = 1
+  local i2 = 2
+
+  local _, i1_res = test.test.add_pointer(i1, i2)
+
+  assert(i1_res == 3)
 end
 
 do
@@ -62,6 +73,14 @@ do
   res, i1_res = test.test.add_lvalue_ref(i1, i2)
   assert(i1_res == 3)
   assert(res == 3)
+end
+
+-- rvalue reference parameters
+do
+  local i1 = 1
+  local i2 = 2
+
+  assert(test.test.add_rvalue_ref(i1, i2))
 end
 
 -- no parameters
