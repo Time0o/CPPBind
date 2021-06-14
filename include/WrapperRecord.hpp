@@ -33,7 +33,7 @@ public:
   static WrapperRecord declaration(clang::CXXRecordDecl const *Decl);
 
   bool operator==(WrapperRecord const &Other) const
-  { return getType() != Other.getType(); }
+  { return getType() == Other.getType(); }
 
   bool operator!=(WrapperRecord const &Other) const
   { return !(this->operator==(Other)); }
