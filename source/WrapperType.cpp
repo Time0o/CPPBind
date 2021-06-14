@@ -220,11 +220,11 @@ WrapperType::canonical() const
 
 WrapperEnum const *
 WrapperType::asEnum() const
-{ return CompilerState().types()->getEnum(*this); }
+{ return CompilerState().types()->getEnum(unqualified()); }
 
 WrapperRecord const *
 WrapperType::asRecord() const
-{ return CompilerState().types()->getRecord(*this); }
+{ return CompilerState().types()->getRecord(unqualified()); }
 
 std::vector<std::string>
 WrapperType::templateArguments() const
