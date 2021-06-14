@@ -129,7 +129,7 @@ public:
   WrapperVariable const *getPropertyFor() const
   { return PropertyFor_; }
 
-  std::optional<WrapperParameter const *> getThis() const
+  std::optional<WrapperParameter const *> getSelf() const
   {
     if (!isInstance())
       return std::nullopt;

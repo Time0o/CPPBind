@@ -215,7 +215,7 @@ def _function_forward_call(self):
 
 def _function_call(self, parameters):
     if self.is_instance():
-        call = f"{self.this().name_interm()}->{self.name().format(quals=Id.REMOVE_QUALS)}"
+        call = f"{self.self().name_interm()}->{self.name().format(quals=Id.REMOVE_QUALS)}"
     else:
         call = f"{self.name()}"
 
@@ -240,7 +240,7 @@ def _function_move(self, parameters):
 
 
 def _function_destruct(self):
-    return f"delete {self.this().name_interm()};"
+    return f"delete {self.self().name_interm()};"
 
 
 def _function_get(self):

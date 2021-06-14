@@ -267,7 +267,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
          "without_operator_name"_a = false)
     .def("namespace", &Function::getNamespace)
     .def("return_type", &Function::getReturnType)
-    .def("this", &Function::getThis,
+    .def("self", &Function::getSelf,
          py::return_value_policy::reference_internal)
     .def("parameters",
          py::overload_cast<>(&Function::getParameters, py::const_),
