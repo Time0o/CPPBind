@@ -123,6 +123,9 @@ public:
                        bool WithOverloadPostfix = false,
                        bool WithoutOperatorName = false) const;
 
+  WrapperRecord const *getOrigin() const
+  { return Origin_->asRecord(); }
+
   WrapperRecord const *getParent() const
   { return Parent_; }
 
@@ -145,9 +148,12 @@ public:
 
   WrapperType getReturnType() const;
 
-  std::optional<std::string> getOverloadedOperator() const;
+  std::optional<std::string> getCustomAction() const
+  { return CustomAction_; }
 
   std::optional<std::string> getTemplateArgumentList() const;
+
+  std::optional<std::string> getOverloadedOperator() const;
 
   bool isDefinition() const
   { return IsDefinition_; }
@@ -193,16 +199,21 @@ public:
 
   bool isNoexcept() const;
 
+  bool isVirtual() const
+  { return IsVirtual_; }
+
+  bool isOverriding() const;
+
   bool isOverloaded() const
   { return static_cast<bool>(Overload_); }
+
+  bool isTemplateInstantiation() const
+  { return static_cast<bool>(TemplateArgumentList_); }
 
   bool isOverloadedOperator(char const *Which = nullptr,
                             int numParameters = -1) const;
 
   bool isCustomCast(char const *Which = nullptr) const;
-
-  bool isTemplateInstantiation() const
-  { return static_cast<bool>(TemplateArgumentList_); }
 
 private:
   static Identifier
@@ -214,9 +225,6 @@ private:
   static std::deque<WrapperParameter>
   determineParameters(clang::FunctionDecl const *Decl);
 
-  static void
-  postfixParameterName(std::string &ParamName, unsigned p);
-
   static bool
   determineIfNoexcept(clang::FunctionDecl const *Decl);
 
@@ -226,12 +234,14 @@ private:
   std::optional<OverloadedOperator>
   determineOverloadedOperator(clang::FunctionDecl const *Decl);
 
+  std::optional<WrapperType> Origin_;
   WrapperRecord const *Parent_ = nullptr;
   WrapperVariable const *PropertyFor_ = nullptr;
 
   Identifier Name_;
   WrapperType ReturnType_;
   std::deque<WrapperParameter> Parameters_;
+  std::optional<std::string> CustomAction_;
 
   bool IsDefinition_ = false;
   bool IsMember_ = false;
@@ -247,11 +257,10 @@ private:
   bool IsConst_ = false;
   bool IsConstexpr_ = false;
   bool IsNoexcept_ = false;
+  bool IsVirtual_ = false;
 
   std::optional<TemplateArgumentList> TemplateArgumentList_;
-
   std::optional<OverloadedOperator> OverloadedOperator_;
-
   std::optional<unsigned> Overload_;
 };
 
@@ -265,9 +274,11 @@ public:
 
   WrapperFunctionBuilder &setName(Identifier const &Name);
   WrapperFunctionBuilder &setNamespace(std::optional<Identifier> const &Namespace);
+  WrapperFunctionBuilder &setOrigin(WrapperType const &Origin);
   WrapperFunctionBuilder &setParent(WrapperRecord const *Parent);
   WrapperFunctionBuilder &setPropertyFor(WrapperVariable const *PropertyFor);
   WrapperFunctionBuilder &setReturnType(WrapperType const &ReturnType);
+  WrapperFunctionBuilder &setCustomAction(std::string const &CustomAction);
   WrapperFunctionBuilder &setIsConstructor(bool Val = true);
   WrapperFunctionBuilder &setIsDestructor(bool Val = true);
   WrapperFunctionBuilder &setIsGetter(bool Val = true);
@@ -275,6 +286,7 @@ public:
   WrapperFunctionBuilder &setIsStatic(bool Val = true);
   WrapperFunctionBuilder &setIsConst(bool Val = true);
   WrapperFunctionBuilder &setIsNoexcept(bool Val = true);
+  WrapperFunctionBuilder &setIsVirtual(bool Val = true);
 
   template<typename ...ARGS>
   WrapperFunctionBuilder &pushParameter(ARGS const & ...Args)

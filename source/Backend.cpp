@@ -266,14 +266,16 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
          "with_overload_postfix"_a = false,
          "without_operator_name"_a = false)
     .def("namespace", &Function::getNamespace)
-    .def("return_type", &Function::getReturnType)
+    .def("origin", &Function::getOrigin)
+    .def("parent", &Function::getParent)
+    .def("property_for", &Function::getPropertyFor)
     .def("self", &Function::getSelf,
          py::return_value_policy::reference_internal)
     .def("parameters",
          py::overload_cast<>(&Function::getParameters, py::const_),
          py::return_value_policy::reference_internal)
-    .def("parent", &Function::getParent)
-    .def("property_for", &Function::getPropertyFor)
+    .def("return_type", &Function::getReturnType)
+    .def("custom_action", &Function::getCustomAction)
     .def("overloaded_operator", &Function::getOverloadedOperator)
     .def("template_argument_list", &Function::getTemplateArgumentList)
     .def("is_definition", &Function::isDefinition)
@@ -291,6 +293,8 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_const", &Function::isConst)
     .def("is_constexpr", &Function::isConstexpr)
     .def("is_noexcept", &Function::isNoexcept)
+    .def("is_virtual", &Function::isVirtual)
+    .def("is_overriding", &Function::isOverriding)
     .def("is_overloaded_operator", &Function::isOverloadedOperator,
          "which"_a = nullptr,
          "num_parameters"_a = -1)

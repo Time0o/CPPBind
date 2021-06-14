@@ -82,6 +82,7 @@ WrapperFunction::WrapperFunction(clang::FunctionDecl const *Decl)
 
 WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
 : WrapperObject<clang::FunctionDecl>(Decl),
+  Origin_(Decl->getParent()->getTypeForDecl()),
   Name_(determineName(Decl)),
   ReturnType_(determineReturnType(Decl)),
   Parameters_(determineParameters(Decl)),
@@ -97,6 +98,7 @@ WrapperFunction::WrapperFunction(clang::CXXMethodDecl const *Decl)
   IsConst_(Decl->isConst()),
   IsConstexpr_(Decl->isConstexpr()),
   IsNoexcept_(determineIfNoexcept(Decl)),
+  IsVirtual_(Decl->isVirtual()),
   TemplateArgumentList_(determineTemplateArgumentList(Decl)),
   OverloadedOperator_(determineOverloadedOperator(Decl))
 {}
@@ -203,6 +205,15 @@ WrapperFunction::isNoexcept() const
 { return OPT(bool, "wrap-noexcept") || isDestructor() || IsNoexcept_; }
 
 bool
+WrapperFunction::isOverriding() const
+{
+  if (!Parent_)
+    return false;
+
+  return Origin_ != Parent_->getType();
+}
+
+bool
 WrapperFunction::isOverloadedOperator(char const *Which,
                                       int numParameters) const
 {
@@ -254,6 +265,16 @@ WrapperType
 WrapperFunction::determineReturnType(clang::FunctionDecl const *Decl)
 { return WrapperType(Decl->getReturnType()); }
 
+static void
+postfixParameterName(std::string &ParamName, unsigned p)
+{
+  auto Postfix(OPT("wrap-func-numbered-param-postfix"));
+
+  string::replaceAll(Postfix, "%p", std::to_string(p));
+
+  ParamName += Postfix;
+}
+
 std::deque<WrapperParameter>
 WrapperFunction::determineParameters(clang::FunctionDecl const *Decl)
 {
@@ -301,16 +322,6 @@ WrapperFunction::determineParameters(clang::FunctionDecl const *Decl)
   }
 
   return ParamList;
-}
-
-void
-WrapperFunction::postfixParameterName(std::string &ParamName, unsigned p)
-{
-  auto Postfix(OPT("wrap-func-numbered-param-postfix"));
-
-  string::replaceAll(Postfix, "%p", std::to_string(p));
-
-  ParamName += Postfix;
 }
 
 bool
@@ -450,6 +461,13 @@ WrapperFunction::determineTemplateArgumentList(clang::FunctionDecl const *Decl)
 }
 
 WrapperFunctionBuilder &
+WrapperFunctionBuilder::setOrigin(WrapperType const &Origin)
+{
+  Wf_.Origin_ = Origin;
+  return *this;
+}
+
+WrapperFunctionBuilder &
 WrapperFunctionBuilder::setParent(WrapperRecord const *Parent)
 {
   auto ParentNameTemplated(Parent->getFormat(true));
@@ -512,6 +530,13 @@ WrapperFunctionBuilder::setReturnType(WrapperType const &ReturnType)
 }
 
 WrapperFunctionBuilder &
+WrapperFunctionBuilder::setCustomAction(std::string const &CustomAction)
+{
+  Wf_.CustomAction_ = CustomAction;
+  return *this;
+}
+
+WrapperFunctionBuilder &
 WrapperFunctionBuilder::setIsGetter(bool Val)
 {
   Wf_.IsGetter_ = Val;
@@ -561,6 +586,13 @@ WrapperFunctionBuilder &
 WrapperFunctionBuilder::setIsNoexcept(bool Val)
 {
   Wf_.IsNoexcept_ = Val;
+  return *this;
+}
+
+WrapperFunctionBuilder &
+WrapperFunctionBuilder::setIsVirtual(bool Val)
+{
+  Wf_.IsVirtual_ = Val;
   return *this;
 }
 
