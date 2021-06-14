@@ -106,6 +106,9 @@ class RustBackend(Backend('rust')):
         self._wrapper_source.append(self._function_definition_rust(f))
 
     def wrap_record(self, r):
+        if r.is_abstract():
+            return
+
         self._wrapper_source.append(self._record_definition_rust(r))
 
     def _c_lib(self):
@@ -165,7 +168,7 @@ class RustBackend(Backend('rust')):
         return [a.target() for a, _ in self.type_aliases()]
 
     def _rust_record_types(self):
-        return [r.type().target() for r in self.records()]
+        return [r.type().target() for r in self.records(include_abstract=False)]
 
     def _rust_is_noexcept(self):
         for f in self.functions(include_members=True):

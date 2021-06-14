@@ -215,12 +215,26 @@ def _function_forward_call(self):
 
 def _function_call(self, parameters):
     if self.is_instance():
-        call = f"{self.self().name_interm()}->{self.name().format(quals=Id.REMOVE_QUALS)}"
-    else:
-        call = f"{self.name()}"
+        this = self.self().name_interm()
 
-    if self.template_argument_list():
-        call = f"{call}{self.template_argument_list()}"
+    custom_action = self.custom_action()
+
+    if custom_action is not None:
+        if self.is_instance():
+            if parameters:
+                parameters = f"{this}, {parameters}"
+            else:
+                parameters = f"{this}"
+
+        call = custom_action
+    else:
+        if self.is_instance():
+            call = f"{this}->{self.name().format(quals=Id.REMOVE_QUALS)}"
+        else:
+            call = f"{self.name()}"
+
+        if self.template_argument_list():
+            call = f"{call}{self.template_argument_list()}"
 
     return f"{call}({parameters});"
 

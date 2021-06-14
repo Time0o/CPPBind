@@ -72,7 +72,8 @@ class LuaBackend(Backend('lua')):
             """,
             lua_module_name=self._lua_module_name(),
             register_module=self._lua_module_register(),
-            create_metatables=self._create_metatables(self.records())))
+            create_metatables=self._create_metatables(
+                r for r in self.records(include_abstract=False))))
 
     def wrap_definition(self, d):
         self.wrap_variable(d.as_variable())
@@ -90,6 +91,9 @@ class LuaBackend(Backend('lua')):
         self._wrapper_module.append(self._function_definition(f))
 
     def wrap_record(self, r):
+        if r.is_abstract():
+            return
+
         functions = [f for f in r.functions() if not f.is_destructor()]
 
         self._wrapper_module.append(self._function_definitions(functions))
@@ -154,7 +158,7 @@ class LuaBackend(Backend('lua')):
         register = [self._register_createtable(h['__functions'])]
 
         for e in h['__enums']:
-            register += self._register_constants(c for c in e.constants())
+            register += self._register_variables(c for c in e.constants())
 
         if h['__variables'] or h['__definitions']:
             variables = h['__variables'] + [d.as_variable() for d in h['__definitions']]
@@ -184,7 +188,7 @@ class LuaBackend(Backend('lua')):
 
         return '\n\n'.join(register)
 
-    def _register_constants(self, variables):
+    def _register_variables(self, variables):
         def register_variable(v):
             variable = v.name()
             if v.type().is_lvalue_reference() and not v.type().is_record_indirection():

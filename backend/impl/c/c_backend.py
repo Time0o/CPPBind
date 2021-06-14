@@ -194,20 +194,33 @@ class CBackend(Backend('c')):
         return f"{t.target()};"
 
     def _record_definition(self, t):
+        if t.as_record().is_abstract():
+            union = code(
+                """
+                union { void *ptr; } obj;
+                """)
+        else:
+            union = code(
+                f"""
+                union {{
+                  char mem[{t.size()}];
+                  void *ptr;
+                }} obj;
+                """)
+
         return code(
-            f"""
-            {t.target()}
+            """
+            {name}
             {{
-              union {{
-                char mem[{t.size()}];
-                void *ptr;
-              }} obj;
+              {union}
 
               char is_initialized;
               char is_const;
               char is_owning;
             }};
-            """)
+            """,
+            name=t.target(),
+            union=union)
 
     def _record_types(self, which='all'):
         types_all = set()

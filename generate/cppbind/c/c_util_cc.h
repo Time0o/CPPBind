@@ -74,6 +74,24 @@ struct_cast(S const *s)
   return const_cast<T *>(struct_cast<T const>(s));
 }
 
+template<typename T, typename S>
+typename std::enable_if<std::is_const<T>::value, T *>::type
+non_owning_struct_cast(S const *s)
+{
+  assert(s->is_initialized);
+
+  return static_cast<T *>(s->obj.ptr);
+}
+
+template<typename T, typename S>
+typename std::enable_if<!std::is_const<T>::value, T *>::type
+non_owning_struct_cast(S const *s)
+{
+  assert(!s->is_const);
+
+  return const_cast<T *>(non_owning_struct_cast<T const>(s));
+}
+
 } // namespace c
 
 } // namespace cppbind

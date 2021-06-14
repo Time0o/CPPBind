@@ -27,8 +27,7 @@ def path():
 
 
 def type_instances():
-    be_records = backend().records(include_incomplete=True,
-                                   include_abstract=True)
+    be_records = backend().records(include_declarations=True)
 
     be_types = backend().types(as_set=True)
 

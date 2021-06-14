@@ -8,6 +8,7 @@ _NS = f"cppbind::c"
 MAKE_OWNING_STRUCT = f"{_NS}::make_owning_struct"
 MAKE_NON_OWNING_STRUCT = f"{_NS}::make_non_owning_struct"
 STRUCT_CAST = f"{_NS}::struct_cast"
+NON_OWNING_STRUCT_CAST = f"{_NS}::non_owning_struct_cast"
 
 
 def make_owning_struct(t, args):
@@ -20,3 +21,6 @@ def make_non_owning_struct(t, ptr):
 
 def struct_cast(t, what):
     return f"{STRUCT_CAST}<{t}>({what})"
+
+def non_owning_struct_cast(t, what):
+    return f"{NON_OWNING_STRUCT_CAST}<{t}>({what})"

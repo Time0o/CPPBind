@@ -181,6 +181,41 @@ WrapperRecord::determinePublicMemberFunctions(
                                .build());
   }
 
+  // base casts
+  WrapperType SelfType(Decl->getTypeForDecl());
+
+  std::vector<WrapperType> BaseTypes {SelfType};
+
+  for (auto const &BaseType : SelfType.baseTypes(true))
+    BaseTypes.push_back(BaseType);
+
+  for (auto const &BaseType : BaseTypes) {
+    for (bool Const : {true, false}) {
+      auto SelfPointerType = Const ? SelfType.withConst().pointerTo() : SelfType.pointerTo();
+      auto BasePointerType = Const ? BaseType.withConst().pointerTo() : BaseType.pointerTo();
+
+      std::string BaseCastName("cast_to_");
+
+      if (Const)
+        BaseCastName += "const_";
+
+      BaseCastName += BaseType.format(true, "", "",
+                                      Identifier::SNAKE_CASE,
+                                      Identifier::REMOVE_QUALS);
+
+      PublicMethods.push_back(
+        WrapperFunctionBuilder(Identifier(BaseCastName))
+                               .setOrigin(BaseType)
+                               .setParent(this)
+                               .setCustomAction("static_cast<" + BasePointerType.str() + ">")
+                               .setReturnType(BasePointerType)
+                               .setIsConst(Const)
+                               .setIsNoexcept()
+                               .setIsVirtual()
+                               .build());
+    }
+  }
+
   return PublicMethods;
 }
 

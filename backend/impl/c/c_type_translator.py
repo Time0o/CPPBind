@@ -81,11 +81,21 @@ class CTypeTranslator(TypeTranslator('c')):
                 {{interm}} = &_{{interm}};
                 """)
 
-        return f"{{interm}} = {c_util.struct_cast(t.with_const(), '{inp}')};"
+        if t.as_record().is_abstract():
+            cast = c_util.non_owning_struct_cast
+        else:
+            cast = c_util.struct_cast
+
+        return f"{{interm}} = {cast(t.with_const(), '{inp}')};"
 
     @rule(lambda t: t.is_record_indirection())
     def input(cls, t, args):
-        return f"{{interm}} = {c_util.struct_cast(t.pointee(), '{inp}')};"
+        if t.pointee().as_record().is_abstract():
+            cast = c_util.non_owning_struct_cast
+        else:
+            cast = c_util.struct_cast
+
+        return f"{{interm}} = {cast(t.pointee(), '{inp}')};"
 
     @rule(lambda t: t.is_pointer() or t.is_reference() and \
                     t.pointee().is_record_indirection())

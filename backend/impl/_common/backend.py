@@ -194,10 +194,10 @@ class BackendGeneric(metaclass=BackendMeta):
         for v in self.variables(include_definitions=True, include_enums=True):
             add_type(v.type())
 
-        for r in self.records(include_abstract=True):
+        for r in self.records():
             add_type(r.type())
 
-        for f in chain(self._functions, *(r.functions() for r in self.records(include_abstract=True))):
+        for f in chain(self._functions, *(r.functions() for r in self.records())):
             for t in [f.return_type()] + [p.type() for p in f.parameters()]:
                 add_type(t)
 
@@ -278,16 +278,17 @@ class BackendGeneric(metaclass=BackendMeta):
         functions = self._functions[:]
 
         if include_members:
-            for r in self.records(include_abstract=False):
-                functions += r.functions()
+            for r in self.records():
+                if not r.is_abstract():
+                    functions += r.functions()
 
         return functions
 
-    def records(self, include_incomplete=False, include_abstract=False):
+    def records(self, include_declarations=False, include_abstract=True):
         records = []
 
         for r in self._records:
-            if not include_incomplete and not r.is_definition():
+            if not include_declarations and not r.is_definition():
                 continue
 
             if not include_abstract and r.is_abstract():
@@ -310,8 +311,7 @@ class BackendGeneric(metaclass=BackendMeta):
             self.wrap_variable(c)
 
         for r in self._records:
-            if not r.is_abstract():
-                self.wrap_record(r)
+            self.wrap_record(r)
 
         for f in self._functions:
             self.wrap_function(f)
