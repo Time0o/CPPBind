@@ -1,5 +1,7 @@
 #include <cassert>
+#include <deque>
 #include <optional>
+#include <queue>
 #include <stack>
 #include <string>
 #include <vector>
@@ -298,18 +300,33 @@ WrapperType::proxyFor()
   return std::nullopt;
 }
 
-std::vector<WrapperType>
-WrapperType::baseTypes() const
+std::deque<WrapperType>
+WrapperType::baseTypes(bool Recursive) const
 {
-  assert(isRecord());
+  if (!isRecord())
+    return {};
 
-  std::vector<WrapperType> BaseTypes;
-  BaseTypes.reserve(BaseTypes_.size());
+  std::deque<WrapperType> BaseWrapperTypes;
 
-  for (auto const &Type : BaseTypes_)
-    BaseTypes.emplace_back(Type);
+  for (auto const &BaseType : BaseTypes_)
+    BaseWrapperTypes.emplace_back(BaseType);
 
-  return BaseTypes;
+  if (Recursive) {
+    std::queue<WrapperType> BaseWrapperTypeQueue(BaseWrapperTypes);
+
+    while (!BaseWrapperTypeQueue.empty()) {
+      auto BaseWrapperType(BaseWrapperTypeQueue.front());
+      BaseWrapperTypeQueue.pop();
+
+      // XXX consider common base classes
+      for (auto const &BaseBaseWrapperType : BaseWrapperType.baseTypes()) {
+        BaseWrapperTypes.push_back(BaseBaseWrapperType);
+        BaseWrapperTypeQueue.push(BaseBaseWrapperType);
+      }
+    }
+  }
+
+  return BaseWrapperTypes;
 }
 
 WrapperType

@@ -2,6 +2,7 @@
 #define GUARD_WRAPPER_TYPE_H
 
 #include <cassert>
+#include <deque>
 #include <memory>
 #include <optional>
 #include <string>
@@ -85,7 +86,7 @@ public:
   WrapperType basic() const;
   WrapperType canonical() const;
   std::optional<WrapperType> proxyFor();
-  std::vector<WrapperType> baseTypes() const;
+  std::deque<WrapperType> baseTypes(bool Recursive = false) const;
 
   WrapperEnum const * asEnum() const;
   WrapperRecord const * asRecord() const;
