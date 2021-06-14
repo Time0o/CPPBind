@@ -287,7 +287,7 @@ class BackendGeneric(metaclass=BackendMeta):
         records = []
 
         for r in self._records:
-            if not include_incomplete and not r.is_complete():
+            if not include_incomplete and not r.is_definition():
                 continue
 
             if not include_abstract and r.is_abstract():

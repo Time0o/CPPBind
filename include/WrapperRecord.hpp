@@ -66,9 +66,6 @@ public:
   bool isDefinition() const
   { return IsDefinition_; }
 
-  bool isComplete() const
-  { return IsDefinition_; }
-
   bool isAbstract() const
   { return IsAbstract_; }
 
