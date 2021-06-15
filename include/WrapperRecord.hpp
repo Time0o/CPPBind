@@ -47,6 +47,8 @@ public:
   WrapperType getType() const
   { return Type_; }
 
+  std::vector<WrapperRecord const *> getBases(bool Recursive = false) const;
+
   std::deque<WrapperFunction> const &getFunctions() const
   { return Functions_; }
 
@@ -60,6 +62,7 @@ public:
   std::optional<WrapperFunction const *> getMoveConstructor() const;
   std::optional<WrapperFunction const *> getMoveAssignmentOperator() const;
   std::optional<WrapperFunction const *> getDestructor() const;
+  std::optional<WrapperFunction const *> getBaseCast(bool Const) const;
 
   std::optional<std::string> getTemplateArgumentList() const;
 
@@ -68,6 +71,8 @@ public:
 
   bool isAbstract() const
   { return IsAbstract_; }
+
+  bool isPolymorphic() const;
 
   bool isCopyable() const
   { return IsCopyable_; }

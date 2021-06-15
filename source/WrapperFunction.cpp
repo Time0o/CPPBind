@@ -537,6 +537,22 @@ WrapperFunctionBuilder::setCustomAction(std::string const &CustomAction)
 }
 
 WrapperFunctionBuilder &
+WrapperFunctionBuilder::setIsConstructor(bool Val)
+{
+  //assert(Wf_.isMember()); // XXX
+  Wf_.IsConstructor_ = Val;
+  return *this;
+}
+
+WrapperFunctionBuilder &
+WrapperFunctionBuilder::setIsDestructor(bool Val)
+{
+  //assert(Wf_.isMember()); // XXX
+  Wf_.IsDestructor_ = Val;
+  return *this;
+}
+
+WrapperFunctionBuilder &
 WrapperFunctionBuilder::setIsGetter(bool Val)
 {
   Wf_.IsGetter_ = Val;
@@ -551,18 +567,9 @@ WrapperFunctionBuilder::setIsSetter(bool Val)
 }
 
 WrapperFunctionBuilder &
-WrapperFunctionBuilder::setIsConstructor(bool Val)
+WrapperFunctionBuilder::setIsBaseCast(bool Val)
 {
-  //assert(Wf_.isMember()); // XXX
-  Wf_.IsConstructor_ = Val;
-  return *this;
-}
-
-WrapperFunctionBuilder &
-WrapperFunctionBuilder::setIsDestructor(bool Val)
-{
-  //assert(Wf_.isMember()); // XXX
-  Wf_.IsDestructor_ = Val;
+  Wf_.IsBaseCast_ = Val;
   return *this;
 }
 

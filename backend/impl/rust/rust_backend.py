@@ -106,10 +106,14 @@ class RustBackend(Backend('rust')):
         self._wrapper_source.append(self._function_definition_rust(f))
 
     def wrap_record(self, r):
-        if r.is_abstract():
-            return
+        if r.is_polymorphic():
+            self._wrapper_source.append(self._record_trait_rust(r))
 
         self._wrapper_source.append(self._record_definition_rust(r))
+
+        if not r.is_abstract():
+            self._wrapper_source.append(self._record_impl_rust(r))
+            self._wrapper_source.append(self._record_trait_impls_rust(r))
 
     def _c_lib(self):
         return f"{self.input_file().filename()}_c"
@@ -168,7 +172,15 @@ class RustBackend(Backend('rust')):
         return [a.target() for a, _ in self.type_aliases()]
 
     def _rust_record_types(self):
-        return [r.type().target() for r in self.records(include_abstract=False)]
+        record_types = []
+
+        for r in self.records():
+            if r.is_polymorphic():
+                record_types.append(r.trait_target())
+
+            record_types.append(r.type().target())
+
+        return record_types
 
     def _rust_is_noexcept(self):
         for f in self.functions(include_members=True):
@@ -209,8 +221,10 @@ class RustBackend(Backend('rust')):
             symbols.append(f.name_target())
 
         for r in h['__records']:
-            if not r.is_abstract():
-                symbols.append(r.name_target())
+            if r.is_polymorphic():
+                symbols.append(r.trait_target())
+
+            symbols.append(r.name_target())
 
         export = [f"pub use {self._rust_module()}::internal::{symbol};"
                   for symbol in symbols]
@@ -235,25 +249,13 @@ class RustBackend(Backend('rust')):
 
     def _record_definition_rust(self, r):
         record_name = r.name_target()
-        record_union = f"{record_name}Union"
-        record_type = r.type().target()
+        record_union = r.union_target()
         record_size = r.type().size()
-
-        record_members = []
-        for f in r.functions():
-            if not (f.is_copy_constructor() or \
-                    f.is_copy_assignment_operator() or \
-                    f.is_move_constructor() or \
-                    f.is_move_assignment_operator() or \
-                    f.is_destructor()):
-                record_members.append(self._function_definition_rust(f))
 
         c_void_ptr = Type('void').pointer_to().target_c()
         c_char = Type('char').target_c()
 
-        record_definition = []
-
-        record_definition.append(code(
+        return code(
             f"""
             #[repr(C)]
             union {record_union} {{
@@ -269,9 +271,26 @@ class RustBackend(Backend('rust')):
                 is_owning: {c_char},
             }}
             """,
-            ))
+            )
 
-        record_definition.append(code(
+    def _record_impl_rust(self, r):
+        record_name = r.name_target()
+        record_type = r.type().target()
+        record_size = r.type().size()
+
+        record_members = []
+        for f in r.functions():
+            if not (f.is_virtual() or \
+                    f.is_copy_constructor() or \
+                    f.is_copy_assignment_operator() or \
+                    f.is_move_constructor() or \
+                    f.is_move_assignment_operator() or \
+                    f.is_destructor()):
+                record_members.append(self._function_definition_rust(f))
+
+        record_impl = []
+
+        record_impl.append(code(
             """
             impl {record_name} {{
                 {record_members}
@@ -310,7 +329,7 @@ class RustBackend(Backend('rust')):
                     record_other=f"{other.name_target()}: {other.type().target()}",
                     record_clone_from=copy_assign.forward()))
 
-            record_definition.append(code(
+            record_impl.append(code(
                 """
                 impl Clone for {record_name} {{
                     {record_clone}
@@ -324,7 +343,7 @@ class RustBackend(Backend('rust')):
             pass # XXX
 
         if r.destructor():
-            record_definition.append(code(
+            record_impl.append(code(
                 """
                 impl Drop for {record_name} {{
                     fn drop(&mut self) {{
@@ -337,7 +356,62 @@ class RustBackend(Backend('rust')):
                 record_name=record_name,
                 record_destruct=r.destructor().forward()))
 
-        return '\n\n'.join(record_definition)
+        return '\n\n'.join(record_impl)
+
+    def _record_trait_rust(self, r):
+        trait_functions = []
+        for f in r.functions():
+            if not f.is_virtual() or f.is_destructor():
+                continue
+
+            if not f.is_overriding():
+                trait_functions.append(self._function_declaration_rust(f, is_pub=False))
+
+        trait_bases = [b.trait_target()
+                       for b in r.bases(recursive=True) if b.is_polymorphic()]
+
+        trait_bases = f": {' + '.join(trait_bases)}" if trait_bases else ""
+
+        return code(
+            """
+            pub trait {trait_name}{trait_bases} {{
+                {trait_functions}
+            }}
+            """,
+            trait_name=r.trait_target(),
+            trait_bases=trait_bases,
+            trait_functions='\n\n'.join(trait_functions))
+
+    def _record_trait_impls_rust(self, r):
+        record_name = r.name_target()
+
+        record_trait_impls = []
+
+        for b in [r] + r.bases(recursive=True):
+            if not b.is_polymorphic():
+                continue
+
+            trait_name = b.trait_target()
+
+            trait_functions = []
+            for f in r.functions():
+                if not f.is_virtual() or f.is_destructor():
+                    continue
+
+                if f.origin() == b:
+                    trait_functions.append(self._function_definition_rust(f, is_pub=False))
+
+            record_trait_impls.append(code(
+                """
+                impl {trait_name} for {record_name} {{
+                    {trait_functions}
+                }}
+                """,
+                record_name=record_name,
+                trait_name=trait_name,
+                trait_functions='\n\n'.join(trait_functions)))
+
+        return '\n\n'.join(record_trait_impls)
 
     def _function_declaration_c(self, f):
         return f"{self._function_header_c(f)};"
@@ -369,17 +443,20 @@ class RustBackend(Backend('rust')):
 
         return f" -> {return_type.target_c()}"
 
-    def _function_definition_rust(self, f):
+    def _function_declaration_rust(self, f, is_pub=True, is_unsafe=True):
+        return f"{self._function_header_rust(f, is_pub=is_pub, is_unsafe=is_unsafe)};"
+
+    def _function_definition_rust(self, f, is_pub=True, is_unsafe=True):
         return code(
             """
             {header} {{
                 {body}
             }}
             """,
-            header=self._function_header_rust(f),
+            header=self._function_header_rust(f, is_pub=is_pub, is_unsafe=is_unsafe),
             body=self._function_body_rust(f))
 
-    def _function_header_rust(self, f):
+    def _function_header_rust(self, f, is_pub=True, is_unsafe=True):
         if f.is_member():
             name = f.name_target(quals=Id.REMOVE_QUALS)
         else:
@@ -394,19 +471,46 @@ class RustBackend(Backend('rust')):
 
                 return "&mut self"
 
-            elif t.is_record():
-                t = t.with_const().lvalue_reference_to()
+            if t.is_record():
+                t = t.with_const().lvalue_reference_to().non_polymorphic()
 
             return f"{p.name_target()}: {t.target()}"
 
-        params = ', '.join(param_declare(p) for p in f.parameters())
+        class LifetimeCounter():
+            def __enter__(self):
+                RustTypeTranslator._lifetime_counter = 0
+                return self
 
-        return_annotation = self._function_return_rust(f)
+            def __exit__(self, type, value, traceback):
+                RustTypeTranslator._lifetime_counter = None
 
-        if '&' in return_annotation:
-            name = f"{name}<'a>"
+            def argument_list(self):
+                if RustTypeTranslator._lifetime_counter == 0:
+                    return None
 
-        return f"pub unsafe fn {name}({params}){return_annotation}"
+                r = range(RustTypeTranslator._lifetime_counter)
+
+                return '<' + ', '.join(f"'_{i}" for i in r) + '>'
+
+        with LifetimeCounter() as lifetime_counter:
+            params = ', '.join(param_declare(p) for p in f.parameters())
+
+            return_annotation = self._function_return_rust(f)
+
+            lifetime_argument_list = lifetime_counter.argument_list()
+
+        if lifetime_argument_list is not None:
+            name = f"{name}{lifetime_argument_list}"
+
+        header = f"fn {name}({params}){return_annotation}"
+
+        if is_unsafe:
+            header = f"unsafe {header}"
+
+        if is_pub:
+            header = f"pub {header}"
+
+        return header
 
     def _function_body_rust(self, f):
         return f.forward()
@@ -421,8 +525,6 @@ class RustBackend(Backend('rust')):
             return_type = return_type.pointee().unqualified()
 
         return_type = return_type.target()
-
-        return_type = return_type.replace('&', "&'a")
 
         if f.is_noexcept():
             return f" -> {return_type}"

@@ -213,6 +213,9 @@ public:
   bool isOverloadedOperator(char const *Which = nullptr,
                             int numParameters = -1) const;
 
+  bool isBaseCast() const
+  { return IsBaseCast_; }
+
   bool isCustomCast(char const *Which = nullptr) const;
 
 private:
@@ -253,6 +256,7 @@ private:
   bool IsDestructor_ = false;
   bool IsGetter_ = false;
   bool IsSetter_ = false;
+  bool IsBaseCast_ = false;
   bool IsStatic_ = false;
   bool IsConst_ = false;
   bool IsConstexpr_ = false;
@@ -283,6 +287,7 @@ public:
   WrapperFunctionBuilder &setIsDestructor(bool Val = true);
   WrapperFunctionBuilder &setIsGetter(bool Val = true);
   WrapperFunctionBuilder &setIsSetter(bool Val = true);
+  WrapperFunctionBuilder &setIsBaseCast(bool Val = true);
   WrapperFunctionBuilder &setIsStatic(bool Val = true);
   WrapperFunctionBuilder &setIsConst(bool Val = true);
   WrapperFunctionBuilder &setIsNoexcept(bool Val = true);

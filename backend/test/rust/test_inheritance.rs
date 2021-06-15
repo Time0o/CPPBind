@@ -1,5 +1,8 @@
 mod test_inheritance_rust;
 use test_inheritance_rust::*;
+use test_inheritance_rust::test::Base1Trait as _;
+use test_inheritance_rust::test::Base2Trait as _;
+use test_inheritance_rust::test::BaseAbstractTrait as _;
 
 fn main() {
     unsafe {

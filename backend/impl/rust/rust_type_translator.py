@@ -39,30 +39,65 @@ class RustTypeTranslator(TypeTranslator('rust')):
 
     @classmethod
     def _enum(cls, t):
-        return t.as_enum().name_target()
+        e = t.as_enum()
+
+        return None if e is None else e.name_target()
 
     @classmethod
     def _record(cls, t):
-        return t.as_record().name_target()
+        r = t.as_record()
+
+        return None if r is None else r.name_target()
 
     @classmethod
-    def _pointer_to(cls, t, what):
-        if t.is_const():
-            return f"* const {what}"
-        else:
-            return f"* mut {what}"
+    def _record_trait(cls, t):
+        r = t.as_record()
+
+        return None if r is None or not r.is_polymorphic() else r.trait_target()
 
     @classmethod
-    def _reference_to(cls, t, what):
+    def _record_cast(cls, t, obj):
+        r = t.pointee().as_record()
+
+        cast = r.base_cast(const=t.pointee().is_const()).name().unqualified()
+
+        if t.is_pointer():
+            return f"(*{obj}).{cast}()"
+        elif t.is_reference():
+            return f"{obj}.{cast}()"
+
+    @classmethod
+    def _pointer_to(cls, t, what, dyn=False):
+        if dyn:
+            what = f"dyn {what}"
+
         if t.is_const():
-            return f"& {what}"
+            what = f"const {what}"
         else:
-            return f"& mut {what}"
+            what = f"mut {what}"
+
+        return f"*{what}"
+
+    @classmethod
+    def _reference_to(cls, t, what, dyn=False):
+        if dyn:
+            what = f"dyn {what}"
+
+        if not t.is_const():
+            what = f"mut {what}"
+
+        if cls._lifetime_counter is not None:
+            what = f"&'_{cls._lifetime_counter} {what}"
+
+            cls._lifetime_counter += 1
+        else:
+            what = f"&{what}"
+
+        return what
 
     @rule(lambda t: t.is_pointer() or t.is_reference())
     def target_c(cls, t, args):
-        what = cls.target_c(t.pointee().unqualified(), args)
-        return cls._pointer_to(t.pointee(), what)
+        return cls._pointer_to(t.pointee(), cls.target_c(t.pointee(), args))
 
     @rule(lambda t: t.is_record())
     def target_c(cls, t, args):
@@ -84,19 +119,26 @@ class RustTypeTranslator(TypeTranslator('rust')):
     def target(cls, t, args):
         return "()"
 
+    @rule(lambda t: t.is_polymorphic_record_indirection())
+    def target(cls, t, args):
+        trait = cls._record_trait(t.pointee())
+
+        if t.is_pointer():
+            return cls._pointer_to(t.pointee(), trait, dyn=True)
+        elif t.is_reference():
+            return cls._reference_to(t.pointee(), trait, dyn=True)
+
     @rule(lambda t: t.is_c_string())
     def target(cls, t, args):
         return cls._reference_to(t.pointee(), "CStr")
 
     @rule(lambda t: t.is_pointer())
     def target(cls, t, args):
-        what = cls.target(t.pointee().unqualified(), args)
-        return cls._pointer_to(t.pointee(), what)
+        return cls._pointer_to(t.pointee(), cls.target(t.pointee(), args))
 
     @rule(lambda t: t.is_reference())
     def target(cls, t, args):
-        what = cls.target(t.referenced().unqualified(), args)
-        return cls._reference_to(t.referenced(), what)
+        return cls._reference_to(t.referenced(), cls.target(t.referenced(), args))
 
     @rule(lambda t: t.is_record())
     def target(cls, t, args):
@@ -122,15 +164,31 @@ class RustTypeTranslator(TypeTranslator('rust')):
     def input(cls, t, args):
         return f"{{interm}} = {{inp}} as {cls.target_c(t.with_const().pointer_to(), args)};"
 
+    @rule(lambda t: t.is_polymorphic_record_indirection())
+    def input(cls, t, args):
+        if args.p.is_self():
+            return f"{{interm}} = self as {cls.target_c(t, args)};"
+
+        cast = cls._record_cast(t, '{inp}')
+
+        if t.pointee().is_const():
+            return code(
+                f"""
+                let {{interm}}_cast = {cast};
+                {{interm}} = &{{interm}}_cast;
+                """)
+        else:
+            return code(
+                f"""
+                let mut {{interm}}_cast = {cast};
+                {{interm}} = &mut {{interm}}_cast;
+                """)
+
     @rule(lambda t: t.is_record_indirection())
     def input(cls, t, args):
         if args.p.is_self():
             return f"{{interm}} = self as {cls.target_c(t, args)};"
 
-        return "{interm} = {inp};"
-
-    @rule(lambda t: t.is_anonymous_enum())
-    def input(cls, t, args):
         return "{interm} = {inp};"
 
     @rule(lambda t: t.is_enum())

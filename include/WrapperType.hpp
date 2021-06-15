@@ -81,6 +81,7 @@ public:
   bool isStruct() const;
   bool isClass() const;
   bool isRecordIndirection(bool Recursive = false) const;
+  bool isPolymorphicRecordIndirection();
   bool isConst() const;
 
   WrapperType basic() const;
@@ -91,7 +92,8 @@ public:
   WrapperEnum const * asEnum() const;
   WrapperRecord const * asRecord() const;
 
-  std::vector<std::string> templateArguments() const;
+  WrapperType polymorphic() const;
+  WrapperType nonPolymorphic() const;
 
   WrapperType lvalueReferenceTo() const;
   WrapperType rvalueReferenceTo() const;
@@ -116,6 +118,8 @@ public:
                      std::string const &WithExtraPostfix = "",
                      Identifier::Case Case = Identifier::ORIG_CASE,
                      Identifier::Quals Quals = Identifier::KEEP_QUALS) const;
+
+  std::vector<std::string> templateArguments() const;
 
   std::string mangled() const;
 
@@ -147,6 +151,8 @@ private:
   std::vector<clang::QualType> BaseTypes_;
 
   std::size_t Size_;
+
+  std::optional<bool> IsPolymorphic_;
 
   std::optional<bool> IsProxy_;
   std::optional<clang::QualType> ProxyFor_;

@@ -187,6 +187,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_struct", &Type::isStruct)
     .def("is_record_indirection", &Type::isRecordIndirection,
          "recursive"_a = false)
+    .def("is_polymorphic_record_indirection", &Type::isPolymorphicRecordIndirection)
     .def("basic", &Type::basic)
     .def("canonical", &Type::canonical)
     .def("proxy_for", &Type::proxyFor)
@@ -201,6 +202,8 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("pointer_to", &Type::pointerTo, "repeat"_a = 0u)
     .def("pointee", &Type::pointee, "recursive"_a = false)
     .def("underlying_integer_type", &Type::underlyingIntegerType)
+    .def("polymorphic", &Type::polymorphic)
+    .def("non_polymorphic", &Type::nonPolymorphic)
     .def("qualifiers", &Type::qualifiers)
     .def("qualified", &Type::qualified, "qualifiers"_a = 0u)
     .def("unqualified", &Type::unqualified)
@@ -261,6 +264,8 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_assignable", &Variable::isAssignable);
 
   py::class_<Function>(m, "Function", py::dynamic_attr())
+    .def(py::self == py::self)
+    .def(py::self != py::self)
     .def("name", &Function::getFormat,
          "with_template_postfix"_a = false,
          "with_overload_postfix"_a = false,
@@ -298,6 +303,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_overloaded_operator", &Function::isOverloadedOperator,
          "which"_a = nullptr,
          "num_parameters"_a = -1)
+    .def("is_base_cast", &Function::isBaseCast)
     .def("is_custom_cast", &Function::isCustomCast,
          "which"_a = nullptr)
     .def("is_template_instantiation", &Function::isTemplateInstantiation);
@@ -311,10 +317,14 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_out", &Parameter::isOut);
 
   auto PyRecord = py::class_<Record>(m, "Record", py::dynamic_attr())
+    .def(py::self == py::self)
+    .def(py::self != py::self)
     .def("name", &Record::getFormat,
          "with_template_postfix"_a = false)
     .def("namespace", &Record::getNamespace)
     .def("type", &Record::getType)
+    .def("bases", &Record::getBases,
+         "recursive"_a = false)
     .def("functions",
          py::overload_cast<>(&Record::getFunctions, py::const_),
          py::return_value_policy::reference_internal)
@@ -332,9 +342,13 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
          py::return_value_policy::reference_internal)
     .def("destructor", &Record::getDestructor,
          py::return_value_policy::reference_internal)
+    .def("base_cast", &Record::getBaseCast,
+         "const"_a,
+         py::return_value_policy::reference_internal)
     .def("template_argument_list", &Record::getTemplateArgumentList)
     .def("is_definition", &Record::isDefinition)
     .def("is_abstract", &Record::isAbstract)
+    .def("is_polymorphic", &Record::isPolymorphic)
     .def("is_copyable", &Record::isCopyable)
     .def("is_moveable", &Record::isMoveable)
     .def("is_template_instantiation", &Record::isTemplateInstantiation);

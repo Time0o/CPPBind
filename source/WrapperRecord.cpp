@@ -11,6 +11,7 @@
 #include "clang/AST/DeclTemplate.h"
 
 #include "ClangUtil.hpp"
+#include "CompilerState.hpp"
 #include "Identifier.hpp"
 #include "IdentifierIndex.hpp"
 #include "Logging.hpp"
@@ -67,6 +68,10 @@ WrapperRecord::getFormat(bool WithTemplatePostfix) const
 
   return Name;
 }
+
+std::vector<WrapperRecord const *>
+WrapperRecord::getBases(bool Recursive) const
+{ return CompilerState().types()->getRecordBases(this, Recursive); }
 
 std::deque<WrapperFunction const *>
 WrapperRecord::getConstructors() const
@@ -146,6 +151,17 @@ WrapperRecord::getDestructor() const
   return std::nullopt;
 }
 
+std::optional<WrapperFunction const *>
+WrapperRecord::getBaseCast(bool Const) const
+{
+  for (auto const &F : Functions_) {
+    if (F.isBaseCast() && *F.getOrigin() == *this && F.isConst() == Const)
+      return &F;
+  }
+
+  return std::nullopt;
+}
+
 std::optional<std::string>
 WrapperRecord::getTemplateArgumentList() const
 {
@@ -153,6 +169,17 @@ WrapperRecord::getTemplateArgumentList() const
     return std::nullopt;
 
   return TemplateArgumentList_->str();
+}
+
+bool
+WrapperRecord::isPolymorphic() const
+{
+  for (auto const &F : Functions_) {
+    if (F.isVirtual() && !F.isBaseCast())
+      return true;
+  }
+
+  return false;
 }
 
 std::deque<WrapperFunction>
@@ -209,6 +236,7 @@ WrapperRecord::determinePublicMemberFunctions(
                                .setParent(this)
                                .setCustomAction("static_cast<" + BasePointerType.str() + ">")
                                .setReturnType(BasePointerType)
+                               .setIsBaseCast()
                                .setIsConst(Const)
                                .setIsNoexcept()
                                .setIsVirtual()

@@ -209,6 +209,17 @@ WrapperType::isRecordIndirection(bool Recursive) const
 { return isIndirection() && pointee(Recursive).isRecord(); }
 
 bool
+WrapperType::isPolymorphicRecordIndirection()
+{
+  if (IsPolymorphic_)
+    return *IsPolymorphic_;
+
+  IsPolymorphic_ = isRecordIndirection() && pointee().asRecord()->isPolymorphic();
+
+  return *IsPolymorphic_;
+}
+
+bool
 WrapperType::isConst() const
 { return type().isConstQualified(); }
 
@@ -370,6 +381,24 @@ WrapperType::underlyingIntegerType() const
   auto const *EnumType = type()->getAs<clang::EnumType>();
 
   return WrapperType(EnumType->getDecl()->getIntegerType());
+}
+
+WrapperType
+WrapperType::polymorphic() const
+{
+  WrapperType Type(*this);
+  Type.IsPolymorphic_ = true;
+
+  return Type;
+}
+
+WrapperType
+WrapperType::nonPolymorphic() const
+{
+  WrapperType Type(*this);
+  Type.IsPolymorphic_ = false;
+
+  return Type;
 }
 
 unsigned
