@@ -119,7 +119,7 @@ class RustTypeTranslator(TypeTranslator('rust')):
     def target(cls, t, args):
         return "()"
 
-    @rule(lambda t: t.is_polymorphic_record_indirection())
+    @rule(lambda t: t.is_record_indirection() and t.pointee().is_polymorphic())
     def target(cls, t, args):
         trait = cls._record_trait(t.pointee())
 
@@ -164,7 +164,7 @@ class RustTypeTranslator(TypeTranslator('rust')):
     def input(cls, t, args):
         return f"{{interm}} = {{inp}} as {cls.target_c(t.with_const().pointer_to(), args)};"
 
-    @rule(lambda t: t.is_polymorphic_record_indirection())
+    @rule(lambda t: t.is_record_indirection() and t.pointee().is_polymorphic())
     def input(cls, t, args):
         if args.p.is_self():
             return f"{{interm}} = self as {cls.target_c(t, args)};"

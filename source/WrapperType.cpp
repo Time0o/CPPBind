@@ -209,14 +209,12 @@ WrapperType::isRecordIndirection(bool Recursive) const
 { return isIndirection() && pointee(Recursive).isRecord(); }
 
 bool
-WrapperType::isPolymorphicRecordIndirection()
+WrapperType::isPolymorphic() const
 {
   if (IsPolymorphic_)
     return *IsPolymorphic_;
 
-  IsPolymorphic_ = isRecordIndirection() && pointee().asRecord()->isPolymorphic();
-
-  return *IsPolymorphic_;
+  return asRecord()->isPolymorphic();
 }
 
 bool

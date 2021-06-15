@@ -40,6 +40,47 @@ WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl)
   IsMoveable_(determineIfMoveable(Decl)),
   TemplateArgumentList_(determineTemplateArgumentList(Decl))
 {
+  WrapperType SelfType(Decl->getTypeForDecl());
+
+  std::vector<WrapperType> BaseTypes;
+
+  if (isPolymorphic())
+    BaseTypes.push_back(SelfType);
+
+  for (auto const &BaseType : SelfType.baseTypes(true))
+    BaseTypes.push_back(BaseType);
+
+  for (auto const &BaseType : BaseTypes) {
+    if (BaseType != SelfType && !BaseType.isPolymorphic())
+      continue;
+
+    for (bool Const : {true, false}) {
+      auto SelfPointerType = Const ? SelfType.withConst().pointerTo() : SelfType.pointerTo();
+      auto BasePointerType = Const ? BaseType.withConst().pointerTo() : BaseType.pointerTo();
+
+      std::string BaseCastName("cast_to_");
+
+      if (Const)
+        BaseCastName += "const_";
+
+      BaseCastName += BaseType.format(true, "", "",
+                                      Identifier::SNAKE_CASE,
+                                      Identifier::REMOVE_QUALS);
+
+      Functions_.push_back(
+        WrapperFunctionBuilder(Identifier(BaseCastName))
+                               .setOrigin(BaseType)
+                               .setParent(this)
+                               .setCustomAction("static_cast<" + BasePointerType.str() + ">")
+                               .setReturnType(BasePointerType)
+                               .setIsBaseCast()
+                               .setIsConst(Const)
+                               .setIsNoexcept()
+                               .setIsVirtual()
+                               .build());
+    }
+  }
+
   for (auto &F : Functions_) {
     F = WrapperFunctionBuilder(F)
         .setParent(this)
@@ -175,7 +216,7 @@ bool
 WrapperRecord::isPolymorphic() const
 {
   for (auto const &F : Functions_) {
-    if (F.isVirtual() && !F.isBaseCast())
+    if (F.isVirtual())
       return true;
   }
 
@@ -206,42 +247,6 @@ WrapperRecord::determinePublicMemberFunctions(
     PublicMethods.emplace_back(WrapperFunctionBuilder(MethodDecl)
                                .setName(Identifier(FieldDecl))
                                .build());
-  }
-
-  // base casts
-  WrapperType SelfType(Decl->getTypeForDecl());
-
-  std::vector<WrapperType> BaseTypes {SelfType};
-
-  for (auto const &BaseType : SelfType.baseTypes(true))
-    BaseTypes.push_back(BaseType);
-
-  for (auto const &BaseType : BaseTypes) {
-    for (bool Const : {true, false}) {
-      auto SelfPointerType = Const ? SelfType.withConst().pointerTo() : SelfType.pointerTo();
-      auto BasePointerType = Const ? BaseType.withConst().pointerTo() : BaseType.pointerTo();
-
-      std::string BaseCastName("cast_to_");
-
-      if (Const)
-        BaseCastName += "const_";
-
-      BaseCastName += BaseType.format(true, "", "",
-                                      Identifier::SNAKE_CASE,
-                                      Identifier::REMOVE_QUALS);
-
-      PublicMethods.push_back(
-        WrapperFunctionBuilder(Identifier(BaseCastName))
-                               .setOrigin(BaseType)
-                               .setParent(this)
-                               .setCustomAction("static_cast<" + BasePointerType.str() + ">")
-                               .setReturnType(BasePointerType)
-                               .setIsBaseCast()
-                               .setIsConst(Const)
-                               .setIsNoexcept()
-                               .setIsVirtual()
-                               .build());
-    }
   }
 
   return PublicMethods;

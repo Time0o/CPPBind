@@ -78,10 +78,10 @@ public:
   bool isPointer() const;
   bool isIndirection() const;
   bool isRecord() const;
+  bool isRecordIndirection(bool Recursive = false) const;
   bool isStruct() const;
   bool isClass() const;
-  bool isRecordIndirection(bool Recursive = false) const;
-  bool isPolymorphicRecordIndirection();
+  bool isPolymorphic() const;
   bool isConst() const;
 
   WrapperType basic() const;
