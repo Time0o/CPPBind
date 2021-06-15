@@ -101,7 +101,9 @@ class LuaTypeTranslator(TypeTranslator('lua')):
 
         return f"{{interm}} = {lua_util.topointer(t, args.i + 1)};"
 
-    @rule(lambda t: t.is_pointer() and t.pointee().is_fundamental())
+    @rule(lambda t: t.is_pointer() and \
+                 t.pointee().is_fundamental() and \
+                 not t.pointee().is_void())
     def input(cls, t, args):
         isuserdata = f"lua_isuserdata(L, {args.i+1})"
         touserdata = f"{{interm}} = {lua_util.topointer(t.pointee(), args.i + 1)};"
@@ -118,7 +120,9 @@ class LuaTypeTranslator(TypeTranslator('lua')):
             touserdata=touserdata,
             indirect=cls._lua_input_indirect(t.pointee(), args))
 
-    @rule(lambda t: t.is_reference() and t.pointee().is_fundamental())
+    @rule(lambda t: t.is_reference() and \
+                 t.pointee().is_fundamental() and \
+                 not t.pointee().is_void())
     def input(cls, t, args):
         return code(
             """
