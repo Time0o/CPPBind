@@ -1,7 +1,13 @@
-import c_util
 from cppbind import Enum, Function, Identifier as Id, Type, Variable
 from patcher import Patcher, _name
 from text import code
+
+
+def _function_before_call(self):
+    if self.is_constructor():
+        t = self.parent().type()
+
+        return f"char {Id.BUF}[{t.size()}];"
 
 
 def _function_declare_return_value(self):
@@ -26,7 +32,7 @@ def _function_perform_return(self):
 def _function_construct(self, parameters):
     t = self.parent().type()
 
-    return f"{c_util.make_owning_struct(t, parameters)};"
+    return f"new ({Id.BUF}) {t}({parameters});"
 
 
 def _function_destruct(self):
@@ -53,6 +59,7 @@ class CPatcher(Patcher):
         self._patch(Enum, 'name_target', _name(default_case=Id.SNAKE_CASE))
         self._patch(Variable, 'name_target', _name(default_case=Id.SNAKE_CASE_CAP_ALL,
                                                    default_quals=Id.REPLACE_QUALS))
+        self._patch(Function, 'before_call', _function_before_call)
         self._patch(Function, 'declare_return_value', _function_declare_return_value)
         self._patch(Function, 'perform_return', _function_perform_return)
         self._patch(Function, 'construct', _function_construct)

@@ -1,9 +1,7 @@
 #ifndef GUARD_CPPBIND_C_UTIL_CC_H
 #define GUARD_CPPBIND_C_UTIL_CC_H
 
-#include <cassert>
 #include <cstring>
-#include <type_traits>
 
 namespace cppbind
 {
@@ -11,58 +9,56 @@ namespace cppbind
 namespace c
 {
 
+template<typename T, typename S>
+S *make_owning_struct_mem(S *s, char *mem)
+{
+  std::memcpy(s->obj.mem, mem, sizeof(T));
+  s->is_initialized = 1;
+  s->is_const = 0;
+  s->is_owning = 1;
+  return s;
+}
+
 template<typename T, typename S, typename ...ARGS>
-S make_owning_struct(ARGS &&...args)
+S *make_owning_struct_args(S *s, ARGS &&...args)
 {
-  S s;
-
-  new (s.obj.mem) T(std::forward<ARGS>(args)...);
-
-  s.is_initialized = 1;
-  s.is_const = 0;
-  s.is_owning = 1;
-
+  new (s->obj.mem) T(std::forward<ARGS>(args)...);
+  s->is_initialized = 1;
+  s->is_const = 0;
+  s->is_owning = 1;
   return s;
 }
 
 template<typename T, typename S>
-typename std::enable_if<std::is_const<T>::value, S>::type
-make_non_owning_struct(T *obj)
+S *make_non_owning_struct(S *s, T *obj)
 {
-  S s;
-
-  s.obj.ptr = const_cast<void *>(static_cast<void const *>(obj));
-  s.is_initialized = 1;
-  s.is_const = 1;
-  s.is_owning = 0;
-
+  s->obj.ptr = static_cast<void *>(obj);
+  s->is_initialized = 1;
+  s->is_const = 0;
+  s->is_owning = 0;
   return s;
 }
 
 template<typename T, typename S>
-typename std::enable_if<!std::is_const<T>::value, S>::type
-make_non_owning_struct(T *obj)
+S *make_non_owning_struct(S *s, T const *obj)
 {
-  S s;
-
-  s.obj.ptr = static_cast<void *>(obj);
-  s.is_initialized = 1;
-  s.is_const = 0;
-  s.is_owning = 0;
-
+  s->obj.ptr = const_cast<void *>(static_cast<void const *>(obj));
+  s->is_initialized = 1;
+  s->is_const = 1;
+  s->is_owning = 0;
   return s;
 }
 
 template<typename T, typename S>
-typename std::enable_if<std::is_const<T>::value, T *>::type
+typename std::enable_if<std::is_const<T>::value, T const *>::type
 struct_cast(S const *s)
 {
   assert(s->is_initialized);
 
   if (s->is_owning)
-    return reinterpret_cast<T *>(&s->obj.mem);
+    return reinterpret_cast<T const *>(&s->obj.mem);
   else
-    return static_cast<T *>(s->obj.ptr);
+    return static_cast<T const *>(s->obj.ptr);
 }
 
 template<typename T, typename S>

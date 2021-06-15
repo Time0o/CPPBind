@@ -81,6 +81,7 @@ public:
   bool isRecordIndirection(bool Recursive = false) const;
   bool isStruct() const;
   bool isClass() const;
+  bool isAbstract() const;
   bool isPolymorphic() const;
   bool isConst() const;
 

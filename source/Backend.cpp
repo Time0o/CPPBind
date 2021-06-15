@@ -187,6 +187,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_struct", &Type::isStruct)
     .def("is_record_indirection", &Type::isRecordIndirection,
          "recursive"_a = false)
+    .def("is_abstract", &Type::isAbstract)
     .def("is_polymorphic", &Type::isPolymorphic)
     .def("basic", &Type::basic)
     .def("canonical", &Type::canonical)
