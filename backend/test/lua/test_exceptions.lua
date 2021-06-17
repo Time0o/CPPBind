@@ -1,4 +1,4 @@
-local test = require 'test.exceptions'
+local test = require 'test_exceptions'
 
 assert(test.test.add_nothrow(1, 2) == 3)
 

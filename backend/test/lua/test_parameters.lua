@@ -1,4 +1,4 @@
-local test = require 'test.parameters'
+local test = require 'test_parameters'
 
 -- integer parameters
 assert(test.test.add_signed_int(test.test.MIN_SIGNED_INT + 1, -1)

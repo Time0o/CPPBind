@@ -1,4 +1,4 @@
-local test = require 'test.inheritance'
+local test = require 'test_inheritance'
 
 assert(test.test.BaseAbstract == nil)
 assert(test.test.Derived.func_protected == nil)

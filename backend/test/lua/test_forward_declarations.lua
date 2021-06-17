@@ -1,4 +1,4 @@
-local test = require 'test.forward_declarations'
+local test = require 'test_forward_declarations'
 
 assert(test.test.add_1(1, 2) == 3)
 assert(test.test.add_2(1, 2, 3) == 6)

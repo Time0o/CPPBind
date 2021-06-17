@@ -1,4 +1,4 @@
-local test = require 'test.templates'
+local test = require 'test_templates'
 
 -- function templates
 assert(test.test.add_int(1, 2) == 3)

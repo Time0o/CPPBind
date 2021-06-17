@@ -1,4 +1,4 @@
-local test = require 'test.overloaded_operators'
+local test = require 'test_overloaded_operators'
 
 do
   local i1 = test.test.Integer.new(2)

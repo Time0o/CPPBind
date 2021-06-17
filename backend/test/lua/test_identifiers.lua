@@ -1,4 +1,4 @@
-local test = require 'test.identifiers'
+local test = require 'test_identifiers'
 
 test.test.a_func()
 test.test.func_b()

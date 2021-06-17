@@ -1,4 +1,4 @@
-local test = require 'test.default_arguments'
+local test = require 'test_default_arguments'
 
 assert(test.test.pow_default_arguments() == test.test.get_e())
 assert(test.test.pow_default_arguments(10.0) == 10.0)
