@@ -322,10 +322,14 @@ def _function_forward(self):
         forward_return_value=self.forward_return_value(),
         perform_return=self.perform_return())
 
-    if not self.is_noexcept():
+    if self.can_throw():
         forward = self.try_catch(forward)
 
     return forward
+
+
+def _function_can_throw(self):
+    return not self.is_noexcept()
 
 
 def _function_try_catch(self, what):
@@ -398,6 +402,7 @@ class Patcher:
         Function.forward_return_value = _function_forward_return_value
         Function.perform_return = _function_perform_return
         Function.forward = _function_forward
+        Function.can_throw = _function_can_throw
         Function.try_catch = _function_try_catch
         Function.handle_exception = _function_handle_exception
         Function.finalize_exception = _function_finalize_exception

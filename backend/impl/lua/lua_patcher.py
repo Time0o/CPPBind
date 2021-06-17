@@ -84,6 +84,23 @@ def _function_perform_return(self):
         num_returns=num_returns)
 
 
+def _function_can_throw(self):
+    if not self.is_noexcept():
+        return True
+
+    for p in self.parameters():
+        if p.is_self():
+            continue
+
+        t = p.type()
+
+        if t.is_record() or \
+           t.is_pointer() or \
+           (t.is_reference() and not t.referenced().is_fundamental()):
+            return True
+
+    return False
+
 def _function_handle_exception(self, what):
     return f"lua_pushstring(L, {what});"
 
@@ -99,5 +116,5 @@ class LuaPatcher(Patcher):
         self._patch(Function, 'declare_return_value', _function_declare_return_value)
         self._patch(Function, 'perform_return', _function_perform_return)
         self._patch(Function, 'handle_exception', _function_handle_exception)
-        self._patch(Function, 'finalize_exception', _function_finalize_exception)
+        self._patch(Function, 'can_throw', _function_can_throw)
         self._patch(Function, 'finalize_exception', _function_finalize_exception)

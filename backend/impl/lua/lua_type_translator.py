@@ -121,8 +121,7 @@ class LuaTypeTranslator(TypeTranslator('lua')):
             indirect=cls._lua_input_indirect(t.pointee(), args))
 
     @rule(lambda t: t.is_reference() and \
-                 t.pointee().is_fundamental() and \
-                 not t.pointee().is_void())
+                 t.pointee().is_fundamental())
     def input(cls, t, args):
         return code(
             """
