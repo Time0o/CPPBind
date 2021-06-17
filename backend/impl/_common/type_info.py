@@ -42,13 +42,18 @@ def type_instances():
         if t_bases is not None:
             t_bases = tuple(t_bases)
 
-        types[str(t)] = (t.mangled(), t, t_bases)
+        t_key = str(t)
+
+        if t_key in types:
+            return
+
+        types[t_key] = (t.mangled(), t, t_bases)
 
     for r in be_records:
         t = r.type()
 
         if t in be_types:
-            add_type(t, t.base_types())
+            add_type(t, t.base_types(recursive=True))
 
     for t in be_types:
         if t.is_record():
