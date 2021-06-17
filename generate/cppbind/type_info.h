@@ -3,12 +3,11 @@
 
 #include <cassert>
 #include <cstdint>
-#include <memory>
+#include <map>
 #include <type_traits>
+#include <typeindex>
 #include <typeinfo>
 #include <utility>
-
-#include "cppbind/util.h"
 
 namespace cppbind
 {
@@ -16,37 +15,26 @@ namespace cppbind
 namespace type_info
 {
 
+template<typename T>
+static std::type_index type_id()
+{ return typeid(typename std::remove_cv<T>::type); }
+
 class type
 {
 public:
-  using id = std::size_t;
-  using map = util::simple_map<id, type const *>;
+  static void add(std::type_index identifier, type const *type)
+  { lookup().insert(std::make_pair(identifier, type)); }
 
-  type(id id)
-  : _id(id)
+  template<typename T>
+  static type const *get()
   {
-    if (!by_id().find(id))
-      by_id().insert(id, this);
+    auto it(lookup().find(type_id<T>()));
+    assert(it != lookup().end());
+
+    return it->second;
   }
 
-  template<typename T>
-  static id opaque()
-  { return opaque_cv<typename std::remove_cv<T>::type>(); }
-
-  template<typename T>
-  static constexpr id opaque_cv()
-  { return util::string_hash(__PRETTY_FUNCTION__); } // XXX guarantee uniqueness
-
-  template<typename T>
-  static type const *lookup()
-  {
-    auto t = by_id().find(opaque<T>());
-    assert(t);
-
-    return *t;
-  }
-
-  id identifier() const { return _id; }
+  std::type_index identifier() const { return _identifier; }
 
   virtual void *copy(void const *obj) const = 0;
   virtual void *move(void *obj) const = 0;
@@ -55,25 +43,29 @@ public:
   virtual void const *cast(type const *to, void const *obj) const = 0;
   virtual void *cast(type const *to, void *obj) const = 0;
 
+protected:
+  type(std::type_index identifier)
+  : _identifier(std::move(identifier))
+  { add(_identifier, this); }
+
 private:
-  static map &by_id()
+  static std::map<std::type_index, type const*> &lookup()
   {
-    static map _by_id;
-    return _by_id;
+    static std::map<std::type_index, type const*> _lookup;
+
+    return _lookup;
   }
 
-  id _id;
+  std::type_index _identifier;
 };
 
-template<typename T, typename ...BS>
+template<typename T, typename ...T_BASES>
 class type_instance : public type
 {
 public:
-  type_instance() : type(type::opaque<T>())
-  {
-    add_cast<T>();
-    add_base_casts();
-  }
+  type_instance()
+  : type(type_id<T>())
+  { add_base_casts(); }
 
   void *copy(void const *obj) const override
   { return _copy(obj); }
@@ -86,11 +78,11 @@ public:
 
   void const *cast(type const *to, void const *obj) const override
   {
-    auto const *cast = _casts.find(to->identifier());
-    if (!cast)
+    auto it(_casts.find(to->identifier()));
+    if (it == _casts.end())
       throw std::bad_cast();
 
-    return (*cast)(obj);
+    return (it->second)(obj);
   }
 
   void *cast(type const *to, void *obj) const override
@@ -142,14 +134,18 @@ private:
     return static_cast<void const *>(to);
   }
 
-  template<typename B>
+  template<typename U>
   void add_cast()
-  { _casts.insert(type::opaque<B>(), cast<B>); }
+  { _casts.insert(std::make_pair(type_id<U>(), cast<U>)); }
 
   void add_base_casts()
-  { [](...){}((add_cast<BS>(), 0)...); }
+  {
+    add_cast<T>();
 
-  util::simple_map<type::id, void const *(*)(void const *)> _casts;
+    [](...){}((add_cast<T_BASES>(), 0)...);
+  }
+
+  std::map<std::type_index, void const *(*)(void const *)> _casts;
 };
 
 class typed_ptr
@@ -168,7 +164,7 @@ public:
 
   template<typename T>
   typed_ptr(T *obj, bool is_owning = false)
-  : typed_ptr(type::lookup<T>(),
+  : typed_ptr(type::get<T>(),
               static_cast<void const *>(obj),
               std::is_const<T>::value,
               is_owning)
@@ -216,9 +212,9 @@ public:
   cast() const
   {
     if (_is_const)
-      return static_cast<T *>(_type->cast(type::lookup<T>(), _obj));
+      return static_cast<T *>(_type->cast(type::get<T>(), _obj));
 
-    return static_cast<T *>(_type->cast(type::lookup<T>(), const_cast<void *>(_obj)));
+    return static_cast<T *>(_type->cast(type::get<T>(), const_cast<void *>(_obj)));
   }
 
   template<typename T>
@@ -228,7 +224,7 @@ public:
     if (_is_const)
       throw std::bad_cast();
 
-    return static_cast<T *>(_type->cast(type::lookup<T>(), const_cast<void *>(_obj)));
+    return static_cast<T *>(_type->cast(type::get<T>(), const_cast<void *>(_obj)));
   }
 
 private:
