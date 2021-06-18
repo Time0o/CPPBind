@@ -2,7 +2,9 @@
 #define GUARD_CPPBIND_TYPE_INFO_H
 
 #include <cassert>
+#include <cinttypes>
 #include <cstdint>
+#include <cstring>
 #include <map>
 #include <type_traits>
 #include <typeindex>
@@ -15,26 +17,72 @@ namespace cppbind
 namespace type_info
 {
 
-template<typename T>
-static std::type_index type_id()
-{ return typeid(typename std::remove_cv<T>::type); }
+class type_id
+{
+public:
+  using id_t = uint64_t;
+
+  template<typename T>
+  static id_t id()
+  { return id_no_cv<typename std::remove_cv<T>::type>(); }
+
+private:
+  template<typename T>
+  static id_t id_no_cv()
+  {
+    std::size_t len;
+    char const *str = str_type<T>(&len);
+
+    return str_hash_fnv1a(str, len);
+  }
+
+  static uint64_t str_hash_fnv1a(char const *str, std::size_t len)
+  {
+    uint64_t h = 0xcbf29ce484222325;
+
+    for (std::size_t i = 0; i < len; ++i) {
+      h ^= str[i];
+      h *= 0x100000001b3;
+    }
+
+    return h;
+  }
+
+  template<typename T>
+  static char const *str_type(std::size_t *len)
+  {
+    static char const *str_ref = str_pretty_function<int>();
+    static std::size_t len_ref = std::strlen(str_ref);
+    static std::size_t len_prefix_ref = std::strstr(str_ref, "int") - str_ref;
+    static std::size_t len_postfix_ref = len_ref - len_prefix_ref - std::strlen("int");
+
+    char const *str = str_pretty_function<T>() + len_prefix_ref;
+    *len = std::strlen(str) - len_postfix_ref;
+
+    return str;
+  }
+
+  template<typename T>
+  static char const *str_pretty_function()
+  { return __PRETTY_FUNCTION__; }
+};
 
 class type
 {
 public:
-  static void add(std::type_index identifier, type const *type)
+  static void add(type_id::id_t identifier, type const *type)
   { lookup().insert(std::make_pair(identifier, type)); }
 
   template<typename T>
   static type const *get()
   {
-    auto it(lookup().find(type_id<T>()));
+    auto it(lookup().find(type_id::id<T>()));
     assert(it != lookup().end());
 
     return it->second;
   }
 
-  std::type_index identifier() const { return _identifier; }
+  type_id::id_t identifier() const { return _identifier; }
 
   virtual void *copy(void const *obj) const = 0;
   virtual void *move(void *obj) const = 0;
@@ -44,19 +92,19 @@ public:
   virtual void *cast(type const *to, void *obj) const = 0;
 
 protected:
-  type(std::type_index identifier)
+  type(type_id::id_t identifier)
   : _identifier(std::move(identifier))
   { add(_identifier, this); }
 
 private:
-  static std::map<std::type_index, type const*> &lookup()
+  static std::map<type_id::id_t, type const*> &lookup()
   {
-    static std::map<std::type_index, type const*> _lookup;
+    static std::map<type_id::id_t, type const*> _lookup;
 
     return _lookup;
   }
 
-  std::type_index _identifier;
+  type_id::id_t _identifier;
 };
 
 template<typename T, typename ...T_BASES>
@@ -64,7 +112,7 @@ class type_instance : public type
 {
 public:
   type_instance()
-  : type(type_id<T>())
+  : type(type_id::id<T>())
   { add_base_casts(); }
 
   void *copy(void const *obj) const override
@@ -136,7 +184,7 @@ private:
 
   template<typename U>
   void add_cast()
-  { _casts.insert(std::make_pair(type_id<U>(), cast<U>)); }
+  { _casts.insert(std::make_pair(type_id::id<U>(), cast<U>)); }
 
   void add_base_casts()
   {
@@ -145,7 +193,7 @@ private:
     [](...){}((add_cast<T_BASES>(), 0)...);
   }
 
-  std::map<std::type_index, void const *(*)(void const *)> _casts;
+  std::map<type_id::id_t, void const *(*)(void const *)> _casts;
 };
 
 class typed_ptr
