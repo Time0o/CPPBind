@@ -7,7 +7,7 @@
 
 #include "CompilerState.hpp"
 
-using namespace boost::filesystem;
+namespace fs = boost::filesystem;
 
 namespace cppbind
 {
@@ -15,9 +15,9 @@ namespace cppbind
 void
 CompilerStateRegistry::updateFileEntry(std::string const &File)
 {
-  auto Stem(path(File).stem());
+  fs::path Path(File);
 
-  FilesByStem_.emplace(Stem.string(), canonical(File).string());
+  FilesByStem_.emplace(Path.stem().string(), fs::canonical(Path).string());
 }
 
 void
@@ -27,11 +27,12 @@ CompilerStateRegistry::updateCompilerInstance(clang::CompilerInstance const &CI)
 void
 CompilerStateRegistry::updateFile(std::string const &File)
 {
-  TmpFile_ = File;
+  fs::path Path(File);
 
-  auto Stem(path(File).stem().string());
-
+  auto Stem(Path.stem().string());
   Stem = Stem.substr(0, Stem.rfind("_tmp"));
+
+  TmpFile_ = File;
 
   auto It(FilesByStem_.find(Stem));
   assert(It != FilesByStem_.end());
@@ -60,12 +61,12 @@ CompilerStateRegistry::currentFile(InputFile IF, bool Relative) const
 
   assert(File);
 
-  auto Path(*File);
+  fs::path Path(*File);
 
   if (Relative)
-    Path = path(Path).filename().string();
+    Path = Path.filename();
 
-  return Path;
+  return Path.string();
 }
 
 bool
@@ -73,15 +74,22 @@ CompilerStateRegistry::inCurrentFile(InputFile IF,
                                      clang::SourceLocation const &Loc) const
 {
   auto &SM(ASTContext().getSourceManager());
+
   auto Filename(SM.getFilename(Loc));
+  if (Filename.empty())
+    return false;
+
+  fs::path Path(Filename.str());
+
+  auto Canonical(fs::canonical(Path).string());
 
   if (IF == ORIG_INPUT_FILE || IF == COMPLETE_INPUT_FILE) {
-    if (Filename == currentFile(ORIG_INPUT_FILE))
+    if (Canonical == currentFile(ORIG_INPUT_FILE))
       return true;
   }
 
   if (IF == TMP_INPUT_FILE || IF == COMPLETE_INPUT_FILE) {
-    if (Filename == currentFile(TMP_INPUT_FILE))
+    if (Canonical == currentFile(TMP_INPUT_FILE))
       return true;
   }
 

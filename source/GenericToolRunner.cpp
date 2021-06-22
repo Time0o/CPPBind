@@ -57,6 +57,7 @@ GenericToolRunner::getSourceFiles(clang::tooling::CommonOptionsParser &Parser)
   for (auto &SourcePath_ : SourcePathList) {
     fs::path SourcePath(SourcePath_);
 
+    auto Canonical(fs::canonical(SourcePath).string());
     auto Stem(SourcePath.stem().string());
     auto Extension(SourcePath.extension().string());
 
@@ -66,7 +67,7 @@ GenericToolRunner::getSourceFiles(clang::tooling::CommonOptionsParser &Parser)
 
     TmpFile SourceFile((SourceFileDirPath / (Stem + "_tmp" + Extension)).string());
 
-    SourceFile << "#include " << fs::canonical(SourcePath.string()) << '\n';
+    SourceFile << "#include \"" << Canonical << "\"\n";
 
     auto &SourceFileRef(SourceFiles.emplace_back(std::move(SourceFile)));
 
