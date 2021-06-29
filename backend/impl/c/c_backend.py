@@ -214,7 +214,6 @@ class CBackend(Backend('c')):
             {{
               {union}
 
-              char is_initialized;
               char is_const;
               char is_owning;
             }};
