@@ -266,7 +266,7 @@ class RustBackend(Backend('rust')):
             #[repr(C)]
             pub struct {record_name} {{
                 obj : {record_union},
-                is_initialized: {c_char},
+
                 is_const: {c_char},
                 is_owning: {c_char},
             }}
@@ -348,6 +348,10 @@ class RustBackend(Backend('rust')):
                 impl Drop for {record_name} {{
                     fn drop(&mut self) {{
                         unsafe {{
+                            if self.is_owning == 0{{
+                                return;
+                            }}
+
                             {record_destruct}
                         }}
                     }}
