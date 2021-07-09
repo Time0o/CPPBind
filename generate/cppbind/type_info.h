@@ -2,7 +2,6 @@
 #define GUARD_CPPBIND_TYPE_INFO_H
 
 #include <cassert>
-#include <cinttypes>
 #include <cstdint>
 #include <cstring>
 #include <map>

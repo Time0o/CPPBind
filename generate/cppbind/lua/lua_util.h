@@ -131,11 +131,13 @@ inline void setmetatable(lua_State *L, char const *key)
 template<typename T>
 T tointegral(lua_State *L, int arg)
 {
-  int valid = 0;
-  auto i = lua_tointegerx(L, arg, &valid);
+  //int valid = 0;
+  //auto i = lua_tointegerx(L, arg, &valid);
 
-  luaL_argcheck(L, valid, arg,
-                "not convertible to lua_Integer");
+  //luaL_argcheck(L, valid, arg,
+  //              "not convertible to lua_Integer");
+  auto i = lua_tointeger(L, arg); // TODO
+
   luaL_argcheck(L, std::numeric_limits<T>::is_signed || i >= 0, arg,
                 "should be non-negative");
   luaL_argcheck(L, i >= std::numeric_limits<T>::min(), arg,
@@ -149,11 +151,13 @@ T tointegral(lua_State *L, int arg)
 template<typename T>
 T tofloating(lua_State *L, int arg)
 {
-  int valid = 0;
-  auto f = lua_tonumberx(L, arg, &valid);
+  //int valid = 0;
+  //auto f = lua_tonumberx(L, arg, &valid);
 
-  luaL_argcheck(L, valid, arg,
-                "not convertible to lua_Number");
+  //luaL_argcheck(L, valid, arg,
+  //              "not convertible to lua_Number");
+  auto f = lua_tonumber(L, arg); // TODO
+
   luaL_argcheck(L, f >= std::numeric_limits<T>::lowest(), arg,
                 "conversion would underflow");
   luaL_argcheck(L, f <= std::numeric_limits<T>::max(), arg,
