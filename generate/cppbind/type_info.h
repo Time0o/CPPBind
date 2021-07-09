@@ -4,7 +4,7 @@
 #include <cassert>
 #include <cstdint>
 #include <cstring>
-#include <map>
+#include <memory>
 #include <type_traits>
 #include <typeindex>
 #include <typeinfo>
@@ -66,11 +66,114 @@ private:
   { return __PRETTY_FUNCTION__; }
 };
 
+template<typename T>
+class type_map
+{
+public:
+  class const_iterator
+  {
+  public:
+    using pointer = std::pair<type_id::id_t, T> const *;
+    using reference = std::pair<type_id::id_t, T> const &;
+
+    const_iterator(pointer data = nullptr)
+    : _data(data)
+    {}
+
+    bool operator==(const_iterator const &rhs) const
+    {
+      if (!_data && !rhs._data)
+        return true;
+
+      if (!!_data != !!rhs._data)
+        return false;
+
+      return *_data == *rhs._data;
+    }
+
+    bool operator!=(const_iterator const &rhs) const
+    { return !operator==(rhs); }
+
+    reference operator*() const
+    { return *_data; }
+
+    pointer operator->() const
+    { return _data; }
+
+  private:
+    pointer _data;
+  };
+
+  type_map()
+  {
+    for (type_id::id_t i = 0; i < HASH_TABLE_SZ; ++i)
+      _hash_table[i] = nullptr;
+  }
+
+  ~type_map()
+  {
+    for (type_id::id_t i = 0; i < HASH_TABLE_SZ; ++i) {
+      auto head = _hash_table[i];
+      while (head) {
+        auto next = head->next;
+        delete head;
+        head = next;
+      }
+    }
+  }
+
+  std::pair<const_iterator, bool> insert(type_id::id_t key, T const &val)
+  {
+    key = hash(key);
+
+    auto head = _hash_table[key];
+
+    _hash_table[key] = new hash_node(key, val, head);
+
+    return std::make_pair(const_iterator(&_hash_table[key]->data), !head);
+  }
+
+  const_iterator find(type_id::id_t key) const
+  {
+    key = hash(key);
+
+    auto head = _hash_table[key];
+
+    if (!head)
+      return end();
+
+    return const_iterator(&head->data);
+  }
+
+  const_iterator end() const
+  { return const_iterator(); }
+
+private:
+  enum : type_id::id_t { HASH_TABLE_SZ = 149 };
+
+  struct hash_node
+  {
+    hash_node(type_id::id_t key, T const &val, hash_node *next = nullptr)
+    : data(key, val),
+      next(next)
+    {}
+
+    std::pair<type_id::id_t, T> data;
+
+    hash_node *next;
+  };
+
+  static type_id::id_t hash(type_id::id_t key)
+  { return key % HASH_TABLE_SZ; }
+
+  hash_node * _hash_table[HASH_TABLE_SZ];
+};
+
 class type
 {
 public:
   static void add(type_id::id_t identifier, type const *type)
-  { lookup().insert(std::make_pair(identifier, type)); }
+  { lookup().insert(identifier, type); }
 
   template<typename T>
   static type const *get()
@@ -96,9 +199,9 @@ protected:
   { add(_identifier, this); }
 
 private:
-  static std::map<type_id::id_t, type const*> &lookup()
+  static type_map<type const*> &lookup()
   {
-    static std::map<type_id::id_t, type const*> _lookup;
+    static type_map<type const*> _lookup;
 
     return _lookup;
   }
@@ -183,7 +286,7 @@ private:
 
   template<typename U>
   void add_cast()
-  { _casts.insert(std::make_pair(type_id::id<U>(), cast<U>)); }
+  { _casts.insert(type_id::id<U>(), cast<U>); }
 
   void add_base_casts()
   {
@@ -192,7 +295,7 @@ private:
     [](...){}((add_cast<T_BASES>(), 0)...);
   }
 
-  std::map<type_id::id_t, void const *(*)(void const *)> _casts;
+  type_map<void const *(*)(void const *)> _casts;
 };
 
 class typed_ptr
