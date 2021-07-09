@@ -76,6 +76,9 @@ def type_instances():
 
         tis.append(f"type_instance<{template_params}> {t_mangled};")
 
+    if not tis:
+        return
+
     return code(
         """
         namespace {ns} {{

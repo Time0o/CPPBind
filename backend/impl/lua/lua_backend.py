@@ -30,11 +30,16 @@ class LuaBackend(Backend('lua')):
 
             {lua_includes}
 
+            struct lua_longjmp {{
+              struct lua_longjmp *previous;
+              int b;
+              volatile int status;
+            }};
+
             {lua_util_include}
+            {type_info_include}
 
             {input_includes}
-
-            {type_info_include}
 
             {type_info_type_instances}
 

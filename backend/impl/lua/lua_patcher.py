@@ -101,12 +101,24 @@ def _function_can_throw(self):
 
     return False
 
-def _function_handle_exception(self, what):
-    return f"lua_pushstring(L, {what});"
 
+def _function_try_catch(self, what):
+    return code(
+        """
+        try {{
+          {what}
+        }} catch (std::exception const &__e) {{
+          lua_pushstring(L, __e.what());
+        }} catch (lua_longjmp *) {{
+          throw;
+        }} catch (...) {{
+          lua_pushstring(L, "exception");
+        }}
 
-def _function_finalize_exception(self):
-    return f"return lua_error(L);"
+        return lua_error(L);
+        """,
+        what=what)
+
 
 
 class LuaPatcher(Patcher):
@@ -115,6 +127,5 @@ class LuaPatcher(Patcher):
         self._patch(Function, 'before_call', _function_before_call)
         self._patch(Function, 'declare_return_value', _function_declare_return_value)
         self._patch(Function, 'perform_return', _function_perform_return)
-        self._patch(Function, 'handle_exception', _function_handle_exception)
         self._patch(Function, 'can_throw', _function_can_throw)
-        self._patch(Function, 'finalize_exception', _function_finalize_exception)
+        self._patch(Function, 'try_catch', _function_try_catch)
