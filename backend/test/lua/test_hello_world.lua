@@ -1,3 +1,3 @@
-local test = require 'test_hello_world'
+require 'test_hello_world'
 
-assert(test.test.hello_world() == "hello world")
+assert(test.hello_world() == "hello world")

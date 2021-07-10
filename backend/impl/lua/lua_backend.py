@@ -137,7 +137,7 @@ class LuaBackend(Backend('lua')):
               {register}
             }}
             """,
-            register=self._register_recursive())
+            register=self._register_namespace('_G', self.objects()))
 
     def _function_definition(self, f):
         return code(
@@ -156,11 +156,22 @@ class LuaBackend(Backend('lua')):
     def _function_header(self, f):
         return f"int {f.name_target()}(lua_State *L)"
 
-    def _register_recursive(self, h=None):
-        if h is None:
-            h = self.objects()
+    def _register_namespace(self, name, h):
+        register = []
 
-        register = [self._register_createtable(h['__functions'])]
+        if name == '_G':
+            lua_get = 'lua_getglobal(L, "_G");'
+        else:
+            lua_get = f'lua_getfield(L, -1, "{name}");'
+
+        register.append(code(
+            f"""
+            {lua_get}
+            if (lua_isnil(L, -1)) {{
+              lua_pop(L, 1);
+              {self._register_createtable(h['__functions'])}
+            }}
+            """))
 
         for e in h['__enums']:
             register += self._register_variables(c for c in e.constants())
@@ -181,15 +192,15 @@ class LuaBackend(Backend('lua')):
         if h['__records']:
             register += self._register_records(h['__records'])
 
-        if '__namespaces' in h:
-            for ns, content in h['__namespaces'].items():
-                register.append(self._register_namespace(ns, content))
+        for name_, h_ in h['__namespaces'].items():
+            register.append(self._register_namespace(name_, h_))
 
-        return '\n\n'.join(register)
+        if name == '_G':
+            lua_set = 'lua_setglobal(L, "_G");'
+        else:
+            lua_set = f'lua_setfield(L, -2, "{name}");'
 
-    def _register_namespace(self, ns, content):
-        register = [self._register_recursive(content),
-                    self._register_setfield(ns)]
+        register.append(lua_set)
 
         return '\n\n'.join(register)
 
@@ -234,6 +245,8 @@ class LuaBackend(Backend('lua')):
 
     def _register_records(self, records):
         def register_record(r):
+            name = r.name_target(namespace='remove')
+
             static_functions = [f for f in r.functions() if not f.is_instance()]
 
             register = [self._register_createtable(static_functions)]
@@ -241,7 +254,7 @@ class LuaBackend(Backend('lua')):
             if static_functions:
                 register.append(self._register_functions(static_functions))
 
-            register.append(self._register_setfield(r.name_target(namespace='remove')))
+            register.append(self._register_setfield(name))
 
             return '\n\n'.join(register)
 

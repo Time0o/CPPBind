@@ -1,12 +1,12 @@
-local test = require 'test_nested_records'
+require 'test_nested_records'
 
-assert(test.test.ToplevelNestedPrivate == nil)
-assert(test.test.ToplevelNestedPublicNestedNestedPrivate == nil)
-assert(test.test.FuncLocal == nil)
+assert(test.ToplevelNestedPrivate == nil)
+assert(test.ToplevelNestedPublicNestedNestedPrivate == nil)
+assert(test.FuncLocal == nil)
 
-test.test.Toplevel.new()
+test.Toplevel.new()
 
-local nested_public = test.test.ToplevelNestedPublic.new()
-test.test.Toplevel.func(nested_public, 0, test.test.TOPLEVEL_NESTED_PUBLIC_V)
+local nested_public = test.ToplevelNestedPublic.new()
+test.Toplevel.func(nested_public, 0, test.TOPLEVEL_NESTED_PUBLIC_V)
 
-test.test.ToplevelNestedPublicNestedNestedPublic.new()
+test.ToplevelNestedPublicNestedNestedPublic.new()
