@@ -101,14 +101,7 @@ WrapperRecord::getName() const
 
 Identifier
 WrapperRecord::getFormat(bool WithTemplatePostfix) const
-{
-  Identifier Name(Name_);
-
-  if (WithTemplatePostfix && isTemplateInstantiation())
-    Name = Identifier(Name.str() + TemplateArgumentList_->str(true));
-
-  return Name;
-}
+{ return Identifier(getType().format(WithTemplatePostfix)); }
 
 std::vector<WrapperRecord const *>
 WrapperRecord::getBases(bool Recursive) const

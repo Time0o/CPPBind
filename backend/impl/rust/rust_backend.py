@@ -37,6 +37,7 @@ class RustBackend(Backend('rust')):
 
         self._wrapper_source.append(code(
             """
+            #![allow(dead_code)]
             #![allow(unused_imports)]
 
             mod internal {{
@@ -159,7 +160,7 @@ class RustBackend(Backend('rust')):
             c_declarations='\n'.join(c_declarations))
 
     def _rust_module(self):
-        return f"{self.input_file().filename()}_rust"
+        return f"crate::{self.input_file().filename()}_rust"
 
     def _rust_typedefs(self):
         typedefs = []
@@ -174,7 +175,7 @@ class RustBackend(Backend('rust')):
     def _rust_record_types(self):
         record_types = []
 
-        for r in self.records():
+        for r in self.records(include_declarations=True):
             if r.is_polymorphic():
                 record_types.append(r.trait_target())
 
@@ -221,6 +222,9 @@ class RustBackend(Backend('rust')):
             symbols.append(f.name_target())
 
         for r in h['__records']:
+            if not r.is_definition():
+                continue
+
             if r.is_polymorphic():
                 symbols.append(r.trait_target())
 
@@ -229,15 +233,15 @@ class RustBackend(Backend('rust')):
         export = [f"pub use {self._rust_module()}::internal::{symbol};"
                   for symbol in symbols]
 
-        for ns, content in h['__namespaces'].items():
+        for ns, h in h['__namespaces'].items():
             export.append(code(
                 """
                 pub mod {mod_name} {{
                     {mod_inner}
                 }}
                 """,
-                mod_name=ns,
-                mod_inner=self._rust_modules_export(content)))
+                mod_name=ns.format(case=Id.SNAKE_CASE),
+                mod_inner=self._rust_modules_export(h)))
 
         return '\n'.join(export)
 
@@ -274,6 +278,8 @@ class RustBackend(Backend('rust')):
             )
 
     def _record_impl_rust(self, r):
+        record_impl = []
+
         record_name = r.name_target()
         record_type = r.type().target()
         record_size = r.type().size()
@@ -288,16 +294,15 @@ class RustBackend(Backend('rust')):
                     f.is_destructor()):
                 record_members.append(self._function_definition_rust(f))
 
-        record_impl = []
-
-        record_impl.append(code(
-            """
-            impl {record_name} {{
-                {record_members}
-            }}
-            """,
-            record_name=record_name,
-            record_members='\n\n'.join(record_members)))
+        if record_members:
+            record_impl.append(code(
+                """
+                impl {record_name} {{
+                    {record_members}
+                }}
+                """,
+                record_name=record_name,
+                record_members='\n\n'.join(record_members)))
 
         if r.is_copyable():
             record_clone = []

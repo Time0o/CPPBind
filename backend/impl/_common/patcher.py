@@ -41,6 +41,9 @@ def _name(get=lambda self: self.name(),
         if postfix is not None:
             name = name + postfix
 
+        while name in _name.reserved():
+            name += '_'
+
         return name
 
     return name_closure
@@ -401,6 +404,7 @@ class Patcher:
 
     @staticmethod
     def _patch_global_names():
+        _name.reserved = lambda: set()
         _name.fallback_namespace = lambda: 'keep'
         _name.fallback_case = lambda: Id.SNAKE_CASE
         _name.fallback_quals = lambda: Id.REPLACE_QUALS

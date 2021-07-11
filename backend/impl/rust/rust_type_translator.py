@@ -38,12 +38,6 @@ class RustTypeTranslator(TypeTranslator('rust')):
         return cls._c_type_fundamental(t)
 
     @classmethod
-    def _enum(cls, t):
-        e = t.as_enum()
-
-        return None if e is None else e.name_target()
-
-    @classmethod
     def _record(cls, t):
         r = t.as_record()
 
@@ -117,7 +111,7 @@ class RustTypeTranslator(TypeTranslator('rust')):
 
     @rule(lambda t: t.is_void())
     def target(cls, t, args):
-        return "()"
+        return 'c_void'
 
     @rule(lambda t: t.is_record_indirection() and t.pointee().is_polymorphic())
     def target(cls, t, args):
@@ -150,6 +144,11 @@ class RustTypeTranslator(TypeTranslator('rust')):
 
     @rule(lambda t: t.is_enum())
     def target(cls, t, args):
+        enum = t.as_enum()
+
+        if enum is None:
+            return cls.target(t.underlying_integer_type())
+
         return t.as_enum().name_target()
 
     @rule(lambda t: t.is_fundamental())

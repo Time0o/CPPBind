@@ -5,6 +5,19 @@ from text import code
 from util import dotdict
 
 
+# XXX add this for other languages
+def _name_reserved():
+    return set({
+        'Self', 'abstract', 'as', 'async', 'await', 'become', 'box', 'break',
+        'const', 'continue', 'crate', 'do', 'dyn', 'else', 'enum', 'extern',
+        'false', 'final', 'fn', 'for', 'if', 'impl', 'in', 'let', 'loop',
+        'macro', 'match', 'mod', 'move', 'mut', 'override', 'priv', 'pub',
+        'ref', 'return', 'self', 'struct', 'super', 'trait', 'true', 'try',
+        'type', 'typeof', 'union', 'unsafe', 'unsized', 'use', 'virtual',
+        'where', 'while', 'yield'
+    })
+
+
 def _name_fallback_namespace():
     return 'remove'
 
@@ -139,6 +152,7 @@ def _record_trait_target(self):
 
 class RustPatcher(Patcher):
     def patch(self):
+        self._patch(_name, 'reserved', _name_reserved)
         self._patch(_name, 'fallback_namespace', _name_fallback_namespace)
         self._patch(Function, 'declare_parameters', _function_declare_parameters)
         self._patch(Function, 'forward_call', _function_forward_call)
