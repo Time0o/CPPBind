@@ -39,54 +39,7 @@ WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl)
   IsCopyable_(determineIfCopyable(Decl)),
   IsMoveable_(determineIfMoveable(Decl)),
   TemplateArgumentList_(determineTemplateArgumentList(Decl))
-{
-  WrapperType SelfType(Decl->getTypeForDecl());
-
-  std::vector<WrapperType> BaseTypes;
-
-  if (isPolymorphic())
-    BaseTypes.push_back(SelfType);
-
-  for (auto const &BaseType : SelfType.baseTypes(true))
-    BaseTypes.push_back(BaseType);
-
-  for (auto const &BaseType : BaseTypes) {
-    if (BaseType != SelfType && !BaseType.isPolymorphic())
-      continue;
-
-    for (bool Const : {true, false}) {
-      auto SelfPointerType = Const ? SelfType.withConst().pointerTo() : SelfType.pointerTo();
-      auto BasePointerType = Const ? BaseType.withConst().pointerTo() : BaseType.pointerTo();
-
-      std::string BaseCastName("cast_to_");
-
-      if (Const)
-        BaseCastName += "const_";
-
-      BaseCastName += BaseType.format(true, "", "",
-                                      Identifier::SNAKE_CASE,
-                                      Identifier::REMOVE_QUALS);
-
-      Functions_.push_back(
-        WrapperFunctionBuilder(Identifier(BaseCastName))
-                               .setOrigin(BaseType)
-                               .setParent(this)
-                               .setCustomAction("static_cast<" + BasePointerType.str() + ">")
-                               .setReturnType(BasePointerType)
-                               .setIsBaseCast()
-                               .setIsConst(Const)
-                               .setIsNoexcept()
-                               .setIsVirtual()
-                               .build());
-    }
-  }
-
-  for (auto &F : Functions_) {
-    F = WrapperFunctionBuilder(F)
-        .setParent(this)
-        .build();
-  }
-}
+{}
 
 void
 WrapperRecord::overload(std::shared_ptr<IdentifierIndex> II)
@@ -223,26 +176,94 @@ WrapperRecord::determinePublicMemberFunctions(
   if (!Decl->isThisDeclarationADefinition())
     return {};
 
-  std::deque<WrapperFunction> PublicMethods;
+  std::deque<WrapperFunction> PublicMemberFunctions;
 
   // member functions
-  auto PublicMethodDecls(determinePublicMemberFunctionDecls(Decl, true));
+  auto PublicMemberFunctionsDecls(determinePublicMemberFunctionDecls(Decl, true));
 
-  PublicMethodDecls = prunePublicMemberFunctionDecls(Decl, PublicMethodDecls);
+  PublicMemberFunctionsDecls =
+    prunePublicMemberFunctionDecls(Decl, PublicMemberFunctionsDecls);
 
-  for (auto const *MethodDecl : PublicMethodDecls)
-    PublicMethods.emplace_back(MethodDecl);
+  for (auto const *MethodDecl : PublicMemberFunctionsDecls)
+    PublicMemberFunctions.emplace_back(MethodDecl);
 
   // callable member fields
   auto PublicCallableFieldDecls(determinePublicCallableMemberFieldDecls(Decl));
 
   for (auto const &[FieldDecl, MethodDecl] : PublicCallableFieldDecls) {
-    PublicMethods.emplace_back(WrapperFunctionBuilder(MethodDecl)
-                               .setName(Identifier(FieldDecl))
-                               .build());
+    PublicMemberFunctions.emplace_back(WrapperFunctionBuilder(MethodDecl)
+                                       .setName(Identifier(FieldDecl))
+                                       .build());
   }
 
-  return PublicMethods;
+  // base casts
+  bool IncludeSelfCast = false;
+  for (auto const &F : PublicMemberFunctions) {
+    if (F.isVirtual()) {
+      IncludeSelfCast = true;
+      break;
+    }
+  }
+
+  for (auto const &BaseCast : determineBaseCasts(Decl, IncludeSelfCast))
+    PublicMemberFunctions.emplace_back(BaseCast);
+
+  // reparent
+  for (auto &F : PublicMemberFunctions) {
+    F = WrapperFunctionBuilder(F)
+        .setParent(this)
+        .build();
+  }
+
+  return PublicMemberFunctions;
+}
+
+std::deque<WrapperFunction>
+WrapperRecord::determineBaseCasts(clang::CXXRecordDecl const *Decl,
+                                  bool IncludeSelfCast) const
+{
+  std::deque<WrapperFunction> BaseCasts;
+
+  WrapperType SelfType(Decl->getTypeForDecl());
+  std::vector<WrapperType> BaseTypes;
+
+  if (IncludeSelfCast)
+    BaseTypes.push_back(SelfType);
+
+  for (auto const &BaseType : SelfType.baseTypes(true))
+    BaseTypes.push_back(BaseType);
+
+  for (auto const &BaseType : BaseTypes) {
+    if (BaseType != SelfType && !BaseType.isPolymorphic())
+      continue;
+
+    for (bool Const : {true, false}) {
+      auto SelfPointerType = Const ? SelfType.withConst().pointerTo() : SelfType.pointerTo();
+      auto BasePointerType = Const ? BaseType.withConst().pointerTo() : BaseType.pointerTo();
+
+      std::string BaseCastName("cast_to_");
+
+      if (Const)
+        BaseCastName += "const_";
+
+      BaseCastName += BaseType.format(true, "", "",
+                                      Identifier::SNAKE_CASE,
+                                      Identifier::REMOVE_QUALS);
+
+      BaseCasts.push_back(
+        WrapperFunctionBuilder(Identifier(BaseCastName))
+                               .setOrigin(BaseType)
+                               .setCustomAction("static_cast<" + BasePointerType.str() + ">")
+                               .setReturnType(BasePointerType)
+                               .setIsBaseCast()
+                               .setIsConst(Const)
+                               .setIsNoexcept()
+                               .setIsVirtual()
+                               .build());
+    }
+  }
+
+  return BaseCasts;
 }
 
 std::deque<clang::CXXMethodDecl const *>

@@ -87,6 +87,9 @@ private:
   std::deque<WrapperFunction> determinePublicMemberFunctions(
     clang::CXXRecordDecl const *Decl) const;
 
+  std::deque<WrapperFunction> determineBaseCasts(
+    clang::CXXRecordDecl const *Decl, bool IncludeSelfCast) const;
+
   std::deque<clang::CXXMethodDecl const *>
   determinePublicMemberFunctionDecls(
     clang::CXXRecordDecl const *Decl, bool IncludeInherited = false) const;
