@@ -26,11 +26,8 @@ class WrapperRecord : public WrapperObject<clang::CXXRecordDecl>,
                       public mixin::NotCopyOrMoveable
 {
 public:
-  WrapperRecord(Identifier const &Name, WrapperType const &Type);
-
-  explicit WrapperRecord(clang::CXXRecordDecl const *Decl);
-
-  static WrapperRecord declaration(clang::CXXRecordDecl const *Decl);
+  explicit WrapperRecord(clang::CXXRecordDecl const *Decl,
+                         bool IncludeDefinition = true);
 
   bool operator==(WrapperRecord const &Other) const
   { return getType() == Other.getType(); }

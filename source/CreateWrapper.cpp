@@ -233,7 +233,7 @@ CreateWrapperConsumer::handleFunction(clang::FunctionDecl const *Decl)
 
 void
 CreateWrapperConsumer::handleRecordDeclaration(clang::CXXRecordDecl const *Decl)
-{ Wrapper_->addWrapperRecord(Identifier(Decl), WrapperType(Decl)); }
+{ Wrapper_->addWrapperRecord(Decl, false); }
 
 void
 CreateWrapperConsumer::handleRecordDefinition(clang::CXXRecordDecl const *Decl)

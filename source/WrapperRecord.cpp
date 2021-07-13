@@ -24,22 +24,21 @@
 namespace cppbind
 {
 
-WrapperRecord::WrapperRecord(Identifier const &Name, WrapperType const &Type)
-: Name_(Name),
-  Type_(Type)
-{}
-
-WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl)
+WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl,
+                             bool IncludeDefinition)
 : WrapperObject(Decl),
   Name_(Decl),
-  Type_(Decl->getTypeForDecl()),
-  Functions_(determinePublicMemberFunctions(Decl)),
-  IsDefinition_(determineIfDefinition(Decl)),
-  IsAbstract_(determineIfAbstract(Decl)),
-  IsCopyable_(determineIfCopyable(Decl)),
-  IsMoveable_(determineIfMoveable(Decl)),
-  TemplateArgumentList_(determineTemplateArgumentList(Decl))
-{}
+  Type_(Decl->getTypeForDecl())
+{
+  if (IncludeDefinition) {
+    Functions_ = determinePublicMemberFunctions(Decl);
+    IsDefinition_ = determineIfDefinition(Decl);
+    IsAbstract_ = determineIfAbstract(Decl);
+    IsCopyable_ = determineIfCopyable(Decl);
+    IsMoveable_ = determineIfMoveable(Decl);
+    TemplateArgumentList_ = determineTemplateArgumentList(Decl);
+  }
+}
 
 void
 WrapperRecord::overload(std::shared_ptr<IdentifierIndex> II)
