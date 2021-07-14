@@ -263,7 +263,7 @@ CreateWrapperFrontendAction::afterProcessing()
 
   if (OPT(bool, "wrap-macro-constants")) {
     for (auto const &Definition : definitions())
-      Wrapper_->addDefinition(Identifier(Definition.first), Definition.second);
+      Wrapper_->addMacro(Identifier(Definition.first), Definition.second);
   }
 
   Wrapper_->overload();

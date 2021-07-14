@@ -10,10 +10,10 @@
 #include "Identifier.hpp"
 #include "Logging.hpp"
 #include "Options.hpp"
-#include "WrapperDefinition.hpp"
 #include "WrapperEnum.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperInclude.hpp"
+#include "WrapperMacro.hpp"
 #include "WrapperRecord.hpp"
 #include "WrapperType.hpp"
 #include "WrapperVariable.hpp"
@@ -29,8 +29,8 @@ public:
   { Includes_.emplace_back(std::forward<ARGS>(Args)...); }
 
   template<typename ...ARGS>
-  void addDefinition(ARGS &&...Args)
-  { Definitions_.emplace_back(std::forward<ARGS>(Args)...); }
+  void addMacro(ARGS &&...Args)
+  { Macros_.emplace_back(std::forward<ARGS>(Args)...); }
 
   template<typename ...ARGS>
   void addWrapperEnum(ARGS &&...Args)
@@ -67,7 +67,7 @@ public:
   void overload();
 
   std::vector<WrapperInclude const *> getIncludes() const;
-  std::vector<WrapperDefinition const *> getDefinitions() const;
+  std::vector<WrapperMacro const *> getMacros() const;
   std::vector<WrapperEnum const *> getEnums() const;
   std::vector<WrapperVariable const *> getVariables() const;
   std::vector<WrapperFunction const *> getFunctions() const;
@@ -98,7 +98,7 @@ private:
   bool checkTypeWrapped(WrapperType const &Type) const;
 
   std::deque<WrapperInclude> Includes_;
-  std::deque<WrapperDefinition> Definitions_;
+  std::deque<WrapperMacro> Macros_;
 
   std::deque<WrapperEnum> Enums_;
   std::deque<WrapperVariable> Variables_;

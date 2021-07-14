@@ -176,8 +176,8 @@ class LuaBackend(Backend('lua')):
         for e in h['__enums']:
             register += self._register_variables(c for c in e.constants())
 
-        if h['__variables'] or h['__definitions']:
-            variables = h['__variables'] + [d.as_variable() for d in h['__definitions']]
+        if h['__variables'] or h['__macros']:
+            variables = h['__variables'] + [m.as_variable() for m in h['__macros']]
 
             getters = [v.getter() for v in variables]
             register.append(self._register_functions(getters))

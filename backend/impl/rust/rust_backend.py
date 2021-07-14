@@ -136,7 +136,7 @@ class RustBackend(Backend('rust')):
         c_declarations = ['pub fn bind_error_what() -> *const c_char;',
                           'pub fn bind_error_reset();']
 
-        for v in self.variables(include_definitions=True):
+        for v in self.variables(include_macros=True):
             c_declarations.append(self._function_declaration_c(v.getter()))
 
             if v.is_assignable():
@@ -208,7 +208,7 @@ class RustBackend(Backend('rust')):
             else:
                 symbols.append(e)
 
-        for v in h['__variables'] + [d.as_variable() for d in h['__definitions']]:
+        for v in h['__variables'] + [m.as_variable() for m in h['__macros']]:
             symbols.append(v.getter())
 
             if v.is_assignable():

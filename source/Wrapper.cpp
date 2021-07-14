@@ -42,9 +42,9 @@ std::vector<WrapperInclude const *>
 Wrapper::getIncludes() const
 { return dequeToVector(Includes_); }
 
-std::vector<WrapperDefinition const *>
-Wrapper::getDefinitions() const
-{ return dequeToVector(Definitions_); }
+std::vector<WrapperMacro const *>
+Wrapper::getMacros() const
+{ return dequeToVector(Macros_); }
 
 std::vector<WrapperEnum const *>
 Wrapper::getEnums() const

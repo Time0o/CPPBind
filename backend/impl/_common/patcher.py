@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from backend import backend
-from cppbind import Definition, Enum, EnumConstant, Function, Identifier as Id, Options, Parameter, Record, Type, Variable
+from cppbind import Enum, EnumConstant, Function, Identifier as Id, Macro, Options, Parameter, Record, Type, Variable
 from text import code
 from util import dotdict
 
@@ -409,7 +409,7 @@ class Patcher:
         _name.fallback_case = lambda: Id.SNAKE_CASE
         _name.fallback_quals = lambda: Id.REPLACE_QUALS
 
-        Definition.name_target = _name(default_case=Id.SNAKE_CASE_CAP_ALL)
+        Macro.name_target = _name(default_case=Id.SNAKE_CASE_CAP_ALL)
 
         Type.name_target = _name(default_case=Id.PASCAL_CASE)
 

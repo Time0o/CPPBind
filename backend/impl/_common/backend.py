@@ -91,7 +91,7 @@ class BackendGeneric(metaclass=BackendMeta):
         self._output_files = []
 
         self._includes = wrapper.includes()
-        self._definitions = wrapper.definitions()
+        self._macros = wrapper.macros()
 
         self._enums = wrapper.enums()
         self._variables = wrapper.variables()
@@ -110,7 +110,7 @@ class BackendGeneric(metaclass=BackendMeta):
         self._hierarchy = {}
         self._init_hierarchy(self._hierarchy)
 
-        self._hierarchy['__definitions'] = self._definitions
+        self._hierarchy['__macros'] = self._macros
 
         for obj in self._objects:
             self._add_to_hierarchy(obj)
@@ -122,7 +122,7 @@ class BackendGeneric(metaclass=BackendMeta):
         keys = [
             '__objects',
             '__types',
-            '__definitions',
+            '__macros',
             '__enums',
             '__variables',
             '__records',
@@ -191,7 +191,7 @@ class BackendGeneric(metaclass=BackendMeta):
                         t = t.pointee()
                         self._types.add(t.unqualified())
 
-        for v in self.variables(include_definitions=True, include_enums=True):
+        for v in self.variables(include_macros=True, include_enums=True):
             add_type(v.type())
 
         for r in self.records():
@@ -256,17 +256,17 @@ class BackendGeneric(metaclass=BackendMeta):
 
         return self._type_aliases_target
 
-    def definitions(self):
-        return self._definitions
+    def macros(self):
+        return self._macros
 
     def enums(self):
         return self._enums
 
-    def variables(self, include_definitions=False, include_enums=False):
+    def variables(self, include_macros=False, include_enums=False):
         variables = self._variables[:]
 
-        if include_definitions:
-            variables += [d.as_variable() for d in self._definitions]
+        if include_macros:
+            variables += [m.as_variable() for m in self._macros]
 
         if include_enums:
             for e in self._enums:
@@ -301,8 +301,8 @@ class BackendGeneric(metaclass=BackendMeta):
     def run(self):
         self.wrap_before()
 
-        for d in self._definitions:
-            self.wrap_definition(d)
+        for m in self._macros:
+            self.wrap_macro(m)
 
         for e in self._enums:
             self.wrap_enum(e)
@@ -329,8 +329,8 @@ class BackendGeneric(metaclass=BackendMeta):
     def wrap_after(self):
         pass
 
-    def wrap_definition(self, d):
-        self.wrap_variable(d.as_variable())
+    def wrap_macro(self, m):
+        self.wrap_variable(m.as_variable())
 
     def wrap_enum(self, e):
         for c in e.constants():

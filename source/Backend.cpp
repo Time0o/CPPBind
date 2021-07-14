@@ -18,6 +18,7 @@
 #include "Wrapper.hpp"
 #include "WrapperFunction.hpp"
 #include "WrapperInclude.hpp"
+#include "WrapperMacro.hpp"
 #include "WrapperRecord.hpp"
 #include "WrapperType.hpp"
 #include "WrapperVariable.hpp"
@@ -69,7 +70,7 @@ using namespace cppbind;
 
 using Type = WrapperType;
 using Include = WrapperInclude;
-using Definition = WrapperDefinition;
+using Macro = WrapperMacro;
 using Enum = WrapperEnum;
 using EnumConstant = WrapperEnumConstant;
 using Variable = WrapperVariable;
@@ -136,7 +137,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
 
   py::class_<Wrapper, std::shared_ptr<Wrapper>>(m, "Wrapper")
     .def("includes", &Wrapper::getIncludes)
-    .def("definitions", &Wrapper::getDefinitions,
+    .def("macros", &Wrapper::getMacros,
          py::return_value_policy::reference_internal)
     .def("enums", &Wrapper::getEnums,
          py::return_value_policy::reference_internal)
@@ -230,13 +231,13 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
          "relative"_a = false)
     .def("path", &Include::path);
 
-  py::class_<Definition>(m, "Definition", py::dynamic_attr())
-    .def("__str__", [](Definition const &Self){ return Self.str(); })
-    .def("str", &Definition::str)
-    .def("name", &Definition::getName)
-    .def("arg", &Definition::getArg)
-    .def("as_variable", &Definition::getAsVariable,
-         "type"_a = WrapperType("int").withConst());
+  py::class_<Macro>(m, "Macro", py::dynamic_attr())
+    .def("__str__", [](Macro const &Self){ return Self.str(); })
+    .def("str", &Macro::str)
+    .def("name", &Macro::getName)
+    .def("arg", &Macro::getArg)
+    .def("as_variable", &Macro::getAsVariable,
+         "type"_a = Type("int").withConst());
 
   py::class_<Enum>(m, "Enum", py::dynamic_attr())
     .def("name", &Enum::getName)

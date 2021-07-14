@@ -1,5 +1,5 @@
-#ifndef GUARD_WRAPPER_DEFINITION_H
-#define GUARD_WRAPPER_DEFINITION_H
+#ifndef GUARD_WRAPPER_MACRO_H
+#define GUARD_WRAPPER_MACRO_H
 
 #include <string>
 
@@ -10,10 +10,10 @@
 namespace cppbind
 {
 
-class WrapperDefinition
+class WrapperMacro
 {
 public:
-  explicit WrapperDefinition(Identifier const &Name, std::string const &Arg)
+  explicit WrapperMacro(Identifier const &Name, std::string const &Arg)
   : Name_(Name),
     Arg_(Arg)
   {}
@@ -38,4 +38,4 @@ private:
 
 } // namespace cppbind
 
-#endif // GUARD_WRAPPER_DEFINITION_H
+#endif // GUARD_WRAPPER_MACRO_H
