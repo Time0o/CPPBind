@@ -19,11 +19,13 @@ namespace cppbind
 class WrapperEnumConstant : public WrapperObject<clang::EnumConstantDecl>
 {
 public:
-  WrapperEnumConstant(clang::EnumConstantDecl const *Decl)
+  WrapperEnumConstant(clang::EnumConstantDecl const *Decl,
+                      WrapperEnum const *Enum)
   : WrapperObject<clang::EnumConstantDecl>(Decl),
     Name_(Identifier(Decl)),
     Type_(Decl->getType()),
-    Value_(Decl->getInitVal().toString(10))
+    Value_(Decl->getInitVal().toString(10)),
+    Enum_(Enum)
   {}
 
   Identifier getName() const
@@ -45,6 +47,9 @@ public:
     return CLiteral;
   }
 
+  WrapperEnum const *getEnum() const
+  { return Enum_; }
+
   WrapperVariable getAsVariable() const
   { return WrapperVariable(Name_, Type_); }
 
@@ -52,6 +57,7 @@ private:
   Identifier Name_;
   WrapperType Type_;
   std::string Value_;
+  WrapperEnum const *Enum_;
 };
 
 class WrapperEnum : public WrapperObject<clang::EnumDecl>
@@ -66,7 +72,7 @@ public:
     Type_(Decl->getTypeForDecl())
   {
     for (auto ConstantDecl : Decl->enumerators())
-      Constants_.emplace_back(ConstantDecl);
+      Constants_.emplace_back(ConstantDecl, this);
   }
 
   Identifier getName() const

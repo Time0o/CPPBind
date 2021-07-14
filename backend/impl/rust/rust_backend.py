@@ -76,16 +76,12 @@ class RustBackend(Backend('rust')):
     def wrap_enum(self, e):
         if e.is_anonymous():
             for c in e.constants():
-                constant_name = self._enum_constant_name_rust(c, anonymous=True)
-
                 self._wrapper_source.append(
-                    f"pub const {constant_name}: {c.type().target()} = {c.value()};")
+                    f"pub const {c.name_target()}: {c.type().target()} = {c.value()};")
         else:
             enum_constants = []
             for c in e.constants():
-                constant_name = self._enum_constant_name_rust(c)
-
-                enum_constants.append(f"{constant_name} = {c.value()}")
+                enum_constants.append(f"{c.name_target()} = {c.value()}")
 
             self._wrapper_source.append(code(
                 """
@@ -208,7 +204,7 @@ class RustBackend(Backend('rust')):
         for e in h['__enums']:
             if e.is_anonymous():
                 for c in e.constants():
-                    symbols.append(self._enum_constant_name_rust(c, anonymous=True))
+                    symbols.append(c.name_target())
             else:
                 symbols.append(e.name_target())
 
@@ -244,12 +240,6 @@ class RustBackend(Backend('rust')):
                 mod_inner=self._rust_modules_export(h)))
 
         return '\n'.join(export)
-
-    def _enum_constant_name_rust(self, c, anonymous=False):
-        if anonymous:
-            return c.name_target(case=Id.SNAKE_CASE_CAP_ALL)
-
-        return c.name_target(case=Id.PASCAL_CASE, quals=Id.REMOVE_QUALS)
 
     def _record_definition_rust(self, r):
         record_name = r.name_target()

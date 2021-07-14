@@ -252,6 +252,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("type", &EnumConstant::getType)
     .def("value", &EnumConstant::getValue,
          "as_c_literal"_a = false)
+    .def("enum", &EnumConstant::getEnum)
     .def("as_variable", &EnumConstant::getAsVariable);
 
   py::class_<Variable>(m, "Variable", py::dynamic_attr())
