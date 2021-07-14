@@ -57,18 +57,18 @@ def _function_forward_parameters(self):
 
 
 def _function_forward_call(self):
-    c_name = self.name_target(namespace='keep', quals=Id.REPLACE_QUALS)
+    c_name = f"{backend()._c_lib()}::{self.name_target()}"
 
     if self.is_copy_constructor():
         c_type_self = self.parent().type().with_const().pointer_to().target_c()
 
-        return f"c::{c_name}(self as {c_type_self})"
+        return f"{c_name}(self as {c_type_self})"
 
     elif self.is_copy_assignment_operator():
         c_type_self = self.parent().type().pointer_to().target_c()
         c_type_other = self.parent().type().with_const().pointer_to().target_c()
 
-        return f"c::{c_name}(self as {c_type_self}, other as {c_type_other});"
+        return f"{c_name}(self as {c_type_self}, other as {c_type_other});"
 
     elif self.is_move_constructor():
         pass # XXX
@@ -79,7 +79,7 @@ def _function_forward_call(self):
     else:
         c_parameters = ', '.join(p.name_interm() for p in self.parameters())
 
-        call = f"c::{c_name}({c_parameters})"
+        call = f"{c_name}({c_parameters})"
 
     call = f"{self.return_type().output(outp=call)}"
 
@@ -100,16 +100,16 @@ def _function_perform_return(self):
 def _function_try_catch(self, what):
     return code(
         """
-        c::bind_error_reset();
+        bind_error_reset();
 
         {what}
 
-        if !c::bind_error_what().is_null() {{
+        if !bind_error_what().is_null() {{
             {handle_exception}
         }}
         """,
         what=what,
-        handle_exception=self.handle_exception("c::bind_error_what()"))
+        handle_exception=self.handle_exception("bind_error_what()"))
 
 
 def _function_handle_exception(self, what):

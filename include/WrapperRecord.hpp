@@ -25,6 +25,8 @@ namespace cppbind
 class WrapperRecord : public WrapperObject<clang::CXXRecordDecl>,
                       public mixin::NotCopyOrMoveable
 {
+  friend class TypeIndex;
+
 public:
   explicit WrapperRecord(clang::CXXRecordDecl const *Decl,
                          bool IncludeDefinition = true);
@@ -62,6 +64,9 @@ public:
   std::optional<WrapperFunction const *> getBaseCast(bool Const) const;
 
   std::optional<std::string> getTemplateArgumentList() const;
+
+  bool isRedeclaration() const
+  { return IsRedeclaration_; }
 
   bool isDefinition() const
   { return IsDefinition_; }
@@ -117,6 +122,7 @@ private:
 
   std::deque<WrapperFunction> Functions_;
 
+  bool IsRedeclaration_ = false;
   bool IsDefinition_ = false;
   bool IsAbstract_ = false;
   bool IsCopyable_ = false;

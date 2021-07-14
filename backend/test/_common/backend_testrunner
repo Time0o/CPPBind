@@ -200,11 +200,12 @@ class BackendTestGenerator:
 
     def _compile_rust_test(self, test, **kwargs):
         cpp_src = self._test_output(test, ext='_c.cc')
-        cpp_bind_error_src = self._generate('c_bind_error', ext='.cc', lang='c')
-
         cpp_obj = self._test_output(test, ext='_c.o')
+        cpp_lib = self._test_output(test, ext='_c.a', prefix='libtest_')
+
+        cpp_bind_error_src = self._generate('c_bind_error', ext='.cc', lang='c')
         cpp_bind_error_obj = self._test_output('c_bind_error', ext='.o')
-        cpp_lib = self._test_output(test, ext='_c.a', prefix='lib')
+        cpp_bind_error_lib = self._test_output('c_bind_error', ext='.a', prefix='lib')
 
         rust_wrap_src = self._test_output(test, ext='_rust.rs')
         rust_test_src = self._test_source(test, ext='.rs')
@@ -222,6 +223,7 @@ class BackendTestGenerator:
                       **kwargs)
 
         self._subprocess(['ar', 'rcs', cpp_lib, cpp_obj, cpp_bind_error_obj])
+        self._subprocess(['ar', 'rcs', cpp_bind_error_lib, cpp_bind_error_obj])
 
         class TmpLnk:
             def __init__(_self, src, target_dir):
@@ -318,8 +320,8 @@ class BackendTestGenerator:
 
         return os.path.join(self._test_output_root_dir, lang)
 
-    def _test_output(self, test, ext, prefix='', postfix='', lang=None):
-        return os.path.join(self._test_output_dir(lang), f"{prefix}test_{test}{postfix}{ext}")
+    def _test_output(self, test, ext, prefix='test_', postfix='', lang=None):
+        return os.path.join(self._test_output_dir(lang), f"{prefix}{test}{postfix}{ext}")
 
     def _compile(self, src, obj, **kwargs):
         compiler = kwargs.get('compiler', 'clangpp')

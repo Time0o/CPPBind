@@ -349,6 +349,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
          "const"_a,
          py::return_value_policy::reference_internal)
     .def("template_argument_list", &Record::getTemplateArgumentList)
+    .def("is_redeclaration", &Record::isRedeclaration)
     .def("is_definition", &Record::isDefinition)
     .def("is_abstract", &Record::isAbstract)
     .def("is_polymorphic", &Record::isPolymorphic)

@@ -1,23 +1,25 @@
-mod test_nested_records_rust;
-use test_nested_records_rust::*;
+use std::ffi::*;
+use std::os::raw::*;
+
+include!("test_nested_records_rust.rs");
 
 fn main() {
     unsafe {
 
     {
-        let _obj = test::Toplevel::new();
+        let _obj = TestToplevel::new();
     }
 
     {
-        let obj = test::ToplevelNestedPublic::new();
+        let obj = TestToplevelNestedPublic::new();
 
-        let t: test::ToplevelNestedPublicT = 0;
-        let e: test::ToplevelNestedPublicE = test::ToplevelNestedPublicE::V;
-        test::Toplevel::func(&obj, t, e);
+        let t = 0;
+        let e: TestToplevelNestedPublicE = TestToplevelNestedPublicE::V;
+        TestToplevel::func(&obj, t, e);
     }
 
     {
-        let _obj = test::ToplevelNestedPublicNestedNestedPublic::new();
+        let _obj = TestToplevelNestedPublicNestedNestedPublic::new();
     }
 
     }

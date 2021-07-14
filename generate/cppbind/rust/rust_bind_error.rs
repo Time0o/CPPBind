@@ -1,6 +1,22 @@
-use std::fmt;
-use std::ffi::CStr;
-use std::os::raw::c_char;
+mod bind_error_c {
+  use std::os::raw::c_char;
+
+  #[link(name="c_bind_error")]
+  extern "C" {
+    pub fn bind_error_what() -> * const c_char;
+    pub fn bind_error_reset();
+  }
+}
+
+pub unsafe fn bind_error_what() -> * const c_char
+{
+    bind_error_c::bind_error_what()
+}
+
+pub unsafe fn bind_error_reset()
+{
+    bind_error_c::bind_error_reset();
+}
 
 #[derive(Debug, Clone)]
 pub struct BindError {

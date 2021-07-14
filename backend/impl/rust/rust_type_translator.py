@@ -105,10 +105,6 @@ class RustTypeTranslator(TypeTranslator('rust')):
     def target_c(cls, t, args):
         return cls._c_type_fundamental(t)
 
-    @rule(lambda t: t.is_alias() and t.is_basic())
-    def target(cls, t, args):
-        return t.name_target()
-
     @rule(lambda t: t.is_void())
     def target(cls, t, args):
         return 'c_void'

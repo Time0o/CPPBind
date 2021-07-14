@@ -1,14 +1,13 @@
-mod test_inheritance_rust;
-use test_inheritance_rust::*;
-use test_inheritance_rust::test::Base1Trait as _;
-use test_inheritance_rust::test::Base2Trait as _;
-use test_inheritance_rust::test::BaseAbstractTrait as _;
+use std::ffi::*;
+use std::os::raw::*;
+
+include!("test_inheritance_rust.rs");
 
 fn main() {
     unsafe {
 
     {
-        let derived = test::Derived::new();
+        let derived = TestDerived::new();
 
         assert!(derived.func_1() == 1);
         assert!(derived.func_2() == 3);
@@ -16,17 +15,17 @@ fn main() {
     }
 
     {
-        let base_1 = test::Base1::new();
+        let base_1 = TestBase1::new();
         assert!(base_1.func_1() == 1);
 
-        let base_2 = test::Base2::new();
+        let base_2 = TestBase2::new();
         assert!(base_2.func_1() == 1);
         assert!(base_2.func_2() == 2);
 
-        let base_protected = test::BaseProtected::new();
+        let base_protected = TestBaseProtected::new();
         assert!(base_protected.func_protected() == true);
 
-        let base_private = test::BasePrivate::new();
+        let base_private = TestBasePrivate::new();
         assert!(base_private.func_private() == true);
     }
 

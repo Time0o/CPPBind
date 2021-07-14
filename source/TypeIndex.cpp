@@ -1,5 +1,6 @@
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "boost/graph/adjacency_list.hpp"
@@ -15,19 +16,25 @@ namespace cppbind
 {
 
 void
-TypeIndex::addRecordDeclaration(WrapperRecord const *Record)
+TypeIndex::addRecordDeclaration(WrapperRecord *Record)
 {
   auto RecordTypeMangled(Record->getType().mangled());
 
+  bool NewRecord = Records_.find(RecordTypeMangled) == Records_.end();
+
   Records_[RecordTypeMangled] = Record;
 
-  auto [_, New] = RecordDeclarations_.insert(RecordTypeMangled);
-  if (New)
+  auto [_, NewDecl] = RecordDeclarations_.insert(RecordTypeMangled);
+
+  if (NewDecl) {
     addRecordToGraph(Record);
+  } else if (NewRecord) {
+    Record->IsRedeclaration_ = true;
+  }
 }
 
 void
-TypeIndex::addRecordDefinition(WrapperRecord const *Record)
+TypeIndex::addRecordDefinition(WrapperRecord *Record)
 {
   addRecordDeclaration(Record);
 

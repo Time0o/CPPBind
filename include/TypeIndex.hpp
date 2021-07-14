@@ -21,8 +21,8 @@ class TypeIndex
   friend class CompilerStateRegistry;
 
 public:
-  void addRecordDeclaration(WrapperRecord const *Record);
-  void addRecordDefinition(WrapperRecord const *Record);
+  void addRecordDeclaration(WrapperRecord *Record);
+  void addRecordDefinition(WrapperRecord *Record);
   void addEnumDefinition(WrapperEnum const *Enum);
 
   bool hasRecordDeclaration(WrapperRecord const *Record) const;

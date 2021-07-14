@@ -28,47 +28,7 @@ class RustBackend(Backend('rust')):
         self._wrapper_source = self.output_file(
             self.input_file().modified(filename='{filename}_rust', ext='.rs'))
 
-        rust_use = [f"use {t};" for t in self._c_types()]
-
-        if not self._rust_is_noexcept():
-            rust_use += ["use rust_bind_error::BindError;"]
-
-        rust_typedefs = [f"pub {td};" for td in self._rust_typedefs()]
-
-        self._wrapper_source.append(code(
-            """
-            #![allow(dead_code)]
-            #![allow(unused_imports)]
-
-            mod internal {{
-
-            {rust_use}
-
-            {rust_typedefs}
-            """,
-            rust_use='\n'.join(rust_use),
-            rust_typedefs='\n'.join(rust_typedefs)))
-
-    def wrap_after(self):
-        c_use = [f"use {t};" for t in self._c_types()] + \
-                [f"use {self._rust_module()}::internal::{t};"
-                  for t in chain(self._rust_record_types(),
-                                 self._rust_typedef_types())]
-
-        self._wrapper_source.append(code(
-            """
-            mod c {{
-                {c_use}
-
-                {c_declarations}
-            }}
-
-            }}
-            """,
-            c_use='\n'.join(c_use),
-            c_declarations=self._c_declarations()))
-
-        self._wrapper_source.append(self._rust_modules_export())
+        self._wrapper_source.append(self._c_declarations())
 
     def wrap_definition(self, d):
         self.wrap_variable(d.as_variable())
@@ -103,14 +63,16 @@ class RustBackend(Backend('rust')):
         self._wrapper_source.append(self._function_definition_rust(f))
 
     def wrap_record(self, r):
-        if r.is_polymorphic():
-            self._wrapper_source.append(self._record_trait_rust(r))
+        if not r.is_redeclaration():
+            self._wrapper_source.append(self._record_definition_rust(r))
 
-        self._wrapper_source.append(self._record_definition_rust(r))
+        if r.is_definition():
+            if r.is_polymorphic():
+                self._wrapper_source.append(self._record_trait_rust(r))
 
-        if not r.is_abstract():
-            self._wrapper_source.append(self._record_impl_rust(r))
-            self._wrapper_source.append(self._record_trait_impls_rust(r))
+            if not r.is_abstract():
+                self._wrapper_source.append(self._record_impl_rust(r))
+                self._wrapper_source.append(self._record_trait_impls_rust(r))
 
     def _c_lib(self):
         return f"{self.input_file().filename()}_c"
@@ -133,8 +95,7 @@ class RustBackend(Backend('rust')):
         return list(sorted(type_imports))
 
     def _c_declarations(self):
-        c_declarations = ['pub fn bind_error_what() -> *const c_char;',
-                          'pub fn bind_error_reset();']
+        c_declarations = []
 
         for v in self.variables(include_macros=True):
             c_declarations.append(self._function_declaration_c(v.getter()))
@@ -147,16 +108,22 @@ class RustBackend(Backend('rust')):
 
         return code(
             """
-            #[link(name="{c_lib}")]
-            extern "C" {{
-                {c_declarations}
+            mod {c_mod} {{
+              #![allow(unused_imports)]
+              use super::*;
+
+              #[link(name="{c_lib}")]
+              extern "C" {{
+                  {c_declarations}
+              }}
             }}
             """,
+            c_mod=self._c_lib(),
             c_lib=self._c_lib(),
             c_declarations='\n'.join(c_declarations))
 
     def _rust_module(self):
-        return f"crate::{self.input_file().filename()}_rust"
+        return f"{self.input_file().filename()}_rust_internal"
 
     def _rust_typedefs(self):
         typedefs = []
@@ -191,63 +158,6 @@ class RustBackend(Backend('rust')):
                 return False
 
         return True
-
-    def _rust_modules_export(self, h=None):
-        if h is None:
-            h = self.objects()
-
-        symbols = []
-
-        for t in h['__types']:
-            symbols.append(t)
-
-        for e in h['__enums']:
-            if e.is_anonymous():
-                for c in e.constants():
-                    symbols.append(c)
-            else:
-                symbols.append(e)
-
-        for v in h['__variables'] + [m.as_variable() for m in h['__macros']]:
-            symbols.append(v.getter())
-
-            if v.is_assignable():
-                symbols.append(v.setter())
-
-        for f in h['__functions']:
-            symbols.append(f)
-
-        for r in h['__records']:
-            if not r.is_definition():
-                continue
-
-            if r.is_polymorphic():
-                symbols.append(r.trait())
-
-            symbols.append(r)
-
-        export = []
-
-        top = self._rust_module()
-
-        for symbol in symbols:
-            symbol_internal = symbol.name_target()
-            symbol_public = symbol.name_target(namespace='remove')
-
-            export.append(
-                f"pub use {top}::internal::{symbol_internal} as {symbol_public};")
-
-        for ns, h in h['__namespaces'].items():
-            export.append(code(
-                """
-                pub mod {mod_name} {{
-                    {mod_inner}
-                }}
-                """,
-                mod_name=ns.format(case=Id.SNAKE_CASE),
-                mod_inner=self._rust_modules_export(h)))
-
-        return '\n'.join(export)
 
     def _record_definition_rust(self, r):
         record_name = r.name_target()

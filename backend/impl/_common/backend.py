@@ -321,11 +321,9 @@ class BackendGeneric(metaclass=BackendMeta):
         for output_file in self._output_files:
             output_file.write()
 
-    @abstractmethod
     def wrap_before(self):
         pass
 
-    @abstractmethod
     def wrap_after(self):
         pass
 
