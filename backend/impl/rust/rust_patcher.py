@@ -18,10 +18,6 @@ def _name_reserved():
     })
 
 
-def _name_fallback_namespace():
-    return 'remove'
-
-
 def _type_target_c(self, scoped=True):
     return backend().type_translator().target_c(self, dotdict({ 'scoped': scoped }))
 
@@ -153,18 +149,27 @@ def _function_forward(self):
             perform_return=self.perform_return())
 
 
-def _record_union_target(self):
-    return f"{self.name_target()}Union"
+def _record_union(self):
+    class union:
+        @staticmethod
+        def name_target(*args, **kwargs):
+            return f"{self.name_target(*args, **kwargs)}Union"
+
+    return union
 
 
-def _record_trait_target(self):
-    return f"{self.name_target()}Trait"
+def _record_trait(self):
+    class trait:
+        @staticmethod
+        def name_target(*args, **kwargs):
+            return f"{self.name_target(*args, **kwargs)}Trait"
+
+    return trait
 
 
 class RustPatcher(Patcher):
     def patch(self):
         self._patch(_name, 'reserved', _name_reserved)
-        self._patch(_name, 'fallback_namespace', _name_fallback_namespace)
         self._patch(EnumConstant, 'name_target', _enum_constant_name_target)
         self._patch(Function, 'declare_parameters', _function_declare_parameters)
         self._patch(Function, 'forward_call', _function_forward_call)
@@ -172,8 +177,8 @@ class RustPatcher(Patcher):
         self._patch(Function, 'handle_exception', _function_handle_exception)
         self._patch(Function, 'perform_return', _function_perform_return)
         self._patch(Function, 'forward', _function_forward)
-        self._patch(Record, 'union_target', _record_union_target)
-        self._patch(Record, 'trait_target', _record_trait_target)
+        self._patch(Record, 'union', _record_union)
+        self._patch(Record, 'trait', _record_trait)
         self._patch(Type, 'target_c', _type_target_c)
         self._patch(Type, 'target', _type_target)
         self._patch(Type, 'target', _type_target)

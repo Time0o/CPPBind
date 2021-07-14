@@ -47,7 +47,7 @@ class RustTypeTranslator(TypeTranslator('rust')):
     def _record_trait(cls, t):
         r = t.as_record()
 
-        return None if r is None or not r.is_polymorphic() else r.trait_target()
+        return None if r is None or not r.is_polymorphic() else r.trait().name_target()
 
     @classmethod
     def _record_cast(cls, t, obj):

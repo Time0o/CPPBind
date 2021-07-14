@@ -173,7 +173,7 @@ class RustBackend(Backend('rust')):
 
         for r in self.records(include_declarations=True):
             if r.is_polymorphic():
-                record_types.append(r.trait_target())
+                record_types.append(r.trait().name_target())
 
             record_types.append(r.type().target())
 
@@ -199,35 +199,43 @@ class RustBackend(Backend('rust')):
         symbols = []
 
         for t in h['__types']:
-            symbols.append(t.target())
+            symbols.append(t)
 
         for e in h['__enums']:
             if e.is_anonymous():
                 for c in e.constants():
-                    symbols.append(c.name_target())
+                    symbols.append(c)
             else:
-                symbols.append(e.name_target())
+                symbols.append(e)
 
         for v in h['__variables'] + [d.as_variable() for d in h['__definitions']]:
-            symbols.append(v.getter().name_target())
+            symbols.append(v.getter())
 
             if v.is_assignable():
-                symbols.append(v.setter().name_target())
+                symbols.append(v.setter())
 
         for f in h['__functions']:
-            symbols.append(f.name_target())
+            symbols.append(f)
 
         for r in h['__records']:
             if not r.is_definition():
                 continue
 
             if r.is_polymorphic():
-                symbols.append(r.trait_target())
+                symbols.append(r.trait())
 
-            symbols.append(r.name_target())
+            symbols.append(r)
 
-        export = [f"pub use {self._rust_module()}::internal::{symbol};"
-                  for symbol in symbols]
+        export = []
+
+        top = self._rust_module()
+
+        for symbol in symbols:
+            symbol_internal = symbol.name_target()
+            symbol_public = symbol.name_target(namespace='remove')
+
+            export.append(
+                f"pub use {top}::internal::{symbol_internal} as {symbol_public};")
 
         for ns, h in h['__namespaces'].items():
             export.append(code(
@@ -243,7 +251,7 @@ class RustBackend(Backend('rust')):
 
     def _record_definition_rust(self, r):
         record_name = r.name_target()
-        record_union = r.union_target()
+        record_union = r.union().name_target()
         record_size = r.type().size()
 
         c_void_ptr = Type('void').pointer_to().target_c()
@@ -366,7 +374,7 @@ class RustBackend(Backend('rust')):
             if not f.is_overriding():
                 trait_functions.append(self._function_declaration_rust(f, is_pub=False))
 
-        trait_bases = [b.trait_target()
+        trait_bases = [b.trait().name_target()
                        for b in r.bases(recursive=True) if b.is_polymorphic()]
 
         trait_bases = f": {' + '.join(trait_bases)}" if trait_bases else ""
@@ -377,7 +385,7 @@ class RustBackend(Backend('rust')):
                 {trait_functions}
             }}
             """,
-            trait_name=r.trait_target(),
+            trait_name=r.trait().name_target(),
             trait_bases=trait_bases,
             trait_functions='\n\n'.join(trait_functions))
 
@@ -390,7 +398,7 @@ class RustBackend(Backend('rust')):
             if not b.is_polymorphic():
                 continue
 
-            trait_name = b.trait_target()
+            trait_name = b.trait().name_target()
 
             trait_functions = []
             for f in r.functions():
