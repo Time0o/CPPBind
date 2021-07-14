@@ -12,7 +12,7 @@ fn main() {
 
     {
         let a: IntType1 = 1;
-        let b: IntType2 = 2;
+        let b: scope_1::Scope2IntType2 = 2;
         let c: test::IntTypeCommon = test::add(a, b);
         assert!(c == 3);
     }

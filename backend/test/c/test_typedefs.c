@@ -12,7 +12,7 @@ int main()
 
   {
     int_type_1_t a = 1;
-    int_type_2_t b = 2;
+    scope_1_scope_2_int_type_2_t b = 2;
     test_int_type_common_t c = test_add(a, b);
     assert(c == 3);
   }

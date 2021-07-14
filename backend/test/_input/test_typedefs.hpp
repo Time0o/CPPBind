@@ -1,8 +1,15 @@
 #include <type_traits>
 
 typedef bool bool_type;
+
 typedef int int_type1;
-typedef long int_type2;
+
+namespace scope1 {
+  struct scope2 {
+    using int_type2 = long;
+  };
+}
+
 
 namespace test
 {
@@ -10,9 +17,9 @@ namespace test
 inline bool_type logical_not(bool_type b) noexcept
 { return !b; }
 
-using IntTypeCommon = std::common_type<int_type1, int_type2>::type;
+using int_type_common = std::common_type<int_type1, scope1::scope2::int_type2>::type;
 
-inline IntTypeCommon add(int_type1 a, int_type2 b) noexcept
+inline int_type_common add(int_type1 a, scope1::scope2::int_type2 b) noexcept
 { return a + b; }
 
 typedef struct S {
