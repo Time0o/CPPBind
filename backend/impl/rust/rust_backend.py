@@ -146,19 +146,6 @@ class RustBackend(Backend('rust')):
 
         return record_types
 
-    def _rust_is_noexcept(self):
-        for f in self.functions(include_members=True):
-            if (f.is_copy_constructor() or \
-                f.is_copy_assignment_operator() or \
-                f.is_move_constructor() or \
-                f.is_move_assignment_operator()):
-                continue
-
-            if not f.is_noexcept():
-                return False
-
-        return True
-
     def _record_definition_rust(self, r):
         record_name = r.name_target()
         record_union = r.union().name_target()
