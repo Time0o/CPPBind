@@ -258,7 +258,9 @@ class LuaBackend(Backend('lua')):
 
             return '\n\n'.join(register)
 
-        return map(register_record, [r for r in records if not r.is_abstract()])
+        return map(
+            register_record,
+            [r for r in records if r.is_definition() and not r.is_abstract()])
 
     def _register_createtable(self, functions):
         return f"lua_createtable(L, 0, {len(functions)});"
