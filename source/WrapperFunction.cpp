@@ -164,8 +164,13 @@ WrapperFunction::getFormat(bool WithTemplatePostfix,
     Name = Identifier(NameStr);
   }
 
-  if (WithTemplatePostfix &&isTemplateInstantiation())
-    Name = Identifier(Name.str() + TemplateArgumentList_->str(true));
+  if (WithTemplatePostfix) {
+    if (isMember())
+        Name = Name.unqualified().qualified(getParent()->getFormat(true));
+
+    if (isTemplateInstantiation())
+        Name = Identifier(Name.str() + TemplateArgumentList_->str(true));
+  }
 
   if (WithOverloadPostfix && isOverloaded()) {
     auto Postfix = OPT("wrap-func-overload-postfix");
@@ -470,13 +475,12 @@ WrapperFunctionBuilder::setOrigin(WrapperType const &Origin)
 WrapperFunctionBuilder &
 WrapperFunctionBuilder::setParent(WrapperRecord const *Parent)
 {
-  auto ParentNameTemplated(Parent->getFormat(true));
   auto ParentType(Parent->getType());
 
   Wf_.Parent_ = Parent;
   Wf_.IsMember_ = true;
 
-  Wf_.Name_ = Wf_.Name_.unqualified().qualified(ParentNameTemplated);
+  Wf_.Name_ = Wf_.Name_.unqualified().qualified(ParentType.getName());
 
   if (Wf_.isInstance()) {
     WrapperType SelfType;

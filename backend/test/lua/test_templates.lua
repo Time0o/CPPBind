@@ -34,3 +34,6 @@ do
 
   assert(any_stack:empty())
 end
+
+assert(test.CalcInt.add(1, 2) == 3)
+assert(test.CalcInt.sub(1, 2) == -1)

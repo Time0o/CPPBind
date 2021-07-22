@@ -83,4 +83,18 @@ template int AnyStack<int>::pop<>();
 template void AnyStack<int>::push<double>(double val);
 template double AnyStack<int>::pop<double>();
 
+template<typename T>
+struct Calc
+{
+  Calc() = delete;
+
+  static T add(T a, T b) noexcept
+  { return a + b; }
+
+  static T sub(T a, T b) noexcept
+  { return a - b; }
+};
+
+template struct Calc<int>;
+
 } // namespace test

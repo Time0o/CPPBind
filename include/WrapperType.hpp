@@ -146,8 +146,6 @@ private:
   clang::QualType const &type() const;
   clang::Type const *typePtr() const;
 
-  std::string templatePostfix() const;
-
   clang::QualType Type_;
   std::vector<clang::QualType> BaseTypes_;
 

@@ -464,7 +464,7 @@ WrapperType::format(bool WithTemplatePostfix,
     } else {
       if (WithTemplatePostfix && BaseType.isTemplateInstantiation()) {
         StrReplace = TemplateArgumentList::strip(StrBase)
-                   + BaseType.templatePostfix();
+                   + BaseType.TemplateArgumentList_->str(true);
       } else {
         StrBase = TemplateArgumentList::strip(StrBase);
         StrReplace = StrBase;
@@ -579,9 +579,5 @@ WrapperType::type() const
 clang::Type const *
 WrapperType::typePtr() const
 { return type().getTypePtr(); }
-
-std::string
-WrapperType::templatePostfix() const
-{ return TemplateArgumentList_->str(true); }
 
 } // namespace cppbind

@@ -42,5 +42,8 @@ int main()
     test_any_stack_int_delete(&any_stack);
   }
 
+  assert(test_calc_int_add(1, 2) == 3);
+  assert(test_calc_int_sub(1, 2) == -1);
+
   return 0;
 }

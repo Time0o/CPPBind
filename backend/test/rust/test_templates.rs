@@ -41,5 +41,8 @@ fn main() {
         assert!(any_stack.empty());
     }
 
+    assert!(TestCalcInt::add(1, 2) == 3);
+    assert!(TestCalcInt::sub(1, 2) == -1);
+
     }
 }
