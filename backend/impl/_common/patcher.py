@@ -109,15 +109,6 @@ def _function_declare_parameters(self):
         else:
             decl = f"{decl};"
 
-        if t_orig.is_record() and t_orig.proxy_for() is not None:
-            decl = code(
-                """
-                {decl_proxy}
-                {decl}
-                """,
-                decl_proxy=f"{t_orig} {p.name_interm()}_proxy;",
-                decl=decl)
-
         return decl
 
     declarations = [declare_parameter(p) for p in self.parameters()]

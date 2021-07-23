@@ -64,7 +64,7 @@ class LuaTypeTranslator(TypeTranslator('lua')):
             {input_tmp}
             {input_interm}
             """,
-            input_tmp=cls.input(t, args).format(interm=f"static {t.without_const()} {Id.TMP}"),
+            input_tmp=cls.input(t, args).format(interm=f"static auto {Id.TMP}"),
             input_interm=f"{{interm}} = &{Id.TMP};")
 
     input_before = [
@@ -95,8 +95,10 @@ class LuaTypeTranslator(TypeTranslator('lua')):
         if t.proxy_for() is not None:
             return code(
                 f"""
-                {{interm}}_proxy = {t}({lua_util.tointegral(t.proxy_for(), args.i + 1)});
-                {{interm}} = &{{interm}}_proxy;
+                {{{{
+                  static auto {Id.TMP} = {t}({lua_util.tointegral(t.proxy_for(), args.i + 1)});
+                  {{interm}} = &{Id.TMP};
+                }}}}
                 """)
 
         return f"{{interm}} = {lua_util.topointer(t, args.i + 1)};"
