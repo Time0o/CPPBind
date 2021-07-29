@@ -124,25 +124,29 @@ public:
 
   std::pair<const_iterator, bool> insert(type_id::id_t key, T const &val)
   {
-    key = hash(key);
+    auto key_hashed = hash(key);
 
-    auto head = _hash_table[key];
+    auto head = _hash_table[key_hashed];
 
-    _hash_table[key] = new hash_node(key, val, head);
+    _hash_table[key_hashed] = new hash_node(key, val, head);
 
-    return std::make_pair(const_iterator(&_hash_table[key]->data), !head);
+    return std::make_pair(const_iterator(&_hash_table[key_hashed]->data), !head);
   }
 
   const_iterator find(type_id::id_t key) const
   {
-    key = hash(key);
+    auto key_hashed = hash(key);
 
-    auto head = _hash_table[key];
+    auto head = _hash_table[key_hashed];
 
-    if (!head)
-      return end();
+    while (head) {
+      if (head->data.first == key)
+        return const_iterator(&head->data);
 
-    return const_iterator(&head->data);
+      head = head->next;
+    }
+
+    return end();
   }
 
   const_iterator end() const
