@@ -7,8 +7,11 @@
 #include <memory>
 #include <type_traits>
 #include <typeindex>
-#include <typeinfo>
 #include <utility>
+
+#ifndef TYPE_INFO_NO_TYPEID
+#include <typeinfo>
+#endif
 
 namespace cppbind
 {
@@ -23,9 +26,16 @@ public:
 
   template<typename T>
   static id_t id()
-  { return id_no_cv<typename std::remove_cv<T>::type>(); }
+  {
+#ifdef TYPE_INFO_NO_TYPEID
+    return id_no_cv<typename std::remove_cv<T>::type>();
+#else
+    return typeid(T).hash_code();
+#endif
+  }
 
 private:
+#ifdef TYPE_INFO_NO_TYPEID
   template<typename T>
   static id_t id_no_cv()
   {
@@ -64,6 +74,7 @@ private:
   template<typename T>
   static char const *str_pretty_function()
   { return __PRETTY_FUNCTION__; }
+#endif
 };
 
 template<typename T>
