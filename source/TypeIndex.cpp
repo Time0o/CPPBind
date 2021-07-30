@@ -20,27 +20,28 @@ TypeIndex::addRecordDeclaration(WrapperRecord *Record)
 {
   auto RecordTypeMangled(Record->getType().mangled());
 
-  bool NewRecord = Records_.find(RecordTypeMangled) == Records_.end();
-
-  Records_[RecordTypeMangled] = Record;
-
   auto [_, NewDecl] = RecordDeclarations_.insert(RecordTypeMangled);
 
-  if (NewDecl) {
+  if (NewDecl)
     addRecordToGraph(Record);
-  } else if (NewRecord) {
-    Record->IsRedeclaration_ = true;
-  }
+
+  if (Records_.find(RecordTypeMangled) == Records_.end())
+    Records_[RecordTypeMangled] = Record;
 }
 
 void
 TypeIndex::addRecordDefinition(WrapperRecord *Record)
 {
-  addRecordDeclaration(Record);
-
   auto RecordTypeMangled(Record->getType().mangled());
 
+  auto [_, NewDecl] = RecordDeclarations_.insert(RecordTypeMangled);
+
+  if (NewDecl)
+    addRecordToGraph(Record);
+
   RecordDefinitions_.insert(RecordTypeMangled);
+
+  Records_[RecordTypeMangled] = Record;
 }
 
 void

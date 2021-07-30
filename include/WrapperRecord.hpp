@@ -65,9 +65,6 @@ public:
 
   std::optional<std::string> getTemplateArgumentList() const;
 
-  bool isRedeclaration() const
-  { return IsRedeclaration_; }
-
   bool isDefinition() const
   { return IsDefinition_; }
 
@@ -122,7 +119,6 @@ private:
 
   std::deque<WrapperFunction> Functions_;
 
-  bool IsRedeclaration_ = false;
   bool IsDefinition_ = false;
   bool IsAbstract_ = false;
   bool IsCopyable_ = false;
