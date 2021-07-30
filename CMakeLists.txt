@@ -107,9 +107,9 @@ add_subdirectory(${PYBIND11_DIR})
 # find lua
 
 # There is no reason CPPBind can't work with other versions of Lua but so far
-# it's only been tested with Lua 5.4.*. The generated code might need some
+# it's only been tested with Lua 5.2.*+. The generated code might need some
 # tweaks to support earlier versions.
-find_package(Lua 5.4 REQUIRED)
+find_package(Lua 5.2 REQUIRED)
 
 set(LUA lua${LUA_VERSION_MAJOR}.${LUA_VERSION_MINOR})
 
