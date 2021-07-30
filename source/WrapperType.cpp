@@ -64,6 +64,15 @@ WrapperType::getName() const
   return Identifier(basic().str());
 }
 
+Identifier
+WrapperType::getFormat(bool WithTemplatePostfix) const
+{
+  if (isAlias() && isBasic())
+    return Identifier(str());
+
+  return Identifier(basic().format(WithTemplatePostfix));
+}
+
 std::optional<Identifier>
 WrapperType::getNamespace()
 {

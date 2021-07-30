@@ -55,6 +55,9 @@ public:
   { return !operator<(Other); }
 
   Identifier getName() const;
+
+  Identifier getFormat(bool WithTemplatePostfix = false) const;
+
   std::optional<Identifier> getNamespace();
 
   std::size_t getSize() const;
