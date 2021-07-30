@@ -64,8 +64,8 @@ CreateWrapperConsumer::addFundamentalTypesHandler()
 void
 CreateWrapperConsumer::addWrapperHandlers()
 {
-  auto OrigInputFile(CompilerState().currentFile(ORIG_INPUT_FILE, true));
-  auto TmpInputFile(CompilerState().currentFile(TMP_INPUT_FILE, true));
+  auto OrigInputFile(CompilerState().currentFile(ORIG_INPUT_FILE, false));
+  auto TmpInputFile(CompilerState().currentFile(TMP_INPUT_FILE, false));
 
   enum MatchLocation
   {
