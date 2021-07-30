@@ -14,6 +14,7 @@
 namespace cppbind
 {
 
+// Class used to represent identifiers in the C++ source code.
 class Identifier
 {
 public:
@@ -46,10 +47,9 @@ public:
     REPLACE_QUALS
   };
 
+private:
   class Component
   {
-    friend class Identifier;
-
   public:
     explicit Component(std::string const &Name);
 
@@ -110,12 +110,14 @@ public:
     std::vector<std::string> NameWords_;
   };
 
+public:
   explicit Identifier(std::string const &Id);
 
   explicit Identifier(clang::NamedDecl const *Decl)
   : Identifier(Decl->getQualifiedNameAsString())
   {}
 
+  // Determine whether some string is a valid C/C++ identifier.
   static bool isIdentifier(std::string const &Name,
                            bool allowQualified = true,
                            bool allowReserved = true);
@@ -141,14 +143,20 @@ public:
   bool isEmpty() const
   { return Components_.empty(); }
 
+  // Split identifier into components, e.g. "foo::bar::SomeClass" =>
+  // ["foo", "bar", "some", "class"]
   std::vector<Identifier> components() const;
 
+  // Extract/modify qualifiers, i.e. everything before the last scope
+  // resolution operator.
   Identifier qualifiers() const;
   Identifier qualified(Identifier const &Qualifiers) const;
   Identifier unqualified(int Remove = -1) const;
 
   std::string str() const;
 
+  // Format identifier. For example, calling 'format(SNAKE_CASE, REPLACE_QUALS)'
+  // on 'foo::bar::SomeClass' yields 'foo_bar_some_class'.
   std::string format(Case Case = ORIG_CASE, Quals Quals = KEEP_QUALS) const;
 
 private:

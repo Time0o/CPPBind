@@ -7,7 +7,6 @@ add_executable(${CPPBIND}
                "CreateWrapper.cpp"
                "GenericToolRunner.cpp"
                "Identifier.cpp"
-               "Options.cpp"
                "Print.cpp"
                "String.cpp"
                "TemplateArgument.cpp"

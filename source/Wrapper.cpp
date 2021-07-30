@@ -29,13 +29,13 @@ namespace cppbind
 {
 
 void
-Wrapper::overload()
+Wrapper::addOverloads()
 {
   for (auto &Wr : Records_)
-    Wr.overload(CompilerState().identifiers());
+    Wr.addOverloads(CompilerState().identifiers());
 
   for (auto &Wf : Functions_)
-    Wf.overload(CompilerState().identifiers());
+    Wf.addOverload(CompilerState().identifiers());
 }
 
 std::vector<WrapperInclude const *>
@@ -100,7 +100,7 @@ Wrapper::_addWrapperFunction(WrapperFunction *Function)
   if (!checkTypeWrapped(Function->getReturnType()))
     return false;
 
-  auto &Params(Function->getParameters());
+  auto &Params(Function->Parameters_);
 
   for (std::size_t i = 0; i < Params.size(); ++i) {
     if (checkTypeWrapped(Params[i].getType()))

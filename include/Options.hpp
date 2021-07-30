@@ -33,9 +33,16 @@ template<typename T>
 using OptionChoices =
   std::initializer_list<std::tuple<llvm::StringRef, T, llvm::StringRef>>;
 
-class OptionsRegistry : private mixin::NotCopyOrMoveable
+// This class wraps LLVM's command line option interface to make it more
+// 'agreeable'. In particular, it makes it possible to define options via a
+// builder pattern interface (see source/Options.cpp) and to access parsed
+// options from anywhere via the 'OPT' macro.
+class OptionsRegistry : private mixin::NotCopyOrMovable
 {
   friend OptionsRegistry &Options();
+
+  // 'is_container_v<T>' evaluates to 'true' if 'T' has a 'push_back' member
+  // function.
 
   template<typename U>
   using value_push_back_t =
@@ -49,6 +56,8 @@ class OptionsRegistry : private mixin::NotCopyOrMoveable
   static inline constexpr bool is_container_v =
     has_value_push_back_v<U> && !std::is_same_v<U, std::string>;
 
+public:
+  // Class which describes a single command line option.
   template<typename T = std::string>
   class Option
   {
@@ -100,9 +109,12 @@ class OptionsRegistry : private mixin::NotCopyOrMoveable
     std::vector<std::pair<Assertion, std::string>> Assertions_;
   };
 
-public:
-  static void init();
+  // Add new option.
+  template<typename T>
+  Option<T> add(llvm::StringRef Name) const
+  { return Option<T>(Name); }
 
+  // Look up (non-container-type) option by name.
   template<typename T = std::string>
   std::enable_if_t<!is_container_v<T>, T>
   get(llvm::StringRef Name) const
@@ -120,6 +132,7 @@ public:
     return Value;
   }
 
+  // Look up (container-type) option by name.
   template<typename T>
   std::enable_if_t<is_container_v<T>, T>
   get(llvm::StringRef Name) const
@@ -161,13 +174,8 @@ private:
   }
 
   template<typename T>
-  Option<T> add(llvm::StringRef Name) const
-  { return Option<T>(Name); }
-
-  template<typename T>
   void addOption(Option<T> Option)
   {
-    // XXX aliases
     // XXX indicate mandatory options and default values in Desc
 
     auto Opt(createOption<T>(Option.Name_, llvm::cl::cat(Category_)));
@@ -287,6 +295,9 @@ inline OptionsRegistry &Options()
 #define OPT2(type, name) Options().get<type>(name)
 
 #define OPT_MUX(_1, _2, MACRO, ...) MACRO
+
+// 'OPT(T, OPTION_NAME)' evaluates to the value passed by the user to the
+// 'OPTION_NAME' command line option, converted to type 'T'.
 #define OPT(...) OPT_MUX(__VA_ARGS__, OPT2, OPT1, _)(__VA_ARGS__)
 
 #endif // GUARD_OPTIONS_H

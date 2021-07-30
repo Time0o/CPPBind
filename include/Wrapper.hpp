@@ -21,6 +21,10 @@
 namespace cppbind
 {
 
+// This is the central class encapsulating all the entities in the input
+// translation unit for which wrapper code should be generated. It is populated
+// by the callbacks defined in 'CreateWrapperConsumer' and subsequently passed
+// on to the backend.
 class Wrapper
 {
 public:
@@ -64,7 +68,7 @@ public:
                      std::forward<ARGS>(Args)...);
   }
 
-  void overload();
+  void addOverloads();
 
   std::vector<WrapperInclude const *> getIncludes() const;
   std::vector<WrapperMacro const *> getMacros() const;

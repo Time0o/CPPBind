@@ -11,6 +11,9 @@
 namespace cppbind
 {
 
+// This class stores identifiers corresponding to declarations/definitions in
+// the input translation unit. It also handles function overload resolution
+// via the 'pushOverload' and 'popOverload' functions.
 class IdentifierIndex
 {
 public:
@@ -102,6 +105,7 @@ private:
   void add(Identifier Id, Type Type, bool Definition)
   {
     // XXX conflict resolution
+
     std::shared_ptr<Props> P;
 
     switch (Type) {

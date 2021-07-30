@@ -136,7 +136,7 @@ T tointegral(lua_State *L, int arg)
 
   //luaL_argcheck(L, valid, arg,
   //              "not convertible to lua_Integer");
-  auto i = lua_tointeger(L, arg); // TODO
+  auto i = lua_tointeger(L, arg); // XXX
 
   luaL_argcheck(L, std::numeric_limits<T>::is_signed || i >= 0, arg,
                 "should be non-negative");
@@ -156,7 +156,7 @@ T tofloating(lua_State *L, int arg)
 
   //luaL_argcheck(L, valid, arg,
   //              "not convertible to lua_Number");
-  auto f = lua_tonumber(L, arg); // TODO
+  auto f = lua_tonumber(L, arg); // XXX
 
   luaL_argcheck(L, f >= std::numeric_limits<T>::lowest(), arg,
                 "conversion would underflow");

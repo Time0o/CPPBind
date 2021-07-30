@@ -26,6 +26,7 @@ set(DEPS_DIR ${PROJECT_SOURCE_DIR}/deps)
 set(PYBIND11_DIR ${DEPS_DIR}/pybind11)
 
 set(GENERATE_DIR ${PROJECT_SOURCE_DIR}/generate/)
+set(FUNDAMENTAL_TYPES_HEADER ${GENERATE_DIR}/cppbind/fundamental_types.h)
 
 set(BACKEND_DIR ${PROJECT_SOURCE_DIR}/backend)
 set(BACKEND_IMPL_DIR ${BACKEND_DIR}/impl)
@@ -164,7 +165,7 @@ function(target_pybind11_config TARGET)
   # These definitions are used in Backend.cpp to locate the backend module to run.
   target_compile_definitions(
     ${TARGET} PRIVATE
-      -DGENERATE_DIR="${GENERATE_DIR}"
+      -DFUNDAMENTAL_TYPES_HEADER="${FUNDAMENTAL_TYPES_HEADER}"
       -DBACKEND_IMPL_DIR="${BACKEND_IMPL_DIR}"
       -DBACKEND_IMPL_COMMON_DIR="${BACKEND_IMPL_COMMON_DIR}")
 

@@ -1,3 +1,9 @@
+# Patcher base class implementation. The functions in this module provide
+# "default behaviour" for the different backends by monkey patching the classes
+# exported by the 'cppbind' module. Backends are free to provide a custom class
+# deriving from 'Patcher' that overwrites some or all of this default behavior.
+# Overall this avoid codes duplication between backends.
+
 from abc import abstractmethod
 from backend import backend
 from cppbind import Enum, EnumConstant, Function, Identifier as Id, Macro, Options, Parameter, Record, Type, Variable
@@ -6,9 +12,9 @@ from util import dotdict
 
 
 def _name(get=lambda self: self.name(),
-          default_namespace=None,
-          default_case=None,
-          default_quals=None,
+          default_namespace='keep',
+          default_case=Id.SNAKE_CASE,
+          default_quals=Id.REPLACE_QUALS,
           default_prefix=None,
           default_postfix=None):
 
@@ -18,15 +24,6 @@ def _name(get=lambda self: self.name(),
                      quals=default_quals,
                      prefix=default_prefix,
                      postfix=default_postfix):
-
-        if namespace is None:
-            namespace = _name.fallback_namespace()
-
-        if case is None:
-            case = _name.fallback_case()
-
-        if quals is None:
-            quals = _name.fallback_quals()
 
         name = get(self)
 
@@ -41,7 +38,7 @@ def _name(get=lambda self: self.name(),
         if postfix is not None:
             name = name + postfix
 
-        while name in _name.reserved():
+        while name in Id.reserved():
             name += '_'
 
         return name
@@ -59,10 +56,6 @@ def _type_input(self, inp, interm=None, args=None):
 
 def _type_output(self, outp, interm=None, args=None):
     return backend().type_translator().output(self, args).format(outp=outp, interm=interm)
-
-
-def _type_helper(self, args=None):
-    return backend().type_translator().helper(self, args)
 
 
 def _function_check_parameters(self):
@@ -370,7 +363,6 @@ class Patcher:
         Type.target = _type_target
         Type.input = _type_input
         Type.output = _type_output
-        Type.helper = _type_helper
 
         Function.check_parameters = _function_check_parameters
         Function.declare_parameters = _function_declare_parameters
@@ -395,10 +387,7 @@ class Patcher:
 
     @staticmethod
     def _patch_global_names():
-        _name.reserved = lambda: set()
-        _name.fallback_namespace = lambda: 'keep'
-        _name.fallback_case = lambda: Id.SNAKE_CASE
-        _name.fallback_quals = lambda: Id.REPLACE_QUALS
+        Id.reserved = lambda: set()
 
         Macro.name_target = _name(default_case=Id.SNAKE_CASE_CAP_ALL)
 

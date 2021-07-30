@@ -4,6 +4,7 @@
 namespace mixin
 {
 
+// Records inheriting from this class are not copyable.
 class NotCopyable
 {
 public:
@@ -15,17 +16,18 @@ protected:
   ~NotCopyable() = default;
 };
 
-class NotCopyOrMoveable
+// Records inheriting from this class are not copy- or movable.
+class NotCopyOrMovable
 {
 public:
-  NotCopyOrMoveable(NotCopyOrMoveable const &)            = delete;
-  NotCopyOrMoveable &operator=(NotCopyOrMoveable const &) = delete;
-  NotCopyOrMoveable(NotCopyOrMoveable &&)                 = delete;
-  void operator=(NotCopyOrMoveable &&)                    = delete;
+  NotCopyOrMovable(NotCopyOrMovable const &)            = delete;
+  NotCopyOrMovable &operator=(NotCopyOrMovable const &) = delete;
+  NotCopyOrMovable(NotCopyOrMovable &&)                 = delete;
+  void operator=(NotCopyOrMovable &&)                   = delete;
 
 protected:
-  NotCopyOrMoveable()  = default;
-  ~NotCopyOrMoveable() = default;
+  NotCopyOrMovable()  = default;
+  ~NotCopyOrMovable() = default;
 };
 
 } // namespace mixin

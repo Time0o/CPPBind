@@ -1,10 +1,11 @@
-import os
+# Python convenience functions for type_info.h.
 
 from backend import backend
 from collections import OrderedDict
 from file import Path
 from itertools import chain
 from text import code
+import os
 
 
 _NS = f"cppbind::type_info"
@@ -26,6 +27,8 @@ def path():
     return Path(os.path.join('cppbind', 'type_info.h'))
 
 
+# Create 'type_instance' instantiations for all record and reference types used
+# by wrapper functions in the current translation unit.
 def type_instances():
     be_records = backend().records(include_declarations=True)
 
@@ -60,10 +63,6 @@ def type_instances():
             add_type(t)
         elif t.is_pointer() or t.is_reference():
             add_type(t.pointee())
-
-        t_helper = t.helper()
-        if t_helper:
-            types[t_helper] = (f"HELPER_{t.mangled()}", t_helper, None)
 
     tis = []
     for t_mangled, t, t_bases in types.values():

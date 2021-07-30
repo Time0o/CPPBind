@@ -234,7 +234,7 @@ class RustBackend(Backend('rust')):
                 record_type=record_type,
                 record_clone='\n\n'.join(record_clone)))
 
-        if r.is_moveable():
+        if r.is_movable():
             pass # XXX
 
         if r.destructor():

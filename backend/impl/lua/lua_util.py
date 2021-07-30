@@ -42,7 +42,7 @@ def createmetatable(r):
     if r.is_copyable():
         function_entries.append(f'{{"copy", {BIND_COPY}}}')
 
-    if r.is_moveable():
+    if r.is_movable():
         function_entries.append(f'{{"move", {BIND_MOVE}}}')
 
     key = f'"METATABLE_{r.type().mangled()}"'

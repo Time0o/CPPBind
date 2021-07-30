@@ -25,7 +25,9 @@ enum InputFile
   COMPLETE_INPUT_FILE
 };
 
-class CompilerStateRegistry : private mixin::NotCopyOrMoveable
+// This singleton class encapsulates some global "compiler state" such as the
+// current source file and clang::CompilerInstance.
+class CompilerStateRegistry : private mixin::NotCopyOrMovable
 {
   friend CompilerStateRegistry &CompilerState();
 
@@ -41,7 +43,11 @@ public:
 
   void updateCompilerInstance(clang::CompilerInstance const &CI);
 
+  // Obtain the name of the currently processed input file
   std::string currentFile(InputFile IF, bool Relative = false) const;
+
+  // Check whether a given source location is in either the original input file,
+  // the temporary input file including it or in either of the two.
   bool inCurrentFile(InputFile IF, clang::SourceLocation const &Loc) const;
 
   std::shared_ptr<IdentifierIndex> identifiers() const { return II_; }

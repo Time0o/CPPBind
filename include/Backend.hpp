@@ -3,27 +3,24 @@
 
 #include <memory>
 #include <string>
-#include <vector>
-
-#include "pybind11/embed.h"
 
 namespace cppbind
 {
 
 class Wrapper;
 
-class Backend
+namespace backend
 {
-public:
-  static void run(std::string const &InputFile,
-                  std::shared_ptr<Wrapper> Wrapper);
 
-private:
-  static pybind11::module_ importModule(std::string const &Module);
+// Run the backend code for the current input file and the 'Wrapper*' objects
+// created by CPPBind. Each invocation of 'run' independently executes the
+// Python interpreter, i.e. there is no state preserved across runs for
+// different translation units on the Python side. The 'Wrapper*' objects are
+// exposed to Python via corresponding Python objects created with the help of
+// pybind11 (see source/Backend.cpp).
+void run(std::string const &InputFile, std::shared_ptr<Wrapper> Wrapper);
 
-  static void addModuleSearchPath(pybind11::module_ const &Sys,
-                                  std::string const &Path);
-};
+}
 
 } // namespace cppbind
 

@@ -62,6 +62,8 @@ public:
 
   std::size_t getSize() const;
 
+  // The type's string representation does not contain spaces or
+  // special characters, e.g. 'l4_cap_idx_t'.
   bool isBasic() const;
   bool isAlias() const;
   bool isTemplateInstantiation(char const *Which = nullptr) const;
@@ -81,16 +83,25 @@ public:
   bool isPointer() const;
   bool isIndirection() const;
   bool isRecord() const;
+  // The type is a pointer or reference to record type.
   bool isRecordIndirection(bool Recursive = false) const;
   bool isStruct() const;
   bool isClass() const;
+  // The type is a record type defining at least one pure virtual member function.
   bool isAbstract() const;
+  // The type is a record type defining at least one virtual member function.
   bool isPolymorphic() const;
   bool isConst() const;
 
+  // This type with all indirections removed.
   WrapperType basic() const;
+  // This type with "sugar", i.e. typedefs etc., removed.
   WrapperType canonical() const;
+  // If this type is a "thin wrapper" (see the implementation for what that
+  // means exactly) around some integral type, return that latter type. Examples
+  // are the many "Flag" record types used in L4Re to wrap flag constants.
   std::optional<WrapperType> proxyFor();
+  // Types that this type is publicly derived from (if any).
   std::deque<WrapperType> baseTypes(bool Recursive = false) const;
 
   WrapperEnum const * asEnum() const;
@@ -106,6 +117,7 @@ public:
   WrapperType pointerTo(unsigned Repeat = 0u) const;
   WrapperType pointee(bool Recursive = false) const;
 
+  // Integral type underlying an enum type.
   WrapperType underlyingIntegerType() const;
 
   unsigned qualifiers() const;
@@ -123,9 +135,9 @@ public:
                      Identifier::Case Case = Identifier::ORIG_CASE,
                      Identifier::Quals Quals = Identifier::KEEP_QUALS) const;
 
-  std::vector<std::string> templateArguments() const;
-
   std::string mangled() const;
+
+  std::vector<std::string> templateArguments() const;
 
 private:
   static clang::QualType

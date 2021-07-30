@@ -137,7 +137,7 @@ class LuaBackend(Backend('lua')):
               {register}
             }}
             """,
-            register=self._register_namespace('_G', self.objects()))
+            register=self._register_namespace('_G', self.namespaces()))
 
     def _function_definition(self, f):
         return code(
@@ -156,7 +156,7 @@ class LuaBackend(Backend('lua')):
     def _function_header(self, f):
         return f"int {f.name_target()}(lua_State *L)"
 
-    def _register_namespace(self, name, h):
+    def _register_namespace(self, name, ns):
         register = []
 
         if name == '_G':
@@ -169,15 +169,15 @@ class LuaBackend(Backend('lua')):
             {lua_get}
             if (lua_isnil(L, -1)) {{
               lua_pop(L, 1);
-              {self._register_createtable(h['__functions'])}
+              {self._register_createtable(ns['functions'])}
             }}
             """))
 
-        for e in h['__enums']:
+        for e in ns['enums']:
             register += self._register_variables(c for c in e.constants())
 
-        if h['__variables'] or h['__macros']:
-            variables = h['__variables'] + [m.as_variable() for m in h['__macros']]
+        if ns['variables'] or ns['macros']:
+            variables = ns['variables'] + [m.as_variable() for m in ns['macros']]
 
             getters = [v.getter() for v in variables]
             register.append(self._register_functions(getters))
@@ -186,14 +186,14 @@ class LuaBackend(Backend('lua')):
             if setters:
                 register.append(self._register_functions(setters))
 
-        if h['__functions']:
-            register.append(self._register_functions(h['__functions']))
+        if ns['functions']:
+            register.append(self._register_functions(ns['functions']))
 
-        if h['__records']:
-            register += self._register_records(h['__records'])
+        if ns['records']:
+            register += self._register_records(ns['records'])
 
-        for name_, h_ in h['__namespaces'].items():
-            register.append(self._register_namespace(name_, h_))
+        for name_, ns_ in ns['namespaces'].items():
+            register.append(self._register_namespace(name_, ns_))
 
         if name == '_G':
             lua_set = 'lua_setglobal(L, "_G");'

@@ -24,46 +24,69 @@
 #include "WrapperType.hpp"
 #include "WrapperVariable.hpp"
 
+namespace fs = boost::filesystem;
+
+// Add a directory to the Python module search path.
+static void
+addModuleSearchPath(pybind11::module_ const &SysMod, std::string const &Path)
+{ SysMod.attr("path").cast<pybind11::list>().append(Path.c_str()); }
+
+// Import some Python module.
+static pybind11::module_
+importModule(std::string const &Module)
+{ return pybind11::module_::import(Module.c_str()); }
+
 namespace cppbind
 {
 
-pybind11::module_ Backend::importModule(std::string const &Module)
-{ return pybind11::module_::import(Module.c_str()); }
-
-void Backend::addModuleSearchPath(pybind11::module_ const &Sys,
-                                  std::string const &Path)
-{ Sys.attr("path").cast<pybind11::list>().append(Path); }
-
-void Backend::run(std::string const &InputFile,
-                  std::shared_ptr<Wrapper> Wrapper)
+namespace backend
 {
-  using namespace boost::filesystem;
 
+void run(std::string const &InputFile, std::shared_ptr<Wrapper> Wrapper)
+{
+  // This starts up the Python interpreter and consequently shuts it down when
+  // it goes out of scope.
   pybind11::scoped_interpreter Guard;
 
   try {
-    auto Sys(importModule("sys"));
-    addModuleSearchPath(Sys, BACKEND_IMPL_COMMON_DIR);
+    // Backend root directory.
+    auto SysMod(importModule("sys"));
 
-    std::vector<std::string> BEs{"c"};
+    addModuleSearchPath(SysMod, BACKEND_IMPL_COMMON_DIR);
 
-    if (OPT("backend") != "c")
-      BEs.push_back(OPT("backend"));
+    // List of backends to initialize. Includes both the C backend and the
+    // backend passed by the user via the '--backend' option (if different).
+    // The former is always initialized in order to allow the latter to
+    // generate 'intermediate' C bindings if necessary (as is e.g. the case for
+    // Rust).
+    std::string CBackend("c");
+    std::string TargetBackend(OPT("backend"));
 
-    for (auto const &BE : BEs) {
-      addModuleSearchPath(Sys, (path(BACKEND_IMPL_DIR) / BE).string());
+    std::vector<std::string> Backends { CBackend };
 
-      importModule(BE + "_backend");
+    if (TargetBackend != CBackend)
+      Backends.push_back(TargetBackend);
 
-      importModule("init").attr("init")(BE, InputFile, Wrapper);
+    // Initialize and run backend(s).
+    for (auto const &Backend : Backends) {
+      addModuleSearchPath(SysMod, (fs::path(BACKEND_IMPL_DIR) / Backend).string());
+
+      importModule(Backend + "_backend");
     }
 
-    importModule("run").attr("run")(OPT("backend"));
+    auto BackendMod(importModule("backend"));
+
+    for (auto const &Backend : Backends)
+      BackendMod.attr("initialize_backend")(Backend, InputFile, Wrapper);
+
+    BackendMod.attr("run_backend")(TargetBackend);
 
   } catch (std::runtime_error const &e) {
     throw log::exception("in backend:\n{0}", e.what());
   }
 }
+
+} // namespace backend
 
 } // namespace cppbind
 
@@ -79,6 +102,9 @@ using Function = WrapperFunction;
 using Parameter = WrapperParameter;
 using Record = WrapperRecord;
 
+// This defines the interface of the 'cppbind' Python module which in essence
+// just consists of 'pythonized' versions of most of the classes used
+// internally by CPPBind.
 PYBIND11_EMBEDDED_MODULE(cppbind, m)
 {
   namespace py = pybind11;
@@ -319,8 +345,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("namespace", &Parameter::getNamespace)
     .def("type", &Parameter::getType)
     .def("default_argument", &Parameter::getDefaultArgument)
-    .def("is_self", &Parameter::isSelf)
-    .def("is_out", &Parameter::isOut);
+    .def("is_self", &Parameter::isSelf);
 
   auto PyRecord = py::class_<Record>(m, "Record", py::dynamic_attr())
     .def(py::self == py::self)
@@ -356,7 +381,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("is_abstract", &Record::isAbstract)
     .def("is_polymorphic", &Record::isPolymorphic)
     .def("is_copyable", &Record::isCopyable)
-    .def("is_moveable", &Record::isMoveable)
+    .def("is_movable", &Record::isMovable)
     .def("is_template_instantiation", &Record::isTemplateInstantiation);
 
   #define RO_PROP(NAME, VALUE) \

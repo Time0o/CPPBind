@@ -5,12 +5,16 @@
 #include <ostream>
 #include <string>
 
+#include "boost/filesystem.hpp"
+
 #include "Logging.hpp"
 #include "Mixin.hpp"
 
 namespace cppbind
 {
 
+// Abstracts a temporary file that is automatically deleted when not needed
+// anymore.
 class TmpFile : private mixin::NotCopyable
 {
   template<typename T>
@@ -20,6 +24,10 @@ public:
   TmpFile();
 
   explicit TmpFile(std::string const &Path);
+
+  explicit TmpFile(boost::filesystem::path const &Path)
+  : TmpFile(Path.string())
+  {}
 
   ~TmpFile();
 

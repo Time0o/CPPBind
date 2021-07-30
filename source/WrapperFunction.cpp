@@ -127,7 +127,7 @@ WrapperFunction::operator==(WrapperFunction const &Other) const
 }
 
 void
-WrapperFunction::overload(std::shared_ptr<IdentifierIndex> II)
+WrapperFunction::addOverload(std::shared_ptr<IdentifierIndex> II)
 {
   auto NameTemplated(getFormat(true, false, true));
 
@@ -332,14 +332,7 @@ WrapperFunction::determineParameters(clang::FunctionDecl const *Decl)
 bool
 WrapperFunction::determineIfNoexcept(clang::FunctionDecl const *Decl)
 {
-#if __clang_major__ >= 9
   auto EST = Decl->getExceptionSpecType();
-#else
-  auto *TSI = Decl->getTypeSourceInfo();
-  clang::QualType T = TSI ? TSI->getType() : Decl->getType();
-  const auto *FPT = T->getAs<clang::FunctionProtoType>();
-  auto EST = FPT ? FPT->getExceptionSpecType() : clang::EST_None;
-#endif
 
   return EST == clang::EST_BasicNoexcept || EST == clang::EST_NoexceptTrue;
 }

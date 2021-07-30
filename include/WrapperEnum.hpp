@@ -99,6 +99,8 @@ public:
   bool isAnonymous() const
   { return IsAnonymous_; }
 
+  // Check whether two or more enum constants have the same value (which might
+  // not be permissible in the target language, see e.g. Rust).
   bool isAmbiguous() const
   {
     std::unordered_set<std::string> Values;

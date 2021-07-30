@@ -27,21 +27,29 @@ namespace clang
 namespace cppbind
 {
 
+// Generic base class template providing some functionality around a
+// FrontendAction instance. 'CONSUMER' should be a type inheriting from
+// ASTConsumer.
 template<typename CONSUMER>
 class GenericFrontendAction : public clang::ASTFrontendAction
 {
   using Include = std::pair<std::string, bool>;
   using Definition = std::pair<std::string, std::string>;
 
+  // Preprocessor callbacks that extract include directives and macro definitions
   class PPCallback : public clang::PPCallbacks
   {
   public:
     PPCallback(std::deque<Include> *Includes,
-                          std::deque<Definition> *Definitions)
+               std::deque<Definition> *Definitions)
     : Includes_(Includes),
       Definitions_(Definitions)
     {}
 
+    // This will extract all include directives in the temporary input file,
+    // These include directives might e.g. originate in files containing
+    // explicit template instantiations provided by the user and need to be
+    // transferred to the generated source code files to guarantee correctness.
     void InclusionDirective(
       clang::SourceLocation Loc,
       clang::Token const &,
@@ -57,13 +65,11 @@ class GenericFrontendAction : public clang::ASTFrontendAction
       if (!CompilerState().inCurrentFile(TMP_INPUT_FILE, Loc))
         return;
 
-      auto IncludePath(FileEntry->getName().str());
-      if (IncludePath == CompilerState().currentFile(TMP_INPUT_FILE))
-        return;
-
-      Includes_->emplace_back(IncludePath, IsAngled);
+      Includes_->emplace_back(FileEntry->getName().str(), IsAngled);
     }
 
+    // Extract macros defined in the original input file. This only considers
+    // macros that look like they're defining constants, e.g. L4_PAGESHIT.
     void MacroDefined(
       clang::Token const &MT,
       clang::MacroDirective const *MD) override
@@ -84,6 +90,7 @@ class GenericFrontendAction : public clang::ASTFrontendAction
       auto ArgEndLoc = MI->tokens().back().getEndLoc();
       auto Arg(print::sourceContent(ArgLoc, ArgEndLoc));
 
+      // Only consider macros made up of numbers and arithmetic/logical operators.
       if (Arg.find_first_not_of("0123456789()+-*/%<>~&|^!= ") == std::string::npos)
         Definitions_->emplace_back(Name, Arg);
     }
@@ -100,7 +107,7 @@ public:
   {
     updateCompilerState(CI, File);
 
-    createIncludeMatcher(CI);
+    createPPCallback(CI);
 
     beforeProcessing();
 
@@ -121,9 +128,15 @@ private:
               CompilerState().currentFile(ORIG_INPUT_FILE));
   }
 
+  // Inheriting classes must implement this function that should return an
+  // ASTConsumer instance which does all the 'real work', i.e. matches the AST
+  // and executes appropriate callbacks.
   virtual std::unique_ptr<CONSUMER> makeConsumer() = 0;
 
+  // Called before every translation unit is processed.
   virtual void beforeProcessing() {};
+
+  // Called after every translation unit is processed.
   virtual void afterProcessing() {};
 
 protected:
@@ -134,7 +147,7 @@ protected:
   { return Definitions_; }
 
 private:
-  void createIncludeMatcher(clang::CompilerInstance &CI)
+  void createPPCallback(clang::CompilerInstance &CI)
   {
     Includes_.clear();
 

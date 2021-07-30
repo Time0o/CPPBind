@@ -144,7 +144,3 @@ class CTypeTranslator(TypeTranslator('c')):
     @rule(lambda _: True)
     def output(cls, t, args):
         return "{interm} = {outp};"
-
-    @rule(lambda _: True)
-    def helper(cls, t, args):
-        pass

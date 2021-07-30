@@ -9,6 +9,8 @@
 #include "clang/Sema/Sema.h"
 
 #include "ClangUtil.hpp"
+#include "CompilerState.hpp"
+#include "CreateWrapper.hpp"
 #include "FundamentalTypes.hpp"
 #include "Identifier.hpp"
 #include "Logging.hpp"
@@ -16,9 +18,6 @@
 #include "String.hpp"
 #include "Wrapper.hpp"
 #include "WrapperType.hpp"
-
-#include "CompilerState.hpp"
-#include "CreateWrapper.hpp"
 
 using namespace clang::ast_matchers;
 
@@ -28,6 +27,10 @@ namespace cppbind
 bool
 CreateWrapperVisitor::VisitCXXRecordDecl(clang::CXXRecordDecl *Decl)
 {
+  // Guarantee expansion of implicit default con-/destructors so that they can
+  // be matched later on. These might otherwise be omitted by Clang if they are
+  // never used.
+
   if (CompilerState().inCurrentFile(COMPLETE_INPUT_FILE, Decl->getLocation())) {
     auto &Sema(CompilerState()->getSema());
 
@@ -74,16 +77,19 @@ CreateWrapperConsumer::addWrapperHandlers()
     OUTSIDE_SOURCE
   };
 
+  // Match declaration in the input source file.
   std::string InsideSource(
     llvm::formatv("anyOf(isExpansionInFileMatching(\"{0}\"),"
                         "isExpansionInFileMatching(\"{1}\"))",
                   OrigInputFile,
                   TmpInputFile));
 
+  // Match declaration anywhere else in the translation unit.
   std::string OutsideSource(
     llvm::formatv("unless({0})",
                   InsideSource));
 
+  // Process wrap rules passed as command line options via --wrap-rule.
   for (auto const &MatcherRule : OPT(std::vector<std::string>, "wrap-rule")) {
     auto Tmp(string::splitFirst(MatcherRule, ":"));
 
@@ -130,7 +136,7 @@ CreateWrapperConsumer::addWrapperHandlers()
 
     } else if (MatcherID == "variable") {
       addWrapperHandler<clang::VarDecl>(
-        "const",
+        "variable",
         match(INSIDE_SOURCE, "varDecl", matchVariable()),
         declHandler<&CreateWrapperConsumer::handleVariable>());
 
@@ -239,6 +245,7 @@ void
 CreateWrapperConsumer::handleRecordDefinition(clang::CXXRecordDecl const *Decl)
 {
   if (Decl->isThisDeclarationADefinition()) {
+    // Match member declarations before the record definition itself.
     auto DeclContext = static_cast<clang::DeclContext const *>(Decl);
     for (auto const *InnerDecl : DeclContext->decls())
       matchDecl(InnerDecl);
@@ -266,13 +273,23 @@ CreateWrapperFrontendAction::afterProcessing()
       Wrapper_->addMacro(Identifier(Definition.first), Definition.second);
   }
 
-  Wrapper_->overload();
+  Wrapper_->addOverloads();
 
-  Backend::run(InputFile_, Wrapper_);
+  backend::run(InputFile_, Wrapper_);
+}
+
+void
+CreateWrapperToolRunner::adjustArguments(
+  std::vector<clang::tooling::ArgumentsAdjuster> &ArgumentsAdjusters) const
+{
+  // Always include 'generate/cppbind/fundamental_types.h' into the translation
+  // unit to guarantee that all fundamental types are available even if not
+  // present in the latter.
+  insertArguments({"-include", FUNDAMENTAL_TYPES_HEADER}, ArgumentsAdjusters);
 }
 
 std::unique_ptr<clang::tooling::FrontendActionFactory>
 CreateWrapperToolRunner::makeFactory() const
-{ return makeFactoryWithArgs<CreateWrapperFrontendAction>(); }
+{ return makeSimpleFactory<CreateWrapperFrontendAction>(); }
 
 } // namespace cppbind

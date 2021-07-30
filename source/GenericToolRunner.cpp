@@ -25,32 +25,33 @@ namespace cppbind
 
 GenericToolRunner::GenericToolRunner(clang::tooling::CommonOptionsParser &Parser)
 : Compilations_(getCompilations(Parser)),
-  SourceFiles_(getSourceFiles(Parser)),
-  Tool_(getTool())
+  SourceFiles_(getSourceFiles(Parser))
 {}
 
 int
 GenericToolRunner::run()
 {
-  beforeRun();
+  auto Tool(getTool());
 
   auto Factory(makeFactory());
 
-  int Ret = Tool_.run(Factory.get());
-
-  afterRun();
-
-  return Ret;
+  return Tool.run(Factory.get());
 }
 
 std::deque<TmpFile>
 GenericToolRunner::getSourceFiles(clang::tooling::CommonOptionsParser &Parser)
 {
+  // List of input files.
   auto &SourcePathList(Parser.getSourcePathList());
+
+  // Create temporary input files, these simply include the respective original
+  // input file and can additionally contain explicit template instantiations.
+
+  // Temporary input file directory (usually /tmp).
   auto SourceFileDirPath(fs::temp_directory_path());
 
+  // Temporary input files.
   std::deque<TmpFile> SourceFiles;
-
   std::unordered_map<std::string, TmpFile *> SourceFilesByPath;
   std::unordered_map<std::string, std::string> SourcePathsByStem;
 
@@ -65,40 +66,38 @@ GenericToolRunner::getSourceFiles(clang::tooling::CommonOptionsParser &Parser)
     if (PathIt != SourcePathsByStem.end())
       throw log::exception("Source path stem '{0}' is not unique", Stem);
 
-    TmpFile SourceFile((SourceFileDirPath / (Stem + "_tmp" + Extension)).string());
+    auto SourcePathTmp(SourceFileDirPath / (Stem + "_tmp" + Extension));
+    auto &SourceFileTmp(SourceFiles.emplace_back(SourcePathTmp));
 
-    SourceFile << "#include \"" << Canonical << "\"\n";
+    // Include original input file.
+    SourceFileTmp << "#include \"" << Canonical << "\"\n";
 
-    auto &SourceFileRef(SourceFiles.emplace_back(std::move(SourceFile)));
-
-    SourceFilesByPath.emplace(SourcePath.string(), &SourceFileRef);
-    SourcePathsByStem.emplace(Stem, SourcePath.string());
+    SourceFilesByPath.emplace(SourcePath.string(), &SourceFileTmp);
+    SourcePathsByStem.emplace(Stem, SourcePath_);
   }
 
-  for (auto const &TIPath :
-       OPT(std::vector<std::string>, "template-instantiations")) {
+  // Append explicit template instantiations to temporary input files.
+  for (auto const &TIPath_ : OPT(std::vector<std::string>, "template-instantiations")) {
+    fs::path TIPath(TIPath_);
 
-    auto Stem(fs::path(TIPath).stem());
+    auto Stem(TIPath.stem().string());
 
-    auto PathIt(SourcePathsByStem.find(Stem.string()));
-    if (PathIt == SourcePathsByStem.end()) {
-      throw log::exception(
-        "Template instantiations '{0}' can't be matched to any source file",
-        TIPath);
-    }
+    auto PathIt(SourcePathsByStem.find(Stem));
+    if (PathIt == SourcePathsByStem.end())
+      throw log::exception("Unmatched template instantiations '{0}'", TIPath_);
 
     auto FileIt(SourceFilesByPath.find(PathIt->second));
-    assert(FileIt != SourceFilesByPath.end());
 
-    auto *SourceFile(FileIt->second);
+    auto SourceFile(FileIt->second);
 
     std::ifstream TIStream(TIPath);
     if (!TIStream)
-      throw log::exception("Failed to open '{0}'", TIPath);
+      throw log::exception("Failed to open '{0}'", TIPath_);
 
     (*SourceFile) << TIStream.rdbuf() << '\n';
   }
 
+  // Pass list of source files to CompilerState.
   CompilerState().updateFileList(SourcePathList.begin(), SourcePathList.end());
 
   return SourceFiles;
@@ -113,31 +112,36 @@ GenericToolRunner::getTool() const
 
   clang::tooling::ClangTool Tool(Compilations_, SourcePathList);
 
-  std::vector<clang::tooling::ArgumentsAdjuster> ArgumentsAdjusters;
-
-  auto BEGIN = clang::tooling::ArgumentInsertPosition::BEGIN;
-  auto END = clang::tooling::ArgumentInsertPosition::END;
-
-  auto insertArguments = [&](std::vector<std::string> const &Arguments,
-                             clang::tooling::ArgumentInsertPosition Where)
-  {
-    ArgumentsAdjusters.push_back(
-      clang::tooling::getInsertArgumentAdjuster(Arguments, Where));
-  };
-
-  insertArguments({"-xc++-header"}, BEGIN);
-
-  auto FundamentalTypesInclude(
-    (fs::path(GENERATE_DIR) / "cppbind" / "fundamental_types.h").string());
-
-  insertArguments({"-include", FundamentalTypesInclude}, END);
-
-  insertArguments(string::split(CLANG_INCLUDE_PATHS, " "), END);
-
-  for (auto const &ArgumentsAdjuster : ArgumentsAdjusters)
+  for (auto const &ArgumentsAdjuster : getArgumentsAdjusters())
     Tool.appendArgumentsAdjuster(ArgumentsAdjuster);
 
   return Tool;
 }
+
+std::vector<clang::tooling::ArgumentsAdjuster>
+GenericToolRunner::getArgumentsAdjusters() const
+{
+  std::vector<clang::tooling::ArgumentsAdjuster> ArgumentsAdjusters;
+
+  // Interpret all input files as C++ headers regardless of extension.
+  insertArguments({"-xc++-header"}, ArgumentsAdjusters, ARGUMENTS_BEGIN);
+
+  // Add default include directories.
+  insertArguments(string::split(CLANG_INCLUDE_PATHS, " "), ArgumentsAdjusters);
+
+  adjustArguments(ArgumentsAdjusters);
+
+  return ArgumentsAdjusters;
+}
+
+void
+GenericToolRunner::insertArguments(
+  std::vector<std::string> const &Arguments,
+  std::vector<clang::tooling::ArgumentsAdjuster> &ArgumentsAdjusters,
+  clang::tooling::ArgumentInsertPosition Where)
+{
+  ArgumentsAdjusters.push_back(
+    clang::tooling::getInsertArgumentAdjuster(Arguments, Where));
+};
 
 } // namespace cppbind

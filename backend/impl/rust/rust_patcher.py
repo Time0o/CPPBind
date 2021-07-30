@@ -6,7 +6,7 @@ from util import dotdict
 
 
 # XXX add this for other languages
-def _name_reserved():
+def _id_reserved():
     return set({
         'Self', 'abstract', 'as', 'async', 'await', 'become', 'box', 'break',
         'const', 'continue', 'crate', 'do', 'dyn', 'else', 'enum', 'extern',
@@ -160,7 +160,6 @@ def _record_trait(self):
 
 class RustPatcher(Patcher):
     def patch(self):
-        self._patch(_name, 'reserved', _name_reserved)
         self._patch(EnumConstant, 'name_target', _name(default_case=Id.SNAKE_CASE_CAP_ALL))
         self._patch(Function, 'declare_parameters', _function_declare_parameters)
         self._patch(Function, 'forward_call', _function_forward_call)
@@ -168,6 +167,7 @@ class RustPatcher(Patcher):
         self._patch(Function, 'handle_exception', _function_handle_exception)
         self._patch(Function, 'perform_return', _function_perform_return)
         self._patch(Function, 'forward', _function_forward)
+        self._patch(Id, 'reserved', _id_reserved)
         self._patch(Record, 'union', _record_union)
         self._patch(Record, 'trait', _record_trait)
         self._patch(Type, 'target_c', _type_target_c)

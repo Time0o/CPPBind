@@ -79,7 +79,7 @@ std::string qualType(clang::QualType Type, Policy P)
 
         Type = clang::QualType(
           ElaboratedType->desugar().getTypePtr(),
-          Type.getQualifiers().getAsOpaqueValue()); // TODO: do we need this? try it out
+          Type.getQualifiers().getAsOpaqueValue());
       }
 
       return Type.getAsString(makePrintingPolicy(P));

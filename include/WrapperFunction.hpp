@@ -72,9 +72,6 @@ public:
   bool isSelf() const
   { return Name_ == Identifier(Identifier::SELF); }
 
-  bool isOut() const
-  { return Name_ == Identifier(Identifier::OUT); }
-
 private:
   static std::optional<std::string> determineDefaultArgument(
     clang::Expr const *DefaultExpr);
@@ -87,6 +84,7 @@ private:
 
 class WrapperFunction : public WrapperObject<clang::FunctionDecl>
 {
+  friend class Wrapper;
   friend class WrapperFunctionBuilder;
 
   struct OverloadedOperator {
@@ -115,7 +113,9 @@ public:
   bool operator!=(WrapperFunction const &Other) const
   { return !(this->operator==(Other)); }
 
-  void overload(std::shared_ptr<IdentifierIndex> II);
+  // If this is an overloaded function, disambiguate it by appending some unique
+  // postfix to its name.
+  void addOverload(std::shared_ptr<IdentifierIndex> II);
 
   Identifier getName() const;
 
@@ -129,6 +129,8 @@ public:
   WrapperRecord const *getParent() const
   { return Parent_; }
 
+  // If this is a getter/setter for some wrapper variable, return that wrapper
+  // variable.
   WrapperVariable const *getPropertyFor() const
   { return PropertyFor_; }
 
@@ -143,11 +145,10 @@ public:
   std::deque<WrapperParameter> const &getParameters() const
   { return Parameters_; }
 
-  std::deque<WrapperParameter> &getParameters()
-  { return Parameters_; }
-
   WrapperType getReturnType() const;
 
+  // Wrapper functions constructed with the wrapper function builder may have
+  // "custom actions" that they perform instead of simply calling a C++ function.
   std::optional<std::string> getCustomAction() const
   { return CustomAction_; }
 
@@ -213,9 +214,11 @@ public:
   bool isOverloadedOperator(char const *Which = nullptr,
                             int numParameters = -1) const;
 
+  // Check if this is a cast to a base type.
   bool isBaseCast() const
   { return IsBaseCast_; }
 
+  // Check if this is a user defined cast, e.g. 'operator bool()'.
   bool isCustomCast(char const *Which = nullptr) const;
 
 private:
@@ -278,7 +281,12 @@ public:
 
   WrapperFunctionBuilder &setName(Identifier const &Name);
   WrapperFunctionBuilder &setNamespace(std::optional<Identifier> const &Namespace);
+  // "Origin" here means the record type in which the function is defined which
+  // may be different from its parent if the latter inherits the function.
   WrapperFunctionBuilder &setOrigin(WrapperType const &Origin);
+  // Record corresponding to some member function. Calling this will
+  // automatically adjust the function's name and add an appropriate "self"
+  // parameter if required.
   WrapperFunctionBuilder &setParent(WrapperRecord const *Parent);
   WrapperFunctionBuilder &setPropertyFor(WrapperVariable const *PropertyFor);
   WrapperFunctionBuilder &setReturnType(WrapperType const &ReturnType);

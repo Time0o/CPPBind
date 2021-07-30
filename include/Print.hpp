@@ -10,6 +10,9 @@
 namespace cppbind
 {
 
+// Utility functions used to turn a number of common Clang/LLVM objects into
+// string representations.
+
 namespace print
 {
 

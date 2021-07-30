@@ -35,16 +35,16 @@ WrapperRecord::WrapperRecord(clang::CXXRecordDecl const *Decl,
     IsDefinition_ = determineIfDefinition(Decl);
     IsAbstract_ = determineIfAbstract(Decl);
     IsCopyable_ = determineIfCopyable(Decl);
-    IsMoveable_ = determineIfMoveable(Decl);
+    IsMovable_ = determineIfMovable(Decl);
     TemplateArgumentList_ = determineTemplateArgumentList(Decl);
   }
 }
 
 void
-WrapperRecord::overload(std::shared_ptr<IdentifierIndex> II)
+WrapperRecord::addOverloads(std::shared_ptr<IdentifierIndex> II)
 {
   for (auto &F : Functions_)
-    F.overload(II);
+    F.addOverload(II);
 }
 
 Identifier
@@ -435,7 +435,7 @@ WrapperRecord::determineIfCopyable(clang::CXXRecordDecl const *Decl)
 }
 
 bool
-WrapperRecord::determineIfMoveable(clang::CXXRecordDecl const *Decl)
+WrapperRecord::determineIfMovable(clang::CXXRecordDecl const *Decl)
 {
   if (!Decl->isThisDeclarationADefinition())
     return false;

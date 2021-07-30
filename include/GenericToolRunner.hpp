@@ -18,6 +18,8 @@ namespace clang { class FrontendAction; }
 namespace cppbind
 {
 
+// Generic base class providing some utility functionality around a ClangTool
+// instance.
 class GenericToolRunner
 {
 public:
@@ -26,6 +28,24 @@ public:
   int run();
 
 protected:
+  // Create a trivial FrontendActionFactory.
+  template<typename T>
+  static std::unique_ptr<clang::tooling::FrontendActionFactory>
+  makeSimpleFactory()
+  {
+    struct Factory : public clang::tooling::FrontendActionFactory
+    {
+      std::unique_ptr<clang::FrontendAction> create() override
+      { return std::make_unique<T>(); }
+    };
+
+    return std::make_unique<Factory>();
+  }
+
+  // Create a FrontendActionFactory whose constructor takes arguments. Currently
+  // unused but might be required again later and should thus remain here for
+  // now.
+#if 0
   template<typename T, typename ...ARGS>
   static std::unique_ptr<clang::tooling::FrontendActionFactory>
   makeFactoryWithArgs(ARGS&&... Args)
@@ -37,21 +57,11 @@ protected:
       : StoredArgs_(std::forward_as_tuple(std::forward<ARGS>(Args)...))
       {}
 
-#if __clang_major__ >= 10
       std::unique_ptr<clang::FrontendAction> create() override
-#else
-      clang::FrontendAction *create() override
-#endif
       {
         return std::apply(
           [](auto&&... Args)
-          {
-#if __clang_major__ >= 10
-            return std::make_unique<T>(std::forward<decltype(Args)>(Args)...);
-#else
-            return new T(std::forward<decltype(Args)>(Args)...);
-#endif
-          },
+          { return std::make_unique<T>(std::forward<decltype(Args)>(Args)...); },
           StoredArgs_);
       }
 
@@ -61,6 +71,7 @@ protected:
 
     return std::make_unique<Factory>(std::forward<ARGS>(Args)...);
   }
+#endif
 
 private:
   static clang::tooling::CompilationDatabase &getCompilations(
@@ -72,15 +83,31 @@ private:
 
   clang::tooling::ClangTool getTool() const;
 
-  virtual std::unique_ptr<clang::tooling::FrontendActionFactory> makeFactory() const = 0;
+  std::vector<clang::tooling::ArgumentsAdjuster> getArgumentsAdjusters() const;
 
-  virtual void beforeRun() {}
-  virtual void afterRun() {}
+protected:
+  static void insertArguments(
+    std::vector<std::string> const &Arguments,
+    std::vector<clang::tooling::ArgumentsAdjuster> &ArgumentsAdjusters,
+    clang::tooling::ArgumentInsertPosition Where = ARGUMENTS_END);
+
+  static auto const ARGUMENTS_BEGIN = clang::tooling::ArgumentInsertPosition::BEGIN;
+  static auto const ARGUMENTS_END = clang::tooling::ArgumentInsertPosition::END;
+
+private:
+  // Inheriting classes may implement this function in order to adjust the
+  // arguments passed to the ClangTool instance.
+  virtual void adjustArguments(
+    std::vector<clang::tooling::ArgumentsAdjuster> &ArgumentsAdjusters) const
+  {}
+
+  // Inheriting classes must implement this function that should return a
+  // FrontendActionFactory instance that creates a new FrontendAction for every
+  // input translation unit.
+  virtual std::unique_ptr<clang::tooling::FrontendActionFactory> makeFactory() const = 0;
 
   clang::tooling::CompilationDatabase &Compilations_;
   std::deque<TmpFile> SourceFiles_;
-
-  clang::tooling::ClangTool Tool_;
 };
 
 } // namespace cppbind

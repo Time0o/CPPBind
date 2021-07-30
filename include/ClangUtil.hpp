@@ -15,6 +15,7 @@
 namespace cppbind
 {
 
+// Obtain the CXXRecordDecl corresponding to some CXXBaseSpecifier.
 inline auto const *declBase(clang::CXXBaseSpecifier const &Base)
 {
   auto const *BaseType(Base.getType()->getAs<clang::RecordType>());
@@ -22,6 +23,8 @@ inline auto const *declBase(clang::CXXBaseSpecifier const &Base)
   return llvm::dyn_cast<clang::CXXRecordDecl>(BaseType->getDecl());
 }
 
+// Create a declaration matcher object for declarations of type 'T'. 'ID' is an
+// arbitrary identifier and 'MatcherSource' a Clang AST matcher expression.
 template<typename T>
 auto declMatcher(llvm::StringRef ID, llvm::StringRef MatcherSource)
 {

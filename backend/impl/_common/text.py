@@ -1,9 +1,13 @@
+# Text processing utility functions.
+
 import re
 import textwrap
 from functools import partial
 from itertools import groupby
 
 
+# This function formats source code such that indentation is preserved, usage
+# is similar to .format, e.g.: code('hello {name}', name='timo')
 def code(c, **kwargs):
     c = textwrap.dedent(c).strip()
 
@@ -13,6 +17,7 @@ def code(c, **kwargs):
     return c
 
 
+# "Compresses" adjacent empty lines into one.
 def compress(txt):
     txt_lines = [l.rstrip() for l in txt.strip().split('\n')]
 

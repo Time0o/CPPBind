@@ -5,9 +5,14 @@
 #include <string>
 #include <unordered_map>
 
+#include "Mixin.hpp"
+
 namespace cppbind {
 
-class EnvRegistry
+// This class is currently used by the backend to preserve some environment
+// variables between backend runs. Currently only the Rust backend makes use
+// of this in order to avoid duplicate type and struct definitions.
+class EnvRegistry : private mixin::NotCopyOrMovable
 {
   friend EnvRegistry &Env();
 

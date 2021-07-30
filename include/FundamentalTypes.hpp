@@ -13,14 +13,14 @@
 namespace cppbind
 {
 
-class FundamentalTypeRegistry : private mixin::NotCopyOrMoveable
+// A singleton class that stores a mapping to fundamental type definitions from
+// their string representations so they can be conveniently accessed later.
+// See generate/cppbind/fundamental_types.h for a list of all fundamental types.
+class FundamentalTypeRegistry : private mixin::NotCopyOrMovable
 {
   friend FundamentalTypeRegistry &FundamentalTypes();
 
 public:
-  void clear()
-  { FundamentalTypes_.clear(); }
-
   void add(clang::Type const *Type)
   {
     assert(Type->isFundamentalType());
@@ -30,6 +30,8 @@ public:
     FundamentalTypes_[TypeName] = Type;
   }
 
+  // Get a type object for the fundamental type with string representation
+  // 'TypeName'.
   clang::Type const *get(std::string const &TypeName) const
   {
     auto IT(FundamentalTypes_.find(TypeName));
@@ -38,6 +40,7 @@ public:
     return IT->second;
   }
 
+  // Check whether 'Type' is a (particular) fundamental type.
   bool is(clang::Type const *Type, std::string const &TypeName = "")
   {
     if (!Type->isFundamentalType())

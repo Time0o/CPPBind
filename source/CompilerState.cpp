@@ -39,8 +39,8 @@ CompilerStateRegistry::updateFile(std::string const &File)
 
   File_ = It->second;
 
-  TI_->Records_.clear();
-  TI_->Enums_.clear();
+  TI_->clearRecords();
+  TI_->clearEnums();
 }
 
 std::string

@@ -248,26 +248,6 @@ WrapperType
 WrapperType::canonical() const
 { return WrapperType(type().getCanonicalType()); }
 
-WrapperEnum const *
-WrapperType::asEnum() const
-{ return CompilerState().types()->getEnum(unqualified()); }
-
-WrapperRecord const *
-WrapperType::asRecord() const
-{ return CompilerState().types()->getRecord(unqualified()); }
-
-std::vector<std::string>
-WrapperType::templateArguments() const
-{
-  std::vector<std::string> TArgs;
-  TArgs.reserve(TemplateArgumentList_->size());
-
-  for (auto const &TA : *TemplateArgumentList_)
-    TArgs.push_back(TA.str());
-
-  return TArgs;
-}
-
 std::optional<WrapperType>
 WrapperType::proxyFor()
 {
@@ -327,6 +307,14 @@ WrapperType::proxyFor()
 
   return std::nullopt;
 }
+
+WrapperEnum const *
+WrapperType::asEnum() const
+{ return CompilerState().types()->getEnum(unqualified()); }
+
+WrapperRecord const *
+WrapperType::asRecord() const
+{ return CompilerState().types()->getRecord(unqualified()); }
 
 std::deque<WrapperType>
 WrapperType::baseTypes(bool Recursive) const
@@ -502,6 +490,18 @@ WrapperType::format(bool WithTemplatePostfix,
 std::string
 WrapperType::mangled() const
 { return print::mangledQualType(type()); }
+
+std::vector<std::string>
+WrapperType::templateArguments() const
+{
+  std::vector<std::string> TArgs;
+  TArgs.reserve(TemplateArgumentList_->size());
+
+  for (auto const &TA : *TemplateArgumentList_)
+    TArgs.push_back(TA.str());
+
+  return TArgs;
+}
 
 clang::QualType
 WrapperType::determineType(clang::QualType const &Type)

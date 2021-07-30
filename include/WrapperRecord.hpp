@@ -23,7 +23,7 @@ namespace cppbind
 {
 
 class WrapperRecord : public WrapperObject<clang::CXXRecordDecl>,
-                      public mixin::NotCopyOrMoveable
+                      public mixin::NotCopyOrMovable
 {
   friend class TypeIndex;
 
@@ -37,7 +37,7 @@ public:
   bool operator!=(WrapperRecord const &Other) const
   { return !(this->operator==(Other)); }
 
-  void overload(std::shared_ptr<IdentifierIndex> II);
+  void addOverloads(std::shared_ptr<IdentifierIndex> II);
 
   Identifier getName() const;
 
@@ -76,8 +76,8 @@ public:
   bool isCopyable() const
   { return IsCopyable_; }
 
-  bool isMoveable() const
-  { return IsMoveable_; }
+  bool isMovable() const
+  { return IsMovable_; }
 
   bool isTemplateInstantiation() const
   { return static_cast<bool>(TemplateArgumentList_); }
@@ -109,7 +109,7 @@ private:
   static bool determineIfDefinition(clang::CXXRecordDecl const *Decl);
   static bool determineIfAbstract(clang::CXXRecordDecl const *Decl);
   static bool determineIfCopyable(clang::CXXRecordDecl const *Decl);
-  static bool determineIfMoveable(clang::CXXRecordDecl const *Decl);
+  static bool determineIfMovable(clang::CXXRecordDecl const *Decl);
 
   static std::optional<TemplateArgumentList>
   determineTemplateArgumentList(clang::CXXRecordDecl const *Decl);
@@ -122,7 +122,7 @@ private:
   bool IsDefinition_ = false;
   bool IsAbstract_ = false;
   bool IsCopyable_ = false;
-  bool IsMoveable_ = false;
+  bool IsMovable_ = false;
 
   std::optional<TemplateArgumentList> TemplateArgumentList_;
 };
