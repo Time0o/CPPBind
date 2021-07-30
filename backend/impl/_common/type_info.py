@@ -29,7 +29,7 @@ def path():
 def type_instances():
     be_records = backend().records(include_declarations=True)
 
-    be_types = backend().types(as_set=True)
+    be_types = backend().types()
 
     types = OrderedDict()
 

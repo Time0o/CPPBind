@@ -1,5 +1,5 @@
 from backend import Backend, backend, switch_backend
-from cppbind import Identifier as Id, Type
+from cppbind import Env, Identifier as Id, Options, Type
 from itertools import chain
 from rust_patcher import RustPatcher
 from rust_type_translator import RustTypeTranslator
@@ -12,8 +12,6 @@ class RustBackend(Backend('rust')):
 
         self._patcher = RustPatcher()
         self._type_translator = RustTypeTranslator()
-
-        self._rust_modules = {}
 
     def patcher(self):
         return self._patcher
@@ -30,18 +28,21 @@ class RustBackend(Backend('rust')):
 
         self._wrapper_source.append(self._c_declarations())
 
+        self._wrapper_source.append('\n'.join(self._rust_typedefs()))
+
     def wrap_definition(self, d):
         self.wrap_variable(d.as_variable())
 
     def wrap_enum(self, e):
-        if e.is_anonymous():
+        if Options.rust_no_enums or e.is_anonymous() or e.is_ambiguous():
             for c in e.constants():
                 self._wrapper_source.append(
                     f"pub const {c.name_target()}: {c.type().target()} = {c.value()};")
         else:
             enum_constants = []
             for c in e.constants():
-                enum_constants.append(f"{c.name_target()} = {c.value()}")
+                enum_constants.append(
+                    f"{c.name_target(case=Id.PASCAL_CASE, quals=Id.REMOVE_QUALS)} = {c.value()}")
 
             self._wrapper_source.append(code(
                 """
@@ -63,8 +64,12 @@ class RustBackend(Backend('rust')):
         self._wrapper_source.append(self._function_definition_rust(f))
 
     def wrap_record(self, r):
-        if not r.is_redeclaration():
-            self._wrapper_source.append(self._record_definition_rust(r))
+        if r.type() in self.record_types():
+            env_key = 'RECORD_{}'.format(r.type().mangled())
+
+            if Env.get(env_key) is None:
+                self._wrapper_source.append(self._record_definition_rust(r))
+                Env.set(env_key, 'y')
 
         if r.is_definition():
             if r.is_polymorphic():
@@ -78,7 +83,7 @@ class RustBackend(Backend('rust')):
         return f"{self.input_file().filename()}_c"
 
     def _c_types(self):
-        type_set = self.types(as_set=True)
+        type_set = self.types()
 
         type_set.add(Type('void'))
         type_set.add(Type('char'))
@@ -128,23 +133,13 @@ class RustBackend(Backend('rust')):
     def _rust_typedefs(self):
         typedefs = []
         for a, t in self.type_aliases():
-            typedefs.append(f"type {a.target()} = {t.target()}")
+            env_key = 'TYPEDEF_{}'.format(a.target())
+
+            if Env.get(env_key) is None:
+                typedefs.append(f"type {a.target()} = {t.target()};")
+                Env.set(env_key, 'y')
 
         return typedefs
-
-    def _rust_typedef_types(self):
-        return [a.target() for a, _ in self.type_aliases()]
-
-    def _rust_record_types(self):
-        record_types = []
-
-        for r in self.records(include_declarations=True):
-            if r.is_polymorphic():
-                record_types.append(r.trait().name_target())
-
-            record_types.append(r.type().target())
-
-        return record_types
 
     def _record_definition_rust(self, r):
         record_name = r.name_target()
@@ -321,12 +316,15 @@ class RustBackend(Backend('rust')):
         return f"{self._function_header_c(f)};"
 
     def _function_header_c(self, f):
-        name = f.name_target(namespace='keep')
+        name = f.name_target()
 
         def param_declare(p):
             t = p.type()
             if t.is_record():
-                t = t.with_const().pointer_to()
+                if t.proxy_for() is not None:
+                    t = t.proxy_for()
+                else:
+                    t = t.with_const().pointer_to()
 
             return f"{p.name_target()}: {t.target_c()}"
 
@@ -376,7 +374,10 @@ class RustBackend(Backend('rust')):
                 return "&mut self"
 
             if t.is_record():
-                t = t.with_const().lvalue_reference_to().non_polymorphic()
+                if t.proxy_for() is not None:
+                    t = t.proxy_for()
+                else:
+                    t = t.with_const().lvalue_reference_to().non_polymorphic()
 
             return f"{p.name_target()}: {t.target()}"
 

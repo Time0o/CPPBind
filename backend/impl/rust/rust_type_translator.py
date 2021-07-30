@@ -1,4 +1,4 @@
-from cppbind import Identifier as Id, Type
+from cppbind import Identifier as Id, Options, Type
 from type_translator import TypeTranslator
 from text import code
 
@@ -39,21 +39,16 @@ class RustTypeTranslator(TypeTranslator('rust')):
 
     @classmethod
     def _record(cls, t):
-        r = t.as_record()
-
-        return None if r is None else r.name_target()
+        return t.name_target()
 
     @classmethod
     def _record_trait(cls, t):
-        r = t.as_record()
-
-        return None if r is None or not r.is_polymorphic() else r.trait().name_target()
+        return t.as_record().trait().name_target()
 
     @classmethod
     def _record_cast(cls, t, obj):
-        r = t.pointee().as_record()
-
-        cast = r.base_cast(const=t.pointee().is_const()).name().unqualified()
+        const = t.pointee().is_const()
+        cast = t.pointee().as_record().base_cast(const=const).name().unqualified()
 
         if t.is_pointer():
             return f"(*{obj}).{cast}()"
@@ -105,6 +100,10 @@ class RustTypeTranslator(TypeTranslator('rust')):
     def target_c(cls, t, args):
         return cls._c_type_fundamental(t)
 
+    @rule(lambda t: t.is_alias() and t.is_basic())
+    def target(cls, t, args):
+        return t.name_target()
+
     @rule(lambda t: t.is_void())
     def target(cls, t, args):
         return 'c_void'
@@ -140,9 +139,7 @@ class RustTypeTranslator(TypeTranslator('rust')):
 
     @rule(lambda t: t.is_enum())
     def target(cls, t, args):
-        enum = t.as_enum()
-
-        if enum is None:
+        if Options.rust_no_enums or t.as_enum().is_ambiguous():
             return cls.target(t.underlying_integer_type())
 
         return t.as_enum().name_target()
@@ -157,6 +154,9 @@ class RustTypeTranslator(TypeTranslator('rust')):
 
     @rule(lambda t: t.is_record())
     def input(cls, t, args):
+        if t.proxy_for() is not None:
+            return "{interm} = {inp};"
+
         return f"{{interm}} = {{inp}} as {cls.target_c(t.with_const().pointer_to(), args)};"
 
     @rule(lambda t: t.is_record_indirection() and t.pointee().is_polymorphic())
@@ -213,13 +213,16 @@ class RustTypeTranslator(TypeTranslator('rust')):
         else:
             return "&mut *{outp}"
 
-    @rule(lambda t: t.is_enum())
-    def output(cls, t, args):
-        return "std::mem::transmute({outp})"
-
     @rule(lambda t: t.is_boolean())
     def output(cls, t, args):
         return f"{{outp}} != 0"
+
+    @rule(lambda t: t.is_enum())
+    def output(cls, t, args):
+        if Options.rust_no_enums:
+            return "{outp}"
+
+        return "std::mem::transmute({outp})"
 
     @rule(lambda _: True)
     def output(cls, t, args):

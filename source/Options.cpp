@@ -100,6 +100,12 @@ void OptionsRegistry::init()
     .done();
 
   // XXX backend options should not be implemented in C++
+  Options().add<bool>("rust-no-enums")
+    .setDescription("Always transform C++ enums into Rust constants")
+    .setDefault(false)
+    .done();
+
+  // XXX backend options should not be implemented in C++
   Options().add<std::string>("lua-include-dir")
     .setDescription("Directory containing lua.h etc.")
     .setDefault("")

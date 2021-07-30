@@ -247,7 +247,8 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     .def("type", &Enum::getType)
     .def("constants", &Enum::getConstants)
     .def("is_scoped", &Enum::isScoped)
-    .def("is_anonymous", &Enum::isAnonymous);
+    .def("is_anonymous", &Enum::isAnonymous)
+    .def("is_ambiguous", &Enum::isAmbiguous);
 
   py::class_<EnumConstant>(m, "EnumConstant", py::dynamic_attr())
     .def("name", &EnumConstant::getName)
@@ -372,6 +373,7 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     RO_PROP("output_cpp_header_extension", OPT("output-cpp-header-extension"))
     RO_PROP("output_cpp_source_extension", OPT("output-cpp-source-extension"))
     RO_PROP("output_relative_includes", OPT(bool, "output-relative-includes"))
+    RO_PROP("rust_no_enums", OPT(bool, "rust-no-enums"))
     RO_PROP("lua_include_dir", OPT("lua-include-dir"))
     RO_PROP("lua_include_cpp", OPT(bool, "lua-include-cpp"));
 

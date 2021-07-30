@@ -46,7 +46,7 @@ class CBackend(Backend('c')):
             header_guard=self._header_guard(),
             typedefs='\n'.join(self._typedefs()),
             record_declarations='\n'.join(self._record_declarations()),
-            record_definitions='\n\n'.join(self._record_definitions('header'))))
+            record_definitions='\n\n'.join(self._record_definitions_header())))
 
         self._wrapper_source.append(code(
             """
@@ -69,7 +69,7 @@ class CBackend(Backend('c')):
             """,
             input_includes='\n'.join(self.input_includes()),
             input_header_include=self._wrapper_header.include(),
-            record_definitions='\n\n'.join(self._record_definitions('source'))))
+            record_definitions='\n\n'.join(self._record_definitions_source())))
 
     def wrap_after(self):
         self._wrapper_header.append(code(
@@ -184,71 +184,34 @@ class CBackend(Backend('c')):
     def _function_body(self, f):
         return f.forward()
 
+    def _record_types(self, which='all'):
+        return [t for t in self.record_types(which) if t.target().startswith('struct')]
+
     def _record_declarations(self):
         return [self._record_declaration(t) for t in self._record_types()]
 
-    def _record_definitions(self, which):
-        return [self._record_definition(t) for t in self._record_types(which)]
+    def _record_definitions_header(self):
+        return [self._record_definition(t) for t in self._record_types('defined')]
+
+    def _record_definitions_source(self):
+        return [self._record_definition(t) for t in self._record_types('used')]
 
     def _record_declaration(self, t):
         return f"{t.target()};"
 
     def _record_definition(self, t):
-        if t.as_record().is_abstract():
-            union = code(
-                """
-                union { void *ptr; } obj;
-                """)
-        else:
-            union = code(
-                f"""
-                union {{
-                  char mem[{t.size()}];
-                  void *ptr;
-                }} obj;
-                """)
-
         return code(
             """
             {name}
             {{
-              {union}
+              union {{
+                char mem[{size}];
+                void *ptr;
+              }} obj;
 
               char is_const;
               char is_owning;
             }};
             """,
             name=t.target(),
-            union=union)
-
-    def _record_types(self, which='all'):
-        types_all = set()
-        types_header = set()
-
-        def add_record_type(t, which):
-            if t.target().startswith('struct'):
-                if which == 'all':
-                    types_all.add(t)
-                elif which == 'header':
-                    types_header.add(t)
-
-        for t in self._types:
-            if t.is_record():
-                add_record_type(t.without_const(), 'all')
-            elif t.is_record_indirection():
-                add_record_type(t.pointee().without_const(), 'all')
-
-        for r in self.records():
-            add_record_type(r.type(), 'header')
-
-        types_source = types_all - types_header
-
-        if which == 'all':
-            types = types_all
-        elif which == 'header':
-            types = types_header
-        elif which == 'source':
-            types = types_source
-
-        return list(sorted(types, key=lambda t: str(t)))
-
+            size=t.size())

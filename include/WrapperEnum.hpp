@@ -2,6 +2,7 @@
 #define GUARD_WRAPPER_ENUM_H
 
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -97,6 +98,19 @@ public:
 
   bool isAnonymous() const
   { return IsAnonymous_; }
+
+  bool isAmbiguous() const
+  {
+    std::unordered_set<std::string> Values;
+
+    for (auto const &Constant : Constants_) {
+      auto [_, NewValue] = Values.insert(Constant.getValue());
+      if (!NewValue)
+        return true;
+    }
+
+    return false;
+  }
 
 private:
   Identifier determineName(clang::EnumDecl const *Decl) const

@@ -236,10 +236,7 @@ class BackendGeneric(metaclass=BackendMeta):
     def objects(self):
         return self._hierarchy
 
-    def types(self, as_set=False):
-        if as_set:
-            return self._types
-
+    def types(self):
         return sorted(self._types)
 
     def type_aliases(self):
@@ -297,6 +294,39 @@ class BackendGeneric(metaclass=BackendMeta):
             records.append(r)
 
         return records
+
+    def record_types(self, which='all'):
+        types_all = set()
+        types_defined = set()
+
+        def add_record_type(t, which):
+            if which == 'all':
+                types_all.add(t)
+            elif which == 'defined':
+                types_defined.add(t)
+
+        for t in self.types():
+            if t.is_alias():
+                t = t.canonical()
+
+            if t.is_record():
+                add_record_type(t.without_const(), 'all')
+            elif t.is_record_indirection():
+                add_record_type(t.pointee().without_const(), 'all')
+
+        for r in self.records():
+            add_record_type(r.type(), 'defined')
+
+        types_used = types_all - types_defined
+
+        if which == 'all':
+            types = types_all
+        elif which == 'defined':
+            types = types_defined
+        elif which == 'used':
+            types = types_used
+
+        return sorted(types)
 
     def run(self):
         self.wrap_before()

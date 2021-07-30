@@ -26,26 +26,17 @@ def _type_target(self):
     return backend().type_translator().target(self)
 
 
-def _enum_constant_name_target(self, *args, **kwargs):
-    if self.enum().is_anonymous():
-        return _enum_constant_name_target.anonymous(self, *args, **kwargs)
-
-    return _enum_constant_name_target.non_anonymous(self, *args, **kwargs)
-
-_enum_constant_name_target.anonymous = _name(default_case=Id.SNAKE_CASE_CAP_ALL)
-_enum_constant_name_target.non_anonymous = _name(default_case=Id.PASCAL_CASE,
-                                                 default_quals=Id.REMOVE_QUALS)
-
-
 def _function_declare_parameters(self):
     def declare_parameter(p):
-        decl_name = p.name_interm()
-        decl_type = p.type()
+        t = p.type()
 
-        if decl_type.is_record():
-            decl_type = decl_type.with_const().pointer_to()
+        if t.is_record():
+            if t.proxy_for() is not None:
+                t = t.proxy_for()
+            else:
+                t = t.with_const().pointer_to()
 
-        return f"let {decl_name}: {decl_type.target_c()};"
+        return f"let {p.name_interm()}: {t.target_c()};"
 
     return '\n'.join(declare_parameter(p) for p in self.parameters())
 
@@ -170,7 +161,7 @@ def _record_trait(self):
 class RustPatcher(Patcher):
     def patch(self):
         self._patch(_name, 'reserved', _name_reserved)
-        self._patch(EnumConstant, 'name_target', _enum_constant_name_target)
+        self._patch(EnumConstant, 'name_target', _name(default_case=Id.SNAKE_CASE_CAP_ALL))
         self._patch(Function, 'declare_parameters', _function_declare_parameters)
         self._patch(Function, 'forward_call', _function_forward_call)
         self._patch(Function, 'try_catch', _function_try_catch)

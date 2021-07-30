@@ -402,7 +402,9 @@ class Patcher:
 
         Macro.name_target = _name(default_case=Id.SNAKE_CASE_CAP_ALL)
 
-        Type.name_target = _name(default_case=Id.PASCAL_CASE)
+        Type.name_target = \
+            _name(get=lambda t: t.name(with_template_postfix=True),
+                  default_case=Id.PASCAL_CASE)
 
         Enum.name_target = _name(default_case=Id.PASCAL_CASE)
         EnumConstant.name_target = _name(default_case=Id.SNAKE_CASE_CAP_ALL)
