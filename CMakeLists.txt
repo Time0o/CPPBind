@@ -6,13 +6,13 @@ cmake_minimum_required(VERSION 3.14)
 ################################################################################
 
 project("cppbind"
-        VERSION 0.1
+        VERSION 1.0
         LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
 set(PROJECT_AUTHOR "Timo Nicolai")
-set(PROJECT_COPYRIGHT "2020")
+set(PROJECT_COPYRIGHT "2021")
 
 
 ################################################################################
@@ -24,7 +24,6 @@ set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
 set(TOOL_DIR ${PROJECT_SOURCE_DIR}/tool)
 set(DEPS_DIR ${PROJECT_SOURCE_DIR}/deps)
 set(PYBIND11_DIR ${DEPS_DIR}/pybind11)
-set(COVERAGE_DIR ${PROJECT_BINARY_DIR}/coverage)
 
 set(GENERATE_DIR ${PROJECT_SOURCE_DIR}/generate/)
 
@@ -36,9 +35,6 @@ set(BACKEND_TEST_COMMON_DIR ${BACKEND_TEST_DIR}/_common)
 set(BACKEND_TEST_RUNNER ${BACKEND_TEST_COMMON_DIR}/backend_testrunner)
 
 set(CPPBIND cppbind_tool)
-set(CPPBIND_PROFRAW ${COVERAGE_DIR}/cppbind_%p.profraw)
-set(CPPBIND_PROFDATA ${COVERAGE_DIR}/cppbind.profdata)
-set(CPPBIND_COVERAGE_TXT ${COVERAGE_DIR}/coverage_cppbind.txt)
 
 
 ################################################################################
@@ -62,6 +58,9 @@ list(GET CLANG_VERSION_LIST 2 CLANG_VERSION_PATCH)
 
 set(CLANG_VERSION_MAJOR_MIN 10)
 
+# In theory, Clang 8 and up should be supported but compiling with Clang 9
+# results in some hard-to-diagnose segmentation faults, therefore we require
+# Clang >= 10. CPPBind has been successfully tested with Clang 10, 11 and 12.
 if (CLANG_VERSION_MAJOR LESS CLANG_VERSION_MAJOR_MIN)
   message(FATAL_ERROR "Clang version < ${CLANG_VERSION_MAJOR_MIN} not supported")
 endif()
@@ -69,14 +68,16 @@ endif()
 # flags
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -pedantic")
 
-if (CMAKE_BUILD_TYPE STREQUAL Debug AND COVERAGE)
-  set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
-endif()
-
 # libraries
+
+# The set of required libraries might vary across systems and Clang versions
+# versions but 'clang-cpp' seems to be all that is needed for Clang >= 10 on
+# e.g. Ubuntu.
 set(CLANG_LIBRARIES clang-cpp)
 
 # include paths
+
+# See explanation in tool clang_include_paths.sh.
 set(ENV{CLANGXX} ${CMAKE_CXX_COMPILER})
 
 execute_process(COMMAND ${TOOL_DIR}/clang_include_paths.sh
@@ -94,6 +95,8 @@ find_package(LLVM ${CLANG_VERSION_MAJOR}.${CLANG_VERSION_MINOR} REQUIRED CONFIG)
 find_package(Boost 1.40 REQUIRED COMPONENTS filesystem graph regex)
 
 # find pybind11
+
+# If this fails you probably didn't check out the corresponding submodule.
 if(NOT EXISTS ${PYBIND11_DIR}/CMakeLists.txt)
   message(FATAL_ERROR "pybind11 submodule not found")
 endif()
@@ -101,7 +104,11 @@ endif()
 add_subdirectory(${PYBIND11_DIR})
 
 # find lua
-find_package(Lua 5.2 REQUIRED)
+
+# There is no reason CPPBind can't work with other versions of Lua but so far
+# it's only been tested with Lua 5.4.*. The generated code might need some
+# tweaks to support earlier versions.
+find_package(Lua 5.4 REQUIRED)
 
 set(LUA lua${LUA_VERSION_MAJOR}.${LUA_VERSION_MINOR})
 
@@ -153,6 +160,8 @@ endfunction()
 
 function(target_pybind11_config TARGET)
   # definitions
+
+  # These definitions are used in Backend.cpp to locate the backend module to run.
   target_compile_definitions(
     ${TARGET} PRIVATE
       -DGENERATE_DIR="${GENERATE_DIR}"
@@ -192,6 +201,7 @@ add_subdirectory(${SRC_DIR})
 if(CMAKE_BUILD_TYPE STREQUAL Debug)
   enable_testing()
 
+  # Iterate over all backends.
   file(GLOB BACKEND_TEST_LANGUAGE_DIRS ${BACKEND_TEST_DIR}/*)
 
   foreach(BACKEND_TEST_LANGUAGE_DIR ${BACKEND_TEST_LANGUAGE_DIRS})
@@ -201,6 +211,10 @@ if(CMAKE_BUILD_TYPE STREQUAL Debug)
       continue()
     endif()
 
+    # Obtain a list of all tests implemented for the current backend. Each test
+    # is simply a target language program that calls wrapper code generated for
+    # some C++ header file in backend/test/_input and fires an assertion if the
+    # wrapper code does not behave as expected.
     execute_process(
       COMMAND ${BACKEND_TEST_RUNNER} list
               ${PROJECT_SOURCE_DIR}
@@ -225,6 +239,13 @@ if(CMAKE_BUILD_TYPE STREQUAL Debug)
       set(RUN_VALGRIND "no")
     endif()
 
+    # Add CMake tests. For each CMake test, the
+    # backend/test/_common/backend_testrunner script invokes CPPBind to
+    # generate wrapper code for some C++ header file in backend/test/_input and
+    # then tries to build and run the corresponding target language test
+    # program. If either compilation fails or the test program returns a
+    # non-zero status code, the CMake test fails. Run 'make test' to execute all
+    # CMake tests or 'ctest -R ...' to execute all tests matching some pattern.
     foreach(BACKEND_TEST ${BACKEND_TESTS})
         add_test(
           NAME ${BACKEND_LANGUAGE}_${BACKEND_TEST}

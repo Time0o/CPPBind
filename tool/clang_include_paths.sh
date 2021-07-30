@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# This script parses the default include paths used by Clang from the output of
+# 'clang -v'. These are then made available to CPPBind via preprocessor macros
+# in order to allow CPPBind to parse programs including STL headers etc.
+
 INCLUDE_START="#include <...> search starts here:"
 INCLUDE_END="End of search list"
 
