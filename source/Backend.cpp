@@ -12,6 +12,7 @@
 #include "pybind11/stl_bind.h"
 
 #include "Backend.hpp"
+#include "Env.hpp"
 #include "Identifier.hpp"
 #include "Logging.hpp"
 #include "Options.hpp"
@@ -373,4 +374,10 @@ PYBIND11_EMBEDDED_MODULE(cppbind, m)
     RO_PROP("output_relative_includes", OPT(bool, "output-relative-includes"))
     RO_PROP("lua_include_dir", OPT("lua-include-dir"))
     RO_PROP("lua_include_cpp", OPT(bool, "lua-include-cpp"));
+
+  struct Env_ {};
+
+  py::class_<Env_>(m, "Env")
+    .def_static("get", [](std::string const &Key){ return Env().get(Key); })
+    .def_static("set", [](std::string const &Key, std::string const &Val){ Env().set(Key, Val); });
 }
