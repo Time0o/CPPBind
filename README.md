@@ -9,13 +9,12 @@ to [SWIG](https://github.com/swig/swig) but has two distinct advantages:
 * No reliance on a custom C++ parser, increasing maintainability
 * Backends can be implemented in Python, allowing for rapid prototyping
 
-Currently CPPBindg supports C and Lua as target languages, implementations for
-Rust and Go will follow.
+Currently CPPBindg supports C, Rust and Lua as target languages.
 
 ## Building
 
 See `.github/workflow/workflow.yml` for a list of dependencies. These mainly
-include LLVM/Clang version 8 and up and Boost.
+include LLVM/Clang version 10 and up and Boost.
 
 To build CPPBind, run the following:
 
@@ -70,22 +69,24 @@ private:
 We can run `cppbind_tool` over this header, using the Lua backend as such:
 
 ```
-cppbind_tool --backend=lua
+cppbind_tool any_stack.h
+             --template-instantiations any_stack.tcc
+             --backend=lua
              --wrap-rule 'record:hasName("AnyStack")'
-             --wrap-template-instantiations any_stack.tcc
              --extra-arg '-std=c++17'
+             --
 ```
 
 The `--wrap-rule` option can be used one or multiple times to refine what
-should be wrapped using the syntax `obj:rule` where `obj` is one of `constant`,
-`function`, or `record` and `rule` is a [Clang AST matcher
+should be wrapped using the syntax `obj:rule` where `obj` is one of `enum`,
+`variable`, `function`, or `record` and `rule` is a [Clang AST matcher
 rule](https://clang.llvm.org/docs/LibASTMatchersReference.html). Furthermore,
 `any_stack.tcc` is an extra file containing the explicit template
 instantiations of `AnyStack` for which wrapper code should be generated. This
 extra step is necessary because Lua has no conception of compile time
 templates:
 
-```
+```c++
 template void AnyStack::push<int>(int);
 template int AnyStack::pop<int>();
 template void AnyStack::push<double>(double);
