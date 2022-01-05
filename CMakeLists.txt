@@ -52,13 +52,13 @@ if (CLANG_VERSION_MAJOR LESS 10)
   message(FATAL_ERROR "Clang version < ${CLANG_VERSION_MAJOR_MIN} not supported")
 endif()
 
-# find boost
-find_package(Boost 1.40 REQUIRED COMPONENTS filesystem graph regex)
+# Boost
+find_package(Boost COMPONENTS filesystem graph regex REQUIRED)
 
-# find pybind11
-add_subdirectory(pybind11)
+# pybind11
+find_package(pybind11 REQUIRED)
 
-# find lua
+# Lua
 
 # There is no reason CPPBind can't work with other versions of Lua but so far
 # it's only been tested with Lua 5.2.*+. The generated code might need some
