@@ -19,4 +19,9 @@ add_executable(${CPPBIND}
                "WrapperType.cpp"
                "WrapperVariable.cpp")
 
-target_basic_config(${CPPBIND})
+target_compile_features(${CPPBIND} PRIVATE cxx_std_17)
+target_include_directories(${CPPBIND} PRIVATE ${INCLUDE_DIR})
+
+clang_config(${CPPBIND})
+boost_config(${CPPBIND})
+pybind11_config(${CPPBIND})

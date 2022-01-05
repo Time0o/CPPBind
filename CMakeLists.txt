@@ -10,6 +10,7 @@ project("cppbind"
         LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -pedantic")
 
 set(PROJECT_AUTHOR "Timo Nicolai")
 set(PROJECT_COPYRIGHT "2021")
@@ -21,9 +22,6 @@ set(PROJECT_COPYRIGHT "2021")
 
 set(SRC_DIR ${PROJECT_SOURCE_DIR}/source)
 set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
-set(TOOL_DIR ${PROJECT_SOURCE_DIR}/tool)
-set(DEPS_DIR ${PROJECT_SOURCE_DIR}/deps)
-set(PYBIND11_DIR ${DEPS_DIR}/pybind11)
 
 set(GENERATE_DIR ${PROJECT_SOURCE_DIR}/generate/)
 set(FUNDAMENTAL_TYPES_HEADER ${GENERATE_DIR}/cppbind/fundamental_types.h)
@@ -42,67 +40,23 @@ set(CPPBIND cppbind_tool)
 # Dependencies
 ################################################################################
 
-# find clang
-if (NOT CMAKE_C_COMPILER_ID STREQUAL Clang)
-  message(FATAL_ERROR "CMAKE_C_COMPILER must be Clang")
-endif()
+# Clang
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/ClangSetup)
 
-if (NOT CMAKE_CXX_COMPILER_ID STREQUAL Clang)
-  message(FATAL_ERROR "CMAKE_CXX_COMPILER must be Clang")
-endif()
-
-# check version
-string(REPLACE "." ";" CLANG_VERSION_LIST ${CMAKE_CXX_COMPILER_VERSION})
-list(GET CLANG_VERSION_LIST 0 CLANG_VERSION_MAJOR)
-list(GET CLANG_VERSION_LIST 1 CLANG_VERSION_MINOR)
-list(GET CLANG_VERSION_LIST 2 CLANG_VERSION_PATCH)
-
-set(CLANG_VERSION_MAJOR_MIN 10)
+include(ClangSetup)
 
 # In theory, Clang 8 and up should be supported but compiling with Clang 9
 # results in some hard-to-diagnose segmentation faults, therefore we require
 # Clang >= 10. CPPBind has been successfully tested with Clang 10, 11 and 12.
-if (CLANG_VERSION_MAJOR LESS CLANG_VERSION_MAJOR_MIN)
+if (CLANG_VERSION_MAJOR LESS 10)
   message(FATAL_ERROR "Clang version < ${CLANG_VERSION_MAJOR_MIN} not supported")
 endif()
-
-# flags
-set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -pedantic")
-
-# libraries
-
-# The set of required libraries might vary across systems and Clang versions
-# versions but 'clang-cpp' seems to be all that is needed for Clang >= 10 on
-# e.g. Ubuntu.
-set(CLANG_LIBRARIES clang-cpp)
-
-# include paths
-
-# See explanation in tool clang_include_paths.sh.
-set(ENV{CLANGXX} ${CMAKE_CXX_COMPILER})
-
-execute_process(COMMAND ${TOOL_DIR}/clang_include_paths.sh
-                RESULT_VARIABLE CLANG_INCLUDE_PATHS_ERROR
-                OUTPUT_VARIABLE CLANG_INCLUDE_PATHS)
-
-if (NOT ${CLANG_INCLUDE_PATHS_ERROR} EQUAL 0)
-  message(FATAL_ERROR "Failed to determine clang default include paths")
-endif()
-
-# find llvm
-find_package(LLVM ${CLANG_VERSION_MAJOR}.${CLANG_VERSION_MINOR} REQUIRED CONFIG)
 
 # find boost
 find_package(Boost 1.40 REQUIRED COMPONENTS filesystem graph regex)
 
 # find pybind11
-
-# If this fails you probably didn't check out the corresponding submodule.
-if(NOT EXISTS ${PYBIND11_DIR}/CMakeLists.txt)
-  message(FATAL_ERROR "pybind11 submodule not found")
-endif()
-
-add_subdirectory(${PYBIND11_DIR})
+add_subdirectory(pybind11)
 
 # find lua
 
@@ -118,39 +72,7 @@ set(LUA lua${LUA_VERSION_MAJOR}.${LUA_VERSION_MINOR})
 # Helper Functions
 ################################################################################
 
-function(target_cpp_config TARGET)
-  set_target_properties(
-    ${TARGET}
-    PROPERTIES
-      LINKER_LANGUAGE CXX
-      CXX_STANDARD 17
-      CXX_STANDARD_REQUIRED ON
-      LINK_FLAGS ""
-  )
-endfunction()
-
-function(target_clang_config TARGET)
-  # definitions
-  target_compile_definitions(
-    ${TARGET} PRIVATE
-    -DCLANG_INCLUDE_PATHS="${CLANG_INCLUDE_PATHS}"
-  )
-
-  # linking
-  target_link_libraries(${TARGET} PRIVATE ${CLANG_LIBRARIES})
-endfunction()
-
-function(target_llvm_config TARGET)
-  # definitions
-  target_compile_definitions(${TARGET} PRIVATE ${LLVM_DEFINITIONS})
-
-  # includes
-  target_include_directories(${TARGET} PRIVATE ${LLVM_INCLUDE_DIRS})
-
-  llvm_config(${TARGET} USE_SHARED option)
-endfunction()
-
-function(target_boost_config TARGET)
+function(boost_config TARGET)
   # includes
   target_include_directories(${TARGET} PRIVATE ${Boost_INCLUDE_DIRS})
 
@@ -159,7 +81,7 @@ function(target_boost_config TARGET)
   target_link_libraries(${TARGET} PRIVATE ${Boost_LIBRARIES})
 endfunction()
 
-function(target_pybind11_config TARGET)
+function(pybind11_config TARGET)
   # definitions
 
   # These definitions are used in Backend.cpp to locate the backend module to run.
@@ -171,20 +93,6 @@ function(target_pybind11_config TARGET)
 
   # linking
   target_link_libraries(${TARGET} PRIVATE pybind11::embed)
-endfunction()
-
-function(target_cppbind_config TARGET)
-  # includes
-  target_include_directories(${TARGET} PRIVATE ${INCLUDE_DIR})
-endfunction()
-
-function(target_basic_config TARGET)
-  target_cpp_config(${TARGET})
-  target_clang_config(${TARGET})
-  target_llvm_config(${TARGET})
-  target_boost_config(${TARGET})
-  target_pybind11_config(${TARGET})
-  target_cppbind_config(${TARGET})
 endfunction()
 
 
