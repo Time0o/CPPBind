@@ -107,7 +107,9 @@ add_subdirectory(${SRC_DIR})
 # Tests
 ################################################################################
 
-if(CMAKE_BUILD_TYPE STREQUAL Debug)
+include(CTest)
+
+if(BUILD_TESTING)
   enable_testing()
 
   # Iterate over all backends.
