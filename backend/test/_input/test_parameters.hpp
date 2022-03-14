@@ -18,7 +18,8 @@ enum : unsigned
 
 enum : long long
 {
-  MIN_LARGE_SIGNED_INT = std::numeric_limits<long long>::min(),
+  // Note: C signed literals cannot be larger than LLONG_MAX
+  MIN_LARGE_SIGNED_INT = -std::numeric_limits<long long>::max(),
   MAX_LARGE_SIGNED_INT = std::numeric_limits<long long>::max()
 };
 

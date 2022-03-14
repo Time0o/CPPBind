@@ -6,13 +6,14 @@
 #include <utility>
 #include <vector>
 
+#include "clang/AST/Decl.h"
+
 #include "Identifier.hpp"
 #include "LLVMFormat.hpp"
+#include "LLVMUtil.hpp"
 #include "WrapperObject.hpp"
 #include "WrapperType.hpp"
 #include "WrapperVariable.hpp"
-
-#include "clang/AST/Decl.h"
 
 namespace cppbind
 {
@@ -25,7 +26,7 @@ public:
   : WrapperObject<clang::EnumConstantDecl>(Decl),
     Name_(Identifier(Decl)),
     Type_(Decl->getType()),
-    Value_(Decl->getInitVal().toString(10)),
+    Value_(APSIntToString(Decl->getInitVal())),
     Enum_(Enum)
   {}
 
@@ -40,12 +41,7 @@ public:
     if (!AsCLiteral)
       return Value_;
 
-    auto CLiteral(Value_ + "ULL");
-
-    if (CLiteral[0] == '-')
-      CLiteral = "(long long)" + CLiteral;
-
-    return CLiteral;
+    return Value_ + (Value_[0] == '-' ? "LL" : "ULL");
   }
 
   WrapperEnum const *getEnum() const
