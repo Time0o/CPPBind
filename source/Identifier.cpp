@@ -350,9 +350,6 @@ Identifier::isReserved(std::string const &Name)
 {
   auto &Info(info(Name));
 
-#if __clang_major__ >= 10
-  return Info.isReservedName();
-#else
   if (Info.getLength() < 2)
      return false;
 
@@ -362,7 +359,6 @@ Identifier::isReserved(std::string const &Name)
   char C2 = NameStart[1];
 
   return C1 == '_' && (C2 == '_' || (C2 >= 'A' && C2 <= 'Z'));
-#endif
 }
 
 } // namespace cppbind
