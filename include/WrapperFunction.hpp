@@ -15,7 +15,6 @@
 #include "clang/AST/Expr.h"
 #include "clang/AST/TemplateBase.h"
 
-#include "llvm/ADT/SmallString.h"
 #include "llvm/Support/raw_ostream.h"
 
 #include "Identifier.hpp"
