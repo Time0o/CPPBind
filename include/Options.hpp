@@ -155,7 +155,14 @@ public:
   }
 
   clang::tooling::CommonOptionsParser parser(int Argc, char const **Argv)
-  { return {Argc, Argv, Category_}; }
+  {
+    auto parser { clang::tooling::CommonOptionsParser::create(Argc, Argv, Category_) };
+
+    if (!parser)
+      throw log::exception("Failed to construct options parser");
+
+    return std::move(*parser);
+  }
 
 private:
   OptionsRegistry(llvm::StringRef Category, llvm::StringRef Usage)
