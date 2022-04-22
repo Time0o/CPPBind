@@ -156,7 +156,10 @@ public:
 
   clang::tooling::CommonOptionsParser parser(int Argc, char const **Argv)
   {
-    auto parser { clang::tooling::CommonOptionsParser::create(Argc, Argv, Category_) };
+    auto parser {
+      clang::tooling::CommonOptionsParser::create(
+        Argc, Argv, Category_, llvm::cl::OneOrMore)
+    };
 
     if (!parser)
       throw log::exception("Failed to construct options parser");
