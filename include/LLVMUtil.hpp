@@ -14,7 +14,7 @@ inline std::string APSIntToString(llvm::APSInt const &I)
   llvm::SmallString<256> SS;
   I.toString(SS);
 
-  return static_cast<std::string>(SS);
+  return SS.c_str();
 }
 
 } // namespace cppbind
