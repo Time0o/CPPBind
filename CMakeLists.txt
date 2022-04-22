@@ -82,6 +82,11 @@ function(boost_config TARGET)
 endfunction()
 
 function(pybind11_config TARGET)
+  # compiler options
+
+  # See https://github.com/pybind/pybind11/issues/1604.
+  target_compile_options(${TARGET} PRIVATE -fsized-deallocation)
+
   # definitions
 
   # These definitions are used in Backend.cpp to locate the backend module to run.

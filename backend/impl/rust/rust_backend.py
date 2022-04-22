@@ -1,6 +1,6 @@
 from backend import Backend, backend, switch_backend
-from cppbind import Env, Identifier as Id, Options, Type
 from itertools import chain
+from pycppbind import Env, Identifier as Id, Options, Type
 from rust_patcher import RustPatcher
 from rust_type_translator import RustTypeTranslator
 from text import code

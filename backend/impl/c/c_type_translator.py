@@ -1,6 +1,6 @@
 import c_util
-from cppbind import Identifier as Id, Options
 from functools import partial
+from pycppbind import Identifier as Id, Options
 from text import code
 from type_translator import TypeTranslator
 

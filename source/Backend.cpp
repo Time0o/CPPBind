@@ -28,13 +28,13 @@ namespace fs = boost::filesystem;
 
 // Add a directory to the Python module search path.
 static void
-addModuleSearchPath(pybind11::module_ const &SysMod, std::string const &Path)
+addModuleSearchPath(pybind11::module const &SysMod, std::string const &Path)
 { SysMod.attr("path").cast<pybind11::list>().append(Path.c_str()); }
 
 // Import some Python module.
-static pybind11::module_
+static pybind11::module
 importModule(std::string const &Module)
-{ return pybind11::module_::import(Module.c_str()); }
+{ return pybind11::module::import(Module.c_str()); }
 
 namespace cppbind
 {
@@ -105,7 +105,7 @@ using Record = WrapperRecord;
 // This defines the interface of the 'cppbind' Python module which in essence
 // just consists of 'pythonized' versions of most of the classes used
 // internally by CPPBind.
-PYBIND11_EMBEDDED_MODULE(cppbind, m)
+PYBIND11_EMBEDDED_MODULE(pycppbind, m)
 {
   namespace py = pybind11;
 

@@ -3,9 +3,9 @@
 # code generation.
 
 from abc import ABCMeta, abstractmethod
-from cppbind import Enum, Function, Options, Record, Type, Variable
 from file import File, Path
 from itertools import chain
+from pycppbind import Enum, Function, Options, Record, Type, Variable
 import os
 
 

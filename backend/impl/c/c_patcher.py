@@ -1,5 +1,5 @@
-from cppbind import Enum, Function, Identifier as Id, Type, Variable
 from patcher import Patcher, _name
+from pycppbind import Enum, Function, Identifier as Id, Type, Variable
 from text import code
 
 

@@ -6,8 +6,8 @@
 import os
 from abc import ABCMeta
 from collections import deque
-from cppbind import Identifier as Id, Options
 from functools import wraps
+from pycppbind import Identifier as Id, Options
 from util import is_iterable
 
 

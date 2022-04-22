@@ -1,5 +1,5 @@
-from cppbind import Function, Identifier as Id, Record
 from patcher import Patcher, _name
+from pycppbind import Function, Identifier as Id, Record
 from text import code
 from util import dotdict
 

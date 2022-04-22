@@ -1,6 +1,6 @@
 from backend import backend
-from cppbind import EnumConstant, Function, Identifier as Id, Record, Type
 from patcher import Patcher, _name
+from pycppbind import EnumConstant, Function, Identifier as Id, Record, Type
 from text import code
 from util import dotdict
 

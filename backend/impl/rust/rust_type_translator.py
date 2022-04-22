@@ -1,4 +1,4 @@
-from cppbind import Identifier as Id, Options, Type
+from pycppbind import Identifier as Id, Options, Type
 from type_translator import TypeTranslator
 from text import code
 

@@ -1,8 +1,8 @@
 import lua_util
 import type_info as ti
 
-from cppbind import Identifier as Id
 from functools import partial
+from pycppbind import Identifier as Id
 from text import code
 from type_translator import TypeTranslator
 

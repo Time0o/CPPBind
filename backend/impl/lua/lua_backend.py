@@ -1,9 +1,9 @@
 import lua_util
 import type_info
 from backend import Backend
-from cppbind import Enum, Function, Identifier as Id, Options, Record, Type
 from lua_patcher import LuaPatcher
 from lua_type_translator import LuaTypeTranslator
+from pycppbind import Enum, Function, Identifier as Id, Options, Record, Type
 from text import code
 
 

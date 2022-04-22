@@ -6,7 +6,7 @@
 
 from abc import abstractmethod
 from backend import backend
-from cppbind import Enum, EnumConstant, Function, Identifier as Id, Macro, Options, Parameter, Record, Type, Variable
+from pycppbind import Enum, EnumConstant, Function, Identifier as Id, Macro, Options, Parameter, Record, Type, Variable
 from text import code
 from util import dotdict
 
