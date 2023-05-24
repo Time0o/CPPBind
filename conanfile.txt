@@ -1,0 +1,7 @@
+[requires]
+boost/1.78.0
+pybind11/2.8.1
+
+[generators]
+CMakeDeps
+CMakeToolchain

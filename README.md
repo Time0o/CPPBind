@@ -13,10 +13,14 @@ Currently CPPBindg supports C, Rust and Lua as target languages.
 
 ## Building
 
-See `.github/workflow/workflow.yml` for a list of dependencies. These mainly
-include LLVM/Clang version 10 and up and Boost.
+I recommend installing the necessary dependencies via `conan`, from the root of
+this repository, simply run:
 
-To build CPPBind, run the following:
+```
+conan install . --output-folder=build --build=missing
+```
+
+And then run `cmake` to build CPPBind:
 
 ```
 mkdir build && cd build
