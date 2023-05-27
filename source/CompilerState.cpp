@@ -1,13 +1,12 @@
 #include <cassert>
+#include <filesystem>
 #include <string>
-
-#include "boost/filesystem.hpp"
 
 #include "clang/Basic/SourceLocation.h"
 
 #include "CompilerState.hpp"
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 namespace cppbind
 {

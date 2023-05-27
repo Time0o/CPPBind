@@ -1,11 +1,10 @@
+#include <filesystem>
 #include <sstream>
 #include <string>
 
-#include "boost/filesystem.hpp"
-
 #include "WrapperInclude.hpp"
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 namespace cppbind
 {

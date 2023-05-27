@@ -1,11 +1,10 @@
 #include <deque>
+#include <filesystem>
 #include <fstream>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-#include "boost/filesystem.hpp"
 
 #include "clang/Tooling/ArgumentsAdjusters.h"
 #include "clang/Tooling/CommonOptionsParser.h"
@@ -18,7 +17,7 @@
 #include "String.hpp"
 #include "TmpFile.hpp"
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 namespace cppbind
 {

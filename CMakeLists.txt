@@ -53,7 +53,7 @@ if (CLANG_VERSION_MAJOR LESS 10)
 endif()
 
 # Boost
-find_package(Boost COMPONENTS filesystem graph regex REQUIRED)
+find_package(Boost COMPONENTS graph regex REQUIRED)
 
 # pybind11
 find_package(pybind11 REQUIRED)

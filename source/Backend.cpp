@@ -1,9 +1,8 @@
+#include <filesystem>
 #include <memory>
 #include <optional>
 #include <string>
 #include <vector>
-
-#include "boost/filesystem/path.hpp"
 
 #include "pybind11/embed.h"
 #include "pybind11/operators.h"
@@ -24,7 +23,7 @@
 #include "WrapperType.hpp"
 #include "WrapperVariable.hpp"
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 // Add a directory to the Python module search path.
 static void

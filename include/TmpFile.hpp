@@ -1,11 +1,10 @@
 #ifndef GUARD_TMP_FILE_H
 #define GUARD_TMP_FILE_H
 
+#include <filesystem>
 #include <fstream>
 #include <ostream>
 #include <string>
-
-#include "boost/filesystem.hpp"
 
 #include "Logging.hpp"
 #include "Mixin.hpp"
@@ -25,7 +24,7 @@ public:
 
   explicit TmpFile(std::string const &Path);
 
-  explicit TmpFile(boost::filesystem::path const &Path)
+  explicit TmpFile(std::filesystem::path const &Path)
   : TmpFile(Path.string())
   {}
 

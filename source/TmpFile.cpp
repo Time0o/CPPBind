@@ -1,14 +1,16 @@
-#include "boost/filesystem.hpp"
+#include <cstdio>
+#include <filesystem>
 
 #include "TmpFile.hpp"
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 namespace cppbind
 {
 
 TmpFile::TmpFile()
-: Path_(fs::unique_path().string())
+// TODO: use mkstemp
+: Path_(std::tmpnam(nullptr))
 {}
 
 TmpFile::TmpFile(std::string const &Path)
