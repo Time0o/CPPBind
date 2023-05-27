@@ -1,5 +1,4 @@
 use std::ffi::*;
-use std::os::raw::*;
 
 include!("test_forward_declarations_rust.rs");
 

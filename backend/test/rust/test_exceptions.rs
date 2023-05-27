@@ -1,6 +1,5 @@
 use std::fmt;
 use std::ffi::*;
-use std::os::raw::*;
 
 include!("rust_bind_error.rs");
 

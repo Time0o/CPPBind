@@ -1,4 +1,4 @@
-use std::os::raw::*;
+use std::ffi::*;
 
 include!("test_variables_rust.rs");
 
