@@ -58,15 +58,6 @@ find_package(Boost COMPONENTS filesystem graph regex REQUIRED)
 # pybind11
 find_package(pybind11 REQUIRED)
 
-# Lua
-
-# There is no reason CPPBind can't work with other versions of Lua but so far
-# it's only been tested with Lua 5.2.*+. The generated code might need some
-# tweaks to support earlier versions.
-find_package(Lua 5.2 REQUIRED)
-
-set(LUA lua${LUA_VERSION_MAJOR}.${LUA_VERSION_MINOR})
-
 
 ################################################################################
 # Helper Functions
@@ -116,6 +107,10 @@ include(CTest)
 
 if(BUILD_TESTING)
   enable_testing()
+
+  # Find Lua
+  find_package(lua 5.4.4 REQUIRED)
+  find_program(lua_PROGRAM lua5.4 REQUIRED)
 
   # Iterate over all backends.
   file(GLOB BACKEND_TEST_LANGUAGE_DIRS ${BACKEND_TEST_DIR}/*)
@@ -176,8 +171,8 @@ if(BUILD_TESTING)
                   --clang-clangpp-args std=c++17
                   --run-valgrind ${RUN_VALGRIND}
                   --valgrind ${VALGRIND}
-                  --lua ${LUA}
-                  --lua-include-dir ${LUA_INCLUDE_DIR}
+                  --lua ${lua_PROGRAM}
+                  --lua-include-dir ${lua_INCLUDE_DIR}
                   ${PROJECT_SOURCE_DIR}
                   ${BACKEND_TEST_DIR}
                   ${BACKEND_LANGUAGE}
