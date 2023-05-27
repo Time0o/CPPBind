@@ -12,6 +12,9 @@
 #include "clang/Lex/PPCallbacks.h"
 #include "clang/Lex/Token.h"
 
+#if __clang_major__ >= 15
+#include "llvm/ADT/Optional.h"
+#endif
 #include "llvm/ADT/StringRef.h"
 
 #include "CompilerState.hpp"
@@ -56,7 +59,11 @@ class GenericFrontendAction : public clang::ASTFrontendAction
       llvm::StringRef,
       bool IsAngled,
       clang::CharSourceRange,
+#if __clang_major__ >= 15
+      llvm::Optional<clang::FileEntryRef> FileEntry,
+#else
       clang::FileEntry const *FileEntry,
+#endif
       llvm::StringRef,
       llvm::StringRef,
       clang::Module const *,
