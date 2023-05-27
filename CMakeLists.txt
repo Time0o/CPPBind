@@ -45,10 +45,9 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/ClangSetup)
 
 include(ClangSetup)
 
-# In theory, Clang 8 and up should be supported but compiling with Clang 9
-# results in some hard-to-diagnose segmentation faults, therefore we require
-# Clang >= 10. CPPBind has been successfully tested with Clang 10, 11 and 12.
-if (CLANG_VERSION_MAJOR LESS 10)
+# You can try building with older versions of Clang by commenting this out but
+# versions before Clang 10 will likely not work.
+if (CLANG_VERSION_MAJOR LESS 12)
   message(FATAL_ERROR "Clang version < ${CLANG_VERSION_MAJOR_MIN} not supported")
 endif()
 
