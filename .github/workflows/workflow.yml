@@ -34,6 +34,7 @@ jobs:
       - name: conan-install
         run: >
           pip install conan &&
+          conan profile detect &&
           conan install . --output-folder=build --build=missing
 
       - name: cmake-configure
@@ -42,6 +43,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Debug
           -DCMAKE_C_COMPILER=${{ matrix.CC }}
           -DCMAKE_CXX_COMPILER=${{ matrix.CXX }}
+          -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake
           -DCTEST_USE_VALGRIND=ON
 
       - name: cmake-build
