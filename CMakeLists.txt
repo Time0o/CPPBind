@@ -87,6 +87,9 @@ function(pybind11_config TARGET)
       -DBACKEND_IMPL_DIR="${BACKEND_IMPL_DIR}"
       -DBACKEND_IMPL_COMMON_DIR="${BACKEND_IMPL_COMMON_DIR}")
 
+  # includes
+  target_include_directories(${TARGET} PRIVATE ${pybind11_INCLUDE_DIRS})
+
   # linking
   target_link_libraries(${TARGET} PRIVATE pybind11::embed)
 endfunction()
