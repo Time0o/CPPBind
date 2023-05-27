@@ -241,7 +241,7 @@ class BackendTestGenerator:
         with TmpLnk(rust_wrap_src, self._test_source_dir()), \
              TmpLnk(rust_bind_error_src, self._test_source_dir()):
 
-            self._subprocess(['rustc', rust_test_src,
+            self._subprocess([kwargs['rustc'], rust_test_src,
                               '--deny', 'warnings',
                               '-A', 'dead_code',
                               '-lstdc++',
@@ -471,6 +471,8 @@ if __name__ == '__main__':
                             help="lua executable")
     run_parser.add_argument('--lua-include-dir', default='/usr/include',
                              help="lua include directory")
+    run_parser.add_argument('--rustc', default='rustc',
+                             help="rustc executable")
 
     args = parser.parse_args()
 

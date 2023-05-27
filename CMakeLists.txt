@@ -112,6 +112,9 @@ if(BUILD_TESTING)
   find_package(lua 5.4.4 REQUIRED)
   find_program(lua_PROGRAM lua5.4 REQUIRED)
 
+  # Find Rust
+  find_program(rustc_PROGRAM rustc REQUIRED)
+
   # Iterate over all backends.
   file(GLOB BACKEND_TEST_LANGUAGE_DIRS ${BACKEND_TEST_DIR}/*)
 
@@ -173,6 +176,7 @@ if(BUILD_TESTING)
                   --valgrind ${VALGRIND}
                   --lua ${lua_PROGRAM}
                   --lua-include-dir ${lua_INCLUDE_DIR}
+                  --rustc ${rustc_PROGRAM}
                   ${PROJECT_SOURCE_DIR}
                   ${BACKEND_TEST_DIR}
                   ${BACKEND_LANGUAGE}
