@@ -13,22 +13,26 @@ Currently CPPBindg supports C, Rust and Lua as target languages.
 
 ## Building
 
-I recommend installing the necessary dependencies via `conan`, from the root of
+I recommend installing the necessary dependencies via `conan`. From the root of
 this repository, simply run:
 
 ```
 conan install . --output-folder=build --build=missing
 ```
 
-And then run `cmake` to build CPPBind:
+And then run `cmake` to prepare to build CPPBind:
 
 ```
-mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake
 ```
 
-Note that you _must_ compile CPPBind with Clang. The generated binary will be
-placed under `build/source/cppbind_tool`.
+Note that you _must_ compile CPPBind with Clang.
+
+Afterwards, simply build with `make`. The generated binary will be placed under
+`build/source/cppbind_tool`. You can also run `make test` to check that
+everything is okay (set `CTEST_OUTPUT_ON_FAILURE=1` to display any errors). In
+order to run the tests you will additionally need the `lua5.4` interpreter and
+`rustc` installed on your system.
 
 ## Usage
 
